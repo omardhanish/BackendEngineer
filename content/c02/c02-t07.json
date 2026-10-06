@@ -1,0 +1,61 @@
+{
+  "title": "Reading and writing files",
+  "idea": "The `fs` module lets your code read, write and manage files and folders. Every call touches the disk, so every call can fail.",
+  "points": [
+    "`readFileSync` returns the data, `readFile` takes a callback, and `fs/promises` returns a promise.",
+    "Sync calls throw, callbacks get `err` first, promises reject. Prefer `await`.",
+    "Every error carries a `code`, such as `ENOENT` (missing) or `EACCES` (not allowed)."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "Six everyday calls",
+    "head": ["Task", "Call", "Watch for"],
+    "rows": [
+      ["Read text", "readFile(path, 'utf8')", "Without 'utf8' you get raw bytes (a Buffer, see c02-t13)"],
+      ["Replace a file", "writeFile(path, text)", "Erases the old content"],
+      ["Add to a file", "appendFile(path, text)", "Creates the file if it is missing"],
+      ["List a folder", "readdir(dir)", "Names only; sort them if order matters"],
+      ["Make a folder", "mkdir(dir)", "Fails if the folder already exists"],
+      ["Delete", "rm(path)", "A folder needs { recursive: true }"]
+    ],
+    "highlight": { "col": 1 },
+    "caption": "These are the promise versions. For sync, add `Sync` to the name; for a callback, pass one last."
+  },
+  "code": [
+    {
+      "file": "files.mjs",
+      "lang": "js",
+      "title": "Promise style",
+      "run": "browser",
+      "caption": "This runs on a safe in-memory disk. Swap `appendFile` for `writeFile` and predict the first output."
+    },
+    {
+      "file": "styles.mjs",
+      "lang": "js",
+      "title": "Sync and callback errors",
+      "run": "browser",
+      "caption": "The same failing read in two styles: the sync call throws at once, the callback gets `err` later."
+    }
+  ],
+  "pitfalls": [
+    "Do not check `existsSync` first: the file can vanish before you read it. Handle `ENOENT`.",
+    "Avoid `readFileSync` in a running server; the next page explains why.",
+    "Relative paths start from where you ran `node`, not from the script's folder."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "import fs from 'node:fs/promises';\n\nawait fs.writeFile('log.txt', 'a');\nawait fs.writeFile('log.txt', 'b');\nawait fs.appendFile('log.txt', 'c');\nconsole.log(await fs.readFile('log.txt', 'utf8'));",
+    "lang": "js",
+    "options": ["abc", "b", "bc", "c"],
+    "answer": 2,
+    "why": "The second `writeFile` replaced `a` with `b`. Then `appendFile` added `c` to the end."
+  },
+  "takeaway": "Name the task, pick a style, check the error `code`.",
+  "chat": {
+    "starters": [
+      "How do I read a JSON file and turn it into an object?",
+      "When is it fine to use readFileSync?",
+      "What is the difference between fs and fs/promises?"
+    ]
+  }
+}

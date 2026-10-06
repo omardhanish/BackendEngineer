@@ -1,0 +1,156 @@
+{
+  "title": "CommonJS and ES modules",
+  "idea": "A module is a file with its own private scope that shares only what it exports, using either CommonJS or ES module syntax.",
+  "analogy": {
+    "text": "A workshop with a service hatch. Tools and scraps stay inside; only what you pass through the hatch (the exports) reaches the next workshop.",
+    "breaks": "Importers receive the same exported objects, not copies."
+  },
+  "points": [
+    "Each file is a module: its variables stay private unless it exports them.",
+    "CommonJS uses `require` and `module.exports`; ES modules use `import` and `export`.",
+    "`.cjs` is CommonJS and `.mjs` is ES modules; `.js` follows `package.json`, covered next.",
+    "Node runs each module once and caches it by its full file path."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "One module, loaded once",
+    "scenario": {
+      "token": { "label": "./math.cjs", "tone": "req" },
+      "stages": [
+        { "id": "file", "label": "Your file", "kind": "end" },
+        { "id": "resolve", "label": "Resolve", "sub": "find the file" },
+        { "id": "cache", "label": "Cache", "sub": "seen it before?" },
+        { "id": "run", "label": "Run", "sub": "execute once" }
+      ],
+      "steps": [
+        {
+          "caption": "A file asks for a module: `require('./math.cjs')` or `import … from './math.cjs'`. Node must find it first.",
+          "at": "file", "slot": "top",
+          "state": { "file": "active" },
+          "out": []
+        },
+        {
+          "caption": "Resolve: Node turns `./math.cjs` into a full file path. That path is the module's identity.",
+          "at": "resolve", "slot": "top",
+          "state": { "file": "done", "resolve": "active" },
+          "out": []
+        },
+        {
+          "caption": "Cache: has this path been loaded before? Not yet, so Node loads the file.",
+          "at": "cache", "slot": "top",
+          "state": { "file": "done", "resolve": "done", "cache": "active" },
+          "out": []
+        },
+        {
+          "caption": "Run: Node executes `math.cjs` once, top to bottom. Its `console.log` fires now.",
+          "at": "run", "slot": "top",
+          "state": { "file": "done", "resolve": "done", "cache": "done", "run": "active" },
+          "out": ["math: loading"]
+        },
+        {
+          "caption": "The file ends. What it assigned to `module.exports` is the result; its other variables stay private.",
+          "at": "run", "slot": "bottom",
+          "token": { "label": "exports", "tone": "ok" },
+          "state": { "file": "done", "resolve": "done", "cache": "done", "run": "active" },
+          "out": ["math: loading"]
+        },
+        {
+          "caption": "The cache now holds the module's exports under its path, ready for the next request.",
+          "at": "cache", "slot": "bottom",
+          "token": { "label": "exports", "tone": "ok" },
+          "state": { "file": "done", "resolve": "done", "cache": "active", "run": "done" },
+          "out": ["math: loading"]
+        },
+        {
+          "caption": "The caller gets the exports and carries on. The first load is done.",
+          "at": "file", "slot": "top",
+          "token": { "label": "exports", "tone": "ok" },
+          "state": { "file": "active", "resolve": "done", "cache": "done", "run": "done" },
+          "out": ["math: loading"]
+        },
+        {
+          "caption": "Later, a second file in this folder asks for `./math.cjs`.",
+          "at": "file", "slot": "top",
+          "state": { "file": "active" },
+          "out": ["math: loading"]
+        },
+        {
+          "caption": "Resolve produces the same full path as before.",
+          "at": "resolve", "slot": "top",
+          "state": { "file": "done", "resolve": "active" },
+          "out": ["math: loading"]
+        },
+        {
+          "caption": "Cache: this path is already stored. A hit, so Node skips the Run stage.",
+          "at": "cache", "slot": "top",
+          "state": { "file": "done", "resolve": "done", "cache": "active" },
+          "out": ["math: loading"]
+        },
+        {
+          "caption": "Node returns the stored exports. The file does not run again, so nothing new prints.",
+          "at": "cache", "slot": "bottom",
+          "token": { "label": "exports", "tone": "ok" },
+          "state": { "file": "done", "resolve": "done", "cache": "active" },
+          "out": ["math: loading"]
+        },
+        {
+          "caption": "Both files now share one exports object, and the module ran once.",
+          "at": "file", "slot": "top",
+          "token": { "label": "exports", "tone": "ok" },
+          "state": { "file": "active", "resolve": "done", "cache": "done" },
+          "out": ["math: loading"]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "math.cjs",
+      "lang": "js",
+      "title": "The module",
+      "run": "captured",
+      "caption": "A CommonJS module. `module.exports` is what other files receive; `secret` stays private."
+    },
+    {
+      "file": "main.cjs",
+      "lang": "js",
+      "title": "CommonJS importer",
+      "run": "captured",
+      "caption": "`require` runs `math.cjs` at the moment it is called, in the middle of this file."
+    },
+    {
+      "file": "main.mjs",
+      "lang": "js",
+      "title": "ES module importer",
+      "run": "captured",
+      "caption": "The same file as an ES module. Compare the order of the first two output lines with `main.cjs`.",
+      "walk": [
+        { "lines": [2], "text": "`import` pulls in `add`. ES modules can import CommonJS files such as `math.cjs`." },
+        { "lines": [1, 2], "text": "Imports load before the file's own code runs, so `math.cjs` prints first." },
+        { "lines": [4], "text": "`secret` was never exported, so no such name exists here." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Use `import`, not `require`, in `.mjs` files; `require` is not defined there.",
+    "Write the extension in ES module imports of your own files: `./math.cjs`, not `./math`.",
+    "Keep per-request data inside functions; module-level variables are shared by every importer."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "// math.cjs prints 'math: loading' when it runs\nrequire('./math.cjs');\nrequire('./math.cjs');\nconsole.log('done');",
+    "lang": "js",
+    "options": ["done", "math: loading, then done", "math: loading, math: loading, then done", "A ReferenceError"],
+    "answer": 1,
+    "why": "Node caches a module by its path. The second `require` returns the stored exports, so `math.cjs` does not run again."
+  },
+  "takeaway": "Share through exports, load by path, and remember a module loads only once.",
+  "chat": {
+    "starters": [
+      "Why does Node have two module systems?",
+      "Can I mix require and import in one project?",
+      "What does export default do?"
+    ]
+  }
+}

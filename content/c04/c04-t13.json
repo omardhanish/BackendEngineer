@@ -1,0 +1,157 @@
+{
+  "title": "Rendering HTML with EJS",
+  "idea": "A template is an HTML file with holes in it. EJS fills the holes with your data, and `res.render` sends the finished HTML.",
+  "points": [
+    "Run `npm install ejs`, then `app.set('view engine', 'ejs')` once; Express loads it by name.",
+    "`res.render('books', { books })` fills `views/books.ejs`; the object's keys become variables.",
+    "`<%= x %>` escapes HTML in the value; `<%- x %>` prints it raw.",
+    "`<% %>` runs JavaScript, such as a loop, and prints nothing."
+  ],
+  "hero": {
+    "type": "anatomy",
+    "title": "One line of an EJS template",
+    "parts": [
+      {
+        "text": "<% for (const b of books) { %>",
+        "label": "Scriptlet",
+        "note": "Runs JavaScript and prints nothing. This opens a loop over the `books` your route passed in."
+      },
+      {
+        "text": "<li>",
+        "label": "HTML",
+        "note": "Plain HTML is copied to the page as written, once per pass of the loop."
+      },
+      {
+        "text": "<%= b.title %>",
+        "label": "Output",
+        "note": "Inserts the value. `<`, `>` and `&` become entities, so user text stays text."
+      },
+      {
+        "text": "</li>",
+        "label": "HTML",
+        "note": "Copied unchanged too: everything outside the tags is plain text to EJS."
+      },
+      {
+        "text": "<% } %>",
+        "label": "Scriptlet",
+        "note": "Closes the loop. The browser receives only the finished HTML, never the tags."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "books.ejs",
+      "lang": "ejs",
+      "title": "The template",
+      "run": "static",
+      "caption": "The view. Save it as `views/books.ejs`; the `books` list comes from the route.",
+      "walk": [
+        {
+          "lines": [
+            1,
+            2,
+            6
+          ],
+          "text": "Plain HTML is copied to the output unchanged."
+        },
+        {
+          "lines": [
+            3,
+            5
+          ],
+          "text": "`<% %>` runs JavaScript and prints nothing. `-%>` also removes the newline after the tag."
+        },
+        {
+          "lines": [
+            4
+          ],
+          "text": "`<%= %>` prints a value with its HTML characters escaped."
+        }
+      ]
+    },
+    {
+      "file": "app.mjs",
+      "lang": "js",
+      "title": "Render a page",
+      "run": "captured",
+      "caption": "A route renders the template with data from the model. Press Run for the real output.",
+      "walk": [
+        {
+          "lines": [
+            1,
+            2
+          ],
+          "text": "Import Express and the same model the JSON API uses."
+        },
+        {
+          "lines": [
+            4
+          ],
+          "text": "Add a book whose title contains markup, as a user might submit."
+        },
+        {
+          "lines": [
+            6,
+            7
+          ],
+          "text": "`app.set('view engine', 'ejs')` makes Express load `ejs` and look for `.ejs` files."
+        },
+        {
+          "lines": [
+            9,
+            10,
+            11
+          ],
+          "text": "`res.render('books', data)` finds `views/books.ejs`, fills it, and sends the HTML."
+        },
+        {
+          "lines": [
+            13,
+            14,
+            15
+          ],
+          "text": "Request the page and print the status and the content type."
+        },
+        {
+          "lines": [
+            16
+          ],
+          "text": "Print the HTML. The markup in the title is escaped, so a browser shows it as text."
+        },
+        {
+          "lines": [
+            17,
+            18
+          ],
+          "text": "Close the server so the script can exit."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Never print user text with `<%-`: it skips escaping and allows script injection.",
+    "Pass every variable the template uses; a missing one throws `ReferenceError` at render time.",
+    "Start Node from the project root: Express looks for `views/` in the current folder."
+  ],
+  "quiz": {
+    "q": "What HTML does this send?",
+    "code": "res.render('note', { name: 'a & b' });\n// views/note.ejs holds:\n// <p><%= name %> / <%- name %></p>",
+    "lang": "js",
+    "options": [
+      "`<p>a & b / a & b</p>`",
+      "`<p>a &amp; b / a &amp; b</p>`",
+      "`<p>a & b / a &amp; b</p>`",
+      "`<p>a &amp; b / a & b</p>`"
+    ],
+    "answer": 3,
+    "why": "`<%=` escapes the value, so `&` becomes `&amp;`. `<%-` prints it exactly as given."
+  },
+  "takeaway": "Treat a template as a function: same data in, same HTML out.",
+  "chat": {
+    "starters": [
+      "How do I share a header and footer between pages?",
+      "Should I use EJS or a React front end?",
+      "How do I serve CSS and images with Express?"
+    ]
+  }
+}

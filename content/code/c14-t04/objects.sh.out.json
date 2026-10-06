@@ -1,0 +1,9 @@
+{
+  "stdout": "$ mkdir demo\n$ cd demo\n$ git init -b main\nInitialized empty Git repository in /home/ada/demo/.git/\n$ echo \"# Demo\" > README.md\n$ git add README.md\n$ git commit -m \"Add README\"\n[main (root-commit) e9f3605] Add README\n 1 file changed, 1 insertion(+)\n create mode 100644 README.md\n$ mkdir src\n$ echo \"console.log('hi');\" > src/app.js\n$ git add src\n$ git commit -m \"Add app\"\n[main e9398f1] Add app\n 1 file changed, 1 insertion(+)\n create mode 100644 src/app.js\n$ git cat-file -t HEAD\ncommit\n$ git cat-file -p HEAD\ntree aef79828c3aa16704bd5695e3d1788c32caeb5d1\nparent e9f36057ead343f58e48b3104e1daadbbf52f253\nauthor Ada Lovelace <ada@example.com> 1740820080 +0000\ncommitter Ada Lovelace <ada@example.com> 1740820080 +0000\n\nAdd app\n$ git cat-file -p 'HEAD^{tree}'\n100644 blob 0805455a24b6c68fbc38d0fa5d121f735984285d\tREADME.md\n040000 tree 1ac951f87d00880938af4a7bf6d1dbc5a0f45a45\tsrc\n$ git cat-file -p HEAD:README.md\n# Demo\n$ git rev-parse HEAD~1:README.md HEAD:README.md\n0805455a24b6c68fbc38d0fa5d121f735984285d\n0805455a24b6c68fbc38d0fa5d121f735984285d",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "git 2.47.0",
+  "hash": "5fe76396dec0bd37",
+  "at": "2026-10-06T10:01:28.071Z"
+}

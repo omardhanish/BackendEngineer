@@ -1,0 +1,56 @@
+{
+  "title": "Variables, constants and types",
+  "idea": "A variable is a name for a value. `let` lets you reassign it; `const` does not. The value has the type, never the name.",
+  "analogy": {
+    "text": "A label stuck on a box. The label is the variable, the box holds the value. `let` lets you move the label to another box; `const` glues it down.",
+    "breaks": "`const` locks the label, not the box: an object's contents can still change."
+  },
+  "points": [
+    "`let` and `const` are visible only inside their `{ }` block; `var` ignores blocks.",
+    "`const` needs a value when declared; a `let` without one starts as `undefined`.",
+    "`typeof` reports the type of whatever the variable holds right now.",
+    "Every value has a type, such as number or string. Later pages cover them."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "Three ways to declare",
+    "head": ["Keyword", "Reassign", "Redeclare", "Scope"],
+    "rows": [
+      ["const", "No", "No", "Block"],
+      ["let", "Yes", "No", "Block"],
+      ["var", "Yes", "Yes", "Function"]
+    ],
+    "highlight": { "row": 0 },
+    "caption": "Scope is where a name is visible. Redeclare means declaring the same name again in the same scope."
+  },
+  "code": [
+    {
+      "file": "vars.mjs",
+      "lang": "js",
+      "title": "let, const and var",
+      "run": "browser",
+      "caption": "Run it. Then change `const limit` to `let limit` and see what the `try` line does."
+    }
+  ],
+  "pitfalls": [
+    "Avoid `var` in new code: it ignores block scope and leaks out of `if` and `for`.",
+    "Keep one type per variable: a number that becomes a string breaks later math.",
+    "Declare every variable with a keyword; a bare `total = 1` throws in modules."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "for (var i = 0; i < 2; i++) {}\nfor (let j = 0; j < 2; j++) {}\nconsole.log(typeof i, typeof j);",
+    "lang": "js",
+    "options": ["number undefined", "undefined undefined", "number number", "undefined number"],
+    "answer": 0,
+    "why": "`var i` ignores the loop's block, so `i` is 2 afterwards. `let j` exists only inside its loop, so `typeof j` is \"undefined\"."
+  },
+  "takeaway": "Default to `const`, use `let` when needed, and skip `var`.",
+  "chat": {
+    "starters": [
+      "Why use const when let also works?",
+      "What does dynamically typed mean in JavaScript?",
+      "Why can I push to a const array?"
+    ]
+  }
+}

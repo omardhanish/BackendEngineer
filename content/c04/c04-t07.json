@@ -1,0 +1,30 @@
+{
+  "title": "Review a REST API",
+  "scenario": {
+    "brief": "Priya has opened a pull request for a small books API. It works on her laptop. Your job: decide whether it is safe to ship.",
+    "role": "Senior engineer reviewing a teammate's pull request.",
+    "goal": "Find what must change before this goes to production, and say why.",
+    "rules": [
+      "Priya is in the chat. She answers questions about her code.",
+      "Ask about anything: auth, errors, limits, configuration.",
+      "When you are ready, press End and debrief."
+    ],
+    "personaLabel": "Priya · PR author",
+    "artifact": 0,
+    "artifactTitle": "Pull request #42: books-api/server.mjs",
+    "artifactNote": "45 lines, in memory, no tests yet. Read it top to bottom, like a reviewer.",
+    "rubric": [
+      { "criterion": "Authorization on write routes", "levels": ["Not raised", "Notes that anyone can call POST and DELETE", "Asks for auth plus an ownership or role check on DELETE"] },
+      { "criterion": "Input validation", "levels": ["Not raised", "Says the body should be validated", "Names a schema check and rejects unknown fields"] },
+      { "criterion": "Correct status codes", "levels": ["Not raised", "Spots one wrong code", "Spots 200 for create and for not found; asks for 201 and 404"] },
+      { "criterion": "Error and log hygiene", "levels": ["Not raised", "Notes the error handler exposes details", "Also flags stack traces to clients and passwords in logs"] },
+      { "criterion": "Secrets and credentials", "levels": ["Not raised", "Notes the hard-coded secret", "Also flags that the token is the secret and the hard-coded password"] },
+      { "criterion": "Limits and pagination", "levels": ["Not raised", "Mentions the size of the list", "Asks for pagination and rate limiting on login"] },
+      { "criterion": "Data bugs", "levels": ["Not raised", "Notices delete behaves oddly", "Finds that findIndex -1 makes splice delete the last book"] },
+      { "criterion": "Production readiness", "levels": ["Not raised", "Mentions one of CORS, config, health check", "Covers CORS origin, env config, health check and graceful shutdown"] }
+    ]
+  },
+  "code": [
+    { "file": "server.mjs", "lang": "js", "run": "static", "caption": "The pull request under review." }
+  ]
+}

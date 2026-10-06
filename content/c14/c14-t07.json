@@ -1,0 +1,99 @@
+{
+  "title": "Git rebase",
+  "idea": "`git rebase` replays your branch's commits on top of another branch, giving a straight history. The replayed commits are copies with new hashes.",
+  "analogy": {
+    "text": "You drafted chapters from a master copy. The master changes, so you retype your chapters onto the new version rather than attaching a note.",
+    "breaks": "Colleagues holding your old chapters now hold copies that no longer match."
+  },
+  "points": [
+    "On a feature branch, `git rebase main` replays its commits on top of `main`.",
+    "Each replayed commit gets a new parent, so it gets a new hash.",
+    "A conflict pauses the replay: fix the file, `git add`, then `git rebase --continue`.",
+    "Rebase only commits you have not shared; teammates' copies of them would stop matching."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "scrubber",
+    "title": "Replaying commits",
+    "scenario": {
+      "kind": "git",
+      "steps": [
+        {
+          "caption": "`about` branches from A and gets two commits, B and C.",
+          "do": ["commit A", "checkout -b about", "commit B", "commit C"]
+        },
+        {
+          "caption": "Meanwhile `main` moves on to D. The two branches have diverged.",
+          "do": ["checkout main", "commit D"]
+        },
+        {
+          "caption": "`git rebase main`, run on `about`, copies B and C on top of D. B′ and C′ are new commits; the originals fade.",
+          "do": ["checkout about", "rebase main"]
+        },
+        {
+          "caption": "`main` can now fast-forward to C′: a straight line, and no merge commit.",
+          "do": ["checkout main", "merge about"]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "rebase.sh",
+      "lang": "bash",
+      "title": "Rebase, then fast-forward",
+      "run": "captured",
+      "caption": "Real Git output; hashes are fixed in this recording. Compare the two graphs: same pages, new hashes.",
+      "walk": [
+        { "lines": [1, 2, 3, 4, 5, 6], "text": "Create `site` with one commit on `main`: the home page." },
+        { "lines": [7, 8, 9, 10, 11, 12, 13], "text": "On a new branch `about`, commit two more pages." },
+        { "lines": [14, 15, 16, 17], "text": "Back on `main`, commit a different page. The branches diverge." },
+        { "lines": [18], "text": "The graph forks: `about` has two commits, `main` has one." },
+        { "lines": [19, 20], "text": "Switch to `about` and rebase it onto `main`. Git replays both commits." },
+        { "lines": [21], "text": "Same two pages, but new hashes, stacked on the contact page. One straight line." },
+        { "lines": [22, 23], "text": "On `main`, the merge is a fast-forward: no merge commit." }
+      ]
+    },
+    {
+      "file": "abort.sh",
+      "lang": "bash",
+      "title": "Abort a rebase",
+      "run": "captured",
+      "caption": "Both branches change one line, so the rebase stops. Backing out is safe.",
+      "walk": [
+        { "lines": [1, 2, 3, 4, 5, 6], "text": "Create `menu` with one commit, as on the merge page." },
+        { "lines": [7, 8, 9], "text": "`cheaper` lowers the soup price." },
+        { "lines": [10, 11, 12], "text": "`main` changes the same line, so a conflict is certain." },
+        { "lines": [13, 14], "text": "The rebase stops at the first replayed commit and prints `CONFLICT`, with hints." },
+        { "lines": [15], "text": "`--abort` ends the rebase and restores the branch as it was." },
+        { "lines": [16], "text": "The log shows the original commit again, with its original hash." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not rebase `main` or any branch teammates have pulled; their copies would diverge.",
+    "Pushing a rebased branch needs `--force-with-lease`; do it only if nobody else uses it.",
+    "Start from a clean `git status`; by default Git refuses to rebase with uncommitted changes."
+  ],
+  "quiz": {
+    "q": "What does the last command print? Options list the lines top to bottom.",
+    "code": "# main has one commit: base\ngit switch -c x\necho 1 > x.txt && git add x.txt && git commit -m X\ngit switch main\necho 2 > m.txt && git add m.txt && git commit -m M\ngit switch x\ngit rebase main\ngit log --format=%s",
+    "lang": "bash",
+    "options": [
+      "X, base",
+      "M, X, base",
+      "X, M, base",
+      "Merge branch 'main', X, M, base"
+    ],
+    "answer": 2,
+    "why": "Rebase replays X on top of M, so X becomes the newest commit. `git log` lists newest first, and no merge commit exists."
+  },
+  "takeaway": "Rebase your own unpublished commits to tidy history; never rewrite shared ones.",
+  "chat": {
+    "starters": [
+      "When should I choose rebase instead of merge?",
+      "What does `git rebase -i` do?",
+      "How do I undo a rebase that already finished?"
+    ]
+  }
+}

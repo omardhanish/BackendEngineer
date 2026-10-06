@@ -1,0 +1,8 @@
+{
+  "stdout": "request: GET /hello/Ana\n/hello/Ana 200\nrequest: GET /nope\n/nope 404",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "hash": "1a285f281cff0607",
+  "at": "2026-10-06T09:15:41.643Z"
+}

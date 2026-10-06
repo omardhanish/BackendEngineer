@@ -1,0 +1,270 @@
+{
+  "title": "Book Store API, part 1",
+  "idea": "The Book Store API is the course's running project: a REST API for books. Part 1 builds the in-memory store, two `GET` routes and a validated `POST`.",
+  "points": [
+    "Data lives in memory: a restart resets it, and chapter 5 adds a database.",
+    "`express.json()` fills `req.body`; without it, `req.body` is `undefined`.",
+    "Errors are JSON like `{ \"error\": \"message\" }`, sent with a matching status.",
+    "`POST` validates first, copies only the three named fields, and answers `201`."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "A POST request, start to finish",
+    "scenario": {
+      "token": {
+        "label": "POST /books",
+        "tone": "req"
+      },
+      "stages": [
+        {
+          "id": "client",
+          "label": "Client",
+          "kind": "end"
+        },
+        {
+          "id": "json",
+          "label": "express.json()",
+          "sub": "fills req.body"
+        },
+        {
+          "id": "route",
+          "label": "POST /books",
+          "sub": "validate, save, reply"
+        },
+        {
+          "id": "store",
+          "label": "books array",
+          "sub": "in memory",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "The client sends `POST /books` with a JSON body and a JSON `content-type` header.",
+          "at": "client",
+          "slot": "top",
+          "state": {
+            "client": "active"
+          }
+        },
+        {
+          "caption": "`express.json()` reads the body and sets `req.body`, then passes the request on.",
+          "at": "json",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "json": "active"
+          }
+        },
+        {
+          "caption": "The route matches. The body has a title, author and year, so the check `isValid` passes.",
+          "at": "route",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "json": "done",
+            "route": "active"
+          }
+        },
+        {
+          "caption": "The handler gives the book id 4 and pushes it onto `books`.",
+          "at": "store",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "json": "done",
+            "route": "active",
+            "store": "active"
+          }
+        },
+        {
+          "caption": "The handler replies `201` with the new book and a `Location` header holding its URL.",
+          "at": "route",
+          "slot": "bottom",
+          "token": {
+            "label": "201",
+            "tone": "ok"
+          },
+          "state": {
+            "client": "done",
+            "json": "done",
+            "route": "active",
+            "store": "done"
+          }
+        },
+        {
+          "caption": "The client gets `201`. `books` now holds four books.",
+          "at": "client",
+          "slot": "top",
+          "token": {
+            "label": "201",
+            "tone": "ok"
+          },
+          "state": {
+            "client": "active",
+            "json": "done",
+            "route": "done",
+            "store": "done"
+          }
+        },
+        {
+          "caption": "A second request has no `author`. It passes `express.json()` and reaches the route.",
+          "at": "route",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "json": "done",
+            "route": "active"
+          }
+        },
+        {
+          "caption": "`isValid` is false, so the handler replies `400` at once. The store is never touched.",
+          "at": "route",
+          "slot": "bottom",
+          "token": {
+            "label": "400",
+            "tone": "err"
+          },
+          "state": {
+            "client": "done",
+            "json": "done",
+            "route": "blocked"
+          }
+        },
+        {
+          "caption": "The client gets `400` and an `error` message. `books` is unchanged.",
+          "at": "client",
+          "slot": "top",
+          "token": {
+            "label": "400",
+            "tone": "err"
+          },
+          "state": {
+            "client": "active",
+            "json": "done",
+            "route": "blocked"
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "app.mjs",
+      "lang": "js",
+      "title": "Read and create",
+      "run": "captured",
+      "caption": "The Book Store so far, with a client that calls it. Press Run for the real output.",
+      "walk": [
+        {
+          "lines": [
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "text": "The store: three starting books in an array, plus the next id to hand out."
+        },
+        {
+          "lines": [
+            9,
+            10,
+            11
+          ],
+          "text": "`title` and `author` must be non-empty text; `year` a whole number."
+        },
+        {
+          "lines": [
+            12,
+            13,
+            14
+          ],
+          "text": "`bookIndex` converts the URL id with `Number`. `fail` sends `{ error }` with a status."
+        },
+        {
+          "lines": [
+            16,
+            17
+          ],
+          "text": "Create the app and add `express.json()` so JSON bodies fill `req.body`."
+        },
+        {
+          "lines": [
+            19,
+            21,
+            22,
+            23,
+            24,
+            25
+          ],
+          "text": "`GET` routes: the list, and one book. A missing id gets 404 and a `return`."
+        },
+        {
+          "lines": [
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33
+          ],
+          "text": "`POST` validates, copies only the three fields, and answers 201 with a `Location` URL."
+        },
+        {
+          "lines": [
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53
+          ],
+          "text": "A client calls the API, prints each status and body, then closes the server."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "`req.params.id` is a string: convert it with `Number()` before comparing ids.",
+    "Always `return` after an error reply, or the handler keeps running and may still change data.",
+    "Send `content-type: application/json` from clients; otherwise `req.body` stays `undefined`."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const books = [{ id: 1 }, { id: 2 }];\nconst find = (id) => books.find((b) => b.id === id);\nconsole.log(find('2'), find(Number('2')));",
+    "lang": "js",
+    "options": [
+      "undefined { id: 2 }",
+      "{ id: 2 } { id: 2 }",
+      "{ id: 2 } undefined",
+      "undefined undefined"
+    ],
+    "answer": 0,
+    "why": "`'2' === 2` is false, so the first lookup finds nothing. `Number('2')` is 2, which matches the second book."
+  },
+  "takeaway": "A handler checks its input, changes data, and answers exactly once.",
+  "chat": {
+    "starters": [
+      "Why return 201 instead of 200 when a book is created?",
+      "What is the difference between `req.params` and `req.query`?",
+      "Why keep books in an array instead of a file or database?"
+    ]
+  }
+}

@@ -1,0 +1,306 @@
+{
+  "title": "Login route with JWT",
+  "idea": "A login route checks an email and password against the stored hash. If they match, it signs a JWT and returns it as `{ token }`.",
+  "points": [
+    "`bcrypt.compare` re-hashes the attempt with the salt stored in the hash.",
+    "The service returns `null` for an unknown email and for a wrong password.",
+    "`jwt.sign` stores `sub` (the user id as a string) and `email`, with `expiresIn: '1h'`.",
+    "The client sends the token back as `Authorization: Bearer <token>`. Lecture 12 checks it."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "Four logins, four replies",
+    "scenario": {
+      "token": {
+        "label": "POST /auth/login",
+        "tone": "req"
+      },
+      "stages": [
+        {
+          "id": "client",
+          "label": "Client",
+          "kind": "end"
+        },
+        {
+          "id": "zod",
+          "label": "Zod",
+          "sub": "valid body?"
+        },
+        {
+          "id": "lookup",
+          "label": "Lookup",
+          "sub": "email found?"
+        },
+        {
+          "id": "compare",
+          "label": "compare",
+          "sub": "password ok?"
+        },
+        {
+          "id": "sign",
+          "label": "jwt.sign",
+          "sub": "make token",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "Ada sends her email and password to `POST /auth/login`.",
+          "at": "client",
+          "slot": "top",
+          "state": {
+            "client": "active"
+          },
+          "out": []
+        },
+        {
+          "caption": "Zod checks that the email is valid and a password is present.",
+          "at": "zod",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "zod": "active"
+          },
+          "out": [
+            "zod: ok"
+          ]
+        },
+        {
+          "caption": "The service looks up the email and finds Ada's row.",
+          "at": "lookup",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "zod": "done",
+            "lookup": "active"
+          },
+          "out": [
+            "zod: ok",
+            "lookup: found"
+          ]
+        },
+        {
+          "caption": "`bcrypt.compare` checks the password against the stored hash. It matches.",
+          "at": "compare",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "zod": "done",
+            "lookup": "done",
+            "compare": "active"
+          },
+          "out": [
+            "zod: ok",
+            "lookup: found",
+            "compare: match"
+          ]
+        },
+        {
+          "caption": "`jwt.sign` builds a token with `sub` and `email`, valid for one hour.",
+          "at": "sign",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "zod": "done",
+            "lookup": "done",
+            "compare": "done",
+            "sign": "active"
+          },
+          "out": [
+            "zod: ok",
+            "lookup: found",
+            "compare: match",
+            "sign: token"
+          ]
+        },
+        {
+          "caption": "The route replies `200` with `{ token }`.",
+          "at": "sign",
+          "slot": "bottom",
+          "token": {
+            "label": "200 { token }",
+            "tone": "ok"
+          },
+          "state": {
+            "client": "done",
+            "zod": "done",
+            "lookup": "done",
+            "compare": "done",
+            "sign": "active"
+          },
+          "out": [
+            "zod: ok",
+            "lookup: found",
+            "compare: match",
+            "sign: token",
+            "200"
+          ]
+        },
+        {
+          "caption": "A second request has no password. It reaches Zod.",
+          "at": "zod",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "zod": "active"
+          },
+          "out": []
+        },
+        {
+          "caption": "Zod rejects it, so the route sends `400` with the issues. The database is untouched.",
+          "at": "zod",
+          "slot": "bottom",
+          "token": {
+            "label": "400 issues",
+            "tone": "err"
+          },
+          "state": {
+            "client": "done",
+            "zod": "blocked"
+          },
+          "out": [
+            "zod: invalid",
+            "400"
+          ]
+        },
+        {
+          "caption": "A third request uses an email nobody registered. It passes Zod and reaches the lookup.",
+          "at": "lookup",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "zod": "done",
+            "lookup": "active"
+          },
+          "out": [
+            "zod: ok"
+          ]
+        },
+        {
+          "caption": "No row comes back. The route sends `401 Invalid email or password`.",
+          "at": "lookup",
+          "slot": "bottom",
+          "token": {
+            "label": "401",
+            "tone": "err"
+          },
+          "state": {
+            "client": "done",
+            "zod": "done",
+            "lookup": "blocked"
+          },
+          "out": [
+            "zod: ok",
+            "lookup: no user",
+            "401"
+          ]
+        },
+        {
+          "caption": "A fourth request has Ada's email and the wrong password. It reaches `compare`.",
+          "at": "compare",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "zod": "done",
+            "lookup": "done",
+            "compare": "active"
+          },
+          "out": [
+            "zod: ok",
+            "lookup: found"
+          ]
+        },
+        {
+          "caption": "`compare` fails. The client gets the same `401` and the same message, so it cannot tell the cases apart.",
+          "at": "compare",
+          "slot": "bottom",
+          "token": {
+            "label": "401",
+            "tone": "err"
+          },
+          "state": {
+            "client": "done",
+            "zod": "done",
+            "lookup": "done",
+            "compare": "blocked"
+          },
+          "out": [
+            "zod: ok",
+            "lookup: found",
+            "compare: no match",
+            "401"
+          ]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "login.mjs",
+      "lang": "js",
+      "title": "Login with a signed token",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "The schema, service and controller are new. Everything under the setup comment lets this file run alone.",
+      "walk": [
+        {
+          "lines": [10, 11, 12, 13],
+          "text": "Login needs a valid email and a non-empty password. Signup already enforced the length."
+        },
+        {
+          "lines": [17, 18],
+          "text": "Find the user by email. No row means `null`."
+        },
+        {
+          "lines": [19, 20],
+          "text": "`compare` checks the attempt against the stored hash. Return `id` and `email`, never the hash."
+        },
+        {
+          "lines": [31, 32, 33, 34, 35],
+          "text": "A bad body gets `400`. No user, or a wrong password, gets one `401`."
+        },
+        {
+          "lines": [36, 37, 38, 39, 40, 41],
+          "text": "Sign `sub` and `email` with the secret. `expiresIn: '1h'` sets the expiry. Reply `{ token }`."
+        },
+        {
+          "lines": [44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60],
+          "text": "Setup: a demo secret, the `users` table, and Ada with a hashed password."
+        },
+        {
+          "lines": [75, 76, 77, 78, 79, 80, 81, 82, 83],
+          "text": "Log in and decode the token. Then try a wrong password, an unknown email and no password."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Use one message for both failures. Two messages tell attackers which emails have accounts.",
+    "Keep the password and `passwordHash` out of the claims. Anyone can decode a token.",
+    "Read `JWT_SECRET` from the environment. `demo-secret` is a demo value; never ship it."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const a = await verifyCredentials(\n  { email: 'ada@example.com', password: 'wrong' });\nconst b = await verifyCredentials(\n  { email: 'nobody@example.com', password: 'wrong' });\nconsole.log(a, b);",
+    "lang": "js",
+    "options": [
+      "undefined null",
+      "null null",
+      "false false",
+      "It throws"
+    ],
+    "answer": 1,
+    "why": "A wrong password and a missing user both return `null`. The controller cannot tell them apart, so it sends the same `401`."
+  },
+  "takeaway": "Compare the password with the stored hash, then sign a token that expires.",
+  "chat": {
+    "starters": [
+      "Can an attacker still tell the two failures apart by response time?",
+      "How long should a login token last?",
+      "What does the client do when the token expires?"
+    ]
+  }
+}

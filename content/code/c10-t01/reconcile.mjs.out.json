@@ -1,0 +1,9 @@
+{
+  "stdout": "want 2, running: api-1 api-2\nwant 2, running: api-1 api-3",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": null,
+  "hash": "3754a6d3562fb238",
+  "at": "2026-10-06T15:12:54.559Z"
+}

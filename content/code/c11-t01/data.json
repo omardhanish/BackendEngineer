@@ -1,0 +1,10 @@
+{
+  "order": {
+    "customer": "Ana", "status": "paid", "city": "Lisbon", "total": 120,
+    "items": [
+      { "sku": "pen", "qty": 4, "price": 5 },
+      { "sku": "book", "qty": 2, "price": 50 }
+    ]
+  },
+  "customer": { "name": "Ana", "tier": "gold" }
+}

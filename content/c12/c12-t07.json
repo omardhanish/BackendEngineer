@@ -1,0 +1,219 @@
+{
+  "title": "A professional project structure",
+  "idea": "A professional structure gives each kind of file its own folder under `src/`, so you can guess where any piece of code lives.",
+  "points": [
+    "`routes/` maps URLs to handlers; `controllers/` holds the handlers.",
+    "`models/` defines the data; `db/` opens the MongoDB connection.",
+    "`middlewares/` and `validators/` hold checks that run before a handler.",
+    "`utils/` holds shared helpers; `constants.js` holds fixed values."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Who imports whom",
+    "nodes": [
+      {
+        "id": "index",
+        "label": "src/index.js",
+        "sub": "entry point"
+      },
+      {
+        "id": "app",
+        "label": "src/app.js",
+        "sub": "builds the app"
+      },
+      {
+        "id": "db",
+        "label": "db/",
+        "sub": "connection"
+      },
+      {
+        "id": "routes",
+        "label": "routes/",
+        "sub": "paths"
+      },
+      {
+        "id": "mw",
+        "label": "middlewares/",
+        "sub": "checks"
+      },
+      {
+        "id": "ctrl",
+        "label": "controllers/",
+        "sub": "handlers"
+      },
+      {
+        "id": "model",
+        "label": "models/",
+        "sub": "data"
+      },
+      {
+        "id": "utils",
+        "label": "utils/",
+        "sub": "helpers"
+      }
+    ],
+    "edges": [
+      {
+        "from": "index",
+        "to": "app"
+      },
+      {
+        "from": "index",
+        "to": "db"
+      },
+      {
+        "from": "app",
+        "to": "routes"
+      },
+      {
+        "from": "routes",
+        "to": "mw"
+      },
+      {
+        "from": "routes",
+        "to": "ctrl"
+      },
+      {
+        "from": "mw",
+        "to": "model"
+      },
+      {
+        "from": "ctrl",
+        "to": "model"
+      },
+      {
+        "from": "ctrl",
+        "to": "utils"
+      }
+    ],
+    "steps": [
+      {
+        "caption": "`index.js` is the entry point: the file you start with `node`. It imports `db/` and `app.js`.",
+        "active": [
+          "index",
+          "app",
+          "db"
+        ],
+        "edges": [
+          0,
+          1
+        ]
+      },
+      {
+        "caption": "`app.js` mounts each router from `routes/` under `/api/v1`.",
+        "active": [
+          "app",
+          "routes"
+        ],
+        "edges": [
+          2
+        ]
+      },
+      {
+        "caption": "A route lists its checks first, then its handler: `middlewares/` before `controllers/`.",
+        "active": [
+          "routes",
+          "mw",
+          "ctrl"
+        ],
+        "edges": [
+          3,
+          4
+        ]
+      },
+      {
+        "caption": "Middleware and controllers reach data through `models/`. Controllers also use helpers from `utils/`.",
+        "active": [
+          "mw",
+          "ctrl",
+          "model",
+          "utils"
+        ],
+        "edges": [
+          5,
+          6,
+          7
+        ]
+      },
+      {
+        "caption": "Arrows never point back: a model never imports a controller.",
+        "active": [
+          "index",
+          "app",
+          "db",
+          "routes",
+          "mw",
+          "ctrl",
+          "model",
+          "utils"
+        ],
+        "edges": []
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "skeleton.sh",
+      "lang": "bash",
+      "title": "Lay out the project",
+      "run": "captured",
+      "caption": "Run it in an empty folder. Every file starts empty; each lesson fills in one.",
+      "walk": [
+        {
+          "lines": [
+            1,
+            2
+          ],
+          "text": "Create the project folder and move into it."
+        },
+        {
+          "lines": [
+            3
+          ],
+          "text": "`mkdir -p` creates every folder at once; `{a,b}` expands to each name."
+        },
+        {
+          "lines": [
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "text": "`touch` creates an empty file for each name, so the layout exists before the code."
+        },
+        {
+          "lines": [
+            10
+          ],
+          "text": "`find` lists every file; `sort` fixes the order."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Never import upward. A model that imports a controller creates a circular import.",
+    "Match the lecture's file names exactly, such as `user.models.js`; later imports depend on them.",
+    "Keep `utils/` for shared helpers. Request handling belongs in controllers."
+  ],
+  "quiz": {
+    "q": "Which import breaks the one-way rule?",
+    "options": [
+      "`auth.routes.js` imports `auth.controllers.js`",
+      "`auth.controllers.js` imports `user.models.js`",
+      "`user.models.js` imports `auth.controllers.js`",
+      "`app.js` imports `auth.routes.js`"
+    ],
+    "answer": 2,
+    "why": "Imports run from routes down to models. A model that imports a controller points back up and forms a cycle."
+  },
+  "takeaway": "Group files by role, and let imports point one way: down.",
+  "chat": {
+    "starters": [
+      "Should I group files by feature instead of by role?",
+      "Why is `validators/` separate from `middlewares/`?",
+      "Where do tests and config files go?"
+    ]
+  }
+}

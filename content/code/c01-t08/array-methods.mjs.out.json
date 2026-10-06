@@ -1,0 +1,9 @@
+{
+  "stdout": "map [6,16,10,20]\nfilter [8,5,10]\nreduce 26\nfind 8\nsome, every [true,false]\nincludes true\nslice [8,5]\nsort [3,5,8,10]\nflat [1,2,3]\nspread [3,8,5,10,99]\noriginal 3,8,5,10",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": null,
+  "hash": "a8c40bd14f4e1a40",
+  "at": "2026-10-06T09:56:07.972Z"
+}

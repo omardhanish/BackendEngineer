@@ -1,0 +1,127 @@
+{
+  "title": "API gateway and autoscaling",
+  "idea": "An API gateway is the single entry point that routes each request to the right service. Autoscaling adds or removes copies of a service as load changes.",
+  "points": [
+    "Clients call one address, and the gateway routes each path to its service.",
+    "It also runs shared checks, such as authentication and rate limits.",
+    "In Kubernetes, a pod is one running copy of a service.",
+    "The Horizontal Pod Autoscaler (HPA) adds pods above a CPU target, removes them below."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "One front door, a scaling service",
+    "scenario": {
+      "tiers": [["client"], ["gw"], ["users", "o1", "o2", "o3"], ["hpa"]],
+      "nodes": {
+        "client": { "label": "Clients", "kind": "user" },
+        "gw": { "label": "API gateway", "kind": "gateway", "sub": "one entry point" },
+        "users": { "label": "Users service", "kind": "service" },
+        "o1": { "label": "Orders pod 1", "kind": "box" },
+        "o2": { "label": "Orders pod 2", "kind": "box" },
+        "o3": { "label": "Orders pod 3", "kind": "box" },
+        "hpa": { "label": "HPA", "kind": "service", "sub": "watches CPU" }
+      },
+      "links": [
+        ["client", "gw"],
+        ["gw", "users"],
+        ["gw", "o1"],
+        ["gw", "o2"],
+        ["gw", "o3"],
+        ["hpa", "o1", { "dashed": true }],
+        ["hpa", "o2", { "dashed": true }],
+        ["hpa", "o3", { "dashed": true }]
+      ],
+      "groups": [{ "label": "Orders service", "nodes": ["o1", "o2", "o3"] }],
+      "steps": [
+        {
+          "caption": "Clients know one address: the API gateway. It checks the token, then picks a service by URL path.",
+          "send": [{ "from": "client", "to": "gw", "label": "GET /orders" }],
+          "state": { "o2": "old", "o3": "old" },
+          "badge": { "gw": "token ok", "o2": "not started", "o3": "not started" }
+        },
+        {
+          "caption": "A path of `/orders` goes to the orders service. A `/users` request would go to the users service.",
+          "send": [{ "from": "gw", "to": "o1", "label": "/orders" }],
+          "badge": { "gw": null }
+        },
+        {
+          "caption": "Traffic grows. The single orders pod runs hot while the users service stays calm.",
+          "send": [
+            { "from": "gw", "to": "o1", "label": "/orders" },
+            { "from": "gw", "to": "o1", "label": "/orders" }
+          ],
+          "state": { "o1": "hot" },
+          "badge": { "o1": "CPU high" }
+        },
+        {
+          "caption": "The HPA checks CPU use at a regular interval. Average use is above its target.",
+          "send": [{ "from": "o1", "to": "hpa", "label": "CPU", "tone": "info" }],
+          "focus": ["hpa"]
+        },
+        {
+          "caption": "It raises the replica count, the number of pods wanted. Kubernetes starts two more pods.",
+          "state": { "o2": "new", "o3": "new" },
+          "badge": { "o2": "starting", "o3": "starting" },
+          "focus": ["hpa"]
+        },
+        {
+          "caption": "The gateway now spreads `/orders` across three pods. Each pod carries less load.",
+          "send": [
+            { "from": "gw", "to": "o1", "label": "/orders" },
+            { "from": "gw", "to": "o2", "label": "/orders" },
+            { "from": "gw", "to": "o3", "label": "/orders" }
+          ],
+          "state": { "o1": "ok", "o2": "ok", "o3": "ok" },
+          "badge": { "o1": null, "o2": null, "o3": null }
+        },
+        {
+          "caption": "Load falls. The HPA removes the extra pods again, but never goes below its minimum.",
+          "state": { "o1": null, "o2": "old", "o3": "old" },
+          "badge": { "o2": "removed", "o3": "removed" }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "hpa.yaml",
+      "lang": "yaml",
+      "title": "An HPA manifest",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Autoscale the `orders` Deployment between one and five pods. Step through it.",
+      "walk": [
+        { "lines": [1, 2], "text": "`autoscaling/v2` is the API version; the kind is `HorizontalPodAutoscaler`." },
+        { "lines": [6, 7, 8, 9], "text": "`scaleTargetRef` names what to scale: the `orders` Deployment, which manages the pods." },
+        { "lines": [10, 11], "text": "`minReplicas` and `maxReplicas` bound the pod count." },
+        { "lines": [12, 13, 14, 15], "text": "Watch the CPU resource metric of the pods." },
+        { "lines": [16, 17, 18], "text": "Aim for average CPU use at 70% of each pod's CPU request." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Give each container a CPU request; without it, a CPU utilization target is undefined.",
+    "Do not rely on the gateway alone for security; each service should still verify callers.",
+    "Autoscaling reacts after load rises, and new pods need time to start."
+  ],
+  "quiz": {
+    "q": "The HPA sees average CPU well above its target. What does it do?",
+    "options": [
+      "Gives each pod more CPU and memory",
+      "Restarts the API gateway",
+      "Adds pods, up to the configured maximum",
+      "Routes requests to a different service"
+    ],
+    "answer": 2,
+    "why": "The HPA scales horizontally: it raises the replica count, within the minimum and maximum. Giving pods more CPU would be vertical scaling."
+  },
+  "takeaway": "The gateway is the front door; the HPA sets how many pods serve.",
+  "chat": {
+    "starters": [
+      "How is an API gateway different from a load balancer?",
+      "What metrics besides CPU can the HPA use?",
+      "Why does the HPA not scale down the moment load drops?"
+    ]
+  }
+}

@@ -1,0 +1,97 @@
+{
+  "title": "Arrays with $unwind",
+  "idea": "`$unwind` splits an array field into one document per element, so later stages can match, sort or group the elements individually.",
+  "points": [
+    "Each new document copies the original, with `items` replaced by one element.",
+    "Name the array with a `$` path: `{ $unwind: '$items' }`.",
+    "A `$match` after `$unwind` tests one element at a time.",
+    "`$size` counts an array's elements without splitting; `$push` collects values back into an array."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "lanes",
+    "title": "Two orders become four documents",
+    "scenario": {
+      "lanes": [
+        { "id": "in", "label": "Ana's orders", "kind": "queue", "hint": "input" },
+        { "id": "split", "label": "After $unwind", "kind": "queue", "hint": "one per element" },
+        { "id": "grp", "label": "After $group by sku", "kind": "area", "hint": "one per sku" }
+      ],
+      "tokens": {
+        "oA": { "label": "total 120 · [pen, book]", "tone": "micro" },
+        "oB": { "label": "total 80 · [lamp, pen]", "tone": "macro" },
+        "a1": { "label": "120 · pen", "tone": "micro" },
+        "a2": { "label": "120 · book", "tone": "micro" },
+        "b1": { "label": "80 · lamp", "tone": "macro" },
+        "b2": { "label": "80 · pen", "tone": "macro" },
+        "gPen": { "label": "pen · 14 units", "tone": "io" },
+        "gBook": { "label": "book · 2 units", "tone": "io" },
+        "gLamp": { "label": "lamp · 1 unit", "tone": "io" }
+      },
+      "steps": [
+        {
+          "caption": "Two orders reach `$unwind: '$items'`. Each holds an `items` array with two elements.",
+          "at": { "in": ["oA", "oB"] },
+          "out": []
+        },
+        {
+          "caption": "The first order becomes two documents, one per element. Both keep `total: 120`.",
+          "at": { "in": ["oB"], "split": ["a1", "a2"] },
+          "active": ["a1", "a2"],
+          "out": []
+        },
+        {
+          "caption": "The second order splits the same way. Now every document holds one `items` object, not an array.",
+          "at": { "split": ["a1", "a2", "b1", "b2"] },
+          "active": ["b1", "b2"],
+          "out": []
+        },
+        {
+          "caption": "`$group` by `'$items.sku'` merges the two pen lines. Book and lamp stay alone.",
+          "at": { "grp": ["gPen", "gBook", "gLamp"] },
+          "active": ["gPen", "gBook", "gLamp"],
+          "out": []
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "unwind.mjs",
+      "lang": "js",
+      "title": "Split, group, count",
+      "run": "captured",
+      "needs": ["mongo"],
+      "caption": "Three pipelines on the shared data. Step through them, then press Run.",
+      "walk": [
+        { "lines": [10, 11], "text": "Keep Ana's orders, then split each into one document per `items` element." },
+        { "lines": [12], "text": "`$project` keeps two fields and hides `_id`. The next page covers it." },
+        { "lines": [13], "text": "Sort for a fixed order. `'items.sku'` is a path into the element." },
+        { "lines": [18, 19, 20], "text": "Unwind every order, then group by the element's `sku`." },
+        { "lines": [21, 22], "text": "`$sum` adds element fields: `qty` for units, and `$multiply` of `qty` and `price` for revenue." },
+        { "lines": [30, 31, 32], "text": "No unwind here: `$size` counts each order's elements, and `$sum` totals them per customer." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Sum element fields, not parent fields: `total` repeats once per element after `$unwind`.",
+    "`$unwind` drops documents whose array is empty, missing or null, unless `preserveNullAndEmptyArrays: true`.",
+    "After `$unwind`, read element fields as `'$items.sku'`; `'$sku'` is missing and groups under `null`."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const rows = await Order.aggregate([\n  { $match: { customer: 'Ben' } },\n  { $unwind: '$items' },\n  { $count: 'lines' },\n]);\nconsole.log(rows[0].lines);",
+    "lang": "js",
+    "options": ["3", "2", "1", "4"],
+    "answer": 0,
+    "why": "Ben has two orders with 1 and 2 items. `$unwind` makes one document per element: 1 + 2 = 3."
+  },
+  "takeaway": "Unwind to work per element, then group to fold the pieces back.",
+  "chat": {
+    "starters": [
+      "How do I keep orders whose items array is empty?",
+      "When should I use `$size` instead of `$unwind`?",
+      "Can I unwind an array nested inside another array?"
+    ]
+  }
+}

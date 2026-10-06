@@ -1,0 +1,62 @@
+{
+  "title": "Docker CLI basics",
+  "idea": "The `docker` command-line interface (CLI) sends each command to the Docker daemon, which does the work. Most commands read as `docker <object> <action>`.",
+  "points": [
+    "Short forms work too: `docker ps` is `docker container ls`.",
+    "Add `--help` to any command to see its usage and options.",
+    "Commands take an id or name to pick a target: `docker stop api`.",
+    "Everyday commands: `build`, `run`, `ps`, `logs`, `stop`, `rm` and `image ls`."
+  ],
+  "hero": {
+    "type": "anatomy",
+    "title": "Reading one docker command",
+    "parts": [
+      { "text": "docker ", "label": "Client", "note": "Every command starts here. The client sends your request to the daemon." },
+      { "text": "container ", "label": "Object", "note": "The kind of thing to manage. Others: `image`, `network` and `volume`." },
+      { "text": "ls ", "label": "Action", "note": "What to do with it. `ls` lists, `rm` removes, `inspect` shows details." },
+      { "text": "--all", "label": "Option", "note": "Changes the action. `-a` is the short form. This one includes stopped containers." }
+    ]
+  },
+  "code": [
+    {
+      "file": "commands.sh",
+      "lang": "bash",
+      "run": "static",
+      "illustrative": true,
+      "caption": "One pass through the everyday commands, using the Book Store API.",
+      "walk": [
+        { "lines": [1], "text": "List the commands. Add `--help` to one, such as `docker run --help`, for its options." },
+        { "lines": [2], "text": "Build an image from the Dockerfile here and name it `bookstore-api`." },
+        { "lines": [3], "text": "Start a container named `api` in the background. The next page covers these flags." },
+        { "lines": [4], "text": "List running containers." },
+        { "lines": [5], "text": "Print what the app in `api` has written to its output." },
+        { "lines": [6, 7], "text": "Stop the container, then remove it. `docker rm` refuses a running container unless you add `-f`." },
+        { "lines": [8], "text": "List images. The image stays after its container is removed." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Name the container, not the image: `docker stop api`, not `docker stop bookstore-api`.",
+    "Use `docker rm` for containers and `docker rmi` for images; they are not interchangeable.",
+    "Use `docker rm -f` sparingly: it kills a running container with no chance to shut down."
+  ],
+  "quiz": {
+    "q": "Which command is just a short form of `docker container ls`?",
+    "options": [
+      "docker images",
+      "docker image ls",
+      "docker ps",
+      "docker container rm"
+    ],
+    "answer": 2,
+    "why": "`docker ps` is an alias of `docker container ls`. `docker images` is the short form of `docker image ls`, which lists images."
+  },
+  "takeaway": "Learn the pattern once, then `--help` answers the rest.",
+  "chat": {
+    "starters": [
+      "What is the difference between docker ps and docker container ls?",
+      "How do I find the name or id of a container?",
+      "Why do some commands work without an object, like docker run?"
+    ]
+  }
+}

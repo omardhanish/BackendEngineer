@@ -1,0 +1,142 @@
+{
+  "title": "Your first Express app",
+  "idea": "A first Express project is one file, `src/server.js`, that creates the app, adds routes and listens. A `package.json` records what it needs.",
+  "points": [
+    "`express()` returns the app; every `app.get`, `app.post` and `app.use` call adds to it.",
+    "`app.listen` opens a port and returns at once; its callback runs when ready.",
+    "Keep code in `src/`; `package.json` and `package-lock.json` stay in the root.",
+    "`\"type\": \"module\"` in `package.json` makes `.js` files ES modules, so `import` works."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "From empty folder to running app",
+    "head": [
+      "Step",
+      "You run or write",
+      "You get"
+    ],
+    "rows": [
+      [
+        "Create the project",
+        "npm init -y",
+        "package.json"
+      ],
+      [
+        "Add Express",
+        "npm install express",
+        "node_modules/ and package-lock.json"
+      ],
+      [
+        "Write the app",
+        "src/server.js",
+        "Your first server: create, route, listen"
+      ],
+      [
+        "Start it",
+        "node src/server.js",
+        "A process that waits for requests"
+      ]
+    ],
+    "highlight": {
+      "col": 1
+    },
+    "caption": "`src/` is a convention, not a rule: Node runs whatever file you name."
+  },
+  "code": [
+    {
+      "file": "server.mjs",
+      "lang": "js",
+      "title": "The app",
+      "run": "captured",
+      "caption": "Save it as `src/server.js`. This copy calls itself once, then closes so the script can exit.",
+      "walk": [
+        {
+          "lines": [
+            1,
+            3
+          ],
+          "text": "Step one: import Express and create the app."
+        },
+        {
+          "lines": [
+            5,
+            6,
+            7
+          ],
+          "text": "Step two: add a route. The handler waits for `GET /`; nothing runs yet."
+        },
+        {
+          "lines": [
+            9
+          ],
+          "text": "Step three: `listen` opens a port. `0` asks the system for any free one."
+        },
+        {
+          "lines": [
+            10
+          ],
+          "text": "`err` is set when listening failed, for example with `EADDRINUSE`."
+        },
+        {
+          "lines": [
+            11,
+            12,
+            13
+          ],
+          "text": "Call the app once, print the reply, then close the server."
+        }
+      ]
+    },
+    {
+      "file": "package.json",
+      "lang": "json",
+      "title": "package.json",
+      "run": "static",
+      "caption": "A `package.json` for this app, trimmed to what it uses.",
+      "walk": [
+        {
+          "lines": [
+            4,
+            5,
+            6
+          ],
+          "text": "`npm start` runs this command."
+        },
+        {
+          "lines": [
+            7,
+            8,
+            9
+          ],
+          "text": "`npm install express` adds this entry. The `^` range is explained next."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Without `if (err) throw err`, a busy port looks like success: the callback still runs.",
+    "Never edit `node_modules`; delete it and run `npm install` to get a clean copy.",
+    "Edits to `server.js` apply only after you stop the process and run it again."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const app = express();\napp.get('/', (req, res) => {\n  console.log('handled');\n  res.send('hi');\n});\nconst server = app.listen(0, () => {\n  console.log('listening');\n  server.close();\n});\nconsole.log('started');",
+    "lang": "js",
+    "options": [
+      "listening started",
+      "handled listening",
+      "started listening",
+      "started handled listening"
+    ],
+    "answer": 2,
+    "why": "`listen` returns at once, so `started` prints first. The callback runs once the port is open. No request arrives, so the handler never runs."
+  },
+  "takeaway": "Registering a route does not run it; only a request does.",
+  "chat": {
+    "starters": [
+      "Why does the book use `listen(0)` instead of a fixed port?",
+      "Do I have to put my code in a `src` folder?",
+      "How do I restart the server automatically when I edit a file?"
+    ]
+  }
+}

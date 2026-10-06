@@ -1,0 +1,191 @@
+{
+  "title": "Book Store CRUD with Mongoose",
+  "idea": "Each Book Store route becomes a Mongoose call on the `Book` model. Mongoose returns promises, so each handler awaits its call.",
+  "points": [
+    "A rejected Mongoose call reaches the error handler; Express 5 forwards it.",
+    "`findById` resolves to `null`, not an error, when no document matches.",
+    "A malformed id makes `findById` throw, so check it with `isValidObjectId` first.",
+    "Send chosen fields; `book.id` is the `_id` as a string."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "Each route and its Mongoose call",
+    "head": [
+      "Route",
+      "Mongoose call",
+      "When it goes wrong"
+    ],
+    "rows": [
+      [
+        "`GET /books`",
+        "`Book.find().sort('year')`",
+        "An empty array, still `200`"
+      ],
+      [
+        "`GET /books/:id`",
+        "`Book.findById(id)`",
+        "`null`, so `404`"
+      ],
+      [
+        "`POST /books`",
+        "`Book.create(fields)`",
+        "`ValidationError`, so `400`"
+      ],
+      [
+        "`PUT /books/:id`",
+        "`book.set(fields)`, then `book.save()`",
+        "`ValidationError`, so `400`"
+      ],
+      [
+        "`DELETE /books/:id`",
+        "`book.deleteOne()`",
+        "No book loaded, so `404`"
+      ]
+    ],
+    "highlight": {
+      "col": 1
+    },
+    "caption": "Check a malformed id first: `findById('abc')` throws instead of returning `null`."
+  },
+  "code": [
+    {
+      "file": "app.mjs",
+      "lang": "js",
+      "title": "The five routes on MongoDB",
+      "run": "captured",
+      "needs": [
+        "mongo"
+      ],
+      "caption": "The Book Store on MongoDB. A client replays the requests. Step through it, then press Run.",
+      "walk": [
+        {
+          "lines": [
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "text": "The `Book` model again, inlined so this file runs alone. Both text fields are trimmed."
+        },
+        {
+          "lines": [
+            9,
+            10,
+            11
+          ],
+          "text": "`show` picks the fields to send, so `__v` stays hidden. `pick` accepts only three fields."
+        },
+        {
+          "lines": [
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19
+          ],
+          "text": "`loadBook` is middleware: a malformed or unknown id gives `404`; otherwise the book goes on `req.book`."
+        },
+        {
+          "lines": [
+            23,
+            24,
+            25,
+            26,
+            27,
+            28
+          ],
+          "text": "`find` lists, sorted by `year`. `create` saves what `pick` returns, or rejects with a `ValidationError`."
+        },
+        {
+          "lines": [
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37
+          ],
+          "text": "`GET`, `PUT` and `DELETE` share `loadBook`. `set` then `save` re-validates; `deleteOne` removes the document."
+        },
+        {
+          "lines": [
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44
+          ],
+          "text": "The error handler turns a `ValidationError` into `400` with the bad field names; anything else is `500`."
+        },
+        {
+          "lines": [
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63,
+            64,
+            65,
+            66,
+            67,
+            68,
+            69,
+            70,
+            71,
+            72,
+            73,
+            74
+          ],
+          "text": "Connect, listen on any free port, then call every route with `fetch`, and close everything."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Never pass `req.body` straight to `create` or `set`; pick the fields you accept.",
+    "`PUT` here replaces the whole book: missing fields fail validation, not stay unchanged.",
+    "Add `sort` to list queries; without it MongoDB promises no order."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const id = '66a1b2c3d4e5f60718293a4b'; // valid format, no such book\nconsole.log(mongoose.isValidObjectId('abc'), await Book.findById(id));",
+    "lang": "js",
+    "options": [
+      "true null",
+      "false undefined",
+      "false null",
+      "It throws `CastError`"
+    ],
+    "answer": 2,
+    "why": "`'abc'` is not a 24-character hex string, so it is invalid. A valid id with no match resolves to `null`."
+  },
+  "takeaway": "Await each Mongoose call; `null` from `findById` means 404.",
+  "chat": {
+    "starters": [
+      "When should I use `findByIdAndUpdate` instead of `save`?",
+      "What is the `__v` field on my documents?",
+      "How do I search books by author?"
+    ]
+  }
+}

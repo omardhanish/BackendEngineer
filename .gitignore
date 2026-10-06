@@ -1,0 +1,25 @@
+# --- secrets (never commit) ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.npmrc
+.claude/
+
+# --- learner data & local artifacts (personal, regenerated, or machine-specific) ---
+data/
+qa/
+.tmp/
+exports/
+*.bak
+*.corrupt-*
+*.tmp
+
+# --- dependencies & noise ---
+node_modules/
+*.log
+.DS_Store
+.vscode/
+.idea/
+coverage/

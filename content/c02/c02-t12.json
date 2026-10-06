@@ -1,0 +1,71 @@
+{
+  "title": "A chat app with custom events",
+  "idea": "A chat room is a hub that emits events you name yourself: `join`, `message`, `leave`. Users listen to the hub, never to each other.",
+  "analogy": {
+    "text": "A group chat. You post once to the group, and the app delivers it to every member's phone.",
+    "breaks": "Here all users live in one program; real chats cross a network."
+  },
+  "points": [
+    "A class can extend `EventEmitter`, so the room has its own methods and events.",
+    "`say` only emits `message`; the room never calls a user directly.",
+    "`join` adds the user's listener and returns a function that removes it with `off`.",
+    "Events are not replayed: only listeners present at `emit` time hear them."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "One room, two users",
+    "actors": [
+      { "id": "ana", "label": "Ana" },
+      { "id": "room", "label": "ChatRoom" },
+      { "id": "ben", "label": "Ben" }
+    ],
+    "messages": [
+      { "from": "ana", "to": "room", "label": "join('Ana')", "note": "`join` adds Ana's `message` listener, then emits `join`." },
+      { "from": "ben", "to": "room", "label": "join('Ben')", "note": "Ben joins the same way. The room now holds two `message` listeners." },
+      { "from": "ana", "to": "room", "label": "say('Ana', 'hi Ben')", "note": "`say` emits one `message` event. Ana does not know who is listening." },
+      { "from": "room", "to": "ben", "label": "message from Ana", "dashed": true, "note": "Ben's listener runs and prints. Ana's own listener skips her message." },
+      { "from": "ben", "to": "room", "label": "say('Ben', 'hi Ana')", "note": "Ben replies the same way, with one emit." },
+      { "from": "room", "to": "ana", "label": "message from Ben", "dashed": true, "note": "Ana's listener runs and prints. Ben's own listener skips his message." },
+      { "from": "ben", "to": "room", "label": "leaveBen()", "note": "The function `join` returned calls `off`, so Ben's listener is gone. One `message` listener remains." }
+    ]
+  },
+  "code": [
+    {
+      "file": "room.mjs",
+      "lang": "js",
+      "title": "A chat room on events",
+      "run": "browser",
+      "caption": "Add a third user, or call `room.say` after Ben leaves, and predict who sees it.",
+      "walk": [
+        { "lines": [3], "text": "`ChatRoom` extends `EventEmitter`, so it inherits `on`, `off` and `emit`." },
+        { "lines": [5, 6, 7, 8], "text": "Each user gets an inbox listener. It prints messages from other users, never their own." },
+        { "lines": [9], "text": "Emit `join` so anyone listening can react." },
+        { "lines": [10, 11, 12, 13], "text": "Return a leave function. It removes the exact listener with `off`, then emits `leave`." },
+        { "lines": [15, 16, 17], "text": "`say` emits one `message` event with the sender and the text." },
+        { "lines": [20, 21, 22], "text": "Create the room and add two listeners that log `join` and `leave`." },
+        { "lines": [24, 25, 26, 27, 28, 29], "text": "Two users join and talk. Ben leaves, so only Ana's listener remains." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Forgetting `off` on leave keeps ghost listeners: they still receive messages and leak memory.",
+    "`off` needs the same function you passed to `on`; save it in a variable.",
+    "Share event names as constants; a typo like `mesage` silently reaches no listener."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "import { EventEmitter } from 'node:events';\n\nconst room = new EventEmitter();\nroom.emit('message', 'hello');\nroom.on('message', (text) => console.log('got', text));\nroom.emit('message', 'hi');",
+    "lang": "js",
+    "options": ["got hello", "got hello, then got hi", "nothing", "got hi"],
+    "answer": 3,
+    "why": "`emit` reaches only listeners that exist at that moment. `hello` was emitted before anyone listened, so it is lost."
+  },
+  "takeaway": "One hub, custom events: a new feature is often one more listener.",
+  "chat": {
+    "starters": [
+      "How would I keep message history for people who join late?",
+      "Could this chat work between two computers?",
+      "When should I use events instead of plain function calls?"
+    ]
+  }
+}

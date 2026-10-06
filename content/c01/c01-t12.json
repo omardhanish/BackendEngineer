@@ -1,0 +1,72 @@
+{
+  "title": "Functions, arrow functions and this",
+  "idea": "A function is reusable code stored as a value. Its `this` is decided by the call; an arrow function borrows `this` from the code around it.",
+  "analogy": {
+    "text": "`this` is like the word 'I': it means whoever speaks the sentence, not whoever wrote it. An arrow function is a sentence with the speaker already filled in.",
+    "breaks": "A plain call has no speaker, so `this` is `undefined` in strict code."
+  },
+  "points": [
+    "Three common forms make a function: declaration, expression and arrow `=>`.",
+    "Regular functions take `this` from the call: the object before the dot.",
+    "`call` runs a function with a chosen `this`; `bind` returns a fixed copy.",
+    "An arrow function has no own `this`: it uses the one around it."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "How the call sets this",
+    "head": ["Call form", "Example", "this (the context)"],
+    "rows": [
+      ["Method call", "user.hi()", "user, the object before the dot"],
+      ["Plain call", "hi()", "undefined (modules are strict)"],
+      ["call or bind", "hi.call(other)", "the object you pass in"],
+      ["new", "new User('Ada')", "the new object"],
+      ["Arrow function", "() => this.name", "the this of the code around it"]
+    ],
+    "highlight": { "row": 4 },
+    "caption": "Strict mode is a safer rule set that modules always use. Only the arrow row ignores the call."
+  },
+  "code": [
+    {
+      "file": "forms.mjs",
+      "lang": "js",
+      "title": "Three function forms",
+      "run": "browser",
+      "caption": "Run it. An arrow without braces returns its expression; with braces you must write `return`."
+    },
+    {
+      "file": "this.mjs",
+      "lang": "js",
+      "title": "this depends on the call",
+      "run": "browser",
+      "caption": "Run it. The call form decides `this`; the arrow keeps the `this` of `reader`.",
+      "walk": [
+        { "lines": [1, 2, 3, 4, 5], "text": "A `class` is a template for objects. Inside its methods, `this` is the object the call used." },
+        { "lines": [6, 7], "text": "`new User('Ada')` makes `ada`. `ada.hello()` is a method call: `this` is `ada`, the object before the dot." },
+        { "lines": [9, 10], "text": "Calling the copied method `detached()` has no object before the dot. `this` is undefined, so `this.name` throws." },
+        { "lines": [12], "text": "`bind(ada)` returns a new function whose `this` is fixed to `ada`." },
+        { "lines": [4, 13], "text": "`ada.reader()` returns an arrow. It has no own `this`, so it uses the `this` of `reader`: `ada`." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "A method passed to another function loses `this`; wrap it in an arrow or `bind` it.",
+    "Do not use an arrow function as an object method: its `this` is not the object.",
+    "Arrow functions cannot be called with `new`; write constructors with `class`."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const user = { name: 'Ada', hi() { return this.name; } };\nconst other = { name: 'Lin' };\nconsole.log(user.hi(), user.hi.call(other));",
+    "lang": "js",
+    "options": ["Ada Ada", "Lin Lin", "Ada Lin", "undefined Lin"],
+    "answer": 2,
+    "why": "`user.hi()` sets `this` to `user`. `call(other)` runs the same function with `this` set to `other`."
+  },
+  "takeaway": "Calls set `this` for regular functions; arrows keep the `this` where they are written.",
+  "chat": {
+    "starters": [
+      "What is the difference between call, apply and bind?",
+      "Why is this undefined inside my callback?",
+      "When should I use an arrow function instead of function?"
+    ]
+  }
+}

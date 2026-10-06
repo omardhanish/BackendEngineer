@@ -1,0 +1,104 @@
+{
+  "title": "Sharding",
+  "idea": "Sharding splits a large dataset across several databases called shards. A partition key, such as a user id, decides which shard owns each row.",
+  "analogy": {
+    "text": "A phone book split into volumes by surname: A–F in one, G–M in the next. You pick the volume from the name before you look.",
+    "breaks": "Rebalancing is harder: rows must be moved between running databases."
+  },
+  "points": [
+    "Each row lives on one shard, so writes and storage spread across machines.",
+    "Range sharding keeps nearby keys together; hash sharding spreads keys but scatters ranges.",
+    "A shard that gets far more traffic than the others is a hot shard.",
+    "A query without the partition key usually must ask every shard and merge results."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "Routing by partition key",
+    "scenario": {
+      "tiers": [["app"], ["s1", "s2", "s3"]],
+      "nodes": {
+        "app": { "label": "App server", "kind": "server", "sub": "picks a shard" },
+        "s1": { "label": "Shard 1", "kind": "db" },
+        "s2": { "label": "Shard 2", "kind": "db" },
+        "s3": { "label": "Shard 3", "kind": "db" }
+      },
+      "links": [["app", "s1"], ["app", "s2"], ["app", "s3"]],
+      "steps": [
+        {
+          "caption": "The app reads the partition key from the request, here a `user_id`, and picks one shard.",
+          "send": [{ "from": "app", "to": "s2", "label": "user u5" }]
+        },
+        {
+          "caption": "Range sharding gives each shard a block of ids: low, middle and high.",
+          "badge": { "s1": "low ids", "s2": "mid ids", "s3": "high ids" }
+        },
+        {
+          "caption": "Ids keep rising, so every new user lands in the highest range. That shard runs hot.",
+          "send": [
+            { "from": "app", "to": "s3", "label": "u7", "tone": "warn" },
+            { "from": "app", "to": "s3", "label": "u8", "tone": "warn" },
+            { "from": "app", "to": "s3", "label": "u9", "tone": "warn" }
+          ],
+          "state": { "s3": "hot" },
+          "items": { "s3": ["u7", "u8", "u9"] }
+        },
+        {
+          "caption": "Hash sharding hashes the key first, so the same new users spread across shards.",
+          "send": [
+            { "from": "app", "to": "s1", "label": "u7" },
+            { "from": "app", "to": "s2", "label": "u8" },
+            { "from": "app", "to": "s3", "label": "u9" }
+          ],
+          "badge": { "s1": null, "s2": null, "s3": null },
+          "state": { "s3": "up" },
+          "items": { "s1": ["u7"], "s2": ["u8"], "s3": ["u9"] }
+        },
+        {
+          "caption": "A query that does not include the partition key usually goes to every shard.",
+          "send": [
+            { "from": "app", "to": "s1", "label": "name=Ann", "tone": "info" },
+            { "from": "app", "to": "s2", "label": "name=Ann", "tone": "info" },
+            { "from": "app", "to": "s3", "label": "name=Ann", "tone": "info" }
+          ]
+        },
+        {
+          "caption": "The app merges the answers. A query across shards costs more than one aimed at a single shard.",
+          "send": [
+            { "from": "s1", "to": "app", "label": "rows", "tone": "ok" },
+            { "from": "s2", "to": "app", "label": "rows", "tone": "ok" },
+            { "from": "s3", "to": "app", "label": "rows", "tone": "ok" }
+          ]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "shard.mjs",
+      "lang": "js",
+      "title": "Range vs hash",
+      "run": "browser",
+      "caption": "Six new, rising ids routed by range, then by hash. The output counts rows per shard."
+    }
+  ],
+  "pitfalls": [
+    "Do not shard before simpler fixes fail; sharding adds real operational complexity.",
+    "Do not range-shard on a key that only rises, such as a timestamp.",
+    "Design queries around the partition key; cross-shard joins and transactions are costly."
+  ],
+  "quiz": {
+    "q": "What does the `range:` line print?",
+    "options": ["0,0,6", "2,2,2", "6,0,0", "1,2,3"],
+    "answer": 0,
+    "why": "Every id is 300 or more, so `Math.min(…, N - 1)` caps the shard at 2. All six writes hit the last shard."
+  },
+  "takeaway": "Sharding spreads data and writes; choose the key by how you query.",
+  "chat": {
+    "starters": [
+      "What is the difference between sharding and partitioning?",
+      "How do I add a shard later without moving everything?",
+      "Can I use a database transaction across shards?"
+    ]
+  }
+}

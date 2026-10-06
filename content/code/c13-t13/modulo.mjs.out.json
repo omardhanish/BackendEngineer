@@ -1,0 +1,9 @@
+{
+  "stdout": "3 -> 4 servers: 749 of 1000 move\n10 -> 11 servers: 918 of 1000 move",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": null,
+  "hash": "bde99d5b7a3a0e75",
+  "at": "2026-10-06T10:00:06.528Z"
+}

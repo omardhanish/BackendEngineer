@@ -1,0 +1,115 @@
+{
+  "title": "Port mapping in Docker",
+  "idea": "Port mapping publishes a container's private port on a port of your host, so traffic from outside can reach the app inside.",
+  "analogy": {
+    "text": "An office building with a switchboard. Callers dial the main number and extension; the desk phone inside has no outside line of its own.",
+    "breaks": "Each host port can be published by only one container."
+  },
+  "points": [
+    "Each container has its own network namespace, so its ports are private.",
+    "`-p HOST:CONTAINER` publishes a container port on a host port.",
+    "`EXPOSE` in a Dockerfile documents a port; it does not publish it.",
+    "Two containers can use one container port if their host ports differ."
+  ],
+  "hero": {
+    "type": "anatomy",
+    "title": "Reading -p 8080:3000",
+    "parts": [
+      {
+        "text": "docker run ",
+        "label": "Command",
+        "note": "Creates a container from an image and starts it."
+      },
+      {
+        "text": "-p ",
+        "label": "Publish flag",
+        "note": "Asks Docker to forward a host port into the container."
+      },
+      {
+        "text": "8080",
+        "label": "Host port",
+        "note": "The port on your machine. Clients connect here, for example localhost:8080."
+      },
+      {
+        "text": ":",
+        "label": "Separator",
+        "note": "Host on the left, container on the right. Never swap them."
+      },
+      {
+        "text": "3000",
+        "label": "Container port",
+        "note": "The port your app listens on inside the container."
+      },
+      {
+        "text": " shop",
+        "label": "Image",
+        "note": "The image to start. Its name comes last."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "ports.sh",
+      "lang": "bash",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Two containers from one image, both listening on 3000 inside, reached on different host ports.",
+      "walk": [
+        {
+          "lines": [
+            1
+          ],
+          "text": "Run `shop` detached. Host port 8080 forwards to port 3000 in the container."
+        },
+        {
+          "lines": [
+            2
+          ],
+          "text": "Same image, same container port 3000, but host port 8081. No clash."
+        },
+        {
+          "lines": [
+            3
+          ],
+          "text": "Request the first container through the host port 8080."
+        },
+        {
+          "lines": [
+            4
+          ],
+          "text": "Request the second container through 8081. Each answer comes from a different container."
+        },
+        {
+          "lines": [
+            5
+          ],
+          "text": "Ask Docker which host port maps to `shop-a`'s published port."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Write `-p HOST:CONTAINER` in that order; `-p 3000:8080` publishes container port 8080.",
+    "Make your app listen on `0.0.0.0`; `127.0.0.1` inside the container stays unreachable.",
+    "Pick a free host port; a second container on 8080 fails to start."
+  ],
+  "quiz": {
+    "q": "The app listens on 3000 in the container. Which flag serves it at localhost:9000?",
+    "options": [
+      "-p 3000:9000",
+      "EXPOSE 9000 in the Dockerfile",
+      "-p 9000",
+      "-p 9000:3000"
+    ],
+    "answer": 3,
+    "why": "The host port comes first and the container port second. `EXPOSE` only documents a port, and `-p 9000` names a container port."
+  },
+  "takeaway": "Use -p HOST:CONTAINER to open a container's private port to your host.",
+  "chat": {
+    "starters": [
+      "What is a network namespace?",
+      "Why does localhost not work from inside a container?",
+      "How do I let Docker pick a free host port?"
+    ]
+  }
+}

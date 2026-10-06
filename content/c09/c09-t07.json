@@ -1,0 +1,128 @@
+{
+  "title": "Running containers with docker run",
+  "idea": "`docker run` creates a container from an image and starts it. Flags before the image name choose how it runs.",
+  "points": [
+    "By default `docker run` stays attached: the app's output fills your terminal.",
+    "A command after the image name replaces the image's `CMD`, its default start command.",
+    "`-e NAME=value` sets an environment variable; the Book Store API reads `PORT` this way.",
+    "`--rm` deletes the container when it exits, which suits one-off commands."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "Flags you use daily",
+    "head": [
+      "Flag",
+      "What it does",
+      "Book Store example"
+    ],
+    "rows": [
+      [
+        "-d",
+        "Runs in the background and prints the container id",
+        "docker run -d bookstore-api"
+      ],
+      [
+        "--name",
+        "Names the container for later commands",
+        "--name api"
+      ],
+      [
+        "-p",
+        "Publishes a container port on a host port",
+        "-p 3000:3000"
+      ],
+      [
+        "-e",
+        "Sets an environment variable, a named setting, in the container",
+        "-e PORT=4000"
+      ],
+      [
+        "--rm",
+        "Removes the container when it exits",
+        "docker run --rm bookstore-api node --version"
+      ],
+      [
+        "-it",
+        "Keeps input open and gives you a terminal",
+        "docker run -it --rm bookstore-api sh"
+      ]
+    ],
+    "highlight": {
+      "col": 0
+    },
+    "caption": "Put flags before the image name. Port mapping gets its own page."
+  },
+  "code": [
+    {
+      "file": "run.sh",
+      "lang": "bash",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Two long-running containers, two one-off commands, then cleanup.",
+      "walk": [
+        {
+          "lines": [
+            1
+          ],
+          "text": "Start `api` in the background. Port 3000 on your host reaches port 3000 in the container."
+        },
+        {
+          "lines": [
+            2
+          ],
+          "text": "A second container. `-e PORT=4000` makes the app listen on 4000, so publish 4000."
+        },
+        {
+          "lines": [
+            3
+          ],
+          "text": "A command after the image name replaces the default. It prints Node's version; `--rm` then cleans up."
+        },
+        {
+          "lines": [
+            4
+          ],
+          "text": "`-it` gives you an interactive shell in a fresh container; `--rm` removes it on exit."
+        },
+        {
+          "lines": [
+            5
+          ],
+          "text": "Stop both containers by name. They stay on disk, still holding their names."
+        },
+        {
+          "lines": [
+            6
+          ],
+          "text": "Remove them. A name can be reused only after its container is removed."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Put flags before the image name; after it, `-d` becomes part of the container's command.",
+    "Reusing `--name api` fails while any container, even stopped, holds it; remove that one first.",
+    "Keep real secrets out of committed scripts; load them with `--env-file` from an untracked file."
+  ],
+  "quiz": {
+    "q": "What does this command do?",
+    "code": "docker run --rm bookstore-api node --version",
+    "lang": "bash",
+    "options": [
+      "Starts the API and prints its version",
+      "Passes --version to server.js",
+      "Fails, because commands must come first",
+      "Prints Node's version, then exits and removes the container"
+    ],
+    "answer": 3,
+    "why": "Text after the image name replaces the default command, so `node --version` runs instead of the server. `--rm` removes the container when it exits."
+  },
+  "takeaway": "Shape the run with flags; pick the program with what follows the image.",
+  "chat": {
+    "starters": [
+      "How do I see the app's output when it runs with -d?",
+      "What is the difference between -i and -t?",
+      "How do I pass many environment variables at once?"
+    ]
+  }
+}

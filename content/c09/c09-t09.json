@@ -1,0 +1,68 @@
+{
+  "title": "Managing and debugging containers",
+  "idea": "A handful of commands inspect and control containers. To debug, ask in order: is it running, what did it print, what is inside?",
+  "points": [
+    "`docker logs` shows what the app prints to stdout and stderr, so log there.",
+    "`docker exec` starts a second process; leaving the shell does not stop the container.",
+    "`docker inspect` prints JSON; `--format` extracts one field, such as the exit code.",
+    "`docker stop` asks the app to exit, then kills it after a grace period."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Debug in this order",
+    "dir": "LR",
+    "nodes": [
+      { "id": "ps", "label": "docker ps -a", "sub": "Is it running?" },
+      { "id": "logs", "label": "docker logs", "sub": "What did it print?" },
+      { "id": "exec", "label": "docker exec", "sub": "What is inside?" },
+      { "id": "inspect", "label": "docker inspect", "sub": "How was it started?" }
+    ],
+    "edges": [
+      { "from": "ps", "to": "logs" },
+      { "from": "logs", "to": "exec" },
+      { "from": "exec", "to": "inspect" }
+    ],
+    "steps": [
+      { "caption": "Start with `docker ps -a`. It lists stopped containers too: is `api` running, or `Exited`?", "active": ["ps"], "edges": [] },
+      { "caption": "`docker logs api` replays the app's output, including the message it printed before a crash.", "active": ["logs"], "edges": [0] },
+      { "caption": "`docker exec -it api sh` opens a shell inside the running container to check files and processes.", "active": ["exec"], "edges": [1] },
+      { "caption": "`docker inspect api` holds the full record: environment variables, port bindings, mounts and exit code.", "active": ["inspect"], "edges": [2] }
+    ]
+  },
+  "code": [
+    {
+      "file": "debug.sh",
+      "lang": "bash",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Everyday commands for the `api` container, from looking to cleaning up.",
+      "walk": [
+        { "lines": [1], "text": "List all containers, stopped ones included, with their status." },
+        { "lines": [2], "text": "Show the last 20 log lines, then keep following new ones." },
+        { "lines": [3], "text": "Open a shell in `api`. Alpine images have `sh`, not `bash`." },
+        { "lines": [4], "text": "Print one field from the JSON: the exit code. Check it after a crash." },
+        { "lines": [5], "text": "Print CPU and memory use once, then exit." },
+        { "lines": [6, 7], "text": "`restart` bounces `api`. `stop` leaves it stopped, files intact." },
+        { "lines": [8], "text": "Delete the stopped container and its writable layer." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "`docker exec` needs a running container. For a crashed one, read `docker logs`.",
+    "`docker rm` deletes the container's files too; copy out what you need with `docker cp`.",
+    "A stopped container still owns its `--name`; `docker rm` it before reusing the name."
+  ],
+  "quiz": {
+    "q": "The api container exits seconds after starting. Which command shows why?",
+    "options": [
+      "docker ps",
+      "docker stats api",
+      "docker logs api",
+      "docker exec -it api sh"
+    ],
+    "answer": 2,
+    "why": "Logs keep what the app printed before it exited. `exec` needs a running container, and `ps` shows state, not output."
+  },
+  "takeaway": "Check status, read logs, then look inside: ps, logs, exec.",
+  "chat": { "starters": ["What is the difference between `docker stop` and `docker kill`?", "Why does my container exit right after it starts?", "How do I get a shell in a container with no bash?"] }
+}

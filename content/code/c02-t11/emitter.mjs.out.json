@@ -1,0 +1,8 @@
+{
+  "stdout": "kitchen: cook 1\nbilling: charge 1\nfirst order bonus for 1\nkitchen: cook 2\nbilling: charge 2\nlisteners: 2",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "hash": "f264234c3df4f590",
+  "at": "2026-10-06T07:34:12.977Z"
+}

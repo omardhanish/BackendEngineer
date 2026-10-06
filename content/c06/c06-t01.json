@@ -1,0 +1,226 @@
+{
+  "title": "Authentication vs authorization",
+  "idea": "Authentication proves who is calling. Authorization decides what that caller may do. A server asks the first question, then the second.",
+  "analogy": {
+    "text": "A members-only club. The door checks your ID to learn who you are. The staff then check the list for which rooms you may enter.",
+    "breaks": "A club checks once at the door; a server checks every request."
+  },
+  "points": [
+    "Authentication checks a credential: a password, a session cookie or a token.",
+    "Authorization checks the caller's role, such as `user` or `admin`, or record ownership.",
+    "Authorization needs an identity, so it can only run after authentication succeeds.",
+    "No valid login gets `401`; a known user without permission gets `403`."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "Two checks, always in this order",
+    "scenario": {
+      "token": {
+        "label": "DELETE /books/1",
+        "tone": "req"
+      },
+      "stages": [
+        {
+          "id": "client",
+          "label": "Client",
+          "kind": "end"
+        },
+        {
+          "id": "authn",
+          "label": "authenticate",
+          "sub": "who are you?"
+        },
+        {
+          "id": "authz",
+          "label": "authorize",
+          "sub": "may you?"
+        },
+        {
+          "id": "handler",
+          "label": "Handler",
+          "sub": "delete the book",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "Request 1 sends `DELETE /books/1` with no login.",
+          "at": "client",
+          "slot": "top",
+          "state": {
+            "client": "active"
+          },
+          "out": []
+        },
+        {
+          "caption": "`authenticate` looks for a login and finds none. It cannot say who is calling.",
+          "at": "authn",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "authn": "active"
+          },
+          "out": [
+            "authenticate: no login"
+          ]
+        },
+        {
+          "caption": "No identity means `401`. The request stops here and `authorize` never runs.",
+          "at": "authn",
+          "slot": "bottom",
+          "token": {
+            "label": "401",
+            "tone": "err"
+          },
+          "state": {
+            "client": "done",
+            "authn": "blocked"
+          },
+          "out": [
+            "authenticate: no login",
+            "send 401"
+          ]
+        },
+        {
+          "caption": "Request 2 comes from Ada, logged in with role `user`. `authenticate` knows who she is and passes her on.",
+          "at": "authn",
+          "slot": "top",
+          "token": {
+            "label": "DELETE /books/1",
+            "tone": "req"
+          },
+          "state": {
+            "client": "done",
+            "authn": "active"
+          },
+          "out": [
+            "authenticate: Ada, role user"
+          ]
+        },
+        {
+          "caption": "`authorize` asks whether role `user` may delete a book. Only `admin` may.",
+          "at": "authz",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "authn": "done",
+            "authz": "active"
+          },
+          "out": [
+            "authenticate: Ada, role user",
+            "authorize: delete needs admin"
+          ]
+        },
+        {
+          "caption": "Known but not allowed means `403`. The handler never runs.",
+          "at": "authz",
+          "slot": "bottom",
+          "token": {
+            "label": "403",
+            "tone": "err"
+          },
+          "state": {
+            "client": "done",
+            "authn": "done",
+            "authz": "blocked"
+          },
+          "out": [
+            "authenticate: Ada, role user",
+            "authorize: delete needs admin",
+            "send 403"
+          ]
+        },
+        {
+          "caption": "Request 3 comes from Root, an admin. Both checks pass.",
+          "at": "authz",
+          "slot": "top",
+          "token": {
+            "label": "DELETE /books/1",
+            "tone": "req"
+          },
+          "state": {
+            "client": "done",
+            "authn": "done",
+            "authz": "active"
+          },
+          "out": [
+            "authenticate: Root, role admin",
+            "authorize: admin may delete"
+          ]
+        },
+        {
+          "caption": "The handler deletes the book.",
+          "at": "handler",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "authn": "done",
+            "authz": "done",
+            "handler": "active"
+          },
+          "out": [
+            "authenticate: Root, role admin",
+            "authorize: admin may delete",
+            "handler: delete book 1"
+          ]
+        },
+        {
+          "caption": "`204` means done, with no body to send back.",
+          "at": "handler",
+          "slot": "bottom",
+          "token": {
+            "label": "204",
+            "tone": "ok"
+          },
+          "state": {
+            "client": "done",
+            "authn": "done",
+            "authz": "done",
+            "handler": "active"
+          },
+          "out": [
+            "authenticate: Root, role admin",
+            "authorize: admin may delete",
+            "handler: delete book 1"
+          ]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "status.mjs",
+      "lang": "js",
+      "title": "401 first, then 403",
+      "run": "browser",
+      "caption": "The `Map` lookup stands in for a verified login. Later pages build these checks as `authenticate` and `requireRole` middleware."
+    }
+  ],
+  "pitfalls": [
+    "Do not send `403` when there is no login; that case is `401`.",
+    "Never trust a `role` sent in the body; read it from the verified login.",
+    "Hiding a button is not authorization. Check permission on the server for every request."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const roleOf = new Map([['ada', 'user'], ['root', 'admin']]);\nfunction status(name) {\n  if (!roleOf.has(name)) return 401;\n  return roleOf.get(name) === 'admin' ? 200 : 403;\n}\nconsole.log(status('ada'), status('root'), status('eve'));",
+    "lang": "js",
+    "options": [
+      "401 200 403",
+      "200 200 401",
+      "403 200 401",
+      "403 200 403"
+    ],
+    "answer": 2,
+    "why": "`ada` is known but not an admin, so `403`. `root` is an admin: `200`. `eve` is unknown, so `401` comes first."
+  },
+  "takeaway": "Knowing who someone is never tells you what they may do.",
+  "chat": {
+    "starters": [
+      "Why is `401` called Unauthorized when it means unauthenticated?",
+      "Can a request be authorized without being authenticated?",
+      "Where in an Express app do these two checks live?"
+    ]
+  }
+}

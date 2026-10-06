@@ -1,0 +1,77 @@
+{
+  "title": "Short codes and POST /shorten",
+  "idea": "`POST /shorten` takes a long URL from a logged-in user and returns a short code: seven random characters made by `nanoid(7)`.",
+  "points": [
+    "`requireAuth` runs first, so only a logged-in user reaches the handler.",
+    "A Zod schema accepts only `http` and `https` URLs; anything else gets `400`.",
+    "`nanoid(7)` picks seven characters from a 64-symbol alphabet of letters, digits, `_` and `-`.",
+    "Random codes can collide. The `unique` column added next rejects a repeat."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "Three requests to POST /shorten",
+    "scenario": {
+      "token": { "label": "POST /shorten", "tone": "req" },
+      "stages": [
+        { "id": "client", "label": "Client", "kind": "end" },
+        { "id": "auth", "label": "requireAuth", "sub": "token?" },
+        { "id": "zod", "label": "Zod", "sub": "valid URL?" },
+        { "id": "handler", "label": "Handler", "sub": "nanoid(7)", "kind": "end" }
+      ],
+      "steps": [
+        { "caption": "A logged-in client sends a token and `{ url }`.", "at": "client", "slot": "top", "state": { "client": "active" }, "out": [] },
+        { "caption": "`requireAuth` accepts the token and calls `next()`.", "at": "auth", "slot": "top", "state": { "client": "done", "auth": "active" }, "out": ["requireAuth: ok"] },
+        { "caption": "Zod checks that `url` is a valid `http` or `https` URL.", "at": "zod", "slot": "top", "state": { "client": "done", "auth": "done", "zod": "active" }, "out": ["requireAuth: ok", "zod: valid"] },
+        { "caption": "The handler calls `nanoid(7)` and has a new short code.", "at": "handler", "slot": "top", "state": { "client": "done", "auth": "done", "zod": "done", "handler": "active" }, "out": ["requireAuth: ok", "zod: valid", "nanoid(7): code"] },
+        { "caption": "It replies `201` with `{ shortCode }`. Nothing is saved yet.", "at": "handler", "slot": "bottom", "token": { "label": "201 { shortCode }", "tone": "ok" }, "state": { "client": "done", "auth": "done", "zod": "done", "handler": "active" }, "out": ["requireAuth: ok", "zod: valid", "nanoid(7): code", "201"] },
+        { "caption": "A second request carries an `ftp:` URL. It passes `requireAuth`.", "at": "zod", "slot": "top", "state": { "client": "done", "auth": "done", "zod": "active" }, "out": ["requireAuth: ok"] },
+        { "caption": "Zod rejects it, so the route sends `400`. `nanoid` never runs.", "at": "zod", "slot": "bottom", "token": { "label": "400 issues", "tone": "err" }, "state": { "client": "done", "auth": "done", "zod": "blocked" }, "out": ["requireAuth: ok", "zod: invalid", "400"] },
+        { "caption": "A third request has no token and stops at the first check.", "at": "auth", "slot": "top", "state": { "client": "done", "auth": "active" }, "out": [] },
+        { "caption": "`requireAuth` sends `401`. Zod and `nanoid` never run.", "at": "auth", "slot": "bottom", "token": { "label": "401", "tone": "err" }, "state": { "client": "done", "auth": "blocked" }, "out": ["requireAuth: no token", "401"] }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "shorten.mjs",
+      "lang": "js",
+      "title": "POST /shorten",
+      "run": "captured",
+      "caption": "Two new lines do the work: validate, then `nanoid(7)`. Everything below the controller is setup.",
+      "walk": [
+        { "lines": [6, 7, 8], "text": "Only `http` and `https` pass. Plain `z.url()` also accepts `ftp:` and `javascript:`." },
+        { "lines": [12, 13, 18, 19], "text": "A bad body gets `400` with the same `issues` shape as signup." },
+        { "lines": [20], "text": "Make the code. Nothing is stored yet; the next lecture adds the table." },
+        { "lines": [21], "text": "Reply `201` with the code." },
+        { "lines": [25, 26, 27, 28], "text": "A stand-in for the real middleware: no `Authorization` header means `401`." },
+        { "lines": [46, 47, 48, 49], "text": "No token gives `401`. A bad URL gives `400` and the issue list." },
+        { "lines": [50, 51, 52], "text": "Two valid requests: each code has 7 characters, and the codes differ." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Avoid counters and `Math.random()` for codes: they are predictable. Use `nanoid`.",
+    "`z.url()` alone accepts `javascript:` and `ftp:` URLs; restrict the protocol to `http` and `https`.",
+    "Call `express.json()` before the route, or `req.body` is `undefined`."
+  ],
+  "quiz": {
+    "q": "Which statement about `nanoid(7)` is true?",
+    "options": [
+      "It never repeats a code",
+      "Codes are random, so repeats are rare but possible",
+      "It checks the database for repeats",
+      "Codes count up: a1, a2, a3"
+    ],
+    "answer": 1,
+    "why": "`nanoid` only generates random text. It cannot see your table, so uniqueness must come from the database."
+  },
+  "takeaway": "Validate the URL, generate a random code, and let the database enforce uniqueness.",
+  "chat": {
+    "starters": [
+      "Why 7 characters and not 6 or 10?",
+      "What happens if nanoid makes the same code twice?",
+      "Why allow only http and https URLs?"
+    ]
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "stdout": "Ana: allowed\nBo: denied, needs admin\nBo: allowed",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "hash": "e6ac3ea54e91534e",
+  "at": "2026-10-06T07:52:46.240Z"
+}

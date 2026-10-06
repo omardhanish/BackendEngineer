@@ -1,0 +1,9 @@
+{
+  "stdout": "user books:read true\nuser books:write false\nadmin books:write true\neditor books:read false",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": null,
+  "hash": "2f6a90ad2ae59edd",
+  "at": "2026-10-06T15:12:22.803Z"
+}

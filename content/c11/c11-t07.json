@@ -1,0 +1,66 @@
+{
+  "title": "Joining with $lookup",
+  "idea": "`$lookup` joins another collection into each document: it finds the matching documents there and adds them to a new array field.",
+  "points": [
+    "`from` names the other collection; `localField` and `foreignField` say which values must match.",
+    "`as` names the new field. It is always an array, even for one match.",
+    "With no match, `as` is an empty array and the order stays.",
+    "`$unwind` on the `as` field gives one object, and drops orders with no match."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "One order meets its customer",
+    "nodes": [
+      { "id": "order", "label": "Order document", "sub": "customer: 'Ana'" },
+      { "id": "stage", "label": "$lookup", "sub": "from: customers" },
+      { "id": "coll", "label": "customers", "sub": "the other collection" },
+      { "id": "out", "label": "Order with who", "sub": "who: [ Ana ]" }
+    ],
+    "edges": [
+      { "from": "order", "to": "stage", "label": "localField", "caption": "An order enters `$lookup`. Its `localField`, `customer`, holds `'Ana'`." },
+      { "from": "stage", "to": "coll", "label": "foreignField", "caption": "`$lookup` searches `customers` for documents whose `foreignField`, `name`, equals `'Ana'`." },
+      { "from": "coll", "to": "stage", "label": "matches", "dashed": true, "back": true, "caption": "One customer matches: `{ name: 'Ana', tier: 'gold' }`. With no match, the list would be empty." },
+      { "from": "stage", "to": "out", "label": "as: who", "caption": "The order leaves with a new array field `who` holding every match. Its other fields are untouched." }
+    ]
+  },
+  "code": [
+    {
+      "file": "lookup.mjs",
+      "lang": "js",
+      "title": "Orders joined to customers",
+      "run": "captured",
+      "needs": ["mongo"],
+      "caption": "One join stage, used twice. Step through it, then press Run.",
+      "walk": [
+        { "lines": [9, 10, 11], "text": "Keep the stage in a variable so two pipelines reuse it. `from` is a collection name." },
+        { "lines": [12, 13], "text": "Match each order's `customer` to a customer's `name`." },
+        { "lines": [14], "text": "The matches arrive as an array in `who`." },
+        { "lines": [19, 20], "text": "Match first, so only the two biggest orders are joined." },
+        { "lines": [21], "text": "`'who.tier'` keeps only `tier` inside each element of the `who` array." },
+        { "lines": [27, 28, 29], "text": "Join paid orders, then `$unwind` so `who` is one object." },
+        { "lines": [30], "text": "Group by the joined field: paid revenue per customer tier." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "`from` takes the collection name (`'customers'`), not the model name; a wrong name returns empty arrays.",
+    "Both fields must hold the same type: a string never matches an ObjectId.",
+    "Every input document is joined, so `$match` first to join fewer."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const rows = await Order.aggregate([\n  { $match: { customer: 'Ana' } },\n  { $lookup: {\n    from: 'customers', localField: 'customer',\n    foreignField: 'name', as: 'who',\n  } },\n]);\nconsole.log(rows.length, rows[0].who.length);",
+    "lang": "js",
+    "options": ["2 2", "2 1", "1 2", "1 1"],
+    "answer": 1,
+    "why": "Ana has two orders, so two documents come out. Each gets `who` holding the one customer named Ana."
+  },
+  "takeaway": "Lookup returns an array; unwind it when you expect exactly one match.",
+  "chat": {
+    "starters": [
+      "How does `$lookup` differ from Mongoose `populate`?",
+      "Should I embed customer data in each order instead of joining?",
+      "How do I join on more than one field?"
+    ]
+  }
+}

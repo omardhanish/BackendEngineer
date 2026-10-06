@@ -1,0 +1,80 @@
+{
+  "title": "Conditions: if, else, switch",
+  "idea": "A condition picks which code runs: JavaScript evaluates an expression, treats the result as true or false, and runs exactly one branch.",
+  "analogy": {
+    "text": "A fork in the road with a sign on each path. You read the sign, then take exactly one path.",
+    "breaks": "A fork has fixed signs; a condition is re-evaluated every time the code runs."
+  },
+  "points": [
+    "`if` runs its block when the condition is truthy; `else` covers everything else.",
+    "In an `else if` chain the first true test wins; the rest are skipped.",
+    "Combine tests with `&&` (and), `||` (or) and `!` (not).",
+    "`switch` compares one value against many `case` labels using `===`."
+  ],
+  "hero": {
+    "type": "compare",
+    "title": "What counts as false",
+    "left": { "title": "Falsy: the test fails", "items": ["`false`", "`0`", "`\"\"` (an empty string)", "`null` and `undefined`", "`NaN`"] },
+    "right": { "title": "Truthy: easy to get wrong", "items": ["`\"0\"` (a non-empty string)", "`\"false\"`", "`[]` (an empty array)", "`{}` (an empty object)"] },
+    "verdict": "Everything that is not on the falsy list is truthy."
+  },
+  "code": [
+    {
+      "file": "conditions.mjs",
+      "lang": "js",
+      "title": "if and switch",
+      "run": "browser",
+      "caption": "An `else if` chain picks one branch. Two `case` labels in a row share one block."
+    }
+  ],
+  "challenges": {
+    "intro": "Write each function, run the tests, and open a hint only when you are stuck.",
+    "items": [
+      {
+        "id": "parity", "title": "Even or odd",
+        "prompt": "Write `parity(n)`. Return `\"even\"` or `\"odd\"`.",
+        "starter": "parity.starter.js", "tests": "parity.tests.js", "solution": "parity.solution.js",
+        "hints": ["The remainder operator `%` gives what is left after a division.", "An even number leaves remainder 0 when divided by 2.", "Test `n % 2 === 0`, and `return` the right word in each branch."]
+      },
+      {
+        "id": "grade", "title": "Letter grade",
+        "prompt": "Write `grade(score)`: 90 and up is `\"A\"`, 80 and up `\"B\"`, 70 and up `\"C\"`, anything lower `\"F\"`.",
+        "starter": "grade.starter.js", "tests": "grade.tests.js", "solution": "grade.solution.js",
+        "hints": ["Check the highest grade first.", "A test only runs if the ones above it failed, so `score >= 80` already means below 90.", "End with a plain `return 'F'` for everything left."]
+      },
+      {
+        "id": "leap", "title": "Leap year",
+        "prompt": "Write `isLeapYear(year)`. A leap year divides by 4, except century years, which must divide by 400.",
+        "starter": "leap.starter.js", "tests": "leap.tests.js", "solution": "leap.solution.js",
+        "hints": ["Split the rule in two: the usual leap years, then the century exception.", "Divisible by 4 and not by 100 is one way to be a leap year.", "The other way is divisible by 400. Join the two ways with `||`."]
+      },
+      {
+        "id": "fizz", "title": "Fizz, Buzz or FizzBuzz",
+        "prompt": "Write `fizzbuzz(n)`: `\"FizzBuzz\"` if `n` divides by 3 and 5, `\"Fizz\"` by 3, `\"Buzz\"` by 5, otherwise `n` itself.",
+        "starter": "fizz.starter.js", "tests": "fizz.tests.js", "solution": "fizz.solution.js",
+        "hints": ["Order matters: one number can match several tests.", "A number divisible by both 3 and 5 is divisible by 15. Test that case first.", "Return the number itself when nothing matches."]
+      },
+      {
+        "id": "daytype", "title": "Weekday or weekend",
+        "prompt": "Write `dayType(day)` with a `switch`: `\"sat\"` and `\"sun\"` give `\"weekend\"`, `\"mon\"` to `\"fri\"` give `\"weekday\"`, anything else `\"unknown\"`.",
+        "starter": "daytype.starter.js", "tests": "daytype.tests.js", "solution": "daytype.solution.js",
+        "hints": ["Stack several `case` labels with no code between them to share one result.", "A `return` inside a case also leaves the `switch`, so no `break` is needed.", "Put `default:` last for everything you did not list."]
+      }
+    ]
+  },
+  "pitfalls": [
+    "Use `===`, not `==`: loose equality converts types and surprises you.",
+    "A `case` without `break` or `return` falls through into the next case.",
+    "Put the most specific test first; a broader test above it hides it."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "options": ["A", "B", "C", "Nothing"],
+    "answer": 1,
+    "why": "`0` is falsy, so the first test fails. The second test is true, and the chain stops there.",
+    "code": "const n = 0;\nif (n) console.log('A');\nelse if (n === 0) console.log('B');\nelse console.log('C');",
+    "lang": "js"
+  },
+  "takeaway": "Conditions pick one branch; order your tests from most specific to most general.",
+  "chat": { "starters": ["Why is an empty array truthy but an empty string falsy?", "When should I use switch instead of else if?", "What is the difference between == and ===?"] }
+}

@@ -1,0 +1,90 @@
+{
+  "title": "Custom bridge networks",
+  "idea": "A custom bridge is a private network you create yourself. Containers on it find each other by name; containers on other networks cannot reach them directly.",
+  "points": [
+    "`docker network create bookstore-net` makes a custom bridge network.",
+    "Join it with `--network bookstore-net`, or attach a running container with `docker network connect`.",
+    "Docker's built-in DNS resolves container names on the same custom network.",
+    "Containers on different networks cannot reach each other directly; a network is a boundary."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "Names work inside one network",
+    "scenario": {
+      "tiers": [["tool"], ["api"], ["job"]],
+      "nodes": {
+        "tool": { "label": "tool", "sub": "alpine", "kind": "box" },
+        "api": { "label": "api", "sub": "bookstore-api", "kind": "service" },
+        "job": { "label": "job", "sub": "alpine", "kind": "box" }
+      },
+      "links": [["tool", "api"], ["job", "api", { "dashed": true }]],
+      "groups": [
+        { "label": "bookstore-net", "nodes": ["tool", "api"] },
+        { "label": "default bridge", "nodes": ["job"] }
+      ],
+      "steps": [
+        {
+          "caption": "`docker network create bookstore-net` makes the network. `--network bookstore-net` puts `tool` and `api` on it.",
+          "focus": ["tool", "api"]
+        },
+        {
+          "caption": "`tool` calls `api` by name. Docker's built-in DNS turns the name into the container's IP address.",
+          "send": [{ "from": "tool", "to": "api", "label": "by name", "tone": "ok" }]
+        },
+        {
+          "caption": "`job` sits on the default bridge, a different network, so it cannot reach `api`.",
+          "send": [{ "from": "job", "to": "api", "label": "blocked", "tone": "err" }]
+        },
+        {
+          "caption": "`docker network connect bookstore-net job` adds the running container to the network. Now `job` reaches `api` by name.",
+          "send": [{ "from": "job", "to": "api", "label": "by name", "tone": "ok" }],
+          "state": { "job": "new" },
+          "badge": { "job": "joined" }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "net.sh",
+      "lang": "bash",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Create a network, start the API on it, and reach it by name from inside and outside.",
+      "walk": [
+        { "lines": [1], "text": "Create a custom bridge network named `bookstore-net`." },
+        { "lines": [2], "text": "Start the API on it. `--network` goes before the image name." },
+        { "lines": [3], "text": "A one-off Alpine container on the same network pings `api` by name. It works." },
+        { "lines": [4], "text": "Start `job` with no `--network`: it joins the default bridge." },
+        { "lines": [5], "text": "From `job`, ping `api` by name. It fails: another network, and no name lookup." },
+        { "lines": [6], "text": "Attach the running `job` to `bookstore-net`. No restart needed." },
+        { "lines": [7], "text": "Ping again. The name now resolves." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Add `--network` to every `docker run`; one without it lands on the default bridge.",
+    "Do not publish a port just so containers can talk; on one network they already can.",
+    "Share a network only with containers that should talk; all ports are open between them."
+  ],
+  "quiz": {
+    "q": "`api` and `tool` are on `bookstore-net`; `job` is on the default bridge. Which call works?",
+    "options": [
+      "`job` calls `api` by name",
+      "`job` calls `api` by IP address",
+      "`api` calls `job` by name",
+      "`tool` calls `api` by name"
+    ],
+    "answer": 3,
+    "why": "Name lookup works only inside a custom network, and different networks are isolated. `tool` and `api` share one."
+  },
+  "takeaway": "Create one custom bridge per app; its containers find each other by name.",
+  "chat": {
+    "starters": [
+      "Can a container be on two networks at once?",
+      "How do I list the containers on a network?",
+      "How do I delete a network I no longer need?"
+    ]
+  }
+}

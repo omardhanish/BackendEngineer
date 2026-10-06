@@ -1,0 +1,9 @@
+{
+  "stdout": "[\n  { total: 120, items: { sku: 'book', qty: 2, price: 50 } },\n  { total: 120, items: { sku: 'pen', qty: 4, price: 5 } },\n  { total: 80, items: { sku: 'lamp', qty: 1, price: 30 } },\n  { total: 80, items: { sku: 'pen', qty: 10, price: 5 } }\n]\n[\n  { _id: 'book', units: 8, revenue: 400 },\n  { _id: 'lamp', units: 5, revenue: 150 },\n  { _id: 'pen', units: 21, revenue: 105 }\n]\n[\n  { _id: 'Ana', orders: 2, lines: 4 },\n  { _id: 'Ben', orders: 2, lines: 3 },\n  { _id: 'Cleo', orders: 2, lines: 2 },\n  { _id: 'Dev', orders: 1, lines: 1 },\n  { _id: 'Eli', orders: 1, lines: 2 }\n]",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "MongoDB 8.2.6",
+  "hash": "7bfafac99498efe8",
+  "at": "2026-10-06T15:08:27.172Z"
+}

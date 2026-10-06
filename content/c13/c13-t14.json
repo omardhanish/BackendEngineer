@@ -1,0 +1,98 @@
+{
+  "title": "Consistent hashing on a ring",
+  "idea": "Consistent hashing places servers and keys on one circle of hash values. Each key belongs to the next server clockwise, so a resize moves only nearby keys.",
+  "points": [
+    "Servers and keys hash into one range; the largest value wraps to zero.",
+    "A key belongs to the first server at or after its position, going clockwise.",
+    "Adding or losing a server moves only the keys in its slice.",
+    "A server can own many ring points, called virtual nodes, which evens out load."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "Servers join and leave the ring",
+    "scenario": {
+      "layout": "ring",
+      "size": 100,
+      "servers": {
+        "A": { "at": 15 },
+        "B": { "at": 45 },
+        "C": { "at": 80 },
+        "D": { "at": 60 },
+        "E": { "at": [40, 70, 95] }
+      },
+      "keys": [
+        { "id": "k1", "at": 5 },
+        { "id": "k2", "at": 12 },
+        { "id": "k3", "at": 20 },
+        { "id": "k4", "at": 33 },
+        { "id": "k5", "at": 41 },
+        { "id": "k6", "at": 50 },
+        { "id": "k7", "at": 58 },
+        { "id": "k8", "at": 67 },
+        { "id": "k9", "at": 72 },
+        { "id": "k10", "at": 85 },
+        { "id": "k11", "at": 93 },
+        { "id": "k12", "at": 98 }
+      ],
+      "steps": [
+        {
+          "caption": "Servers and keys hash onto the same ring. Each key belongs to the first server clockwise from it.",
+          "servers": ["A", "B", "C"],
+          "focus": ["k3"]
+        },
+        {
+          "caption": "Add server D. Only the keys between B and D change owner. Every other key stays put.",
+          "servers": ["A", "B", "C", "D"]
+        },
+        {
+          "caption": "Server B fails. Its keys move to the next server clockwise, D. No other key moves.",
+          "servers": ["A", "C", "D"]
+        },
+        {
+          "caption": "Add E with three points on the ring, called virtual nodes. It takes small slices from several servers.",
+          "servers": ["A", "C", "D", "E"]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "ring.mjs",
+      "lang": "js",
+      "title": "A ring with virtual nodes",
+      "run": "captured",
+      "caption": "Compare load with one point and with 200, then the keys moved by a ring and by `hash % N`.",
+      "walk": [
+        { "lines": [3, 4], "text": "A well-spread hash and 1000 sample keys. SHA-1 is used for its spread, not for security." },
+        { "lines": [6, 7, 8, 9], "text": "Each server gets `vnodes` points on the ring, sorted by position. Each point is a virtual node." },
+        { "lines": [10], "text": "A key goes to the first point at or after its hash, wrapping past the end." },
+        { "lines": [12, 13, 14, 15, 16], "text": "Count how many keys each server owns." },
+        { "lines": [17, 18], "text": "One point per server is lopsided; many points even it out." },
+        { "lines": [20, 21, 22, 23], "text": "Add server D and count the keys that change owner." },
+        { "lines": [24], "text": "The same change under `hash % N` moves far more keys." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Too few ring points per server gives uneven load; use many virtual nodes.",
+    "Moving keys is still work: copy data or refill caches when the ring changes.",
+    "All clients need the same server list and hash function, or keys scatter."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const ring = [{ s: 'A', at: 10 }, { s: 'B', at: 40 }, { s: 'C', at: 70 }];\nconst owner = (h) => (ring.find((p) => p.at >= h) ?? ring[0]).s;\nconsole.log(owner(5), owner(40), owner(41), owner(95));",
+    "lang": "js",
+    "options": ["A B C C", "A B C A", "C B B C", "A C C A"],
+    "answer": 1,
+    "why": "A key goes to the first point at or after its hash. 40 sits exactly on B, and 95 wraps around to A."
+  },
+  "takeaway": "A ring turns a resize from a mass remap into a small, local move.",
+  "chat": {
+    "starters": [
+      "Where is consistent hashing used in real systems?",
+      "How many virtual nodes should each server have?",
+      "What happens to the data on a server that leaves the ring?"
+    ]
+  }
+}

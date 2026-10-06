@@ -1,0 +1,98 @@
+{
+  "title": "Git internals and config",
+  "idea": "Git stores a project as objects named by a hash of their content: blobs are files, trees are folders, and a commit points to a tree.",
+  "analogy": {
+    "text": "A warehouse where every box is labelled by a fingerprint of what is inside. Identical contents get the same label, so Git stores them once.",
+    "breaks": "Real boxes can be edited; a Git object never changes."
+  },
+  "points": [
+    "A blob holds only a file's bytes. Its name lives in the tree.",
+    "A tree lists names, each pointing to a blob or a smaller tree.",
+    "A commit adds an author, a message and parent links to a tree.",
+    "Settings come from system, global (you), then local (repository); the last wins."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "One commit, as objects",
+    "nodes": [
+      { "id": "c2", "label": "Commit", "sub": "Add app" },
+      { "id": "t", "label": "Tree", "sub": "project root" },
+      { "id": "c1", "label": "Parent commit", "sub": "Add README" },
+      { "id": "b1", "label": "Blob", "sub": "# Demo" },
+      { "id": "s", "label": "Tree", "sub": "src/" },
+      { "id": "b2", "label": "Blob", "sub": "console.log('hi');" }
+    ],
+    "edges": [
+      { "from": "c2", "to": "t", "label": "tree" },
+      { "from": "t", "to": "b1", "label": "README.md" },
+      { "from": "t", "to": "s", "label": "src" },
+      { "from": "s", "to": "b2", "label": "app.js" },
+      { "from": "c2", "to": "c1", "label": "parent", "dashed": true }
+    ],
+    "steps": [
+      { "caption": "A commit stores the author, the message and a pointer to one tree.", "active": ["c2", "t"], "edges": [0] },
+      { "caption": "The tree is the project's root folder. It lists each name and points to what it holds.", "active": ["t", "b1", "s"], "edges": [1, 2] },
+      { "caption": "Two files with equal contents share one blob, because the name lives in the tree.", "active": ["b1"], "edges": [1] },
+      { "caption": "A subfolder is another tree, which points to its own blobs.", "active": ["s", "b2"], "edges": [3] },
+      { "caption": "The commit also points to its parent. That link turns commits into a history.", "active": ["c2", "c1"], "edges": [4] }
+    ]
+  },
+  "code": [
+    {
+      "file": "objects.sh",
+      "lang": "bash",
+      "title": "Read the objects",
+      "run": "captured",
+      "caption": "Real Git output. `cat-file` reads any object by name; hashes here come from fixed demo dates.",
+      "walk": [
+        { "lines": [1, 2, 3, 4, 5, 6], "text": "Create a repository with one commit that adds `README.md`." },
+        { "lines": [7, 8, 9, 10], "text": "A second commit adds `src/app.js`." },
+        { "lines": [11], "text": "`-t` prints an object's type. `HEAD` is a commit." },
+        { "lines": [12], "text": "`-p` prints it readably: one tree, one parent, author, committer, message." },
+        { "lines": [13], "text": "The commit's tree lists names: `README.md` is a blob, `src` is another tree." },
+        { "lines": [14], "text": "A blob prints as the file's own text." },
+        { "lines": [15], "text": "Both commits point at the same README blob: equal content is stored once." }
+      ]
+    },
+    {
+      "file": "config.sh",
+      "lang": "bash",
+      "title": "Config levels",
+      "run": "captured",
+      "caption": "The name and emails are demo values. Replace them with your own.",
+      "walk": [
+        { "lines": [1, 2], "text": "`--global` writes your own file, usually `~/.gitconfig`: settings for every repository." },
+        { "lines": [3, 4, 5], "text": "Make a repository. It has its own `.git/config`." },
+        { "lines": [6], "text": "Without a flag, `git config` writes this repository's file only." },
+        { "lines": [7], "text": "Reading a key gives the winner: the local value." },
+        { "lines": [8], "text": "`--get-all` lists every value, `--show-origin` adds its file. The last one wins." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Set `user.name` and `user.email` first; existing commits keep the identity they were made with.",
+    "Without `--global`, `git config user.name Ada` sets the name for this repository only.",
+    "Never put passwords or tokens in `git config`; the files are plain text."
+  ],
+  "quiz": {
+    "q": "What do the three commands print, in order?",
+    "code": "git cat-file -t HEAD\ngit cat-file -t 'HEAD^{tree}'\ngit cat-file -t HEAD:README.md",
+    "lang": "bash",
+    "options": [
+      "tree, commit, blob",
+      "commit, blob, tree",
+      "commit, tree, blob",
+      "blob, tree, commit"
+    ],
+    "answer": 2,
+    "why": "`HEAD` is a commit, `HEAD^{tree}` is its root tree, and `HEAD:README.md` is one file's blob."
+  },
+  "takeaway": "Objects are named by their content, so an unchanged file is stored once.",
+  "chat": {
+    "starters": [
+      "Why does Git name objects by a hash of their content?",
+      "How do I see which config file a setting comes from?",
+      "What happens to old objects when I change a file?"
+    ]
+  }
+}

@@ -1,0 +1,97 @@
+{
+  "title": "Container security basics",
+  "idea": "Container security is least privilege: give a container only the access it needs, so a flaw in your app does less damage.",
+  "points": [
+    "A container process runs as `root`, the all-powerful account, unless the image says otherwise.",
+    "Official Node images ship a `node` user; `USER node` switches to it.",
+    "Files you `COPY` and values you set with `ENV` stay readable inside the image.",
+    "Drop what the app does not need: capabilities, write access, new privileges."
+  ],
+  "hero": {
+    "type": "anatomy",
+    "title": "A hardened docker run command",
+    "parts": [
+      {
+        "text": "docker run -d --name api ",
+        "label": "Command",
+        "note": "Starts the Book Store API in the background as a container named `api`."
+      },
+      {
+        "text": "--read-only ",
+        "label": "Read-only filesystem",
+        "note": "Makes the root filesystem read-only. Add `--tmpfs /tmp` if the app needs scratch space."
+      },
+      {
+        "text": "--cap-drop ALL ",
+        "label": "Capabilities",
+        "note": "Drops every Linux capability, the separate privileges that make up root's power. Add back only what you need."
+      },
+      {
+        "text": "--security-opt no-new-privileges ",
+        "label": "No new privileges",
+        "note": "Stops processes in the container from gaining extra privileges after they start."
+      },
+      {
+        "text": "-p 127.0.0.1:3000:3000 ",
+        "label": "Loopback only",
+        "note": "Publishes the port on the host's `127.0.0.1` only. Without it, the port listens on all host addresses."
+      },
+      {
+        "text": "bookstore-api",
+        "label": "Image",
+        "note": "The image to run. Its Dockerfile sets `USER node`, so the process does not run as `root`."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "Dockerfile",
+      "lang": "docker",
+      "run": "static",
+      "illustrative": true,
+      "caption": "The chapter's Dockerfile with one new line: the app runs as `node`.",
+      "walk": [
+        { "lines": [4], "text": "Dependencies install as `root`, before the user switch. That is fine at build time." },
+        { "lines": [5], "text": "Copied files belong to `root`, so `node` can read the code but cannot rewrite it." },
+        { "lines": [7], "text": "From here on, `RUN` steps and the container's process use `node`, not `root`." },
+        { "lines": [8], "text": "`CMD` now starts the server as `node`." }
+      ]
+    },
+    {
+      "file": "run.sh",
+      "lang": "bash",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Pass secrets when the container starts, then check what the process can do.",
+      "walk": [
+        { "lines": [1], "text": "Read secrets from a local `.env` file at start; keep that file out of the image." },
+        { "lines": [2], "text": "Print the user the container's process runs as." },
+        { "lines": [3], "text": "Try to create a file in `/app`. It fails: `root` owns that folder." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "A `COPY . .` also copies `.env` into the image; list it in `.dockerignore`.",
+    "Never share `/var/run/docker.sock`, Docker's control socket, with a container; it can then control Docker.",
+    "Skip `--privileged`: it grants every capability and all host devices."
+  ],
+  "quiz": {
+    "q": "An image copied `.env`, then a later line ran `RUN rm .env`. Is the secret gone?",
+    "options": [
+      "Yes, the file no longer exists",
+      "No, the earlier layer still contains it",
+      "Yes, but only after a restart",
+      "No, but only on public registries"
+    ],
+    "answer": 1,
+    "why": "Image layers are read-only. `RUN rm` adds a new layer that hides the file, but the earlier layer still holds it."
+  },
+  "takeaway": "Run as non-root, keep secrets out of images, drop privileges you do not need.",
+  "chat": {
+    "starters": [
+      "Is root inside a container the same as root on the host?",
+      "How do I pass secrets to a container without baking them in?",
+      "What does `--read-only` break, and how do I fix it?"
+    ]
+  }
+}

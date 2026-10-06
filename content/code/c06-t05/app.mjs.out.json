@@ -1,0 +1,9 @@
+{
+  "stdout": "GET /me 401 {\"error\":\"login required\"}\nPOST /login 400 {\"error\":\"email and password required\"}\nPOST /login 401 {\"error\":\"invalid credentials\"}\nPOST /login 200 {\"email\":\"ada@example.com\"}\nGET /me 200 {\"id\":1,\"email\":\"ada@example.com\",\"role\":\"user\"}\nPOST /logout 204\nGET /me 401 {\"error\":\"login required\"}",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "PostgreSQL 18.4",
+  "hash": "d0d75db47f6cc62e",
+  "at": "2026-10-06T15:10:38.488Z"
+}

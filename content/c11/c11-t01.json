@@ -1,0 +1,116 @@
+{
+  "title": "Aggregation pipelines",
+  "idea": "An aggregation pipeline is an ordered list of stages. Each stage receives the documents the previous stage produced and hands its own result to the next.",
+  "analogy": {
+    "text": "A factory line. Raw parts enter, each station filters or reshapes them, and the finished product leaves at the end.",
+    "breaks": "Your collection is not consumed: a normal pipeline only reads it."
+  },
+  "points": [
+    "A stage is an object with one operator key, such as `$match` or `$sort`.",
+    "Order matters: a `$match` after `$group` filters groups, not orders.",
+    "MongoDB runs the whole pipeline on the server and returns only the final documents.",
+    "`aggregate()` returns plain objects, not Mongoose documents, so no `.save()`."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "A pipeline, stage by stage",
+    "scenario": {
+      "token": { "label": "8 documents", "tone": "req" },
+      "stages": [
+        { "id": "orders", "label": "orders", "sub": "the collection", "kind": "end" },
+        { "id": "match", "label": "$match", "sub": "status is paid" },
+        { "id": "group", "label": "$group", "sub": "sum total by city" },
+        { "id": "sort", "label": "$sort", "sub": "by _id" },
+        { "id": "result", "label": "Result", "sub": "back to Node", "kind": "end" }
+      ],
+      "steps": [
+        {
+          "caption": "The pipeline reads the `orders` collection. Every document enters the first stage.",
+          "at": "orders",
+          "slot": "top",
+          "state": { "orders": "active" },
+          "out": []
+        },
+        {
+          "caption": "`$match` tests each document against `status: 'paid'`.",
+          "at": "match",
+          "slot": "top",
+          "state": { "orders": "done", "match": "active" },
+          "out": []
+        },
+        {
+          "caption": "Only paid orders reach `$group`, which builds one document per city.",
+          "at": "group",
+          "slot": "top",
+          "token": { "label": "6 documents", "tone": "req" },
+          "state": { "orders": "done", "match": "done", "group": "active" },
+          "out": ["$match: 8 in, 6 out"]
+        },
+        {
+          "caption": "`$group` emits its documents in no promised order. `$sort` fixes that.",
+          "at": "sort",
+          "slot": "top",
+          "token": { "label": "3 documents", "tone": "req" },
+          "state": { "orders": "done", "match": "done", "group": "done", "sort": "active" },
+          "out": ["$match: 8 in, 6 out", "$group: 6 in, 3 out"]
+        },
+        {
+          "caption": "The sorted result goes back to your Node code, one document per city.",
+          "at": "result",
+          "slot": "top",
+          "token": { "label": "3 sorted", "tone": "ok" },
+          "state": { "orders": "done", "match": "done", "group": "done", "sort": "done", "result": "active" },
+          "out": ["$match: 8 in, 6 out", "$group: 6 in, 3 out", "$sort: 3 in, 3 out"]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "pipeline.mjs",
+      "lang": "js",
+      "title": "Your first pipeline",
+      "run": "captured",
+      "needs": ["mongo"],
+      "caption": "Step through it, then press Run for the real output from MongoDB.",
+      "walk": [
+        { "lines": [4, 5], "text": "Connect, then fill `orders` and `customers`: the dataset every page of this chapter uses." },
+        { "lines": [6, 7], "text": "A model supplies the collection. An empty, loose schema is enough here." },
+        { "lines": [9, 13], "text": "The array of stages is the whole pipeline. `aggregate` returns a promise of results." },
+        { "lines": [10], "text": "Stage 1 keeps only paid orders." },
+        { "lines": [11], "text": "Stage 2 sums `total` per city. The next page explains `$group`." },
+        { "lines": [12], "text": "Stage 3 sorts the cities by name." },
+        { "lines": [14, 15], "text": "Print the result, then disconnect so the process exits." }
+      ]
+    },
+    {
+      "file": "data.json",
+      "lang": "json",
+      "title": "The shared data",
+      "run": "static",
+      "caption": "One of the 8 `orders` and one of the 5 `customers`. Here `total` is the sum of `qty * price`."
+    }
+  ],
+  "pitfalls": [
+    "Add `$sort` when order matters: MongoDB promises no output order without it.",
+    "Mongoose casts `find()` filters but not pipelines: convert strings from `req.query` yourself.",
+    "Debug by running one stage first, printing it, then adding the next."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const rows = await Order.aggregate([\n  { $match: { status: 'pending' } },\n  { $group: { _id: '$city', n: { $sum: 1 } } },\n]);\nconsole.log(rows.length);",
+    "lang": "js",
+    "options": ["0", "3", "1", "8"],
+    "answer": 2,
+    "why": "`$match` leaves one pending order (Cleo, Porto), so `$group` builds a single city bucket."
+  },
+  "takeaway": "A pipeline is stages in order; each one feeds the next.",
+  "chat": {
+    "starters": [
+      "Why use aggregate instead of find and a loop in Node?",
+      "Can a pipeline change the documents in my collection?",
+      "How do I see what each stage outputs while debugging?"
+    ]
+  }
+}

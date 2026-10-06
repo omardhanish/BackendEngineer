@@ -1,0 +1,8 @@
+{
+  "stdout": "GET /books\n200 application/json",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "hash": "28b7921088b00ebd",
+  "at": "2026-10-06T08:03:43.288Z"
+}

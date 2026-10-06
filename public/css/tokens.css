@@ -1,0 +1,154 @@
+/* Design tokens. OKLCH throughout: lightness is perceptual, so one formula gives readable accents on every
+   chapter hue. A chapter is just a hue (--h); light/dark only change lightness. */
+:root {
+  color-scheme: light;
+
+  /* chapter accent (JS sets --h per chapter; data-band="lime" nudges lightness for yellow-green hues) */
+  --h: 250;
+  --al: 54%;
+  --ac: 0.12;
+
+  --font-serif: "Newsreader", Georgia, "Times New Roman", serif;
+  --font-ui: "Inter", "Inter Fallback", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* surfaces: warm paper */
+  --bg: oklch(97.4% 0.008 85);
+  --surface: oklch(99.5% 0.004 85);
+  --surface-2: oklch(96.1% 0.009 85);
+  --surface-3: oklch(92.6% 0.011 85);
+  --ink: oklch(23% 0.016 60);
+  --ink-2: oklch(40% 0.016 60);
+  --ink-3: oklch(53% 0.013 60);
+  --ink-4: oklch(68% 0.01 60);
+  --hair: oklch(23% 0.016 60 / 0.11);
+  --hair-2: oklch(23% 0.016 60 / 0.2);
+
+  /* theme-dependent mixing amounts; the accent formulas themselves are declared below */
+  --acc2-mix: 82%;
+  --soft-1: 8%;
+  --soft-2: 15%;
+  --line-mix: 36%;
+  --accent-ink: oklch(99% 0.004 85);
+
+  --ok: oklch(54% 0.13 150);
+  --warn: oklch(64% 0.15 70);
+  --bad: oklch(54% 0.19 25);
+  --info: oklch(55% 0.13 245);
+  --ok-soft: color-mix(in oklch, var(--ok) 11%, var(--surface));
+  --warn-soft: color-mix(in oklch, var(--warn) 14%, var(--surface));
+  --bad-soft: color-mix(in oklch, var(--bad) 10%, var(--surface));
+  --info-soft: color-mix(in oklch, var(--info) 10%, var(--surface));
+
+  /* code */
+  --code-bg: oklch(97.8% 0.007 85);
+  --code-bar: oklch(95.2% 0.009 85);
+  --tk-comment: var(--ink-3);
+  --tk-punct: oklch(46% 0.012 60);
+  --tk-keyword: oklch(49% 0.16 305);
+  --tk-string: oklch(46% 0.11 150);
+  --tk-number: oklch(51% 0.15 55);
+  --tk-fn: oklch(47% 0.13 250);
+  --tk-class: oklch(49% 0.12 200);
+  --tk-prop: oklch(43% 0.08 250);
+  --tk-op: oklch(45% 0.1 20);
+  --tk-var: oklch(51% 0.14 25);
+
+  /* memory-engine reference colours */
+  --c1: oklch(58% 0.15 25);
+  --c2: oklch(58% 0.13 150);
+  --c3: oklch(56% 0.14 250);
+  --c4: oklch(60% 0.15 85);
+
+  /* tones used by animation tokens */
+  --t-sync: oklch(54% 0.13 250);
+  --t-timer: oklch(64% 0.15 72);
+  --t-micro: oklch(52% 0.16 305);
+  --t-macro: oklch(54% 0.12 190);
+  --t-io: oklch(54% 0.13 150);
+
+  /* space (4px grid), radii, elevation */
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px; --s8: 32px; --s10: 40px; --s12: 48px; --s16: 64px;
+  --r1: 6px; --r2: 10px; --r3: 20px; --r-pill: 999px;
+  --sh-1: 0 1px 0 oklch(23% 0.016 60 / 0.04), 0 1px 2px oklch(23% 0.016 60 / 0.06);
+  --sh-2: 0 1px 2px oklch(23% 0.016 60 / 0.05), 0 8px 18px -6px oklch(23% 0.016 60 / 0.1), 0 24px 48px -16px oklch(23% 0.016 60 / 0.12);
+  --sh-3: 0 2px 4px oklch(23% 0.016 60 / 0.06), 0 16px 36px -8px oklch(23% 0.016 60 / 0.16), 0 48px 90px -24px oklch(23% 0.016 60 / 0.24);
+
+  /* motion */
+  --d1: 90ms; --d2: 160ms; --d3: 240ms; --d4: 420ms;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* type */
+  --fs-body: 19px;
+  --fs-lede: clamp(22px, 0.9vw + 1.5vh + 6px, 30px);
+  --fs-title: clamp(30px, 1.4vw + 2.4vh + 8px, 50px);
+}
+
+[data-band="lime"] { --al: 50%; }
+
+/* Derived accent tokens are re-declared on every element that sets its own --h (a chapter card, a TOC
+   section…), because var() resolves where a custom property is declared, not where it is used. */
+:root,
+[style*="--h"] {
+  --accent: oklch(var(--al) var(--ac) var(--h));
+  --accent-2: color-mix(in oklch, var(--accent) var(--acc2-mix), var(--ink));
+  --accent-soft: color-mix(in oklch, var(--accent) var(--soft-1), var(--surface));
+  --accent-soft-2: color-mix(in oklch, var(--accent) var(--soft-2), var(--surface));
+  --accent-line: color-mix(in oklch, var(--accent) var(--line-mix), var(--surface));
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --al: 76%;
+  --ac: 0.11;
+  --acc2-mix: 88%;
+  --soft-1: 10%;
+  --soft-2: 18%;
+  --line-mix: 34%;
+  --bg: oklch(19% 0.012 70);
+  --surface: oklch(22.5% 0.013 70);
+  --surface-2: oklch(17.5% 0.011 70);
+  --surface-3: oklch(27% 0.014 70);
+  --ink: oklch(94.5% 0.008 80);
+  --ink-2: oklch(80% 0.01 80);
+  --ink-3: oklch(64% 0.01 80);
+  --ink-4: oklch(50% 0.01 80);
+  --hair: oklch(94% 0.008 80 / 0.12);
+  --hair-2: oklch(94% 0.008 80 / 0.2);
+  --accent-ink: oklch(19% 0.02 70);
+  --ok: oklch(74% 0.14 150);
+  --warn: oklch(80% 0.14 80);
+  --bad: oklch(72% 0.16 25);
+  --info: oklch(75% 0.12 245);
+  --code-bg: oklch(20.5% 0.012 70);
+  --code-bar: oklch(24% 0.013 70);
+  --tk-punct: oklch(72% 0.01 80);
+  --tk-keyword: oklch(76% 0.13 305);
+  --tk-string: oklch(78% 0.11 150);
+  --tk-number: oklch(78% 0.12 60);
+  --tk-fn: oklch(77% 0.11 250);
+  --tk-class: oklch(78% 0.1 200);
+  --tk-prop: oklch(76% 0.07 250);
+  --tk-op: oklch(76% 0.1 20);
+  --tk-var: oklch(76% 0.12 25);
+  --c1: oklch(74% 0.14 25);
+  --c2: oklch(76% 0.13 150);
+  --c3: oklch(74% 0.12 250);
+  --c4: oklch(80% 0.13 85);
+  --t-sync: oklch(76% 0.12 250);
+  --t-timer: oklch(80% 0.13 75);
+  --t-micro: oklch(76% 0.13 305);
+  --t-macro: oklch(78% 0.1 190);
+  --t-io: oklch(77% 0.12 150);
+  --sh-1: 0 1px 0 oklch(0% 0 0 / 0.3), 0 1px 2px oklch(0% 0 0 / 0.35);
+  --sh-2: 0 1px 2px oklch(0% 0 0 / 0.3), 0 10px 22px -6px oklch(0% 0 0 / 0.45), 0 28px 56px -16px oklch(0% 0 0 / 0.5);
+  --sh-3: 0 2px 4px oklch(0% 0 0 / 0.35), 0 18px 40px -8px oklch(0% 0 0 / 0.55), 0 50px 100px -24px oklch(0% 0 0 / 0.6);
+}
+:root[data-theme="dark"][data-band="lime"],
+:root[data-theme="dark"] [data-band="lime"] { --al: 76%; }
+
+/* Reduced motion: honour the OS setting and the in-app switch. Instant steps, no sliding, no autoplay. */
+@media (prefers-reduced-motion: reduce) {
+  :root { --d1: 1ms; --d2: 1ms; --d3: 1ms; --d4: 1ms; }
+}
+:root[data-motion="reduce"] { --d1: 1ms; --d2: 1ms; --d3: 1ms; --d4: 1ms; }

@@ -1,0 +1,9 @@
+{
+  "stdout": "{\"title\":\"Dune\",\"author\":\"Frank Herbert\",\"year\":1965}\n{\"title\":\"Emma\",\"author\":\"Jane Austen\",\"tags\":[\"classic\"]}\n{\"title\":\"Neuromancer\",\"author\":\"William Gibson\",\"year\":1984,\"edition\":{\"format\":\"paperback\"}}\n[ '_id', 'title', 'author', 'year' ]",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "MongoDB 8.2.6",
+  "hash": "f10d402d86bf37a5",
+  "at": "2026-10-06T15:08:37.349Z"
+}

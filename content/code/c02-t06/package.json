@@ -1,0 +1,11 @@
+{
+  "name": "shop-api",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node app.mjs",
+    "dev": "nodemon app.mjs"
+  },
+  "dependencies": { "dotenv": "^18.0.5" },
+  "devDependencies": { "nodemon": "^3.1.0" }
+}

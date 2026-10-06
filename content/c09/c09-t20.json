@@ -1,0 +1,95 @@
+{
+  "title": "Bind mounts",
+  "idea": "A bind mount maps a host file or folder into a container. Both see the same files, so an edit on one side appears on the other.",
+  "analogy": {
+    "text": "A shared network drive. Two people open the same file; neither holds a copy.",
+    "breaks": "Either side can delete the file, and it is gone for both."
+  },
+  "points": [
+    "`--mount type=bind,source=HOST,target=CONTAINER` mounts a host path into the container.",
+    "Nothing is copied: the container reads and writes the host's real files.",
+    "A bind mount hides whatever the image already holds at that container path.",
+    "Add `readonly` to `--mount`, or `:ro` to the short `-v` form, for read-only use."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "One folder, two views",
+    "nodes": [
+      { "id": "ed", "label": "Your editor", "sub": "on the host" },
+      { "id": "host", "label": "Host folder", "sub": "bookstore/" },
+      { "id": "ctr", "label": "Container /app", "sub": "bind-mounted" },
+      { "id": "app", "label": "node server.js", "sub": "in the container" }
+    ],
+    "edges": [
+      { "from": "ed", "to": "host", "label": "save" },
+      { "from": "host", "to": "ctr", "label": "mount" },
+      { "from": "ctr", "to": "app", "label": "read" },
+      { "from": "ctr", "to": "host", "label": "writes", "back": true }
+    ],
+    "steps": [
+      {
+        "caption": "The mount makes the host folder appear at `/app`, in place of the image's own files.",
+        "active": ["host", "ctr"],
+        "edges": [1]
+      },
+      {
+        "caption": "The process reads `/app/server.js`, which is really the host's file.",
+        "active": ["ctr", "app"],
+        "edges": [2]
+      },
+      {
+        "caption": "You edit and save `server.js` on the host, as usual.",
+        "active": ["ed", "host"],
+        "edges": [0]
+      },
+      {
+        "caption": "The container already sees the new file. Restart the process: no image rebuild.",
+        "active": ["host", "ctr", "app"],
+        "edges": [1, 2]
+      },
+      {
+        "caption": "Files the container writes under `/app` land in the host folder too.",
+        "active": ["ctr", "host"],
+        "edges": [3]
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "mount.sh",
+      "lang": "bash",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Run the API from your working folder, then try the short read-only form.",
+      "walk": [
+        { "lines": [1, 2, 3], "text": "Mount the current folder over `/app`. `source` is the host path, `target` the container path." },
+        { "lines": [4], "text": "After editing `server.js` on the host, restart. The new code runs; no rebuild." },
+        { "lines": [5, 6, 7], "text": "The short form is `-v HOST:CONTAINER`. The `:ro` suffix makes the mount read-only." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Mounting the project over `/app` hides the image's `node_modules`; install dependencies on the host too.",
+    "A typo in a `-v` host path creates an empty folder; `--mount` reports an error instead.",
+    "A bind mount depends on a host path, so keep deployed code in the image."
+  ],
+  "quiz": {
+    "q": "You bind-mount an empty host folder onto `/app`. What does the container see at `/app`?",
+    "options": [
+      "The image's files, plus the empty folder",
+      "An empty folder; the image's files are hidden",
+      "An error, because `/app` already exists",
+      "The image's files, copied into the host folder"
+    ],
+    "answer": 1,
+    "why": "A bind mount shows the host path and hides what the image held there. Docker does not copy image files into it."
+  },
+  "takeaway": "A bind mount shares host files with a container and hides the image's copy.",
+  "chat": {
+    "starters": [
+      "What is the difference between a bind mount and a volume?",
+      "Why are files my container writes owned by root on my host?",
+      "Do bind mounts work the same on Mac, Windows and Linux?"
+    ]
+  }
+}

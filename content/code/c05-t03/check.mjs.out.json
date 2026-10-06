@@ -1,0 +1,9 @@
+{
+  "stdout": "major version 18",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "PostgreSQL 18.4",
+  "hash": "733f057306137d7c",
+  "at": "2026-10-06T15:13:35.695Z"
+}

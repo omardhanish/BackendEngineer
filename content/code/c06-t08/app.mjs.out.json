@@ -1,0 +1,9 @@
+{
+  "stdout": "/users nobody 401 {\"error\":\"login required\"}\n/users ada@example.com 403 {\"error\":\"forbidden\"}\n/users grace@example.com 200 [{\"email\":\"ada@example.com\"},{\"email\":\"grace@example.com\"}]\n/books ada@example.com 200 [\"Dune\",\"Emma\"]",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "PostgreSQL 18.4",
+  "hash": "3f3ed1272baf5163",
+  "at": "2026-10-06T10:00:21.585Z"
+}

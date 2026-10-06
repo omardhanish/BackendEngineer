@@ -1,0 +1,9 @@
+{
+  "stdout": "[ { title: 'Neuromancer' }, { title: 'The Dispossessed' } ]\nselect \"title\" from \"books\" where \"books\".\"year\" > $1 order by \"books\".\"title\"\n[ { title: 'Neuromancer' }, { title: 'The Dispossessed' } ]",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "PostgreSQL 18.4",
+  "hash": "de25d13202d32995",
+  "at": "2026-10-06T15:12:53.019Z"
+}

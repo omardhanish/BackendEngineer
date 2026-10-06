@@ -1,0 +1,222 @@
+{
+  "title": "Every loop kind: ten challenges",
+  "idea": "Pick the loop that matches the job: `do...while` for at least one pass, `for...in` for object keys, nested loops for combinations.",
+  "analogy": {
+    "text": "A car odometer. The right-most digit runs through 0 to 9 completely before the next digit moves up by one.",
+    "breaks": "Digits always cycle 0 to 9; an inner loop's length can vary."
+  },
+  "points": [
+    "`do...while` runs its body, then tests: it always makes at least one pass.",
+    "`for...in` visits each key of an object; read its value with `obj[key]`.",
+    "In nested loops, the inner loop finishes all its passes for each outer pass.",
+    "A plain `for` fits index work, such as steps of 2 or walking backwards."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "memory",
+    "title": "Nested loops, pass by pass",
+    "scenario": {
+      "code": [
+        "let seats = '';",
+        "for (const row of ['A', 'B']) {",
+        "  for (let n = 1; n <= 3; n++) {",
+        "    seats += row + n + ' ';",
+        "  }",
+        "}",
+        "console.log(seats);"
+      ],
+      "steps": [
+        {
+          "caption": "`seats` starts as an empty string.",
+          "line": 0,
+          "stack": [{ "name": "Global", "vars": { "seats": "''" } }]
+        },
+        {
+          "caption": "The outer loop begins. `row` is `'A'`.",
+          "line": 1,
+          "stack": [{ "name": "Global", "vars": { "seats": "''", "row": "'A'" } }]
+        },
+        {
+          "caption": "The inner loop begins: `n` is 1.",
+          "line": 2,
+          "stack": [{ "name": "Global", "vars": { "seats": "''", "row": "'A'", "n": "1" } }]
+        },
+        {
+          "caption": "The body adds `'A1 '` to `seats`.",
+          "line": 3,
+          "stack": [{ "name": "Global", "vars": { "seats": "'A1 '", "row": "'A'", "n": "1" } }]
+        },
+        {
+          "caption": "Next inner pass: `n` is 2. The outer loop waits on `'A'`.",
+          "line": 3,
+          "stack": [{ "name": "Global", "vars": { "seats": "'A1 A2 '", "row": "'A'", "n": "2" } }]
+        },
+        {
+          "caption": "`n` is 3: the last inner pass for `'A'`.",
+          "line": 3,
+          "stack": [{ "name": "Global", "vars": { "seats": "'A1 A2 A3 '", "row": "'A'", "n": "3" } }]
+        },
+        {
+          "caption": "`n` becomes 4, so `n <= 3` is false. The inner loop ends.",
+          "line": 2,
+          "stack": [{ "name": "Global", "vars": { "seats": "'A1 A2 A3 '", "row": "'A'", "n": "4" } }]
+        },
+        {
+          "caption": "The outer loop moves on: `row` is `'B'`. `n` no longer exists; the inner loop will start over.",
+          "line": 1,
+          "stack": [{ "name": "Global", "vars": { "seats": "'A1 A2 A3 '", "row": "'B'" } }]
+        },
+        {
+          "caption": "A new inner loop begins with `n` at 1 again and adds `'B1 '`.",
+          "line": 3,
+          "stack": [{ "name": "Global", "vars": { "seats": "'A1 A2 A3 B1 '", "row": "'B'", "n": "1" } }]
+        },
+        {
+          "caption": "The passes for `n` 2 and 3 add `'B2 '` and `'B3 '`.",
+          "line": 3,
+          "stack": [{ "name": "Global", "vars": { "seats": "'A1 A2 A3 B1 B2 B3 '", "row": "'B'", "n": "3" } }]
+        },
+        {
+          "caption": "Both loops are done. The body ran 2 x 3 = 6 times, and `console.log` prints all six seats.",
+          "line": 6,
+          "stack": [{ "name": "Global", "vars": { "seats": "'A1 A2 A3 B1 B2 B3 '" } }]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "kinds.mjs",
+      "lang": "js",
+      "title": "do...while and for...in",
+      "run": "browser",
+      "caption": "Run it. Change `tries < 0` to `tries < 3` and predict what the `do...while` prints."
+    }
+  ],
+  "challenges": {
+    "intro": "Each prompt names the loop to use. Run the tests, and open a hint only when you are stuck.",
+    "items": [
+      {
+        "id": "digits", "title": "Count the digits",
+        "prompt": "Write `countDigits(n)` using `do...while`. `n` is a whole number, 0 or more. Return how many digits it has; `0` has one digit.",
+        "starter": "digits.starter.js", "tests": "digits.tests.js", "solution": "digits.solution.js",
+        "hints": [
+          "A plain `while` would skip the body for `0`. `do...while` always runs once, which suits the one digit of `0`.",
+          "Each pass drops the last digit: `Math.floor(n / 10)` divides by 10 and rounds down. Add 1 to a counter per pass.",
+          "`do { n = Math.floor(n / 10); count++; } while (n > 0);` then `return count`."
+        ]
+      },
+      {
+        "id": "flags", "title": "Keys that are true",
+        "prompt": "Write `enabledFlags(flags)` using `for...in`. Return an array of the keys whose value is exactly `true`, in the object's order.",
+        "starter": "flags.starter.js", "tests": "flags.tests.js", "solution": "flags.solution.js",
+        "hints": [
+          "`for (const key in flags)` gives one key per pass. The value is `flags[key]`.",
+          "A value like `1` is truthy but not `true`. Compare with `=== true`.",
+          "Make an empty array before the loop, `push(key)` when the test passes, and `return` the array after the loop."
+        ]
+      },
+      {
+        "id": "cart", "title": "Total a cart",
+        "prompt": "Write `cartTotal(items)` using `for...of`. Each item is `{ price, qty }`. Return the sum of `price * qty` over all items; an empty cart gives `0`.",
+        "starter": "cart.starter.js", "tests": "cart.tests.js", "solution": "cart.solution.js",
+        "hints": [
+          "`for (const item of items)` gives one object per pass. Read its fields as `item.price` and `item.qty`.",
+          "Start `total` at `0` and add one item's `price * qty` on every pass.",
+          "`for (const item of items) { total += item.price * item.qty; }`, then `return total` after the loop."
+        ]
+      },
+      {
+        "id": "triangle", "title": "Triangle of stars",
+        "prompt": "Write `triangle(n)` using nested loops. Return an array of `n` strings: `'*'`, then `'**'`, then `'***'`, and so on. For `n` below 1, return `[]`.",
+        "starter": "triangle.starter.js", "tests": "triangle.tests.js", "solution": "triangle.solution.js",
+        "hints": [
+          "The outer loop makes one row per pass. The inner loop builds that row.",
+          "Row number `i`, counting from 1, has `i` stars, so the inner loop runs `i` times.",
+          "Per outer pass: start `let row = ''`, add `'*'` in the inner loop, then `rows.push(row)`. Return `rows` last."
+        ]
+      },
+      {
+        "id": "pairs", "title": "Every pair in order",
+        "prompt": "Write `pairs(items)` using nested loops. Return an array of `[a, b]` arrays: each item paired with every item after it. For `[1, 2, 3]` that is `[[1, 2], [1, 3], [2, 3]]`.",
+        "starter": "pairs.starter.js", "tests": "pairs.tests.js", "solution": "pairs.solution.js",
+        "hints": [
+          "The outer loop picks `a` by index `i`. The inner loop picks every `b` that comes after it.",
+          "Start the inner loop at `i + 1`, not at 0, so no item pairs with itself and no pair repeats.",
+          "`for (let j = i + 1; j < items.length; j++)` inside the outer loop, with `result.push([items[i], items[j]])`."
+        ]
+      },
+      {
+        "id": "break-early", "title": "Stop at a negative",
+        "prompt": "Write `sumBeforeNegative(numbers)`. Add the numbers in order and use `break` to stop at the first negative number. `0` is not negative.",
+        "starter": "break-early.starter.js", "tests": "break-early.tests.js", "solution": "break-early.solution.js",
+        "hints": [
+          "A loop normally runs to the end. `break` leaves it at once.",
+          "Test each number first: if it is below 0, `break`. Otherwise add it to the total.",
+          "`for (const n of numbers) { if (n < 0) break; total += n; }`, then `return total`."
+        ]
+      },
+      {
+        "id": "skip-items", "title": "Skip the non-numbers",
+        "prompt": "Write `sumNumbers(values)`. Use `continue` to skip every item whose `typeof` is not `'number'`. Return the sum of the numbers that remain.",
+        "starter": "skip-items.starter.js", "tests": "skip-items.tests.js", "solution": "skip-items.solution.js",
+        "hints": [
+          "`continue` ends the current pass early and starts the next one.",
+          "At the top of the body: if `typeof v !== 'number'`, `continue`. The code below it only sees numbers.",
+          "`for (const v of values) { if (typeof v !== 'number') continue; total += v; }`, then `return total`."
+        ]
+      },
+      {
+        "id": "collatz", "title": "Reach 1 with while",
+        "prompt": "Write `collatzSteps(n)` using `while`. While `n` is not 1: halve it if it is even, otherwise set it to `3 * n + 1`. Return the number of steps. `n` is 1 or more.",
+        "starter": "collatz.starter.js", "tests": "collatz.tests.js", "solution": "collatz.solution.js",
+        "hints": [
+          "You cannot know the number of passes in advance, so `while (n !== 1)` fits better than a counting `for`.",
+          "Inside the loop, test `n % 2 === 0`. Change `n` in the `if` branch or the `else` branch, then add 1 to `steps`.",
+          "Inside `while (n !== 1)`: halve or triple-plus-one `n` with `if`/`else`, then `steps++`. Return `steps` after the loop."
+        ]
+      },
+      {
+        "id": "every-other", "title": "Every other item",
+        "prompt": "Write `everyOther(items)` using a `for` loop that steps by 2. Return a new array with the items at index 0, 2, 4, and so on.",
+        "starter": "every-other.starter.js", "tests": "every-other.tests.js", "solution": "every-other.solution.js",
+        "hints": [
+          "The last part of a `for` can be any change. `i += 2` moves two places each pass.",
+          "Start at `i = 0` and keep going while `i < items.length`.",
+          "`for (let i = 0; i < items.length; i += 2) { picked.push(items[i]); }`, then `return picked`."
+        ]
+      },
+      {
+        "id": "palindrome", "title": "Is it a palindrome?",
+        "prompt": "Write `isPalindrome(text)` using a `for` loop with two counters that move toward each other. Return `true` if `text` reads the same backwards. Case matters; `''` is a palindrome.",
+        "starter": "palindrome.starter.js", "tests": "palindrome.tests.js", "solution": "palindrome.solution.js",
+        "hints": [
+          "Compare the first and last characters, then the second and second to last, moving inward.",
+          "`for (let i = 0, j = text.length - 1; i < j; i++, j--)` runs two counters at once.",
+          "Inside, `return false` when `text[i] !== text[j]`. After the loop, `return true`."
+        ]
+      }
+    ]
+  },
+  "pitfalls": [
+    "Give nested loops different counters, `i` and `j`; a repeated name hides the outer one.",
+    "In a `while` loop, change the counter before `continue`, or the loop never ends.",
+    "To stop two nested loops at once, `return` from the function; `break` leaves only one."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "options": ["6", "5", "3", "Nothing"],
+    "answer": 0,
+    "why": "The body runs once before the first test. `n` becomes 6, then `6 < 3` is false and the loop ends.",
+    "code": "let n = 5;\ndo {\n  n++;\n} while (n < 3);\nconsole.log(n);",
+    "lang": "js"
+  },
+  "takeaway": "Before you loop, ask: at least once? Keys or values? One loop or two?",
+  "chat": {
+    "starters": [
+      "When would I really need a do...while loop?",
+      "What is the difference between for...in and for...of?",
+      "How do I break out of two nested loops at once?"
+    ]
+  }
+}

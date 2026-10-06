@@ -1,0 +1,8 @@
+{
+  "stdout": "event: listening\nevent: request GET /hi\nevent: close",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "hash": "aec7180b3ae059a3",
+  "at": "2026-10-06T09:16:12.200Z"
+}

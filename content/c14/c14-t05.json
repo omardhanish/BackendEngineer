@@ -1,0 +1,88 @@
+{
+  "title": "Merge and merge conflicts",
+  "idea": "A merge combines the work of two branches. If both changed the same lines, Git stops with a conflict and asks you to choose.",
+  "analogy": {
+    "text": "Two editors revise copies of one report. Edits to different paragraphs combine cleanly; a rewrite of the same sentence needs a person to choose.",
+    "breaks": "Git compares lines, not meaning, so a clean merge can still be wrong."
+  },
+  "points": [
+    "`git merge feature` brings the commits of `feature` into your current branch.",
+    "If your branch has not moved, Git fast-forwards: no new commit is made.",
+    "If both branches moved, Git creates a merge commit with two parents.",
+    "To resolve a conflict, edit the file, run `git add`, then `git commit`."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "scrubber",
+    "title": "Two kinds of merge",
+    "scenario": {
+      "kind": "git",
+      "steps": [
+        {
+          "caption": "`cheaper` branches from A and adds B. `main` still points at A.",
+          "do": ["commit A", "checkout -b cheaper", "commit B"]
+        },
+        {
+          "caption": "Meanwhile `main` gets commit C. The two histories have diverged.",
+          "do": ["checkout main", "commit C"]
+        },
+        {
+          "caption": "Merging `cheaper` creates M, a commit with two parents. If both sides edited the same lines, Git stops first.",
+          "do": ["merge cheaper M"]
+        },
+        {
+          "caption": "A new branch, `docs`, adds D while `main` stands still.",
+          "do": ["checkout -b docs", "commit D", "checkout main"]
+        },
+        {
+          "caption": "Merging `docs` is a fast-forward: `main` slides to D and no merge commit is made.",
+          "do": ["merge docs"]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "conflict.sh",
+      "lang": "bash",
+      "title": "A real conflict",
+      "run": "captured",
+      "caption": "Real Git output. Two branches change the same line of `menu.txt`, then you resolve it.",
+      "walk": [
+        { "lines": [1, 2, 3, 4, 5, 6], "text": "Create a repository with one commit on `main`." },
+        { "lines": [7, 8, 9], "text": "On `cheaper`, change the price. `-a` stages changes to files Git already tracks." },
+        { "lines": [10, 11, 12], "text": "Back on `main`, change the same line differently." },
+        { "lines": [13], "text": "Both branches changed that line, so Git stops with a conflict." },
+        { "lines": [14, 15], "text": "`UU` flags the unmerged file. `cat` shows both versions between conflict markers." },
+        { "lines": [16, 17, 18], "text": "Write the final text, stage the file, and commit to finish the merge." },
+        { "lines": [19], "text": "The graph shows the merge commit joining both lines." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not commit the markers `<<<<<<<`, `=======` and `>>>>>>>`; search the file for them first.",
+    "Commit or stash (shelve) work before merging; `git merge --abort` may not restore uncommitted changes.",
+    "Always keeping your side silently drops a teammate's change."
+  ],
+  "quiz": {
+    "q": "What does the last command print?",
+    "code": "echo a > f.txt && git add f.txt && git commit -m base\ngit switch -c x\necho b > f.txt && git commit -am x\ngit switch main\necho c > f.txt && git commit -am main\ngit merge x\ngit status --short",
+    "lang": "bash",
+    "options": [
+      "UU f.txt",
+      "M  f.txt",
+      "?? f.txt",
+      "Nothing: the merge succeeded"
+    ],
+    "answer": 0,
+    "why": "Both branches changed `f.txt` from the same base, so the merge stops. `UU` marks a file with unmerged changes."
+  },
+  "takeaway": "A clean merge is automatic; a conflict means you decide what the file says.",
+  "chat": {
+    "starters": [
+      "What is the difference between merge and rebase?",
+      "How do I undo a merge?",
+      "Can a merge succeed and still break my code?"
+    ]
+  }
+}

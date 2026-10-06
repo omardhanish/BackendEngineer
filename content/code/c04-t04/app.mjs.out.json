@@ -1,0 +1,8 @@
+{
+  "stdout": "POST /books 201\nGET /books/2 200\nDELETE /books/2 204\nGET /books/2 404",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "hash": "ecd19147cfd4067d",
+  "at": "2026-10-06T07:52:45.907Z"
+}

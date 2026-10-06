@@ -1,0 +1,9 @@
+{
+  "stdout": "200 { id: '1', role: 'user' }\n401 { error: 'login required' }",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "PostgreSQL 18.4",
+  "hash": "0b9cdf16ac1ce6a2",
+  "at": "2026-10-06T09:56:27.885Z"
+}

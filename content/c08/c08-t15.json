@@ -1,0 +1,65 @@
+{
+  "title": "The URL service",
+  "idea": "`createUrl` moves code generation and saving into `url.service.js`. It retries when Postgres reports a repeated code, so the controller stays short.",
+  "points": [
+    "The controller validates, calls `createUrl` and replies `201`. It never sees `nanoid` or SQL.",
+    "`onConflictDoNothing()` returns no row when the code already exists.",
+    "No row means a collision. The loop draws a new code and retries.",
+    "After five failed tries it throws; Express 5 forwards it to the error handler."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "One request that collides once",
+    "actors": [
+      { "id": "controller", "label": "Controller" },
+      { "id": "service", "label": "createUrl" },
+      { "id": "db", "label": "Postgres" }
+    ],
+    "messages": [
+      { "from": "controller", "to": "service", "label": "createUrl({ userId, targetUrl })", "note": "The controller passes plain values. No `req` or `res` crosses this line." },
+      { "from": "service", "to": "db", "label": "INSERT code #1", "note": "The service draws a code with `nanoid(7)` and inserts it." },
+      { "from": "db", "to": "service", "label": "no row", "dashed": true, "note": "That code exists already. The unique index refuses it, so `onConflictDoNothing()` returns no row." },
+      { "from": "service", "to": "db", "label": "INSERT code #2", "note": "No row means a collision. The loop draws a fresh code and tries again." },
+      { "from": "db", "to": "service", "label": "row: shortCode", "dashed": true, "note": "This code is free. `returning` sends back the saved `shortCode`." },
+      { "from": "service", "to": "controller", "label": "shortCode", "dashed": true, "note": "The service returns the code. The controller replies `201 { shortCode }`." }
+    ]
+  },
+  "code": [
+    {
+      "file": "createurl.mjs",
+      "lang": "js",
+      "title": "createUrl service",
+      "run": "captured",
+      "needs": ["postgres"],
+      "caption": "The service and the slimmer controller come first. A forced collision at the end shows the retry.",
+      "walk": [
+        { "lines": [11, 12, 13, 14], "text": "Plain values in. The optional `makeCode` lets a test choose the codes." },
+        { "lines": [16, 17, 18, 19, 20, 21], "text": "Insert a code. A repeat returns no row; a new code returns its row, and the loop ends." },
+        { "lines": [15, 22, 23], "text": "Give up after five tries and throw, so a broken generator cannot loop forever." },
+        { "lines": [27, 28, 29, 30, 31, 32, 33, 34, 35], "text": "The controller keeps HTTP work only: validate, call the service, reply `201`." },
+        { "lines": [86, 87, 88], "text": "Force a collision: the first code repeats the saved one, so `fresh01` is used." },
+        { "lines": [89], "text": "A generator that always collides reaches the cap and throws." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Cap the retries. Without a limit, a generator that keeps colliding hangs the request.",
+    "A failed `createUrl` is a server error. Do not answer `400`; the client did nothing wrong."
+  ],
+  "quiz": {
+    "q": "The generator hands out three codes in order. What does this print?",
+    "code": "const codes = ['aaa', 'aaa', 'bbb'];\nconst next = () => codes.shift();\nconst a = { userId: 1, targetUrl: 'https://a.co' };\nawait createUrl(a, next);\nconsole.log(await createUrl(a, next), codes.length);",
+    "lang": "js",
+    "options": ["aaa 1", "bbb 1", "bbb 0", "It throws"],
+    "answer": 2,
+    "why": "The second call draws `aaa` again, so the insert returns no row and the loop draws `bbb`. All three codes are used."
+  },
+  "takeaway": "The service owns the retry; the controller only maps results to HTTP.",
+  "chat": {
+    "starters": [
+      "How likely is a collision with 7 characters?",
+      "Why is the code generator a parameter?",
+      "Why use onConflictDoNothing instead of catching the unique error?"
+    ]
+  }
+}

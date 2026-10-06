@@ -1,0 +1,70 @@
+{
+  "title": "Automatic port mapping",
+  "idea": "Automatic port mapping lets Docker pick the host port for you, so many containers can use one container port without clashing.",
+  "points": [
+    "`-P` publishes every `EXPOSE`d port on a random free host port.",
+    "`-p 3000` publishes only that container port on a random host port.",
+    "Docker picks an unused high host port, usually from the ephemeral range.",
+    "`docker port api-1` prints which host port Docker chose."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "Two containers, no clashes",
+    "scenario": {
+      "tiers": [["you"], ["api1", "api2"]],
+      "nodes": {
+        "you": { "label": "Your machine", "kind": "user" },
+        "api1": { "label": "Container api-1", "sub": "listens on 3000", "kind": "box" },
+        "api2": { "label": "Container api-2", "sub": "listens on 3000", "kind": "box" }
+      },
+      "links": [
+        ["you", "api1", { "label": "port A" }],
+        ["you", "api2", { "label": "port B" }]
+      ],
+      "groups": [{ "label": "Docker host", "nodes": ["api1", "api2"] }],
+      "steps": [
+        { "caption": "Run with `-P`. Docker reads `EXPOSE 3000` from the image and publishes that container port.", "state": { "api1": "new" }, "badge": { "api1": "EXPOSE 3000" }, "focus": ["api1"] },
+        { "caption": "Docker binds a free host port, call it A, and forwards it to 3000. `docker port api-1` shows it.", "badge": { "api1": "host port A" }, "focus": ["api1"] },
+        { "caption": "A second `-P` run starts `api-2`. It also listens on 3000, so Docker gives it another host port, B.", "state": { "api1": "ok", "api2": "new" }, "badge": { "api2": "host port B" }, "focus": ["api2"] },
+        { "caption": "Each host port reaches its own container. You picked no numbers, and nothing clashed.", "state": { "api2": "ok" }, "send": [{ "from": "you", "to": "api1", "label": "GET :A", "tone": "req" }, { "from": "you", "to": "api2", "label": "GET :B", "tone": "req" }] }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "auto-ports.sh",
+      "lang": "bash",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Two containers from one image, each on a host port Docker picked. The image has `EXPOSE 3000`.",
+      "walk": [
+        { "lines": [1, 2], "text": "Same image twice with `-P`. Each container gets its own free host port." },
+        { "lines": [3], "text": "List every mapping of `api-1`: container port, then host address and port." },
+        { "lines": [4], "text": "Ask for one container port. Only the host side is printed." },
+        { "lines": [5], "text": "`docker ps` shows mappings in its PORTS column; `--format` picks the columns." },
+        { "lines": [6], "text": "`-p 3000` publishes only that port and lets Docker pick the host port." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "`-P` skips ports the image does not expose. Add `EXPOSE` or use `-p`.",
+    "A new container can get a new port. Read it with `docker port`; never hard-code it.",
+    "Pick the host port yourself with `-p HOST:CONTAINER` when clients need a stable URL."
+  ],
+  "quiz": {
+    "q": "Both containers listen on 3000 inside. What happens?",
+    "code": "docker run -d -P --name api-1 bookstore-api\ndocker run -d -P --name api-2 bookstore-api",
+    "lang": "bash",
+    "options": [
+      "Both start, each on its own free host port",
+      "The second fails: host port 3000 is taken",
+      "Both start and share one host port",
+      "Only the first publishes a port"
+    ],
+    "answer": 0,
+    "why": "`-P` lets Docker pick an unused host port for each container, so two containers can share container port 3000."
+  },
+  "takeaway": "Let Docker pick the host port, then ask `docker port` where it landed.",
+  "chat": { "starters": ["How do I find the port Docker assigned?", "When should I use -P instead of -p?", "Is a random host port reachable from other machines?"] }
+}

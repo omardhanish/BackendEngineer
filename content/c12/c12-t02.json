@@ -1,0 +1,65 @@
+{
+  "title": "Reading the PRD",
+  "idea": "A PRD (product requirements document) says what to build and why, in the product team's words. Read it to find the data, routes and rules your backend needs.",
+  "analogy": {
+    "text": "A client's brief to an architect: rooms, budget, deadline. It says what the building must do; the architect still chooses walls and wiring.",
+    "breaks": "A PRD keeps changing while the product is built."
+  },
+  "points": [
+    "A PRD gives the goal, users, features, rules and what is out of scope.",
+    "A feature is often a user story: who, what and why in one sentence.",
+    "Nouns suggest data, verbs suggest routes, and rules suggest checks.",
+    "A PRD says what to build; how you build it is your design."
+  ],
+  "hero": {
+    "type": "anatomy",
+    "title": "One user story, read for the backend",
+    "parts": [
+      { "text": "As a member", "label": "Who", "note": "Says who may call. A member is logged in, so the route is secured.", "tone": "a" },
+      { "text": ", I want to change my password", "label": "What", "note": "Names the action: one route, plus the data it receives.", "tone": "b" },
+      { "text": ", so that my account stays safe", "label": "Why", "note": "States the goal. It hints at rules to check, such as hashing the new password.", "tone": "c" }
+    ]
+  },
+  "code": [
+    {
+      "file": "prd.yaml",
+      "lang": "yaml",
+      "title": "The project's PRD",
+      "run": "static",
+      "caption": "The PRD for this project, trimmed to what the backend needs. Step through how a backend developer reads it.",
+      "walk": [
+        { "lines": [2], "text": "Two kinds of caller. The split decides which routes need a login." },
+        { "lines": [4, 5, 6], "text": "Verbs such as register, verify and log in become routes. Nouns such as email become fields." },
+        { "lines": [7], "text": "\"Stay logged in\" hints at a way to renew a login without the password." },
+        { "lines": [14], "text": "A rule about time: each link needs an expiry stored beside its token." },
+        { "lines": [15], "text": "A rule about safety: hash the password before saving it." },
+        { "lines": [16], "text": "Operations are requirements too: monitors need a route to call." },
+        { "lines": [17], "text": "Out of scope is binding. Do not build what this line lists." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Ask when a line is vague. \"Verify email\" could mean a link, a code, or both.",
+    "Do not guess a rule. Get exact numbers, such as how long a link lives.",
+    "Skip out-of-scope items: every extra feature is more code to test and secure."
+  ],
+  "quiz": {
+    "q": "The PRD says links in emails expire after 20 minutes. What must the backend store?",
+    "options": [
+      "A cookie in the browser",
+      "An expiry time stored with each token",
+      "Nothing: the email service enforces it",
+      "A longer password"
+    ],
+    "answer": 1,
+    "why": "The server, not the email, decides if a link is still valid. It compares a stored expiry time with the current time."
+  },
+  "takeaway": "Read a PRD for nouns, verbs and rules; they become data, routes and checks.",
+  "chat": {
+    "starters": [
+      "What is the difference between a PRD and an API spec?",
+      "What should I do when the PRD is vague?",
+      "How detailed should a PRD be?"
+    ]
+  }
+}

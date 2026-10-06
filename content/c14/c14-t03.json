@@ -1,0 +1,80 @@
+{
+  "title": "Commits and git log",
+  "idea": "A commit is a saved snapshot of your project with a message. `git log` lists commits, newest first.",
+  "analogy": {
+    "text": "Save points in a video game. Each save records the whole game at that moment, and you can reload any earlier one.",
+    "breaks": "Git saves only when you commit, and you choose what goes in."
+  },
+  "points": [
+    "`git add` stages changes: it picks what goes into the next commit.",
+    "`git commit -m \"message\"` saves the staged changes as one new commit.",
+    "Each commit links to its parent, the commit before it, forming a chain.",
+    "`git log` walks that chain from `HEAD`; `--oneline` prints one line per commit."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "scrubber",
+    "title": "A chain of commits",
+    "scenario": {
+      "kind": "git",
+      "steps": [
+        {
+          "caption": "The first commit, A, has no parent. `main` points at it, and `HEAD` points at `main`.",
+          "do": ["commit A"]
+        },
+        {
+          "caption": "Commit B records A as its parent. `main` moves forward to B, and `HEAD` follows.",
+          "do": ["commit B"]
+        },
+        {
+          "caption": "Commit C extends the chain. `git log` starts at `HEAD` and follows parents back to A.",
+          "do": ["commit C"]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "shop.sh",
+      "lang": "bash",
+      "title": "Three commits",
+      "run": "captured",
+      "caption": "Real Git output. Hashes and dates are fixed in this recording; yours will differ.",
+      "walk": [
+        { "lines": [1, 2, 3], "text": "Create an empty repository named `shop`." },
+        { "lines": [4, 5, 6], "text": "`git add` stages the file. The short status shows `A`: staged as a new file." },
+        { "lines": [7], "text": "Commit with a message. Git prints the branch, a short hash and the message." },
+        { "lines": [8, 9, 10], "text": "A second commit: write the file, stage it, commit it." },
+        { "lines": [11, 12, 13], "text": "A third commit changes the same file. It stores the new version." },
+        { "lines": [14], "text": "One line per commit, newest first. In a terminal, Git also marks `HEAD -> main`." },
+        { "lines": [15], "text": "`-1` shows only the newest commit, in full: hash, author, date, message." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Write messages that say what changed: `Add login route`, not `update`.",
+    "`git add .` stages everything here. Run `git status` first, and list private files in `.gitignore`.",
+    "Never commit a secret: deleting the file later leaves it in history."
+  ],
+  "quiz": {
+    "q": "`git show HEAD:f.txt` prints the committed copy. What does it print?",
+    "code": "echo one > f.txt\ngit add f.txt\necho two > f.txt\ngit commit -m \"Add f\"\ngit show HEAD:f.txt",
+    "lang": "bash",
+    "options": [
+      "An error: nothing was staged",
+      "two",
+      "one, then two",
+      "one"
+    ],
+    "answer": 3,
+    "why": "`git add` stages the file as it is at that moment. The later edit is not staged, so the commit holds `one`."
+  },
+  "takeaway": "Stage deliberately, commit small, and let `git log` tell the story.",
+  "chat": {
+    "starters": [
+      "What is the staging area for?",
+      "How do I change the message of my last commit?",
+      "What makes a good commit message?"
+    ]
+  }
+}

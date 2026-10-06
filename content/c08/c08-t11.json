@@ -1,0 +1,79 @@
+{
+  "title": "JWT helper functions",
+  "idea": "A JWT helper module is one file, `src/utils/jwt.js`, that holds every call to `jsonwebtoken`. Everything else calls `signToken` or `verifyToken`.",
+  "points": [
+    "`signToken(user)` builds the claims `{ sub, email }` and signs them for one hour.",
+    "`verifyToken(token)` returns the claims, or throws if the token is bad or expired.",
+    "A thrown error lets the caller choose the response. The helper never touches `res`.",
+    "Login still returns `200 { token }`. Only the signing code moved."
+  ],
+  "hero": {
+    "type": "compare",
+    "title": "Same behaviour, one place to change it",
+    "left": {
+      "title": "Without helpers",
+      "tone": "bad",
+      "items": [
+        "Login calls `jwt.sign` with its own options",
+        "The middleware would call `jwt.verify` the same way",
+        "Each file reads `JWT_SECRET` for itself",
+        "One call can forget to pin `algorithms`"
+      ]
+    },
+    "right": {
+      "title": "With one helper file",
+      "tone": "good",
+      "items": [
+        "Only `jwt.js` imports `jsonwebtoken`",
+        "Both helpers read `JWT_SECRET` and pin HS256",
+        "Callers import two names and nothing else",
+        "A new rule is a one-file edit"
+      ]
+    },
+    "verdict": "Callers say what they want. `jwt.js` decides how."
+  },
+  "code": [
+    {
+      "file": "jwt-helpers.mjs",
+      "lang": "js",
+      "title": "src/utils/jwt.js",
+      "run": "captured",
+      "caption": "The two helpers are the new file. The lines under the setup comment try them out.",
+      "walk": [
+        { "lines": [6, 8], "text": "`signToken` sets the claims and the options. `sub` is a string; the lifetime is one hour." },
+        { "lines": [13, 14], "text": "`verifyToken` accepts only HS256, so a token signed another way is refused." },
+        { "lines": [7, 13], "text": "Both read `JWT_SECRET` when called. No other file needs to know it." },
+        { "lines": [19, 20, 21, 22], "text": "Sign a token for Ada, verify it, and print the claims and the lifetime in seconds." },
+        { "lines": [24, 25, 26, 27, 28, 29, 30, 31], "text": "Three bad tokens: wrong secret, expired, junk. Each one throws; the caller decides what that means." }
+      ]
+    },
+    {
+      "file": "controller.diff",
+      "lang": "diff",
+      "title": "Login controller, after",
+      "run": "static",
+      "caption": "The login controller shrinks. The route, the request and the response do not change."
+    }
+  ],
+  "pitfalls": [
+    "Import `jsonwebtoken` only in `jwt.js`. A stray `jwt.verify` elsewhere can skip the checks.",
+    "Let `verifyToken` throw. Catching inside it hides failures from the middleware.",
+    "Keep `JWT_SECRET` in the environment, not in `jwt.js`."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "process.env.JWT_SECRET = 'demo-secret';\nconst token = signToken({ id: 7, email: 'a@x.co' });\nconst { sub } = verifyToken(token);\nconsole.log(sub, typeof sub);",
+    "lang": "js",
+    "options": ["7 number", "undefined string", "It throws", "7 string"],
+    "answer": 3,
+    "why": "`signToken` stores `String(user.id)`. The `sub` claim comes back as the string `'7'`, and `typeof` reports it."
+  },
+  "takeaway": "One file owns every `jsonwebtoken` call; everything else uses two functions.",
+  "chat": {
+    "starters": [
+      "Why pin `algorithms: ['HS256']` when verifying?",
+      "Should the secret be read once at startup or on every call?",
+      "How would I test `signToken` and `verifyToken` on their own?"
+    ]
+  }
+}

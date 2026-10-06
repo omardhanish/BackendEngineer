@@ -1,0 +1,8 @@
+{
+  "stdout": "cat dog\nnode\nobject undefined bigint\nfalse\nfalse true\ntrue",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "hash": "83ba243186f93568",
+  "at": "2026-10-06T07:52:43.572Z"
+}

@@ -1,0 +1,94 @@
+{
+  "title": "Async communication with queues",
+  "idea": "A queue sits between services. The sender adds a message and moves on; a consumer processes it later, at its own pace.",
+  "points": [
+    "Messages wait in the queue when consumers are down or slow.",
+    "Add more consumers to drain a backlog; the sender does not change.",
+    "Normally a message is deleted only after the consumer acknowledges it (an ack).",
+    "No ack means redelivery, so delivery is at-least-once and duplicates can happen."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "A job, a missing ack, a second delivery",
+    "actors": [
+      { "id": "api", "label": "API" },
+      { "id": "queue", "label": "Queue" },
+      { "id": "w1", "label": "Worker 1" },
+      { "id": "w2", "label": "Worker 2" }
+    ],
+    "messages": [
+      {
+        "from": "api",
+        "to": "queue",
+        "label": "enqueue job 7",
+        "note": "The API puts a job on the queue and replies to the user at once. It does not wait for the work."
+      },
+      {
+        "from": "queue",
+        "to": "w1",
+        "label": "deliver job 7",
+        "note": "The queue hands job 7 to worker 1. It keeps its own copy until the worker sends an ack."
+      },
+      {
+        "from": "w1",
+        "to": "w1",
+        "label": "slow, no ack yet",
+        "note": "Worker 1 is slow, or its connection dropped. The ack does not arrive in time."
+      },
+      {
+        "from": "queue",
+        "to": "w2",
+        "label": "redeliver job 7",
+        "note": "The queue cannot tell slow from dead, so it delivers job 7 again, to worker 2. This is at-least-once delivery."
+      },
+      {
+        "from": "w2",
+        "to": "queue",
+        "label": "ack job 7",
+        "note": "Worker 2 finishes and sends the ack. The queue now deletes job 7."
+      },
+      {
+        "from": "w1",
+        "to": "w1",
+        "label": "finishes job 7 too",
+        "dashed": true,
+        "note": "Worker 1 finishes too, so the work ran twice. A handler is idempotent if running it twice equals running it once."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "queue.mjs",
+      "lang": "js",
+      "title": "An idempotent handler",
+      "run": "browser",
+      "caption": "The handler remembers job ids, so a repeat is skipped. Delete the `done.has` line and run again."
+    }
+  ],
+  "pitfalls": [
+    "Do not assume a message arrives once; record handled ids in shared storage.",
+    "Acknowledge only after the work succeeds; an early ack loses the job on a crash.",
+    "Watch queue depth: a growing backlog means consumers cannot keep up."
+  ],
+  "quiz": {
+    "q": "This handler has no duplicate check. The ack for j2 is lost. What prints?",
+    "code": "const queue = ['j1', 'j2'];\nlet ackLost = true;\n\nwhile (queue.length) {\n  const id = queue.shift();\n  console.log('email for', id);\n  // pretend j2's ack is lost: it is delivered again\n  if (id === 'j2' && ackLost) { ackLost = false; queue.push(id); }\n}",
+    "lang": "js",
+    "options": [
+      "email for j1, email for j2",
+      "email for j1, email for j2, skip j2",
+      "email for j1, skip j1, email for j2",
+      "email for j1, email for j2, email for j2"
+    ],
+    "answer": 3,
+    "why": "The lost ack makes the queue deliver j2 again. With no duplicate check, the handler runs twice and sends a second email."
+  },
+  "takeaway": "A queue decouples services, but delivery is at-least-once: make handlers idempotent.",
+  "chat": {
+    "starters": [
+      "What is the difference between at-least-once and exactly-once delivery?",
+      "Where do messages go when a consumer keeps failing?",
+      "Which tools implement queues, such as RabbitMQ or SQS?"
+    ]
+  }
+}

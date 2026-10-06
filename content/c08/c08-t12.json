@@ -1,0 +1,71 @@
+{
+  "title": "Auth middleware",
+  "idea": "`requireAuth` is a middleware that guards a route. It verifies the bearer token, stores the caller on `req.user`, and calls `next()`.",
+  "points": [
+    "`requireAuth` reads `req.get('authorization')` and expects two words: `Bearer` and the token.",
+    "`verifyToken` throws on a bad signature or an expired token. The middleware catches it.",
+    "On success `req.user` is `{ id, email }`. The id is `Number(claims.sub)`, matching `users.id`.",
+    "Every failure, whatever the cause, answers `401` with `{ error: 'Unauthorized' }`."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "One guard, three requests",
+    "actors": [
+      { "id": "client", "label": "Client" },
+      { "id": "auth", "label": "requireAuth" },
+      { "id": "jwt", "label": "verifyToken" },
+      { "id": "handler", "label": "Handler" }
+    ],
+    "messages": [
+      { "from": "client", "to": "auth", "label": "GET + Bearer token", "note": "The client sends `Authorization: Bearer <token>`. `requireAuth` splits it at the space." },
+      { "from": "auth", "to": "jwt", "label": "verifyToken(token)", "note": "The scheme is `Bearer` and a token is present, so `requireAuth` hands the token to the helper." },
+      { "from": "jwt", "to": "auth", "label": "claims", "dashed": true, "note": "The signature and expiry check out. The helper returns `sub`, `email` and the timestamps." },
+      { "from": "auth", "to": "handler", "label": "next()", "note": "`requireAuth` sets `req.user` to `{ id, email }`, then calls `next()`." },
+      { "from": "handler", "to": "client", "label": "200 + data", "dashed": true, "note": "The handler reads `req.user`. It never parses a header itself." },
+      { "from": "client", "to": "auth", "label": "GET, no header", "note": "A second request has no `Authorization` header." },
+      { "from": "auth", "to": "client", "label": "401 Unauthorized", "dashed": true, "note": "`requireAuth` answers at once. `verifyToken` and the handler never run." },
+      { "from": "client", "to": "auth", "label": "GET + bad token", "note": "A third request carries a tampered or expired token." },
+      { "from": "auth", "to": "jwt", "label": "verifyToken(token)", "note": "The scheme looks right, so `requireAuth` asks the helper." },
+      { "from": "jwt", "to": "auth", "label": "throws", "dashed": true, "note": "The helper throws. `requireAuth` catches it and sends `401`. The handler does not run." }
+    ]
+  },
+  "code": [
+    {
+      "file": "require-auth.mjs",
+      "lang": "js",
+      "title": "requireAuth",
+      "run": "captured",
+      "caption": "The middleware is the new code. The rest copies lecture 11's helpers and adds a stand-in route.",
+      "walk": [
+        { "lines": [4, 5, 6, 7, 8, 9, 10, 11, 12], "text": "A short copy of lecture 11's helpers, so this file runs alone." },
+        { "lines": [15, 18, 19], "text": "Split the header at the space. Anything but `Bearer <token>` gets the one shared `401` reply." },
+        { "lines": [20, 21, 22, 23, 24, 25], "text": "`verifyToken` throws on a bad or expired token. Catch it and send `401`." },
+        { "lines": [26, 27], "text": "Store the caller on `req.user`, then call `next()`. Only now does the route run." },
+        { "lines": [32, 33, 34, 35, 36, 37], "text": "A stand-in route that returns `req.user` and counts how often it runs." },
+        { "lines": [43, 44, 45, 46, 47, 48], "text": "Four requests: no header, a valid token, the wrong scheme and an expired token." },
+        { "lines": [49, 50, 51, 52, 53], "text": "Only the valid request reaches the handler. The counter shows it ran once." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Return after sending `401`. Otherwise the function carries on and calls `next()` too.",
+    "`requireAuth` never queries the database. A deleted user's token works until it expires.",
+    "Take the user from `req.user`, never from the body or query string."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const run = (authorization) => {\n  const req = { get: () => authorization };\n  const res = { status: (c) => ({ json: () => console.log(c) }) };\n  requireAuth(req, res, () => console.log('next'));\n};\nrun('Bearer ' + signToken({ id: 1, email: 'a@x.co' }));\nrun('Bearer garbage');\nrun(undefined);",
+    "lang": "js",
+    "options": ["next, 401, 401", "next, next, 401", "401, 401, 401", "next, 401, then it throws"],
+    "answer": 0,
+    "why": "A valid token calls `next()`. Junk makes `verifyToken` throw, and a missing header fails the `Bearer` check. Both send `401`."
+  },
+  "takeaway": "Verify the token once, in middleware; handlers then trust `req.user`.",
+  "chat": {
+    "starters": [
+      "Why catch the error instead of letting Express handle it?",
+      "Should `requireAuth` load the user from the database?",
+      "How do I protect only some routes and leave `GET /:shortCode` public?"
+    ]
+  }
+}

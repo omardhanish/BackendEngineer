@@ -1,0 +1,2178 @@
+{
+  "version": 1,
+  "chapters": [
+    {
+      "id": "c00",
+      "n": 0,
+      "title": "Welcome",
+      "tagline": "Start here: the map, the method and the goal.",
+      "outcomes": [
+        "See the whole path from JavaScript to production",
+        "Know how to read this book and use the tutor",
+        "Understand what you will have built by the end"
+      ],
+      "hue": 25,
+      "topics": [
+        "c00-t01"
+      ]
+    },
+    {
+      "id": "c01",
+      "n": 1,
+      "title": "JavaScript foundations",
+      "tagline": "The language under every line of backend code.",
+      "outcomes": [
+        "Explain how JavaScript really runs your code",
+        "Pick the right type, loop and array method",
+        "Use functions, this and closures with confidence"
+      ],
+      "hue": 49,
+      "topics": [
+        "c01-t01",
+        "c01-t02",
+        "c01-t03",
+        "c01-t04",
+        "c01-t05",
+        "c01-t06",
+        "c01-t07",
+        "c01-t08",
+        "c01-t09",
+        "c01-t10",
+        "c01-t11",
+        "c01-t12",
+        "c01-t13"
+      ]
+    },
+    {
+      "id": "c02",
+      "n": 2,
+      "title": "Node.js core",
+      "tagline": "Run JavaScript outside the browser, and see why it scales.",
+      "outcomes": [
+        "Structure code with modules and npm",
+        "Read and write files without blocking",
+        "Explain the event loop, then use events and buffers"
+      ],
+      "hue": 73,
+      "topics": [
+        "c02-t01",
+        "c02-t02",
+        "c02-t03",
+        "c02-t04",
+        "c02-t05",
+        "c02-t06",
+        "c02-t07",
+        "c02-t08",
+        "c02-t09",
+        "c02-t10",
+        "c02-t11",
+        "c02-t12",
+        "c02-t13",
+        "c02-t14"
+      ]
+    },
+    {
+      "id": "c03",
+      "n": 3,
+      "title": "HTTP",
+      "tagline": "The conversation every backend has with the world.",
+      "outcomes": [
+        "Read any request and response",
+        "Pick methods and status codes correctly",
+        "Build a server using only Node's core modules"
+      ],
+      "hue": 97,
+      "topics": [
+        "c03-t01",
+        "c03-t02",
+        "c03-t03",
+        "c03-t04",
+        "c03-t05",
+        "c03-t06",
+        "c03-t07"
+      ]
+    },
+    {
+      "id": "c04",
+      "n": 4,
+      "title": "Express, REST & MVC",
+      "tagline": "A clean API, from route to response.",
+      "outcomes": [
+        "Design REST endpoints that make sense",
+        "Compose middleware and organise code with MVC",
+        "Build and refactor a complete CRUD API"
+      ],
+      "hue": 121,
+      "topics": [
+        "c04-t01",
+        "c04-t02",
+        "c04-t03",
+        "c04-t04",
+        "c04-t05",
+        "c04-t06",
+        "c04-t07",
+        "c04-t08",
+        "c04-t09",
+        "c04-t10",
+        "c04-t11",
+        "c04-t12",
+        "c04-t13"
+      ]
+    },
+    {
+      "id": "c05",
+      "n": 5,
+      "title": "SQL, Postgres & Drizzle",
+      "tagline": "Persist data safely, and query it fast.",
+      "outcomes": [
+        "Choose between SQL and NoSQL with reasons",
+        "Model tables, relations and indexes",
+        "Query Postgres from Node with a type-safe ORM"
+      ],
+      "hue": 145,
+      "topics": [
+        "c05-t01",
+        "c05-t02",
+        "c05-t03",
+        "c05-t04",
+        "c05-t05",
+        "c05-t06",
+        "c05-t07",
+        "c05-t08",
+        "c05-t09",
+        "c05-t10"
+      ]
+    },
+    {
+      "id": "c06",
+      "n": 6,
+      "title": "Auth: sessions, JWT & RBAC",
+      "tagline": "Know who is calling, and what they may do.",
+      "outcomes": [
+        "Tell authentication from authorization",
+        "Implement session and JWT login",
+        "Protect routes with role-based access"
+      ],
+      "hue": 169,
+      "topics": [
+        "c06-t01",
+        "c06-t02",
+        "c06-t03",
+        "c06-t04",
+        "c06-t05",
+        "c06-t06",
+        "c06-t07",
+        "c06-t08",
+        "c06-t09"
+      ]
+    },
+    {
+      "id": "c07",
+      "n": 7,
+      "title": "MongoDB & Mongoose",
+      "tagline": "Documents instead of rows.",
+      "outcomes": [
+        "Model data as documents",
+        "Build CRUD with Mongoose",
+        "Protect routes with auth middleware"
+      ],
+      "hue": 193,
+      "topics": [
+        "c07-t01",
+        "c07-t02",
+        "c07-t03",
+        "c07-t04",
+        "c07-t05",
+        "c07-t06"
+      ]
+    },
+    {
+      "id": "c08",
+      "n": 8,
+      "title": "Project: URL shortener",
+      "tagline": "Ship a small, real service end to end.",
+      "outcomes": [
+        "Wire Express, Drizzle, Postgres and JWT together",
+        "Validate every input with Zod",
+        "Enforce ownership on every action"
+      ],
+      "hue": 217,
+      "topics": [
+        "c08-t01",
+        "c08-t02",
+        "c08-t03",
+        "c08-t04",
+        "c08-t05",
+        "c08-t06",
+        "c08-t07",
+        "c08-t08",
+        "c08-t09",
+        "c08-t10",
+        "c08-t11",
+        "c08-t12",
+        "c08-t13",
+        "c08-t14",
+        "c08-t15",
+        "c08-t16",
+        "c08-t17",
+        "c08-t18"
+      ]
+    },
+    {
+      "id": "c09",
+      "n": 9,
+      "title": "Docker",
+      "tagline": "Package once, run anywhere.",
+      "outcomes": [
+        "Explain images, containers and layers",
+        "Write lean, secure Dockerfiles",
+        "Run multi-container setups with Compose"
+      ],
+      "hue": 241,
+      "topics": [
+        "c09-t01",
+        "c09-t02",
+        "c09-t03",
+        "c09-t04",
+        "c09-t05",
+        "c09-t06",
+        "c09-t07",
+        "c09-t08",
+        "c09-t09",
+        "c09-t10",
+        "c09-t11",
+        "c09-t12",
+        "c09-t13",
+        "c09-t14",
+        "c09-t15",
+        "c09-t16",
+        "c09-t17",
+        "c09-t18",
+        "c09-t19",
+        "c09-t20",
+        "c09-t21",
+        "c09-t22",
+        "c09-t23",
+        "c09-t24",
+        "c09-t25"
+      ]
+    },
+    {
+      "id": "c10",
+      "n": 10,
+      "title": "AWS ECR & ECS",
+      "tagline": "From your laptop to a load-balanced service.",
+      "outcomes": [
+        "Push an image to ECR",
+        "Run it on ECS behind a load balancer",
+        "Debug a failing health check"
+      ],
+      "hue": 265,
+      "topics": [
+        "c10-t01",
+        "c10-t02",
+        "c10-t03",
+        "c10-t04",
+        "c10-t05",
+        "c10-t06",
+        "c10-t07",
+        "c10-t08",
+        "c10-t09"
+      ]
+    },
+    {
+      "id": "c11",
+      "n": 11,
+      "title": "MongoDB aggregation",
+      "tagline": "Ask big questions of your data.",
+      "outcomes": [
+        "Build pipelines stage by stage",
+        "Group, sum and reshape documents",
+        "Join collections with $lookup"
+      ],
+      "hue": 289,
+      "topics": [
+        "c11-t01",
+        "c11-t02",
+        "c11-t03",
+        "c11-t04",
+        "c11-t05",
+        "c11-t06",
+        "c11-t07"
+      ]
+    },
+    {
+      "id": "c12",
+      "n": 12,
+      "title": "Project: production auth backend",
+      "tagline": "A professional backend, built the way teams build it.",
+      "outcomes": [
+        "Structure a project the professional way",
+        "Implement access and refresh tokens plus email flows",
+        "Validate, test and secure every route"
+      ],
+      "hue": 313,
+      "topics": [
+        "c12-t01",
+        "c12-t02",
+        "c12-t03",
+        "c12-t04",
+        "c12-t05",
+        "c12-t06",
+        "c12-t07",
+        "c12-t08",
+        "c12-t09",
+        "c12-t10",
+        "c12-t11",
+        "c12-t12",
+        "c12-t13",
+        "c12-t14",
+        "c12-t15",
+        "c12-t16",
+        "c12-t17",
+        "c12-t18",
+        "c12-t19",
+        "c12-t20",
+        "c12-t21",
+        "c12-t22",
+        "c12-t23",
+        "c12-t24",
+        "c12-t25",
+        "c12-t26",
+        "c12-t27",
+        "c12-t28",
+        "c12-t29",
+        "c12-t30",
+        "c12-t31",
+        "c12-t32",
+        "c12-t33",
+        "c12-t34",
+        "c12-t35",
+        "c12-t36",
+        "c12-t37"
+      ]
+    },
+    {
+      "id": "c13",
+      "n": 13,
+      "title": "System design",
+      "tagline": "Scale from one user to millions.",
+      "outcomes": [
+        "Choose vertical or horizontal scaling with reasons",
+        "Split a system with queues and events",
+        "Reason about replicas, shards and hashing"
+      ],
+      "hue": 337,
+      "topics": [
+        "c13-t01",
+        "c13-t02",
+        "c13-t03",
+        "c13-t04",
+        "c13-t05",
+        "c13-t06",
+        "c13-t07",
+        "c13-t08",
+        "c13-t09",
+        "c13-t10",
+        "c13-t11",
+        "c13-t12",
+        "c13-t13",
+        "c13-t14",
+        "c13-t15",
+        "c13-t16",
+        "c13-t17",
+        "c13-t18",
+        "c13-t19"
+      ]
+    },
+    {
+      "id": "c14",
+      "n": 14,
+      "title": "Git",
+      "tagline": "Never lose work; collaborate without fear.",
+      "outcomes": [
+        "Understand what Git actually stores",
+        "Merge, rebase and resolve conflicts",
+        "Open a pull request the right way"
+      ],
+      "hue": 361,
+      "topics": [
+        "c14-t01",
+        "c14-t02",
+        "c14-t03",
+        "c14-t04",
+        "c14-t05",
+        "c14-t06",
+        "c14-t07",
+        "c14-t08",
+        "c14-t09"
+      ]
+    }
+  ],
+  "topics": [
+    {
+      "id": "c00-t01",
+      "chapter": "c00",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Course Introduction",
+      "lecture": 1
+    },
+    {
+      "id": "c01-t01",
+      "chapter": "c01",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "JavaScript story - from console to the V8 engine",
+      "lecture": 2
+    },
+    {
+      "id": "c01-t02",
+      "chapter": "c01",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "How JavaScript executes code - behind the scenes",
+      "lecture": 3
+    },
+    {
+      "id": "c01-t03",
+      "chapter": "c01",
+      "n": 3,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Datatypes, variables and constants in JavaScript",
+      "lecture": 4
+    },
+    {
+      "id": "c01-t04",
+      "chapter": "c01",
+      "n": 4,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Operations in JavaScript",
+      "lecture": 5
+    },
+    {
+      "id": "c01-t05",
+      "chapter": "c01",
+      "n": 5,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Primitives in JavaScript",
+      "lecture": 6
+    },
+    {
+      "id": "c01-t06",
+      "chapter": "c01",
+      "n": 6,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Non-primitives in JavaScript",
+      "lecture": 7
+    },
+    {
+      "id": "c01-t07",
+      "chapter": "c01",
+      "n": 7,
+      "kind": "challenge",
+      "depth": 3,
+      "source": "Five challenges on conditions in JavaScript",
+      "lecture": 8
+    },
+    {
+      "id": "c01-t08",
+      "chapter": "c01",
+      "n": 8,
+      "kind": "challenge",
+      "depth": 3,
+      "source": "Facing ten challenges in arrays and methods",
+      "lecture": 9
+    },
+    {
+      "id": "c01-t09",
+      "chapter": "c01",
+      "n": 9,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Introduction to loops in JavaScript",
+      "lecture": 10
+    },
+    {
+      "id": "c01-t10",
+      "chapter": "c01",
+      "n": 10,
+      "kind": "challenge",
+      "depth": 3,
+      "source": "Defeat 6 loop challenges in JavaScript",
+      "lecture": 11
+    },
+    {
+      "id": "c01-t11",
+      "chapter": "c01",
+      "n": 11,
+      "kind": "challenge",
+      "depth": 3,
+      "source": "Ten loop challenges to learn all kinds of loops in JavaScript",
+      "lecture": 12
+    },
+    {
+      "id": "c01-t12",
+      "chapter": "c01",
+      "n": 12,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Function, arrow function, this and context in JavaScript",
+      "lecture": 13
+    },
+    {
+      "id": "c01-t13",
+      "chapter": "c01",
+      "n": 13,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Higher-order functions and nested functions in JavaScript",
+      "lecture": 14
+    },
+    {
+      "id": "c02-t01",
+      "chapter": "c02",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "What is Node.js and why use it for server-side development",
+      "lecture": 15
+    },
+    {
+      "id": "c02-t02",
+      "chapter": "c02",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Installing Node.js and setting up a local development environment",
+      "lecture": 16
+    },
+    {
+      "id": "c02-t03",
+      "chapter": "c02",
+      "n": 3,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Your first Node.js script: writing and running Hello World",
+      "lecture": 17
+    },
+    {
+      "id": "c02-t04",
+      "chapter": "c02",
+      "n": 4,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Node.js vs browser JavaScript engines: key differences",
+      "lecture": 18
+    },
+    {
+      "id": "c02-t05",
+      "chapter": "c02",
+      "n": 5,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Understanding Node.js modules and their role in structuring code",
+      "lecture": 19
+    },
+    {
+      "id": "c02-t06",
+      "chapter": "c02",
+      "n": 6,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Working with third-party modules using npm and package.json",
+      "lecture": 20
+    },
+    {
+      "id": "c02-t07",
+      "chapter": "c02",
+      "n": 7,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Using the File System (fs) module to read and write files",
+      "lecture": 21
+    },
+    {
+      "id": "c02-t08",
+      "chapter": "c02",
+      "n": 8,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Understanding blocking vs non-blocking code execution in Node.js",
+      "lecture": 22
+    },
+    {
+      "id": "c02-t09",
+      "chapter": "c02",
+      "n": 9,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "The internal architecture of Node.js: event loop and thread pool",
+      "lecture": 23
+    },
+    {
+      "id": "c02-t10",
+      "chapter": "c02",
+      "n": 10,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "What are events in Node.js and why are they important?",
+      "lecture": 24
+    },
+    {
+      "id": "c02-t11",
+      "chapter": "c02",
+      "n": 11,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Creating and using event emitters in Node.js",
+      "lecture": 25
+    },
+    {
+      "id": "c02-t12",
+      "chapter": "c02",
+      "n": 12,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Building a real-time chat app with custom events in Node.js",
+      "lecture": 26
+    },
+    {
+      "id": "c02-t13",
+      "chapter": "c02",
+      "n": 13,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Introduction to buffers in Node.js: what and why",
+      "lecture": 27
+    },
+    {
+      "id": "c02-t14",
+      "chapter": "c02",
+      "n": 14,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Working with buffers in Node.js using practical code examples",
+      "lecture": 28
+    },
+    {
+      "id": "c03-t01",
+      "chapter": "c03",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Introduction to the HTTP protocol and its role in web communication",
+      "lecture": 29
+    },
+    {
+      "id": "c03-t02",
+      "chapter": "c03",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "HTTP methods and status codes explained for backend developers",
+      "lecture": 30
+    },
+    {
+      "id": "c03-t03",
+      "chapter": "c03",
+      "n": 3,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Creating a basic HTTP server with core Node.js modules",
+      "lecture": 31
+    },
+    {
+      "id": "c03-t04",
+      "chapter": "c03",
+      "n": 4,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Deep dive into HTTP request handling and server routing in Node.js",
+      "lecture": 32
+    },
+    {
+      "id": "c03-t05",
+      "chapter": "c03",
+      "n": 5,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Building a custom server with Node.js: hands-on coding session",
+      "lecture": 33
+    },
+    {
+      "id": "c03-t06",
+      "chapter": "c03",
+      "n": 6,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Using API clients to test Node.js HTTP endpoints",
+      "lecture": 34
+    },
+    {
+      "id": "c03-t07",
+      "chapter": "c03",
+      "n": 7,
+      "kind": "challenge",
+      "depth": 2,
+      "source": "Challenge: build a custom task with a native HTTP server in Node.js",
+      "lecture": 35
+    },
+    {
+      "id": "c04-t01",
+      "chapter": "c04",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Introduction to the Express framework and its core features",
+      "lecture": 36
+    },
+    {
+      "id": "c04-t02",
+      "chapter": "c04",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Creating your first Express app and file structure setup",
+      "lecture": 37
+    },
+    {
+      "id": "c04-t03",
+      "chapter": "c04",
+      "n": 3,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Understanding semantic versioning in Node projects",
+      "lecture": 38
+    },
+    {
+      "id": "c04-t04",
+      "chapter": "c04",
+      "n": 4,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "REST API design principles for modern backend development",
+      "lecture": 39
+    },
+    {
+      "id": "c04-t05",
+      "chapter": "c04",
+      "n": 5,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Book Store API - setting up routes and controllers (part 1)",
+      "lecture": 40
+    },
+    {
+      "id": "c04-t06",
+      "chapter": "c04",
+      "n": 6,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Book Store API - finalizing CRUD features and testing (part 2)",
+      "lecture": 41
+    },
+    {
+      "id": "c04-t07",
+      "chapter": "c04",
+      "n": 7,
+      "kind": "roleplay",
+      "depth": 3,
+      "source": "Review a REST API before production"
+    },
+    {
+      "id": "c04-t08",
+      "chapter": "c04",
+      "n": 8,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Understanding middleware functions and their execution in Express.js",
+      "lecture": 42
+    },
+    {
+      "id": "c04-t09",
+      "chapter": "c04",
+      "n": 9,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Advanced middleware concepts and custom middleware implementation",
+      "lecture": 43
+    },
+    {
+      "id": "c04-t10",
+      "chapter": "c04",
+      "n": 10,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Creating and integrating custom modules in Node.js projects",
+      "lecture": 44
+    },
+    {
+      "id": "c04-t11",
+      "chapter": "c04",
+      "n": 11,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Refactoring the Book Store API for better maintainability and structure",
+      "lecture": 45
+    },
+    {
+      "id": "c04-t12",
+      "chapter": "c04",
+      "n": 12,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "The Model-View-Controller (MVC) pattern in scalable API architecture",
+      "lecture": 46
+    },
+    {
+      "id": "c04-t13",
+      "chapter": "c04",
+      "n": 13,
+      "kind": "bonus",
+      "depth": 2,
+      "source": "Rendering HTML on the server with EJS templates"
+    },
+    {
+      "id": "c05-t01",
+      "chapter": "c05",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Intro to databases: SQL vs NoSQL for modern applications",
+      "lecture": 47
+    },
+    {
+      "id": "c05-t02",
+      "chapter": "c05",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "What is an ORM and why use it in application development",
+      "lecture": 48
+    },
+    {
+      "id": "c05-t03",
+      "chapter": "c05",
+      "n": 3,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Setting up PostgreSQL with Docker for local development",
+      "lecture": 49
+    },
+    {
+      "id": "c05-t04",
+      "chapter": "c05",
+      "n": 4,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Installing and configuring Drizzle ORM with PostgreSQL",
+      "lecture": 50
+    },
+    {
+      "id": "c05-t05",
+      "chapter": "c05",
+      "n": 5,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Migrating Book Store to Drizzle ORM - part 1: schema setup",
+      "lecture": 51
+    },
+    {
+      "id": "c05-t06",
+      "chapter": "c05",
+      "n": 6,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Migrating Book Store to Drizzle ORM - part 2: query logic",
+      "lecture": 52
+    },
+    {
+      "id": "c05-t07",
+      "chapter": "c05",
+      "n": 7,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Testing your REST APIs using Postman",
+      "lecture": 53
+    },
+    {
+      "id": "c05-t08",
+      "chapter": "c05",
+      "n": 8,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Using indexes in PostgreSQL to speed up queries",
+      "lecture": 54
+    },
+    {
+      "id": "c05-t09",
+      "chapter": "c05",
+      "n": 9,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Adding foreign key relationships: authors and books",
+      "lecture": 55
+    },
+    {
+      "id": "c05-t10",
+      "chapter": "c05",
+      "n": 10,
+      "kind": "roleplay",
+      "depth": 3,
+      "source": "Choose the right database for a new backend"
+    },
+    {
+      "id": "c06-t01",
+      "chapter": "c06",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Understanding authentication vs authorization with real-world examples",
+      "lecture": 56
+    },
+    {
+      "id": "c06-t02",
+      "chapter": "c06",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "What is authentication? A story-based introduction to login systems",
+      "lecture": 57
+    },
+    {
+      "id": "c06-t03",
+      "chapter": "c06",
+      "n": 3,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Implementing session-based authentication in Node.js applications",
+      "lecture": 58
+    },
+    {
+      "id": "c06-t04",
+      "chapter": "c06",
+      "n": 4,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Adding session-based authentication support using Drizzle ORM",
+      "lecture": 59
+    },
+    {
+      "id": "c06-t05",
+      "chapter": "c06",
+      "n": 5,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Building secure auth workflows using Express.js middleware functions",
+      "lecture": 60
+    },
+    {
+      "id": "c06-t06",
+      "chapter": "c06",
+      "n": 6,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Creating stateless authentication using JWT (JSON Web Tokens)",
+      "lecture": 61
+    },
+    {
+      "id": "c06-t07",
+      "chapter": "c06",
+      "n": 7,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Introduction to authorization and role-based access control (RBAC)",
+      "lecture": 62
+    },
+    {
+      "id": "c06-t08",
+      "chapter": "c06",
+      "n": 8,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Implementing role-based authorization logic in Express.js applications",
+      "lecture": 63
+    },
+    {
+      "id": "c06-t09",
+      "chapter": "c06",
+      "n": 9,
+      "kind": "roleplay",
+      "depth": 3,
+      "source": "Design secure authentication and role-based access"
+    },
+    {
+      "id": "c07-t01",
+      "chapter": "c07",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Introduction to MongoDB (NoSQL)",
+      "lecture": 64
+    },
+    {
+      "id": "c07-t02",
+      "chapter": "c07",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "MongoDB Atlas setup",
+      "lecture": 65
+    },
+    {
+      "id": "c07-t03",
+      "chapter": "c07",
+      "n": 3,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "MongoDB Mongoose setup",
+      "lecture": 66
+    },
+    {
+      "id": "c07-t04",
+      "chapter": "c07",
+      "n": 4,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Creating a basic CRUD application with MongoDB and Express",
+      "lecture": 67
+    },
+    {
+      "id": "c07-t05",
+      "chapter": "c07",
+      "n": 5,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Authentication middleware with Express and MongoDB",
+      "lecture": 68
+    },
+    {
+      "id": "c07-t06",
+      "chapter": "c07",
+      "n": 6,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Node.js Mongoose aggregation pipeline introduction",
+      "lecture": 69
+    },
+    {
+      "id": "c08-t01",
+      "chapter": "c08",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Overview of the URL shortener project",
+      "lecture": 70
+    },
+    {
+      "id": "c08-t02",
+      "chapter": "c08",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Tech stack: Express, Drizzle ORM, JWT, PostgreSQL and Zod",
+      "lecture": 71
+    },
+    {
+      "id": "c08-t03",
+      "chapter": "c08",
+      "n": 3,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Bootstrapping a clean Express server setup for backend development",
+      "lecture": 72
+    },
+    {
+      "id": "c08-t04",
+      "chapter": "c08",
+      "n": 4,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Configuring PostgreSQL with Docker for a local development environment",
+      "lecture": 73
+    },
+    {
+      "id": "c08-t05",
+      "chapter": "c08",
+      "n": 5,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Installing and setting up Drizzle ORM for the database",
+      "lecture": 74
+    },
+    {
+      "id": "c08-t06",
+      "chapter": "c08",
+      "n": 6,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Designing and implementing the user schema using Drizzle ORM",
+      "lecture": 75
+    },
+    {
+      "id": "c08-t07",
+      "chapter": "c08",
+      "n": 7,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Creating a secure signup route",
+      "lecture": 76
+    },
+    {
+      "id": "c08-t08",
+      "chapter": "c08",
+      "n": 8,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Adding Zod for validating incoming signup and login data",
+      "lecture": 77
+    },
+    {
+      "id": "c08-t09",
+      "chapter": "c08",
+      "n": 9,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Refactoring: moving user logic and validation to separate service modules",
+      "lecture": 78
+    },
+    {
+      "id": "c08-t10",
+      "chapter": "c08",
+      "n": 10,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Building a login route with JWT authentication and token response",
+      "lecture": 79
+    },
+    {
+      "id": "c08-t11",
+      "chapter": "c08",
+      "n": 11,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Refactoring: extracting JWT sign and verify logic into utility functions",
+      "lecture": 80
+    },
+    {
+      "id": "c08-t12",
+      "chapter": "c08",
+      "n": 12,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Creating authentication middleware to extract and validate the current user",
+      "lecture": 81
+    },
+    {
+      "id": "c08-t13",
+      "chapter": "c08",
+      "n": 13,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Handling shorten-URL requests via POST and generating unique shortcodes",
+      "lecture": 82
+    },
+    {
+      "id": "c08-t14",
+      "chapter": "c08",
+      "n": 14,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Creating a schema for shortened URLs using Drizzle ORM",
+      "lecture": 83
+    },
+    {
+      "id": "c08-t15",
+      "chapter": "c08",
+      "n": 15,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Refactoring: extracting URL creation logic",
+      "lecture": 84
+    },
+    {
+      "id": "c08-t16",
+      "chapter": "c08",
+      "n": 16,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Implementing redirection logic from a short URL",
+      "lecture": 85
+    },
+    {
+      "id": "c08-t17",
+      "chapter": "c08",
+      "n": 17,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Fetching all shortened URLs by the logged-in user",
+      "lecture": 86
+    },
+    {
+      "id": "c08-t18",
+      "chapter": "c08",
+      "n": 18,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Deleting a URL with ownership and authorization",
+      "lecture": 87
+    },
+    {
+      "id": "c09-t01",
+      "chapter": "c09",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Introduction to Docker and the rise of containerization in DevOps",
+      "lecture": 88
+    },
+    {
+      "id": "c09-t02",
+      "chapter": "c09",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "The real-world problem Docker solves in modern development",
+      "lecture": 89
+    },
+    {
+      "id": "c09-t03",
+      "chapter": "c09",
+      "n": 3,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Understanding the difference between Docker and virtual machines",
+      "lecture": 90
+    },
+    {
+      "id": "c09-t04",
+      "chapter": "c09",
+      "n": 4,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "How to install Docker on your system for local development",
+      "lecture": 91
+    },
+    {
+      "id": "c09-t05",
+      "chapter": "c09",
+      "n": 5,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Docker containers vs Docker images: what's the difference?",
+      "lecture": 92
+    },
+    {
+      "id": "c09-t06",
+      "chapter": "c09",
+      "n": 6,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Introduction to the Docker CLI and commonly used commands",
+      "lecture": 93
+    },
+    {
+      "id": "c09-t07",
+      "chapter": "c09",
+      "n": 7,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Running Docker containers using the CLI with practical examples",
+      "lecture": 94
+    },
+    {
+      "id": "c09-t08",
+      "chapter": "c09",
+      "n": 8,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Working with Docker images through the command-line interface (CLI)",
+      "lecture": 95
+    },
+    {
+      "id": "c09-t09",
+      "chapter": "c09",
+      "n": 9,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Exploring Docker container commands for management and debugging",
+      "lecture": 96
+    },
+    {
+      "id": "c09-t10",
+      "chapter": "c09",
+      "n": 10,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Creating and using a Dockerfile to containerize Node.js apps",
+      "lecture": 97
+    },
+    {
+      "id": "c09-t11",
+      "chapter": "c09",
+      "n": 11,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Best practices to optimize Docker images for speed and performance",
+      "lecture": 98
+    },
+    {
+      "id": "c09-t12",
+      "chapter": "c09",
+      "n": 12,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Understanding and implementing port mapping in Docker containers",
+      "lecture": 99
+    },
+    {
+      "id": "c09-t13",
+      "chapter": "c09",
+      "n": 13,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Auto port mapping in Docker: dynamic exposure of container ports",
+      "lecture": 100
+    },
+    {
+      "id": "c09-t14",
+      "chapter": "c09",
+      "n": 14,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Publishing Docker images to Docker Hub or private registries",
+      "lecture": 101
+    },
+    {
+      "id": "c09-t15",
+      "chapter": "c09",
+      "n": 15,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Building optimized multi-stage Docker images for production use",
+      "lecture": 102
+    },
+    {
+      "id": "c09-t16",
+      "chapter": "c09",
+      "n": 16,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Security best practices for running Docker containers safely",
+      "lecture": 103
+    },
+    {
+      "id": "c09-t17",
+      "chapter": "c09",
+      "n": 17,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Understanding Docker bridge networking for container communication",
+      "lecture": 104
+    },
+    {
+      "id": "c09-t18",
+      "chapter": "c09",
+      "n": 18,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Creating and using custom Docker bridges for network isolation",
+      "lecture": 105
+    },
+    {
+      "id": "c09-t19",
+      "chapter": "c09",
+      "n": 19,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Docker other modes of networking",
+      "lecture": 106
+    },
+    {
+      "id": "c09-t20",
+      "chapter": "c09",
+      "n": 20,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Attaching host machine volumes to Docker containers for data sharing",
+      "lecture": 107
+    },
+    {
+      "id": "c09-t21",
+      "chapter": "c09",
+      "n": 21,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Creating and managing custom named volumes in Docker for persistence",
+      "lecture": 108
+    },
+    {
+      "id": "c09-t22",
+      "chapter": "c09",
+      "n": 22,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Introduction to Docker Compose",
+      "lecture": 109
+    },
+    {
+      "id": "c09-t23",
+      "chapter": "c09",
+      "n": 23,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Networking in Docker Compose",
+      "lecture": 110
+    },
+    {
+      "id": "c09-t24",
+      "chapter": "c09",
+      "n": 24,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Volumes in Docker Compose",
+      "lecture": 111
+    },
+    {
+      "id": "c09-t25",
+      "chapter": "c09",
+      "n": 25,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Custom Docker builds",
+      "lecture": 112
+    },
+    {
+      "id": "c10-t01",
+      "chapter": "c10",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Introduction to Docker orchestration and why it's crucial for production",
+      "lecture": 113
+    },
+    {
+      "id": "c10-t02",
+      "chapter": "c10",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Creating and configuring a new AWS account for ECS deployment",
+      "lecture": 114
+    },
+    {
+      "id": "c10-t03",
+      "chapter": "c10",
+      "n": 3,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Setting up Amazon Elastic Container Registry (ECR) to push Docker images",
+      "lecture": 115
+    },
+    {
+      "id": "c10-t04",
+      "chapter": "c10",
+      "n": 4,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Launching and configuring ECS clusters to run Docker containers",
+      "lecture": 116
+    },
+    {
+      "id": "c10-t05",
+      "chapter": "c10",
+      "n": 5,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Defining ECS tasks and creating task definitions for container execution",
+      "lecture": 117
+    },
+    {
+      "id": "c10-t06",
+      "chapter": "c10",
+      "n": 6,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Deploying ECS services with a load balancer for high availability",
+      "lecture": 118
+    },
+    {
+      "id": "c10-t07",
+      "chapter": "c10",
+      "n": 7,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Cleaning up AWS ECS and ECR resources to avoid unnecessary billing",
+      "lecture": 119
+    },
+    {
+      "id": "c10-t08",
+      "chapter": "c10",
+      "n": 8,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Debugging and fixing ECS health check failures during container deployment",
+      "lecture": 120
+    },
+    {
+      "id": "c10-t09",
+      "chapter": "c10",
+      "n": 9,
+      "kind": "roleplay",
+      "depth": 3,
+      "source": "Diagnose a failing production Node.js service"
+    },
+    {
+      "id": "c11-t01",
+      "chapter": "c11",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "MongoDB aggregation setup",
+      "lecture": 121
+    },
+    {
+      "id": "c11-t02",
+      "chapter": "c11",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Grouping in MongoDB",
+      "lecture": 122
+    },
+    {
+      "id": "c11-t03",
+      "chapter": "c11",
+      "n": 3,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Group, sum and more",
+      "lecture": 123
+    },
+    {
+      "id": "c11-t04",
+      "chapter": "c11",
+      "n": 4,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Dealing with arrays in aggregation",
+      "lecture": 124
+    },
+    {
+      "id": "c11-t05",
+      "chapter": "c11",
+      "n": 5,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Match and project pipeline stages",
+      "lecture": 125
+    },
+    {
+      "id": "c11-t06",
+      "chapter": "c11",
+      "n": 6,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Match: all the operators of aggregation",
+      "lecture": 126
+    },
+    {
+      "id": "c11-t07",
+      "chapter": "c11",
+      "n": 7,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Lookup in MongoDB aggregation",
+      "lecture": 127
+    },
+    {
+      "id": "c12-t01",
+      "chapter": "c12",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Building a fresh, backend-focused project",
+      "lecture": 128
+    },
+    {
+      "id": "c12-t02",
+      "chapter": "c12",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Understand the PRD",
+      "lecture": 129
+    },
+    {
+      "id": "c12-t03",
+      "chapter": "c12",
+      "n": 3,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Preparing a Node project for the backend",
+      "lecture": 130
+    },
+    {
+      "id": "c12-t04",
+      "chapter": "c12",
+      "n": 4,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Add Prettier and Git to the codebase",
+      "lecture": 131
+    },
+    {
+      "id": "c12-t05",
+      "chapter": "c12",
+      "n": 5,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Auto-restart your server with nodemon",
+      "lecture": 132
+    },
+    {
+      "id": "c12-t06",
+      "chapter": "c12",
+      "n": 6,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Dotenv files on the backend",
+      "lecture": 133
+    },
+    {
+      "id": "c12-t07",
+      "chapter": "c12",
+      "n": 7,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "A professional project structure",
+      "lecture": 134
+    },
+    {
+      "id": "c12-t08",
+      "chapter": "c12",
+      "n": 8,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Setup of a basic Express server",
+      "lecture": 135
+    },
+    {
+      "id": "c12-t09",
+      "chapter": "c12",
+      "n": 9,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Introducing Postman for API testing",
+      "lecture": 136
+    },
+    {
+      "id": "c12-t10",
+      "chapter": "c12",
+      "n": 10,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Separation of app and index",
+      "lecture": 137
+    },
+    {
+      "id": "c12-t11",
+      "chapter": "c12",
+      "n": 11,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Express configuration and CORS",
+      "lecture": 138
+    },
+    {
+      "id": "c12-t12",
+      "chapter": "c12",
+      "n": 12,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Standard ApiResponse and API errors",
+      "lecture": 139
+    },
+    {
+      "id": "c12-t13",
+      "chapter": "c12",
+      "n": 13,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Keeping data in constants",
+      "lecture": 140
+    },
+    {
+      "id": "c12-t14",
+      "chapter": "c12",
+      "n": 14,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "How to connect with MongoDB",
+      "lecture": 141
+    },
+    {
+      "id": "c12-t15",
+      "chapter": "c12",
+      "n": 15,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "A guide to MongoDB Atlas connection",
+      "lecture": 142
+    },
+    {
+      "id": "c12-t16",
+      "chapter": "c12",
+      "n": 16,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Write a healthcheck controller and routes",
+      "lecture": 143
+    },
+    {
+      "id": "c12-t17",
+      "chapter": "c12",
+      "n": 17,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Catch errors better with async handlers",
+      "lecture": 144
+    },
+    {
+      "id": "c12-t18",
+      "chapter": "c12",
+      "n": 18,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Learn to write a user schema in Mongoose",
+      "lecture": 145
+    },
+    {
+      "id": "c12-t19",
+      "chapter": "c12",
+      "n": 19,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Hash the password with Mongoose pre hooks",
+      "lecture": 146
+    },
+    {
+      "id": "c12-t20",
+      "chapter": "c12",
+      "n": 20,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Learn to handle Mongoose methods",
+      "lecture": 147
+    },
+    {
+      "id": "c12-t21",
+      "chapter": "c12",
+      "n": 21,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "What are JWT tokens",
+      "lecture": 148
+    },
+    {
+      "id": "c12-t22",
+      "chapter": "c12",
+      "n": 22,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Theory behind access tokens and refresh tokens",
+      "lecture": 149
+    },
+    {
+      "id": "c12-t23",
+      "chapter": "c12",
+      "n": 23,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Code for access and refresh tokens with the crypto module",
+      "lecture": 150
+    },
+    {
+      "id": "c12-t24",
+      "chapter": "c12",
+      "n": 24,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "How to generate email templates",
+      "lecture": 151
+    },
+    {
+      "id": "c12-t25",
+      "chapter": "c12",
+      "n": 25,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "How to send emails in Node.js",
+      "lecture": 152
+    },
+    {
+      "id": "c12-t26",
+      "chapter": "c12",
+      "n": 26,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "How to register a user",
+      "lecture": 153
+    },
+    {
+      "id": "c12-t27",
+      "chapter": "c12",
+      "n": 27,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Routers for registering a user",
+      "lecture": 154
+    },
+    {
+      "id": "c12-t28",
+      "chapter": "c12",
+      "n": 28,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Test the register route with Postman",
+      "lecture": 155
+    },
+    {
+      "id": "c12-t29",
+      "chapter": "c12",
+      "n": 29,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Writing custom validations",
+      "lecture": 156
+    },
+    {
+      "id": "c12-t30",
+      "chapter": "c12",
+      "n": 30,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Log in a user with tokens and cookie data",
+      "lecture": 157
+    },
+    {
+      "id": "c12-t31",
+      "chapter": "c12",
+      "n": 31,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Login validation and testing",
+      "lecture": 158
+    },
+    {
+      "id": "c12-t32",
+      "chapter": "c12",
+      "n": 32,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Write auth middleware",
+      "lecture": 159
+    },
+    {
+      "id": "c12-t33",
+      "chapter": "c12",
+      "n": 33,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "How to securely log out a user",
+      "lecture": 160
+    },
+    {
+      "id": "c12-t34",
+      "chapter": "c12",
+      "n": 34,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Refresh the access token and resend the verification email",
+      "lecture": 161
+    },
+    {
+      "id": "c12-t35",
+      "chapter": "c12",
+      "n": 35,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "All password-related controllers: forgot password and reset password",
+      "lecture": 162
+    },
+    {
+      "id": "c12-t36",
+      "chapter": "c12",
+      "n": 36,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "All routes and validators of auth",
+      "lecture": 163
+    },
+    {
+      "id": "c12-t37",
+      "chapter": "c12",
+      "n": 37,
+      "kind": "roleplay",
+      "depth": 3,
+      "source": "Turn product requirements into a backend plan"
+    },
+    {
+      "id": "c13-t01",
+      "chapter": "c13",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Section introduction - introduction to system design",
+      "lecture": 164
+    },
+    {
+      "id": "c13-t02",
+      "chapter": "c13",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Scaling a system for one user",
+      "lecture": 165
+    },
+    {
+      "id": "c13-t03",
+      "chapter": "c13",
+      "n": 3,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Vertical scaling",
+      "lecture": 166
+    },
+    {
+      "id": "c13-t04",
+      "chapter": "c13",
+      "n": 4,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Horizontal scaling",
+      "lecture": 167
+    },
+    {
+      "id": "c13-t05",
+      "chapter": "c13",
+      "n": 5,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "DB scaling: multi-read replication",
+      "lecture": 168
+    },
+    {
+      "id": "c13-t06",
+      "chapter": "c13",
+      "n": 6,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "DB scaling: data sharding",
+      "lecture": 169
+    },
+    {
+      "id": "c13-t07",
+      "chapter": "c13",
+      "n": 7,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Monolith service architecture",
+      "lecture": 170
+    },
+    {
+      "id": "c13-t08",
+      "chapter": "c13",
+      "n": 8,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Microservice architecture",
+      "lecture": 171
+    },
+    {
+      "id": "c13-t09",
+      "chapter": "c13",
+      "n": 9,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "HPA, microservices and the API gateway",
+      "lecture": 172
+    },
+    {
+      "id": "c13-t10",
+      "chapter": "c13",
+      "n": 10,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Microservice communication (HTTP, sync)",
+      "lecture": 173
+    },
+    {
+      "id": "c13-t11",
+      "chapter": "c13",
+      "n": 11,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Microservice communication (queue, async)",
+      "lecture": 174
+    },
+    {
+      "id": "c13-t12",
+      "chapter": "c13",
+      "n": 12,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Pub/Sub vs queue and fan-out architecture",
+      "lecture": 175
+    },
+    {
+      "id": "c13-t13",
+      "chapter": "c13",
+      "n": 13,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Consistent hashing, part 1: problem statement",
+      "lecture": 176
+    },
+    {
+      "id": "c13-t14",
+      "chapter": "c13",
+      "n": 14,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Consistent hashing, part 2: solution",
+      "lecture": 177
+    },
+    {
+      "id": "c13-t15",
+      "chapter": "c13",
+      "n": 15,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Event-driven architecture",
+      "lecture": 178
+    },
+    {
+      "id": "c13-t16",
+      "chapter": "c13",
+      "n": 16,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Event sourcing",
+      "lecture": 179
+    },
+    {
+      "id": "c13-t17",
+      "chapter": "c13",
+      "n": 17,
+      "kind": "bonus",
+      "depth": 2,
+      "source": "Reverse proxy vs forward proxy"
+    },
+    {
+      "id": "c13-t18",
+      "chapter": "c13",
+      "n": 18,
+      "kind": "bonus",
+      "depth": 2,
+      "source": "Blue-green and rolling deployments"
+    },
+    {
+      "id": "c13-t19",
+      "chapter": "c13",
+      "n": 19,
+      "kind": "roleplay",
+      "depth": 3,
+      "source": "Scale a backend from startup to millions of users"
+    },
+    {
+      "id": "c14-t01",
+      "chapter": "c14",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Introduction to the Git series",
+      "lecture": 180
+    },
+    {
+      "id": "c14-t02",
+      "chapter": "c14",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Git init and the hidden folder",
+      "lecture": 181
+    },
+    {
+      "id": "c14-t03",
+      "chapter": "c14",
+      "n": 3,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Git commits and logs",
+      "lecture": 182
+    },
+    {
+      "id": "c14-t04",
+      "chapter": "c14",
+      "n": 4,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Git internals and configs",
+      "lecture": 183
+    },
+    {
+      "id": "c14-t05",
+      "chapter": "c14",
+      "n": 5,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Git merge and merge conflicts",
+      "lecture": 184
+    },
+    {
+      "id": "c14-t06",
+      "chapter": "c14",
+      "n": 6,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Git diff and stashing",
+      "lecture": 185
+    },
+    {
+      "id": "c14-t07",
+      "chapter": "c14",
+      "n": 7,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Git rebase is not that scary",
+      "lecture": 186
+    },
+    {
+      "id": "c14-t08",
+      "chapter": "c14",
+      "n": 8,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Insight into pushing code to GitHub",
+      "lecture": 187
+    },
+    {
+      "id": "c14-t09",
+      "chapter": "c14",
+      "n": 9,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "How to make a pull request and contribute to open source",
+      "lecture": 188
+    }
+  ]
+}

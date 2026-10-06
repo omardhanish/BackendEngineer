@@ -1,0 +1,9 @@
+{
+  "stdout": "$ mkdir site\n$ cd site\n$ git init -b main\nInitialized empty Git repository in /home/ada/site/.git/\n$ echo \"home\" > index.txt\n$ git add index.txt\n$ git commit -m \"Add home page\"\n[main (root-commit) 4841e1e] Add home page\n 1 file changed, 1 insertion(+)\n create mode 100644 index.txt\n$ git switch -c about\nSwitched to a new branch 'about'\n$ echo \"about\" > about.txt\n$ git add about.txt\n$ git commit -m \"Add about page\"\n[about ef42c9e] Add about page\n 1 file changed, 1 insertion(+)\n create mode 100644 about.txt\n$ echo \"team\" > team.txt\n$ git add team.txt\n$ git commit -m \"Add team page\"\n[about f40d801] Add team page\n 1 file changed, 1 insertion(+)\n create mode 100644 team.txt\n$ git switch main\nSwitched to branch 'main'\n$ echo \"contact\" > contact.txt\n$ git add contact.txt\n$ git commit -m \"Add contact page\"\n[main 24725fb] Add contact page\n 1 file changed, 1 insertion(+)\n create mode 100644 contact.txt\n$ git log --oneline --graph --all --decorate\n* 24725fb (HEAD -> main) Add contact page\n| * f40d801 (about) Add team page\n| * ef42c9e Add about page\n|/\n* 4841e1e Add home page\n$ git switch about\nSwitched to branch 'about'\n$ git rebase main\nRebasing (1/2)\rRebasing (2/2)\rSuccessfully rebased and updated refs/heads/about.\n$ git log --oneline --graph --all --decorate\n* 9ba1389 (HEAD -> about) Add team page\n* 23db516 Add about page\n* 24725fb (main) Add contact page\n* 4841e1e Add home page\n$ git switch main\nSwitched to branch 'main'\n$ git merge about\nUpdating 24725fb..9ba1389\nFast-forward\n about.txt | 1 +\n team.txt  | 1 +\n 2 files changed, 2 insertions(+)\n create mode 100644 about.txt\n create mode 100644 team.txt",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "git 2.47.0",
+  "hash": "3f3fd44ee9016303",
+  "at": "2026-10-06T15:07:40.888Z"
+}

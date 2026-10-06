@@ -1,0 +1,96 @@
+{
+  "title": "Named volumes",
+  "idea": "A named volume is storage that Docker creates and manages by name. Its data survives when the container that used it is removed.",
+  "points": [
+    "`docker run -v covers:/app/covers` mounts the volume `covers`, creating it if needed.",
+    "`docker rm` removes the container but keeps its named volumes.",
+    "Docker decides where the data lives; you refer to it by name.",
+    "A new, empty volume is filled with the image's files from the mount path."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "Data outlives the container",
+    "scenario": {
+      "tiers": [["old", "new"], ["vol"]],
+      "nodes": {
+        "old": { "label": "api", "sub": "container 1", "kind": "service" },
+        "new": { "label": "api", "sub": "container 2", "kind": "service" },
+        "vol": { "label": "covers", "sub": "named volume", "kind": "db" }
+      },
+      "links": [["old", "vol"], ["new", "vol"]],
+      "steps": [
+        {
+          "caption": "`docker run -v covers:/app/covers` creates the volume `covers` and starts the first container with it mounted.",
+          "state": { "old": "up" },
+          "badge": { "new": "not started", "vol": "empty" },
+          "focus": ["old", "vol"]
+        },
+        {
+          "caption": "Say the app saves two cover images. They are written to the volume, not the container's own writable layer.",
+          "send": [{ "from": "old", "to": "vol", "label": "write", "tone": "warn" }],
+          "items": { "vol": ["c1.png", "c2.png"] },
+          "badge": { "vol": null }
+        },
+        {
+          "caption": "`docker rm -f api` deletes the container and its writable layer. The volume and its files stay.",
+          "state": { "old": "down" },
+          "badge": { "old": "removed" }
+        },
+        {
+          "caption": "A new container started with the same `-v` mounts the volume and sees the same files.",
+          "send": [{ "from": "vol", "to": "new", "label": "files", "tone": "ok" }],
+          "state": { "new": "new" },
+          "badge": { "new": null }
+        },
+        {
+          "caption": "Remove the containers, then run `docker volume rm covers`. The volume and its files are gone for good.",
+          "state": { "new": "down", "vol": "down" },
+          "badge": { "new": "removed", "vol": "deleted" },
+          "items": { "vol": null }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "volume.sh",
+      "lang": "bash",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Imagine the API saves cover images in `/app/covers`. Remove its container, reuse the volume, and the files remain.",
+      "walk": [
+        { "lines": [1], "text": "Create the volume up front. Optional: `docker run` creates a missing volume." },
+        { "lines": [2], "text": "Mount it at `/app/covers`. Files the app writes there go into the volume." },
+        { "lines": [3], "text": "Force-remove the container. The volume is not touched." },
+        { "lines": [4], "text": "Start a new `api` with the same `-v`. It sees the earlier files." },
+        { "lines": [5], "text": "List the volumes on this Docker host." },
+        { "lines": [6], "text": "Show the details of one volume." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "`docker volume rm` deletes the data for good; back up anything you still need.",
+    "Always name the volume: `-v /app/covers` creates an anonymous volume with a random name.",
+    "Reusing a volume that already has data hides the image's files at that path."
+  ],
+  "quiz": {
+    "q": "You run `docker rm -f api`. What happens to the named volume `covers` it used?",
+    "options": [
+      "It is deleted with the container",
+      "It stays, but its files are emptied",
+      "It stays, with all its files",
+      "Docker asks whether to keep it"
+    ],
+    "answer": 2,
+    "why": "Named volumes are managed apart from containers. Removing a container leaves the volume and its files in place."
+  },
+  "takeaway": "Named volumes outlive containers; mount the same one to keep your data.",
+  "chat": {
+    "starters": [
+      "Where does Docker keep a volume's files on my machine?",
+      "How do I back up a named volume?",
+      "When should I choose a volume over a bind mount?"
+    ]
+  }
+}

@@ -1,0 +1,111 @@
+{
+  "title": "Preparing a Node project",
+  "idea": "`package.json` is the file that makes a folder a Node project. It names the project, picks the module format and defines commands such as `npm start`.",
+  "points": [
+    "`npm init -y` writes a starter `package.json` using default answers.",
+    "`\"type\": \"module\"` makes `.js` files ES modules, so `import` and `export` work.",
+    "A `scripts` entry names a command; `npm start` runs the `start` script.",
+    "Keep code in `src/`; `src/index.js` is the entry point `start` runs."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "What `npm start` does",
+    "scenario": {
+      "token": { "label": "npm start", "tone": "req" },
+      "stages": [
+        { "id": "you", "label": "Terminal", "sub": "npm start", "kind": "end" },
+        { "id": "npm", "label": "npm", "sub": "reads package.json" },
+        { "id": "script", "label": "scripts.start", "sub": "node src/index.js" },
+        { "id": "node", "label": "Node", "sub": "checks type" },
+        { "id": "app", "label": "src/index.js", "sub": "runs as ES module", "kind": "end" }
+      ],
+      "steps": [
+        {
+          "caption": "You type `npm start` in the project folder.",
+          "at": "you",
+          "slot": "top",
+          "state": { "you": "active" },
+          "out": []
+        },
+        {
+          "caption": "npm opens `package.json` and looks in `scripts` for an entry named `start`.",
+          "at": "npm",
+          "slot": "top",
+          "state": { "you": "done", "npm": "active" },
+          "out": ["npm: read package.json"]
+        },
+        {
+          "caption": "It finds `node src/index.js` and runs that command.",
+          "at": "script",
+          "slot": "top",
+          "state": { "you": "done", "npm": "done", "script": "active" },
+          "out": ["npm: read package.json", "npm: run scripts.start"]
+        },
+        {
+          "caption": "Node starts, loads `src/index.js` and reads the nearest `package.json` to learn its module type.",
+          "at": "node",
+          "slot": "top",
+          "state": { "you": "done", "npm": "done", "script": "done", "node": "active" },
+          "out": ["npm: read package.json", "npm: run scripts.start", "node: found type module"]
+        },
+        {
+          "caption": "`\"type\": \"module\"` makes the `.js` file an ES module, so its `import` lines work.",
+          "at": "app",
+          "slot": "top",
+          "token": { "label": "ES module", "tone": "ok" },
+          "state": { "you": "done", "npm": "done", "script": "done", "node": "done", "app": "active" },
+          "out": ["npm: read package.json", "npm: run scripts.start", "node: found type module", "app: running"]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "package.json",
+      "lang": "json",
+      "title": "The manifest",
+      "run": "static",
+      "caption": "The project's `package.json` after `npm init -y` and two edits. `npm pkg set type=module` changes a key without opening the file.",
+      "walk": [
+        { "lines": [2, 3], "text": "Name and version identify the project." },
+        { "lines": [4], "text": "`type` decides how Node reads every `.js` file in this project." },
+        { "lines": [5], "text": "`main` names the entry file." },
+        { "lines": [6, 7, 8], "text": "`npm start` runs this command. Other script names need `npm run`." }
+      ]
+    },
+    {
+      "file": "esm.mjs",
+      "lang": "js",
+      "title": "What ES modules change",
+      "run": "captured",
+      "caption": "Run it beside that `package.json`. `.mjs` is always an ES module; `type` gives `.js` files the same rules."
+    }
+  ],
+  "pitfalls": [
+    "In ES modules `require` and `__dirname` do not exist; use `import` and `import.meta.url`.",
+    "Write the extension in relative imports: `./app.js`, not `./app`.",
+    "Set `type` yourself. Without it, `.js` defaults to CommonJS and `import` may fail or warn."
+  ],
+  "quiz": {
+    "q": "`package.json` contains `\"type\": \"module\"`. What happens when `src/index.js` runs?",
+    "code": "// src/index.js\nconst os = require('node:os');\nconsole.log(typeof os.cpus);",
+    "lang": "js",
+    "options": [
+      "function",
+      "undefined",
+      "ReferenceError: `require` is not defined",
+      "SyntaxError: Unexpected token"
+    ],
+    "answer": 2,
+    "why": "In an ES module `require` is not defined. Use `import os from 'node:os'` instead."
+  },
+  "takeaway": "`package.json` tells npm what to run and tells Node how to read `.js`.",
+  "chat": {
+    "starters": [
+      "Should I use ES modules or CommonJS in a new project?",
+      "What does `-y` skip when I run `npm init`?",
+      "Why keep code in `src/` and not in the project root?"
+    ]
+  }
+}

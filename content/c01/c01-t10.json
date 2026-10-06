@@ -1,0 +1,124 @@
+{
+  "title": "Six loop challenges",
+  "idea": "An accumulator is a variable that a loop updates on every pass, turning many items into one result.",
+  "analogy": {
+    "text": "A cashier's running total. The till starts at zero, each scanned item adds to it, and the receipt prints once the last item is scanned.",
+    "breaks": "A till only adds; an accumulator can also multiply, join or compare."
+  },
+  "points": [
+    "The start value is also the answer when the loop makes zero passes.",
+    "Each pass combines the variable's old value with one new item.",
+    "Choose the loop by what you have: a count, a collection or a condition.",
+    "A failing test shows what you returned; trace its input by hand."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "What to start with",
+    "head": ["Job", "Start with", "Each pass"],
+    "rows": [
+      ["Total", "0", "total += n"],
+      ["Product", "1", "result *= n"],
+      ["Count matches", "0", "count++ when it matches"],
+      ["Build text", "'' (empty text)", "text += part"],
+      ["Collect items", "[] (empty array)", "list.push(item)"],
+      ["Biggest so far", "the first item", "replace it when n is bigger"]
+    ],
+    "highlight": { "row": 5 },
+    "caption": "Five start values are fixed. Only the biggest-so-far search starts from your data."
+  },
+  "code": [
+    {
+      "file": "accumulate.mjs",
+      "lang": "js",
+      "title": "Two accumulators",
+      "run": "browser",
+      "caption": "Run it. Change `let total = 0` to `100` and predict both lines before you run it again."
+    }
+  ],
+  "challenges": {
+    "intro": "Write each function, run the tests, and open a hint only when you are stuck.",
+    "items": [
+      {
+        "id": "sum-to", "title": "Sum 1 to n",
+        "prompt": "Write `sumTo(n)`. Return 1 + 2 + ... + n. For `n` below 1, return `0`. For example, `sumTo(4)` is 10.",
+        "starter": "sum-to.starter.js", "tests": "sum-to.tests.js", "solution": "sum-to.solution.js",
+        "hints": [
+          "Count from 1 up to `n` with a `for` loop, and keep a running total in a variable declared before the loop.",
+          "Start `total` at `0`. Write the test as `i <= n`, so that `n` itself is added.",
+          "`for (let i = 1; i <= n; i++) { total += i; }`, then `return total`. For `n` below 1 the loop never runs."
+        ]
+      },
+      {
+        "id": "countdown", "title": "Count down",
+        "prompt": "Write `countdown(n)` using a `while` loop. Return an array from `n` down to 1, such as `[3, 2, 1]`. For `n` below 1, return `[]`.",
+        "starter": "countdown.starter.js", "tests": "countdown.tests.js", "solution": "countdown.solution.js",
+        "hints": [
+          "A `while` loop repeats as long as its test is true. Here the test is that `n` is at least 1.",
+          "Push `n` onto an array, then lower `n` by 1 inside the loop body.",
+          "`while (n >= 1) { out.push(n); n--; }`, then `return out`. Without `n--` the loop never ends."
+        ]
+      },
+      {
+        "id": "factorial", "title": "Factorial",
+        "prompt": "Write `factorial(n)`. Return 1 * 2 * ... * n. `n` is a whole number, 0 or more, and `factorial(0)` is `1`.",
+        "starter": "factorial.starter.js", "tests": "factorial.tests.js", "solution": "factorial.solution.js",
+        "hints": [
+          "Many numbers become one product, so you need an accumulator. Which start value leaves a product unchanged?",
+          "A product starts at `1`, because anything times 0 is 0. Loop `i` from 2 up to `n` and multiply: `result *= i`.",
+          "`let result = 1; for (let i = 2; i <= n; i++) { result *= i; }`, then `return result`."
+        ]
+      },
+      {
+        "id": "vowels", "title": "Count the vowels",
+        "prompt": "Write `countVowels(text)`. Return how many of the letters `a`, `e`, `i`, `o`, `u` appear in `text`, in upper or lower case. `y` does not count.",
+        "starter": "vowels.starter.js", "tests": "vowels.tests.js", "solution": "vowels.solution.js",
+        "hints": [
+          "`for (const letter of text)` walks a string one character at a time.",
+          "Compare in one case: `text.toLowerCase()` returns the text in lower case, so you only check five letters.",
+          "Inside the loop, `if ('aeiou'.includes(letter)) { count++; }`. Return `count` after the loop."
+        ]
+      },
+      {
+        "id": "reverse", "title": "Reverse a string",
+        "prompt": "Write `reverseText(text)`. Return the characters of `text` in reverse order, built with a loop. For example, `'abc'` becomes `'cba'`.",
+        "starter": "reverse.starter.js", "tests": "reverse.tests.js", "solution": "reverse.solution.js",
+        "hints": [
+          "Build a new string, one character per pass, starting from an empty string `''`.",
+          "Adding each character to the end copies the order. Add each new character to the front instead.",
+          "`result = ch + result;` inside `for (const ch of text)`. Then `return result`."
+        ]
+      },
+      {
+        "id": "largest", "title": "Find the largest",
+        "prompt": "Write `largest(numbers)`. Return the biggest number in the array. The numbers may be negative. For an empty array, return `undefined`.",
+        "starter": "largest.starter.js", "tests": "largest.tests.js", "solution": "largest.solution.js",
+        "hints": [
+          "Keep the biggest number seen so far in a variable, and compare every item with it.",
+          "Do not start at `0`: if every number is negative, `0` would win. Start from the first item.",
+          "`let best = numbers[0];`, then in the loop `if (n > best) { best = n; }`. Return `best`."
+        ]
+      }
+    ]
+  },
+  "pitfalls": [
+    "Declare the accumulator before the loop; inside the body it resets every pass.",
+    "Use `i <= n` when `n` itself counts; `i < n` stops one pass early.",
+    "A `return` inside the loop body ends the whole function, not only the pass."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "options": ["-2", "-9", "0", "undefined"],
+    "answer": 2,
+    "why": "No item is greater than the start value 0, so `best` never changes. Start from the first item instead.",
+    "code": "let best = 0;\nfor (const n of [-4, -2, -9]) {\n  if (n > best) best = n;\n}\nconsole.log(best);",
+    "lang": "js"
+  },
+  "takeaway": "Set a start value, update it each pass, return it after the loop.",
+  "chat": {
+    "starters": [
+      "Why must the accumulator be declared before the loop?",
+      "How do I find out why my loop returns the wrong total?",
+      "When should I choose for...of instead of a for loop?"
+    ]
+  }
+}

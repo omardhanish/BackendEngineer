@@ -1,0 +1,9 @@
+{
+  "stdout": "201 7\nsaved: true https://example.com/docs\nafter a collision: fresh01\nCould not generate a unique short code",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "PostgreSQL 18.4",
+  "hash": "6da760c92857a78d",
+  "at": "2026-10-06T15:09:47.938Z"
+}

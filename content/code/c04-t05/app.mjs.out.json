@@ -1,0 +1,9 @@
+{
+  "stdout": "GET /books/1 200 {\"id\":1,\"title\":\"Dune\",\"author\":\"Frank Herbert\",\"year\":1965}\nGET /books/9 404 {\"error\":\"Book not found\"}\nPOST /books 201 {\"id\":4,\"title\":\"Hyperion\",\"author\":\"Dan Simmons\",\"year\":1989}\nPOST /books 400 {\"error\":\"Send title, author and year\"}\nGET /books/4 200 {\"id\":4,\"title\":\"Hyperion\",\"author\":\"Dan Simmons\",\"year\":1989}",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": null,
+  "hash": "422b3fe0ada7f7ae",
+  "at": "2026-10-06T09:19:00.993Z"
+}

@@ -1,0 +1,53 @@
+{
+  "title": "Primitives in JavaScript",
+  "idea": "A primitive is a single, immutable value: string, number, bigint, boolean, undefined, null or symbol. Variables hold it directly, and `===` compares it by value.",
+  "analogy": {
+    "text": "A number written on a sticky note. Copying it onto a second note gives two independent notes; changing one leaves the other alone.",
+    "breaks": "Primitives are never edited; a variable is given a new value."
+  },
+  "points": [
+    "There are seven primitive types; everything else is an object.",
+    "Primitives are immutable: `toUpperCase()` returns a new string and leaves the old one.",
+    "Assigning a primitive copies it, so changing one variable never affects another.",
+    "`===` compares primitives by value, and `typeof` reports the type name."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "The seven primitives",
+    "head": ["Type", "Example", "typeof"],
+    "rows": [
+      ["string", "'hello'", "\"string\""],
+      ["number", "42, 3.14, NaN", "\"number\""],
+      ["bigint", "9007199254740993n", "\"bigint\""],
+      ["boolean", "true, false", "\"boolean\""],
+      ["symbol", "Symbol('id')", "\"symbol\""],
+      ["undefined, null", "let x;  const y = null;", "\"undefined\", \"object\""]
+    ],
+    "highlight": { "row": 5 },
+    "caption": "`typeof null` is `\"object\"`, a long-standing quirk. Null is still a primitive."
+  },
+  "code": [
+    {
+      "file": "primitives.mjs",
+      "lang": "js",
+      "title": "Copy, compare, typeof",
+      "run": "browser",
+      "caption": "Run it. Then predict what `0.1 + 0.2` gives before you print it."
+    }
+  ],
+  "pitfalls": [
+    "Check for null with `value === null`; `typeof value === 'object'` also matches arrays and objects.",
+    "Never compare decimal results with `===`; use integer cents or a small tolerance.",
+    "Test for NaN with `Number.isNaN(x)`; `x === NaN` is always false."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "let x = 5;\nlet y = x;\ny += 1;\nconsole.log(x, y, typeof null);",
+    "lang": "js",
+    "options": ["6 6 object", "5 6 null", "5 6 object", "5 5 object"],
+    "answer": 2,
+    "why": "`y` is a copy, so `x` stays 5. `typeof null` is the string \"object\"."
+  },
+  "takeaway": "Primitives are copied and compared by value, and never change in place.",
+  "chat": { "starters": ["Why is typeof null equal to object?", "Why does 0.1 + 0.2 not equal 0.3?", "When should I use bigint instead of number?"] }
+}

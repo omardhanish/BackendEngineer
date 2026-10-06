@@ -1,0 +1,126 @@
+{
+  "title": "Docker Compose",
+  "idea": "Docker Compose lets you describe a multi-container app in one `compose.yaml` file, then start all of it with one command.",
+  "points": [
+    "Each `services` entry describes one part of your app, such as `api` or `db`.",
+    "`docker compose up` builds or pulls images, creates a network, then starts the containers.",
+    "Compose keys mirror `docker run` flags: `ports` is `-p`, `environment` is `-e`.",
+    "`${DB_PASSWORD}` is filled from your shell or from a `.env` file beside `compose.yaml`."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "What docker compose up does",
+    "scenario": {
+      "token": { "label": "up", "tone": "req" },
+      "stages": [
+        { "id": "file", "label": "compose.yaml", "sub": "api and db", "kind": "end" },
+        { "id": "images", "label": "Images", "sub": "build api, pull db" },
+        { "id": "net", "label": "Network", "sub": "one per project" },
+        { "id": "run", "label": "Containers", "sub": "db, then api", "kind": "end" }
+      ],
+      "steps": [
+        {
+          "caption": "`docker compose up` reads `compose.yaml` from the current folder. It names two services: `api` and `db`.",
+          "at": "file",
+          "slot": "top",
+          "state": { "file": "active" },
+          "out": []
+        },
+        {
+          "caption": "A service with `build` is built; a service with `image` is pulled if it is missing.",
+          "at": "images",
+          "slot": "top",
+          "state": { "file": "done", "images": "active" },
+          "out": ["build api", "pull db"]
+        },
+        {
+          "caption": "Compose creates one private network for the whole project. Every container joins it.",
+          "at": "net",
+          "slot": "top",
+          "state": { "file": "done", "images": "done", "net": "active" },
+          "out": ["build api", "pull db", "create network"]
+        },
+        {
+          "caption": "Containers start in `depends_on` order: `db` first, then `api`. The app is running.",
+          "at": "run",
+          "slot": "top",
+          "state": { "file": "done", "images": "done", "net": "done", "run": "active" },
+          "out": ["build api", "pull db", "create network", "start db", "start api"]
+        },
+        {
+          "caption": "`docker compose down` works backwards. It stops and removes the containers.",
+          "at": "run",
+          "slot": "bottom",
+          "token": { "label": "down", "tone": "ok" },
+          "state": { "file": "done", "images": "done", "net": "done", "run": "active" },
+          "out": ["build api", "pull db", "create network", "start db", "start api", "remove containers"]
+        },
+        {
+          "caption": "Then it removes the network. The images stay on disk.",
+          "at": "net",
+          "slot": "bottom",
+          "token": { "label": "down", "tone": "ok" },
+          "state": { "file": "done", "images": "done", "net": "active", "run": "done" },
+          "out": ["build api", "pull db", "create network", "start db", "start api", "remove containers", "remove network"]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "compose.yaml",
+      "lang": "yaml",
+      "title": "compose.yaml",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Two services, `api` and `db`. Save the file next to the Dockerfile.",
+      "walk": [
+        { "lines": [2, 3], "text": "`api` is built from the Dockerfile in this folder, like `docker build .`." },
+        { "lines": [4, 5], "text": "Like `-p 3000:3000`. Keep the quotes: YAML can misread an unquoted `HOST:CONTAINER`." },
+        { "lines": [6, 7], "text": "`depends_on` makes Compose start `db` before `api`." },
+        { "lines": [8, 9], "text": "`db` runs a ready-made image, pulled from Docker Hub if it is missing." },
+        { "lines": [10, 11], "text": "The `postgres` image requires a password; `POSTGRES_PASSWORD` sets it." }
+      ]
+    },
+    {
+      "file": "session.sh",
+      "lang": "bash",
+      "title": "Run it",
+      "run": "static",
+      "illustrative": true,
+      "caption": "`demo-password` is a demo value. Keep your real `.env` out of git.",
+      "walk": [
+        { "lines": [1], "text": "Create the `.env` file Compose reads for `${DB_PASSWORD}`." },
+        { "lines": [2], "text": "Build `api`, create the network and start both containers in the background." },
+        { "lines": [3], "text": "List this project's containers." },
+        { "lines": [4], "text": "Show the logs of `api` only." },
+        { "lines": [5], "text": "Stop and remove the containers and the network." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "`depends_on` waits for start, not readiness; add a `healthcheck` with `condition: service_healthy`.",
+    "After code changes run `docker compose up --build`; plain `up` can reuse the old image.",
+    "Old guides use `docker-compose` and `version:`; current Compose uses `docker compose` and no `version`."
+  ],
+  "quiz": {
+    "q": "You run `docker compose up -d`, then `docker compose down`. What still exists?",
+    "options": [
+      "The stopped `api` container",
+      "The built and pulled images",
+      "The project's private network",
+      "Nothing; everything is deleted"
+    ],
+    "answer": 1,
+    "why": "`down` removes the containers and the network. Images stay on disk unless you add `--rmi`."
+  },
+  "takeaway": "Describe the app once in `compose.yaml`, then run it all with `docker compose up`.",
+  "chat": {
+    "starters": [
+      "What is the difference between `docker compose` and `docker-compose`?",
+      "How do I start only one service from the file?",
+      "How do I rebuild after I change my code?"
+    ]
+  }
+}

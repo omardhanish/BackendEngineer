@@ -1,0 +1,100 @@
+{
+  "title": "Objects, arrays and references",
+  "idea": "Objects, arrays and functions are stored by reference: a variable holds a link to the object, so two variables can share and change the same one.",
+  "analogy": {
+    "text": "A shared document link. Two people hold the same link, so an edit by one shows for the other. Sending the link copies the link, not the document.",
+    "breaks": "Real links can go dead; a JavaScript reference never dangles."
+  },
+  "points": [
+    "Objects, arrays and functions live on the heap; variables hold a reference to them.",
+    "Assigning `b = a` copies the reference, so both names reach one object.",
+    "`===` on objects asks whether both sides are the same object, not equal contents.",
+    "Spread `{ ...a }` copies one level; `structuredClone(a)` copies nested objects too."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "memory",
+    "title": "Two names, one object",
+    "scenario": {
+      "code": [
+        "const a = { n: 1 };",
+        "const b = a;",
+        "b.n = 2;",
+        "const c = { ...a };",
+        "c.n = 3;",
+        "console.log(a.n, c.n);"
+      ],
+      "steps": [
+        {
+          "caption": "Line 1 creates an object on the heap. The variable `a` holds a reference to it.",
+          "line": 0,
+          "stack": [{ "name": "Global", "vars": { "a": { "ref": "o1" }, "b": "<uninitialized>", "c": "<uninitialized>" } }],
+          "heap": [{ "id": "o1", "label": "object", "props": { "n": "1" } }]
+        },
+        {
+          "caption": "Line 2 copies the reference, not the object. `a` and `b` now point at the same object.",
+          "line": 1,
+          "stack": [{ "name": "Global", "vars": { "a": { "ref": "o1" }, "b": { "ref": "o1" }, "c": "<uninitialized>" } }],
+          "heap": [{ "id": "o1", "label": "object", "props": { "n": "1" } }]
+        },
+        {
+          "caption": "Line 3 changes the object through `b`. There is only one object, so `a` sees the change.",
+          "line": 2,
+          "stack": [{ "name": "Global", "vars": { "a": { "ref": "o1" }, "b": { "ref": "o1" }, "c": "<uninitialized>" } }],
+          "heap": [{ "id": "o1", "label": "object", "props": { "n": "2" } }]
+        },
+        {
+          "caption": "Line 4 spreads `a` into a new object. `c` gets its own object with copied values.",
+          "line": 3,
+          "stack": [{ "name": "Global", "vars": { "a": { "ref": "o1" }, "b": { "ref": "o1" }, "c": { "ref": "o2" } } }],
+          "heap": [
+            { "id": "o1", "label": "object", "props": { "n": "2" } },
+            { "id": "o2", "label": "object (copy)", "props": { "n": "2" } }
+          ]
+        },
+        {
+          "caption": "Line 5 changes the copy only. The first object is untouched.",
+          "line": 4,
+          "stack": [{ "name": "Global", "vars": { "a": { "ref": "o1" }, "b": { "ref": "o1" }, "c": { "ref": "o2" } } }],
+          "heap": [
+            { "id": "o1", "label": "object", "props": { "n": "2" } },
+            { "id": "o2", "label": "object (copy)", "props": { "n": "3" } }
+          ]
+        },
+        {
+          "caption": "Line 6 reads through two different references to two different objects.",
+          "line": 5,
+          "stack": [{ "name": "Global", "vars": { "a": { "ref": "o1" }, "b": { "ref": "o1" }, "c": { "ref": "o2" } } }],
+          "heap": [
+            { "id": "o1", "label": "object", "props": { "n": "2" } },
+            { "id": "o2", "label": "object (copy)", "props": { "n": "3" } }
+          ]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "refs.mjs",
+      "lang": "js",
+      "title": "Alias, spread, structuredClone",
+      "run": "browser",
+      "caption": "Run it. Then push to `copy.tags` and see which lengths change."
+    }
+  ],
+  "pitfalls": [
+    "Spread is shallow: nested objects stay shared. Use `structuredClone` for a deep copy.",
+    "Do not use `===` to compare contents; compare the fields you need.",
+    "`structuredClone` throws on functions, so clone plain data only."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const p = { n: 1 };\nconst q = p;\nq.n = 9;\nconst r = { ...p };\nr.n = 5;\nconsole.log(p.n, p === q, p === r);",
+    "lang": "js",
+    "options": ["1 false false", "9 true true", "5 true false", "9 true false"],
+    "answer": 3,
+    "why": "`q` is an alias, so `p.n` becomes 9 and `p === q`. `r` is a new object, so `p === r` is false."
+  },
+  "takeaway": "Variables hold references; assigning copies the link, not the object.",
+  "chat": { "starters": ["Why does changing one variable change another?", "What is the difference between shallow and deep copy?", "Are function arguments passed by reference?"] }
+}

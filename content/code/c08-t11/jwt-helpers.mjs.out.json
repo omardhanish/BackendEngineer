@@ -1,0 +1,9 @@
+{
+  "stdout": "{\"sub\":\"1\",\"email\":\"ada@example.com\"} 3600\nJsonWebTokenError - invalid signature\nTokenExpiredError - jwt expired\nJsonWebTokenError - jwt malformed",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": null,
+  "hash": "85bae451914b8605",
+  "at": "2026-10-06T15:08:59.644Z"
+}

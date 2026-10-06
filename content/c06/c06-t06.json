@@ -1,0 +1,175 @@
+{
+  "title": "Stateless auth with JWT",
+  "idea": "A JSON Web Token (JWT) is a signed string of claims, such as a user's id and role. The server signs it at login, then only verifies it.",
+  "analogy": {
+    "text": "A festival wristband with a tamper-proof seal. Staff check the seal and read the colour; they keep no guest list.",
+    "breaks": "You cannot cancel one early without keeping a list, which brings state back."
+  },
+  "points": [
+    "At login the server signs the claims with a secret and returns the token.",
+    "The client sends it with every request as `Authorization: Bearer <token>`.",
+    "`jwt.verify` recomputes the signature and checks `exp`, the expiry time.",
+    "Stateless means no stored login: any server holding the secret can verify it."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "scrubber",
+    "title": "Inside a signed token",
+    "scenario": {
+      "kind": "jwt",
+      "secret": "demo-secret",
+      "payload": {
+        "sub": "1",
+        "role": "user",
+        "exp": 1893456000
+      },
+      "steps": [
+        {
+          "caption": "The login response carries a token: header, payload and signature, joined by dots.",
+          "view": "parts"
+        },
+        {
+          "caption": "Header and payload are only encoded. Anyone can read `sub` (the user id), `role` and `exp`.",
+          "view": "decode"
+        },
+        {
+          "caption": "The signature is a fingerprint of the first two parts, made with the secret. The secret stays on the server.",
+          "view": "sign"
+        },
+        {
+          "caption": "A client edits `role` to `admin`. The old signature no longer matches, so `jwt.verify` throws.",
+          "view": "tamper",
+          "tamper": {
+            "role": "admin"
+          }
+        },
+        {
+          "caption": "Only a holder of the secret can sign an edited payload that the server accepts.",
+          "view": "resign",
+          "tamper": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "verify.mjs",
+      "lang": "js",
+      "title": "Sign and verify",
+      "run": "captured",
+      "caption": "`verify` returns the claims only for an untouched, unexpired token signed with the same secret."
+    },
+    {
+      "file": "app.mjs",
+      "lang": "js",
+      "title": "Login and a stateless route",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "Login queries Postgres once. After that, `authenticate` needs no database at all.",
+      "walk": [
+        {
+          "lines": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20
+          ],
+          "text": "Setup: a demo `JWT_SECRET` and a `users` table holding Ada. The low bcrypt cost keeps the demo fast."
+        },
+        {
+          "lines": [
+            26,
+            27,
+            28,
+            29,
+            30
+          ],
+          "text": "Look up the user and compare the password with the stored hash. Both failures give one message."
+        },
+        {
+          "lines": [
+            31,
+            32,
+            33
+          ],
+          "text": "Sign the claims with the secret from the environment. The token expires in 15 minutes."
+        },
+        {
+          "lines": [
+            38,
+            39,
+            40
+          ],
+          "text": "`authenticate` strips `Bearer ` and verifies the token, accepting only HS256."
+        },
+        {
+          "lines": [
+            41,
+            42,
+            43,
+            44
+          ],
+          "text": "A bad or missing token ends the request with `401`. A good one fills `req.user`."
+        },
+        {
+          "lines": [
+            47,
+            48,
+            49
+          ],
+          "text": "The route reads the claims from `req.user`. It runs no query."
+        },
+        {
+          "lines": [
+            58,
+            59,
+            60,
+            61,
+            62,
+            63
+          ],
+          "text": "Close the database pool first. The token still works; a request without one gets `401`."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Never put passwords or private data in the payload; anyone can decode it.",
+    "Always set `expiresIn`; a token without an expiry works forever.",
+    "Keep `JWT_SECRET` in the environment. Anyone who has it can mint admin tokens."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const token = jwt.sign({ role: 'user' }, 'demo-secret',\n  { expiresIn: '15m' });\nconst [head, , sig] = token.split('.');\nconst body = Buffer.from('{\"role\":\"admin\"}').toString('base64url');\nconst forged = `${head}.${body}.${sig}`;\nconsole.log(jwt.decode(forged).role);\ntry { jwt.verify(forged, 'demo-secret'); }\ncatch (err) { console.log(err.message); }",
+    "lang": "js",
+    "options": [
+      "user, then invalid signature",
+      "admin, then invalid signature",
+      "admin, then nothing",
+      "invalid signature, then nothing"
+    ],
+    "answer": 1,
+    "why": "`jwt.decode` only reads the payload, so the forged `admin` shows. `jwt.verify` recomputes the signature, finds a mismatch and throws."
+  },
+  "takeaway": "The token carries its own proof, so the server stores nothing per login.",
+  "chat": {
+    "starters": [
+      "How is a JWT different from a session cookie?",
+      "How do I log a user out if tokens are stateless?",
+      "Where should the client keep the token?"
+    ]
+  }
+}

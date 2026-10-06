@@ -1,0 +1,8 @@
+{
+  "stdout": "Array      function\nPromise    function\nsetTimeout function\ndocument   undefined\nprocess    object",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "hash": "7fce5fcdf5150ee0",
+  "at": "2026-10-06T09:15:02.865Z"
+}

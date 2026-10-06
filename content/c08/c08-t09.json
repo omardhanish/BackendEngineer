@@ -1,0 +1,67 @@
+{
+  "title": "Move logic into services",
+  "idea": "A service is a module of plain functions that holds your rules and queries. It knows nothing about HTTP, so controllers can stay thin.",
+  "points": [
+    "The controller reads `req`, picks the status code and calls `res.json`.",
+    "`createUser` hashes and inserts, then returns a user or `null`. It never sees `req`.",
+    "`auth.validation.js` holds only Zod schemas that routes and tests can share.",
+    "The refactor moves code. The requests and responses stay exactly the same."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Who does what after the refactor",
+    "nodes": [
+      { "id": "route", "label": "Route", "sub": "auth.routes.js" },
+      { "id": "ctrl", "label": "Controller", "sub": "HTTP in, HTTP out" },
+      { "id": "schema", "label": "Schema", "sub": "Zod rules" },
+      { "id": "svc", "label": "Service", "sub": "logic and queries" },
+      { "id": "db", "label": "Postgres", "sub": "users table" }
+    ],
+    "edges": [
+      { "from": "route", "to": "ctrl", "caption": "The route only maps `POST /auth/signup` to a controller function." },
+      { "from": "ctrl", "to": "schema", "label": "safeParse", "caption": "The controller asks the schema to check the body. A failure becomes a 400." },
+      { "from": "ctrl", "to": "svc", "label": "createUser", "caption": "Valid data goes to the service as plain arguments. No `req` or `res` crosses this line." },
+      { "from": "svc", "to": "db", "label": "insert", "caption": "The service hashes the password and runs the query." },
+      { "from": "svc", "to": "ctrl", "label": "user or null", "dashed": true, "back": true, "caption": "The service returns data. The controller turns it into 201 or 409." }
+    ]
+  },
+  "code": [
+    {
+      "file": "refactor.mjs",
+      "lang": "js",
+      "title": "Three small modules",
+      "run": "captured",
+      "needs": ["postgres"],
+      "caption": "Each `// src/...` block is its own file in the project, with `import` lines added. One file here, so it runs alone.",
+      "walk": [
+        { "lines": [7, 8, 9, 10, 11], "text": "Validation module: only Zod schemas, reusable by routes and tests." },
+        { "lines": [14, 15, 16, 17, 18, 19, 20], "text": "Service: hash, then insert. Plain values in, a row out. No `req`, no `res`." },
+        { "lines": [19, 21], "text": "A duplicate gives no row, so the service returns `null`. It does not pick a status code." },
+        { "lines": [25, 26, 27, 28], "text": "Controller: shape the 400 body. This is HTTP work, so it stays here." },
+        { "lines": [30, 31, 32, 33, 34, 35, 36], "text": "The handler is short: validate, call the service, map the result to 201 or 409." },
+        { "lines": [55, 56, 57, 58, 59, 60, 61, 62, 63], "text": "The same requests as before give the same answers." },
+        { "lines": [64, 65], "text": "The service also works with no HTTP at all, so a script or a test can reuse it." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Keep `req`, `res` and status codes out of services. Pass values in; return values out.",
+    "After moving code, re-run the requests. Check 201, 400 and 409 still come back."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const a = { email: 'a@x.co', password: 'secret-pass' };\nconst first = await createUser(a);\nconst again = await createUser(a);\nconsole.log(first.email, again);",
+    "lang": "js",
+    "options": ["a@x.co null", "a@x.co undefined", "a@x.co {}", "It throws a unique violation"],
+    "answer": 0,
+    "why": "On a duplicate, `onConflictDoNothing()` returns no row, so the service returns `null`. The controller turns that into 409."
+  },
+  "takeaway": "Controllers speak HTTP; services do the work and know nothing of it.",
+  "chat": {
+    "starters": [
+      "How do I decide what belongs in a service?",
+      "Should one service call another service?",
+      "How would I test a service without starting Express?"
+    ]
+  }
+}

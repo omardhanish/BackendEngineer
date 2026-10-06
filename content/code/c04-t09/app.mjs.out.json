@@ -1,0 +1,8 @@
+{
+  "stdout": "logger: /books\nerror handler: session store is down\n500 { error: 'internal error' }",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "hash": "e15e7f00fb529176",
+  "at": "2026-10-06T07:52:46.174Z"
+}

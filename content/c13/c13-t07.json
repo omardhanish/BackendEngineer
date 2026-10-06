@@ -1,0 +1,89 @@
+{
+  "title": "Monolith architecture",
+  "idea": "A monolith is one application deployed as a single unit. Every feature runs in the same process and usually shares one database.",
+  "analogy": {
+    "text": "One restaurant kitchen cooks every dish. Staff pass things hand to hand, which is fast, but the kitchen opens, closes and expands as a whole.",
+    "breaks": "A monolith can still be organised into clean modules inside."
+  },
+  "points": [
+    "Every feature is a module in one codebase, built and deployed together.",
+    "Modules call each other as plain function calls, with no network between them.",
+    "One shared database lets a single transaction cover several features.",
+    "The cost: you deploy and scale as one unit; a crash can stop everything."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "One request, one process",
+    "actors": [
+      { "id": "client", "label": "Client" },
+      { "id": "app", "label": "Monolith" },
+      { "id": "db", "label": "Database" }
+    ],
+    "messages": [
+      {
+        "from": "client",
+        "to": "app",
+        "label": "POST /orders",
+        "note": "One request enters the one running application."
+      },
+      {
+        "from": "app",
+        "to": "app",
+        "label": "orders calls payments",
+        "note": "A plain function call inside the same process: no network to cross."
+      },
+      {
+        "from": "app",
+        "to": "db",
+        "label": "INSERT order",
+        "note": "All modules share one database, so one transaction can cover the whole change."
+      },
+      {
+        "from": "db",
+        "to": "app",
+        "label": "committed",
+        "dashed": true,
+        "note": "A transaction commits together or rolls back together."
+      },
+      {
+        "from": "app",
+        "to": "client",
+        "label": "201 Created",
+        "dashed": true,
+        "note": "One process answers. Shipping a fix to any module means deploying the whole app."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "monolith.mjs",
+      "lang": "js",
+      "title": "Two modules, one process",
+      "run": "browser",
+      "caption": "`orders` calls `payments` like any other function. Nothing can time out between them."
+    }
+  ],
+  "pitfalls": [
+    "Do not split into microservices, the next page, just because monoliths sound old-fashioned.",
+    "Do not let modules read each other's database tables; call their functions instead."
+  ],
+  "quiz": {
+    "q": "What does the snippet print, line by line?",
+    "options": [
+      "order placed, then order placed",
+      "payment declined, then order placed",
+      "order placed, then an error",
+      "order placed, then payment declined"
+    ],
+    "answer": 3,
+    "why": "`charge(20)` returns true, so the order is placed. `charge(0)` returns false, so the payment is declined."
+  },
+  "takeaway": "A monolith is the simplest design; split it only for a real reason.",
+  "chat": {
+    "starters": [
+      "When is a monolith the right choice?",
+      "How do I keep a monolith's code organised?",
+      "Can I scale a monolith horizontally?"
+    ]
+  }
+}

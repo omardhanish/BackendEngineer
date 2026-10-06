@@ -1,0 +1,119 @@
+{
+  "title": "Microservice architecture",
+  "idea": "Microservices split an application into small services, each with one job and its own data. Services deploy on their own and talk over the network.",
+  "analogy": {
+    "text": "A food court. Each stall cooks one kind of food, runs its own kitchen and can open or close alone. Ordering a full meal means visiting several stalls.",
+    "breaks": "Services call each other while handling one request, and those calls can fail."
+  },
+  "points": [
+    "Each service owns one capability and its own data, reached only through its API.",
+    "Teams deploy and scale each service independently.",
+    "Calls between services are network requests, so they can be slow or fail.",
+    "A change that spans services cannot use a single database transaction."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "Services with their own databases",
+    "scenario": {
+      "tiers": [["client"], ["gw"], ["orders", "payments", "users"], ["odb", "pdb", "udb"]],
+      "nodes": {
+        "client": { "label": "Client", "kind": "user" },
+        "gw": { "label": "Gateway", "kind": "gateway", "sub": "single entry" },
+        "orders": { "label": "Orders", "kind": "service" },
+        "payments": { "label": "Payments", "kind": "service" },
+        "users": { "label": "Users", "kind": "service" },
+        "odb": { "label": "Orders DB", "kind": "db" },
+        "pdb": { "label": "Payments DB", "kind": "db" },
+        "udb": { "label": "Users DB", "kind": "db" }
+      },
+      "links": [
+        ["client", "gw"],
+        ["gw", "orders"],
+        ["gw", "users"],
+        ["orders", "payments", { "label": "HTTP", "dashed": true }],
+        ["orders", "odb"],
+        ["payments", "pdb"],
+        ["users", "udb"]
+      ],
+      "steps": [
+        {
+          "caption": "Clients send every request to one entry point, a gateway that routes by path.",
+          "send": [{ "from": "client", "to": "gw", "label": "POST /orders" }]
+        },
+        {
+          "caption": "The gateway routes the request to the Orders service.",
+          "send": [{ "from": "gw", "to": "orders", "label": "POST /orders" }]
+        },
+        {
+          "caption": "Orders needs a payment, so it calls Payments over the network.",
+          "send": [{ "from": "orders", "to": "payments", "label": "charge", "tone": "info" }]
+        },
+        {
+          "caption": "Each service writes only to its own database. Orders never reads the Payments database.",
+          "send": [
+            { "from": "orders", "to": "odb", "label": "INSERT" },
+            { "from": "payments", "to": "pdb", "label": "INSERT" }
+          ]
+        },
+        {
+          "caption": "Payments goes down. The Users service keeps running, and Orders does too if it handles the failed call.",
+          "send": [{ "from": "gw", "to": "users", "label": "GET /me", "tone": "ok" }],
+          "state": { "payments": "down" },
+          "badge": { "payments": "down" }
+        },
+        {
+          "caption": "Payments is back, and traffic grows on Orders alone.",
+          "state": { "payments": "up", "orders": "busy" },
+          "badge": { "payments": null }
+        },
+        {
+          "caption": "Only Orders runs more copies. Users and Payments stay as they are.",
+          "state": { "orders": "up" },
+          "badge": { "orders": "more copies" }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "service-call.mjs",
+      "lang": "js",
+      "title": "Same call, over the network",
+      "run": "captured",
+      "caption": "In the monolith this was a function call. Now it is a network request that can fail.",
+      "walk": [
+        { "lines": [3], "text": "Payments is its own small HTTP server. It always answers `paid`." },
+        { "lines": [4, 5], "text": "Listen on a free port and build its URL." },
+        { "lines": [7, 8, 9, 10], "text": "Orders makes a network request and handles a failed call in `catch`." },
+        { "lines": [11], "text": "Payments is running, so the call succeeds." },
+        { "lines": [12], "text": "Stop Payments, as a crash or a deploy would." },
+        { "lines": [13], "text": "The same call now fails, and Orders still returns an answer." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not share one database between services; that couples them again.",
+    "Do not split early; more services mean more to deploy, monitor and debug.",
+    "Never assume a call to another service succeeds; plan for it to fail."
+  ],
+  "quiz": {
+    "q": "What does the script print, line by line?",
+    "options": [
+      "order paid, then order paid",
+      "order failed twice",
+      "order paid, then order failed: payments unreachable",
+      "order paid, then it crashes"
+    ],
+    "answer": 2,
+    "why": "The first call reaches the running service. After `close()` the port refuses connections, `fetch` rejects, and `catch` returns the failure message."
+  },
+  "takeaway": "Microservices buy independence at the price of network calls and more to operate.",
+  "chat": {
+    "starters": [
+      "How small should a microservice be?",
+      "How do services find each other?",
+      "How do I handle a transaction that spans two services?"
+    ]
+  }
+}

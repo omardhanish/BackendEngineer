@@ -1,0 +1,118 @@
+{
+  "title": "What authentication is",
+  "idea": "Authentication is a login system: the user proves a secret once, and the server hands back proof that works for later requests.",
+  "points": [
+    "HTTP forgets you between requests, so the server must recognize you again.",
+    "A hash is a one-way scramble of the password; sign-up stores only that.",
+    "bcrypt mixes in a random salt, so one password gives different hashes.",
+    "The proof, a cookie or token, replaces the password on later requests."
+  ],
+  "hero": {
+    "type": "timeline",
+    "title": "A login story: Ada and the Book Store",
+    "items": [
+      {
+        "label": "Sign up",
+        "text": "Ada picks a password. The server stores only its hash."
+      },
+      {
+        "label": "Log in",
+        "text": "Ada sends email and password. The server hashes the attempt and compares."
+      },
+      {
+        "label": "Receive proof",
+        "text": "On a match the server answers with proof, such as a cookie."
+      },
+      {
+        "label": "Show proof",
+        "text": "Every later request carries the proof. The password is never sent again."
+      },
+      {
+        "label": "Log out",
+        "text": "The proof stops working, and the next request is a stranger's."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "login.mjs",
+      "lang": "js",
+      "title": "Sign up and log in",
+      "run": "captured",
+      "caption": "`bcryptjs` is pure JavaScript with the same API as the native `bcrypt` package. Step through, then press Run.",
+      "walk": [
+        {
+          "lines": [
+            3
+          ],
+          "text": "A `Map` stands in for the users table: email to stored hash."
+        },
+        {
+          "lines": [
+            5,
+            6,
+            7
+          ],
+          "text": "Sign-up stores only the hash. The `10` is the cost: higher is slower, for attackers too."
+        },
+        {
+          "lines": [
+            9,
+            10,
+            11,
+            12
+          ],
+          "text": "An unknown email has no hash and fails. Otherwise `compare` hashes the attempt with the stored salt."
+        },
+        {
+          "lines": [
+            14,
+            15
+          ],
+          "text": "Two users sign up with the same password."
+        },
+        {
+          "lines": [
+            16,
+            17,
+            18
+          ],
+          "text": "Three attempts: right password, wrong password, unknown email."
+        },
+        {
+          "lines": [
+            19,
+            20
+          ],
+          "text": "Compare the two stored hashes. Each has its own random salt, so predict the result."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Never store or log a plain password. Keep only the bcrypt hash.",
+    "Do not hash passwords with SHA-256 or MD5; fast hashes make guessing cheap.",
+    "Hashing the attempt again and using `===` never matches. Call `bcrypt.compare`."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "import bcrypt from 'bcryptjs';\nconst stored = await bcrypt.hash('demo-password', 10);\nconst a = await bcrypt.compare('demo-password', stored);\nconst b = await bcrypt.compare('Demo-Password', stored);\nconsole.log(a, b, stored === 'demo-password');",
+    "lang": "js",
+    "options": [
+      "true false false",
+      "true true false",
+      "true false true",
+      "false false false"
+    ],
+    "answer": 0,
+    "why": "`compare` re-hashes the attempt with the salt inside the stored hash. Case matters, and the stored value is a hash, not the password."
+  },
+  "takeaway": "Verify the secret once, then recognize the user by proof, not the password.",
+  "chat": {
+    "starters": [
+      "Why hash passwords instead of encrypting them?",
+      "What is a salt, and where is it stored?",
+      "After login, is the proof a cookie or a token?"
+    ]
+  }
+}

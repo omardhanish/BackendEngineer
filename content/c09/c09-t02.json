@@ -1,0 +1,58 @@
+{
+  "title": "The problem Docker solves",
+  "idea": "Docker tackles the \"it works on my machine\" problem. It ships the app together with its environment, so every machine runs the same setup.",
+  "points": [
+    "Your app's environment is the Node.js version, packages and system libraries around its code.",
+    "Machines set up by hand drift apart: a laptop, a test server, production.",
+    "Two apps on one server can need different Node.js versions.",
+    "A new teammate installs Docker and runs the image, not a setup checklist."
+  ],
+  "hero": {
+    "type": "compare",
+    "title": "Setup by hand or by image",
+    "left": {
+      "title": "Install on every machine",
+      "tone": "bad",
+      "items": [
+        "Each machine installs Node.js and packages itself",
+        "Versions drift between laptop, test and production",
+        "A bug appears on one machine and not another",
+        "New teammates follow a setup checklist"
+      ]
+    },
+    "right": {
+      "title": "Ship the environment",
+      "tone": "good",
+      "items": [
+        "The image holds Node.js, packages and your code",
+        "Every machine runs the same image",
+        "Two apps can use different Node.js versions",
+        "New teammates install Docker, then run the image"
+      ]
+    },
+    "verdict": "One image replaces many hand-built setups."
+  },
+  "pitfalls": [
+    "Do not expect Docker to fix bugs; it only keeps the environment consistent.",
+    "Settings and secrets still differ per environment; keep them out of the image."
+  ],
+  "quiz": {
+    "q": "The API crashes only on a teammate's laptop. How does an image help?",
+    "options": [
+      "It rewrites your code for each machine",
+      "Both machines run the same Node.js and packages",
+      "It fixes bugs in your JavaScript",
+      "It copies your laptop's files to theirs"
+    ],
+    "answer": 1,
+    "why": "The image carries Node.js, packages and code together, so both machines run one environment. A genuine bug in your code still crashes."
+  },
+  "takeaway": "When behavior differs by machine, compare the environments too.",
+  "chat": {
+    "starters": [
+      "Why does the same code behave differently on two machines?",
+      "What goes inside an image and what stays outside?",
+      "Do I still need Node.js installed on my laptop?"
+    ]
+  }
+}

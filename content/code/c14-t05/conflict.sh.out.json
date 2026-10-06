@@ -1,0 +1,9 @@
+{
+  "stdout": "$ mkdir menu\n$ cd menu\n$ git init -b main\nInitialized empty Git repository in /home/ada/menu/.git/\n$ echo \"soup: 5\" > menu.txt\n$ git add menu.txt\n$ git commit -m \"Add menu\"\n[main (root-commit) dc76954] Add menu\n 1 file changed, 1 insertion(+)\n create mode 100644 menu.txt\n$ git switch -c cheaper\nSwitched to a new branch 'cheaper'\n$ echo \"soup: 4\" > menu.txt\n$ git commit -am \"Lower soup price\"\n[cheaper cc08cc2] Lower soup price\n 1 file changed, 1 insertion(+), 1 deletion(-)\n$ git switch main\nSwitched to branch 'main'\n$ echo \"soup: 6\" > menu.txt\n$ git commit -am \"Raise soup price\"\n[main 3142879] Raise soup price\n 1 file changed, 1 insertion(+), 1 deletion(-)\n$ git merge cheaper\nAuto-merging menu.txt\nCONFLICT (content): Merge conflict in menu.txt\nAutomatic merge failed; fix conflicts and then commit the result.\n$ git status --short\nUU menu.txt\n$ cat menu.txt\n<<<<<<< HEAD\nsoup: 6\n=======\nsoup: 4\n>>>>>>> cheaper\n$ echo \"soup: 5\" > menu.txt\n$ git add menu.txt\n$ git commit --no-edit\n[main 5aa04c8] Merge branch 'cheaper'\n$ git log --oneline --graph\n*   5aa04c8 Merge branch 'cheaper'\n|\\\n| * cc08cc2 Lower soup price\n* | 3142879 Raise soup price\n|/\n* dc76954 Add menu",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "git 2.47.0",
+  "hash": "aaa6db0aa20c6a4b",
+  "at": "2026-10-06T10:01:55.410Z"
+}

@@ -1,0 +1,92 @@
+{
+  "title": "Pushing to a remote",
+  "idea": "A remote is another copy of your repository, usually on a server such as GitHub. `git push` uploads your new commits to it.",
+  "analogy": {
+    "text": "Pushing is like adding pages to a shared binder. The binder refuses new pages until you have read the ones added since your last visit.",
+    "breaks": "Everyone holds a full copy, not just a page in the binder."
+  },
+  "points": [
+    "Git stores each remote as a name and URL; `origin` is the usual name.",
+    "`git push -u origin main` uploads `main` to `origin` and remembers that link.",
+    "`origin/main` records where the remote's `main` was when you last connected.",
+    "Rejected? The remote has commits you lack. `git pull` fetches, then merges them."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "scrubber",
+    "title": "Push, reject, merge, push",
+    "scenario": {
+      "kind": "git",
+      "steps": [
+        {
+          "caption": "You commit A. It exists only on your machine, and no remote is involved yet.",
+          "do": ["commit A"]
+        },
+        {
+          "caption": "`git push -u origin main` uploads A. The `origin/main` label is your record of where the remote stands.",
+          "do": ["push main"]
+        },
+        {
+          "caption": "A teammate pushes B. You commit C. Pushing C now would be rejected: the remote has a commit you lack.",
+          "do": ["remote-commit B", "commit C"]
+        },
+        {
+          "caption": "`git fetch` downloads B and moves `origin/main`. Your own branch and files do not change.",
+          "do": ["fetch"]
+        },
+        {
+          "caption": "`git merge origin/main` joins both lines in merge commit M.",
+          "do": ["merge origin/main"]
+        },
+        {
+          "caption": "`git push` now succeeds: M builds on B, so the remote's `main` moves forward to M.",
+          "do": ["push main"]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "push.sh",
+      "lang": "bash",
+      "title": "Push, rejection, fix",
+      "run": "captured",
+      "caption": "Real Git output. A bare repository on disk stands in for GitHub; the commands are the same. Hashes are fixed in this recording.",
+      "walk": [
+        { "lines": [1], "text": "A bare repository holds history but no working files. It stands in for GitHub." },
+        { "lines": [2, 3, 4, 5, 6, 7], "text": "Create `app` with one commit." },
+        { "lines": [8, 9], "text": "`remote add` stores a name and a URL. `remote -v` lists them." },
+        { "lines": [10], "text": "`-u` records `origin/main` as the branch `main` tracks, so later `git push` needs no arguments." },
+        { "lines": [11, 12, 13, 14, 15, 16], "text": "A teammate clones the remote, commits, and pushes. Clone set up `origin` for them." },
+        { "lines": [17, 18, 19, 20, 21], "text": "You commit too. Your push is rejected: the remote has a commit you lack." },
+        { "lines": [22, 23, 24, 25], "text": "`git fetch` downloads their commit. `status -sb` shows you are ahead and behind. Merge, then push." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Keep access tokens out of the remote URL; Git stores URLs as plain text.",
+    "After a rejected push, fetch and merge; `--force` would discard your teammate's commits.",
+    "If `git pull` stops about divergent branches, choose: `--no-rebase` merges, `--rebase` rebases."
+  ],
+  "quiz": {
+    "q": "What does the last command print?",
+    "code": "# main was pushed earlier with -u\ngit commit --allow-empty -m \"More\"\ngit status -sb",
+    "lang": "bash",
+    "options": [
+      "## main",
+      "## main...origin/main [ahead 1]",
+      "## main...origin/main [behind 1]",
+      "## main...origin/main"
+    ],
+    "answer": 1,
+    "why": "`-u` linked `main` to `origin/main`. The new commit exists only locally, so `main` is one commit ahead."
+  },
+  "takeaway": "A push succeeds only when it moves the remote branch forward.",
+  "chat": {
+    "starters": [
+      "What does the `-u` flag in `git push -u` do?",
+      "Why is the default remote called origin?",
+      "How do I log in to GitHub from the command line?"
+    ]
+  }
+}

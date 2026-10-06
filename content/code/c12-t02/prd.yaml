@@ -1,0 +1,17 @@
+goal: People register, prove who they are and stay logged in.
+users: visitor (not logged in) and member (logged in)
+stories:
+  - As a visitor, I register with a username, email and password.
+  - As a visitor, I verify my email with the link I was sent.
+  - As a visitor, I log in.
+  - As a member, I stay logged in without retyping my password.
+  - As a member, I view my own profile.
+  - As a member, I ask for a new verification email.
+  - As a member, I log out.
+  - As a member, I change my password.
+  - As a visitor, I reset a forgotten password with an emailed link.
+rules:
+  - Links in emails expire after 20 minutes.
+  - Passwords are stored hashed, never as plain text.
+operations: a health check tells monitors the service is up
+out_of_scope: social login, two-factor codes, a front end

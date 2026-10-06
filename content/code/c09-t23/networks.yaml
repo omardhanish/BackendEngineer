@@ -1,0 +1,14 @@
+services:
+  proxy:
+    networks:
+      - front
+  api:
+    networks:
+      - front
+      - back
+  db:
+    networks:
+      - back
+networks:
+  front:
+  back:

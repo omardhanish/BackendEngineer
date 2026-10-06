@@ -1,0 +1,65 @@
+{
+  "title": "Methods and status codes",
+  "idea": "A request's method names the action, such as read or delete. The response's status code names the outcome, such as created or not found.",
+  "analogy": {
+    "text": "A form at a service counter. You tick one action: look up, add, replace or remove. The clerk stamps it: done, go elsewhere, your mistake, our mistake.",
+    "breaks": "In HTTP, your own code decides what each method does."
+  },
+  "points": [
+    "Safe methods only read, so anyone may call them freely.",
+    "Idempotent methods leave the same state when repeated, so a retry is harmless.",
+    "The first digit groups codes: `2xx` is success, `3xx` a redirect to another URL.",
+    "`4xx` means the client erred; `5xx` means the server failed."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "Five methods at a glance",
+    "head": ["Method", "Means", "Safe", "Idempotent", "Usual success"],
+    "rows": [
+      ["GET", "Read", "yes", "yes", "200"],
+      ["POST", "Create or trigger", "no", "no", "201"],
+      ["PUT", "Replace the whole item", "no", "yes", "200 or 204"],
+      ["PATCH", "Change part of it", "no", "not guaranteed", "200"],
+      ["DELETE", "Remove", "no", "yes", "204"]
+    ],
+    "highlight": { "col": 3 },
+    "caption": "`PUT` sends the whole new version; `PATCH` sends only the fields that change."
+  },
+  "code": [
+    {
+      "file": "repeat.mjs",
+      "lang": "js",
+      "title": "Repeating a call",
+      "run": "browser",
+      "caption": "Each call runs twice on a fresh store. Only `POST` ends in a different state."
+    },
+    {
+      "file": "classes.mjs",
+      "lang": "js",
+      "title": "Status classes",
+      "run": "browser",
+      "caption": "The first digit gives the class. Add a code such as `502` and run it again."
+    }
+  ],
+  "pitfalls": [
+    "Never change data on a `GET` request, even when it is convenient.",
+    "Retry only idempotent requests automatically; a repeated `POST` may create duplicates.",
+    "Use `401` for missing or invalid credentials, `403` for a known user without permission."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const order = { qty: 1 };\nconst put = () => { order.qty = 3; };     // fixed value\nconst patch = () => { order.qty += 1; };  // relative change\nput(); put();\npatch(); patch();\nconsole.log(order.qty);",
+    "lang": "js",
+    "options": ["3", "4", "5", "6"],
+    "answer": 2,
+    "why": "`put` sets 3 each time, so repeating it changes nothing. Each `patch` adds 1 again: 3 + 1 + 1 = 5."
+  },
+  "takeaway": "Choose the method by intent, then judge the result by its first digit.",
+  "chat": {
+    "starters": [
+      "Is it ever safe to retry a POST request?",
+      "When should I return 400 and when 422?",
+      "What is the difference between a 301 and a 302 redirect?"
+    ]
+  }
+}

@@ -1,0 +1,247 @@
+{
+  "title": "Reverse proxy vs forward proxy",
+  "idea": "A proxy is a server that passes requests on for someone else. A forward proxy acts for clients; a reverse proxy acts for servers.",
+  "analogy": {
+    "text": "A switchboard. Staff calling out show the company's number (forward proxy). Callers ringing in reach a receptionist who routes them (reverse proxy).",
+    "breaks": "A switchboard only connects calls; a proxy can also cache, filter and log."
+  },
+  "points": [
+    "Both sit between clients and servers; the difference is whose side they serve.",
+    "A forward proxy serves clients, who are usually configured to send requests through it.",
+    "A reverse proxy fronts your servers; clients see one address, not the servers behind.",
+    "Reverse proxies often balance load, terminate HTTPS, cache or compress for your app."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "Two proxies, two sides",
+    "scenario": {
+      "tiers": [
+        [
+          "c1",
+          "c2"
+        ],
+        [
+          "fp"
+        ],
+        [
+          "rp"
+        ],
+        [
+          "s1",
+          "s2"
+        ]
+      ],
+      "nodes": {
+        "c1": {
+          "label": "User A",
+          "kind": "user"
+        },
+        "c2": {
+          "label": "User B",
+          "kind": "user"
+        },
+        "fp": {
+          "label": "Forward proxy",
+          "kind": "proxy"
+        },
+        "rp": {
+          "label": "Reverse proxy",
+          "kind": "proxy"
+        },
+        "s1": {
+          "label": "App server 1",
+          "kind": "server"
+        },
+        "s2": {
+          "label": "App server 2",
+          "kind": "server"
+        }
+      },
+      "links": [
+        [
+          "c1",
+          "fp"
+        ],
+        [
+          "c2",
+          "fp"
+        ],
+        [
+          "fp",
+          "rp",
+          {
+            "label": "internet",
+            "dashed": true
+          }
+        ],
+        [
+          "rp",
+          "s1"
+        ],
+        [
+          "rp",
+          "s2"
+        ]
+      ],
+      "groups": [
+        {
+          "label": "Client side",
+          "nodes": [
+            "c1",
+            "c2",
+            "fp"
+          ]
+        },
+        {
+          "label": "Server side",
+          "nodes": [
+            "rp",
+            "s1",
+            "s2"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "caption": "Users on one network send their requests through a forward proxy.",
+          "send": [
+            {
+              "from": "c1",
+              "to": "fp",
+              "label": "GET /"
+            },
+            {
+              "from": "c2",
+              "to": "fp",
+              "label": "GET /"
+            }
+          ],
+          "badge": {
+            "fp": "for clients"
+          }
+        },
+        {
+          "caption": "The forward proxy sends the request out for them. The site normally sees the proxy's address, not the user's.",
+          "send": [
+            {
+              "from": "fp",
+              "to": "rp",
+              "label": "GET /"
+            }
+          ]
+        },
+        {
+          "caption": "On the site's side, a reverse proxy answers first. To outsiders, it is the site.",
+          "badge": {
+            "rp": "for servers"
+          },
+          "focus": [
+            "rp"
+          ]
+        },
+        {
+          "caption": "It picks a backend and forwards the request. The client never learns which server answered.",
+          "send": [
+            {
+              "from": "rp",
+              "to": "s1",
+              "label": "GET /"
+            }
+          ],
+          "state": {
+            "s1": "busy"
+          }
+        },
+        {
+          "caption": "The reply returns along the same path. Either proxy can log it; plain HTTP replies can also be cached.",
+          "send": [
+            {
+              "from": "s1",
+              "to": "rp",
+              "label": "200",
+              "tone": "ok"
+            },
+            {
+              "from": "rp",
+              "to": "fp",
+              "label": "200",
+              "tone": "ok"
+            },
+            {
+              "from": "fp",
+              "to": "c1",
+              "label": "200",
+              "tone": "ok"
+            }
+          ],
+          "state": {
+            "s1": null
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "proxy.mjs",
+      "lang": "js",
+      "title": "Express behind a proxy",
+      "run": "captured",
+      "caption": "Your app sits behind a reverse proxy, so it must be told how to find the real client address.",
+      "walk": [
+        {
+          "lines": [
+            4
+          ],
+          "text": "Tell Express one reverse proxy sits in front of this app."
+        },
+        {
+          "lines": [
+            5
+          ],
+          "text": "`req.ip` now comes from the `X-Forwarded-For` header, not the connection."
+        },
+        {
+          "lines": [
+            9,
+            10
+          ],
+          "text": "Fake the header a reverse proxy sets, using a documentation-range address."
+        },
+        {
+          "lines": [
+            11
+          ],
+          "text": "The response shows the client address Express found."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Behind a proxy, `req.ip` is the proxy's address until you set `trust proxy`.",
+    "Trust `X-Forwarded-For` only when your own proxy sets it; clients can fake it.",
+    "One reverse proxy is itself a single point of failure; plan a redundant pair."
+  ],
+  "quiz": {
+    "q": "A reverse proxy forwards a request with `X-Forwarded-For: 198.51.100.4`. What is `req.ip`?",
+    "code": "// no trust proxy setting\napp.get('/', (req, res) => res.send(req.ip));",
+    "lang": "js",
+    "options": [
+      "undefined",
+      "Both addresses, as a list",
+      "198.51.100.4",
+      "The proxy's address"
+    ],
+    "answer": 3,
+    "why": "By default Express ignores `X-Forwarded-For`, so `req.ip` is whoever connected: the proxy. `trust proxy` changes that."
+  },
+  "takeaway": "A forward proxy hides clients; a reverse proxy hides your servers.",
+  "chat": {
+    "starters": [
+      "What is the difference between a reverse proxy and a load balancer?",
+      "How does a forward proxy handle HTTPS sites?",
+      "What is X-Forwarded-For, and can I trust it?"
+    ]
+  }
+}

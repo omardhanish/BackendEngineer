@@ -1,0 +1,84 @@
+{
+  "title": "The problem with hash % N",
+  "idea": "Modulo hashing puts each key on server `hash % N`. It spreads keys evenly, but when N changes, most keys move to a different server.",
+  "points": [
+    "A hash function turns a key into the same number every time.",
+    "`hash % N` maps that number to one of N servers.",
+    "Adding or removing a server changes N, so most keys map elsewhere.",
+    "Cache entries then miss until refilled; sharded data must be copied to new owners."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "Keys remapped when N changes",
+    "scenario": {
+      "layout": "ring",
+      "size": 100,
+      "rule": "mod",
+      "servers": {
+        "A": { "at": 10 },
+        "B": { "at": 40 },
+        "C": { "at": 70 },
+        "D": { "at": 90 }
+      },
+      "keys": [
+        { "id": "k1", "at": 5 },
+        { "id": "k2", "at": 12 },
+        { "id": "k3", "at": 20 },
+        { "id": "k4", "at": 33 },
+        { "id": "k5", "at": 41 },
+        { "id": "k6", "at": 50 },
+        { "id": "k7", "at": 58 },
+        { "id": "k8", "at": 67 },
+        { "id": "k9", "at": 72 },
+        { "id": "k10", "at": 85 },
+        { "id": "k11", "at": 93 },
+        { "id": "k12", "at": 98 }
+      ],
+      "steps": [
+        {
+          "caption": "With three servers, `hash % 3` gives every key one fixed home. Each dot takes the color of its server.",
+          "servers": ["A", "B", "C"]
+        },
+        {
+          "caption": "Add a fourth server. The divisor is now 4. Look at how many keys change owner.",
+          "servers": ["A", "B", "C", "D"]
+        },
+        {
+          "caption": "Server B fails and the divisor drops to 3. Keys remap again, including keys that were not on B.",
+          "servers": ["A", "C", "D"]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "modulo.mjs",
+      "lang": "js",
+      "title": "Counting moved keys",
+      "run": "browser",
+      "caption": "A key keeps its server only if both remainders match. Add the pair `[100, 101]` to the list: a bigger cluster does not help."
+    }
+  ],
+  "pitfalls": [
+    "Avoid `hash % N` for a cluster whose size changes; every resize remaps most keys.",
+    "Adding a cache server can send a wave of misses to your database.",
+    "Every client must use the same hash function, or the same key lands on different servers."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const keys = Array.from({ length: 12 }, (_, i) => i);\nconst stay = keys.filter((k) => k % 3 === k % 4);\nconsole.log(stay.length);",
+    "lang": "js",
+    "options": ["12", "9", "3", "0"],
+    "answer": 2,
+    "why": "Only keys 0, 1 and 2 have the same remainder under both divisors. The other nine move to a different server."
+  },
+  "takeaway": "With `hash % N`, changing N remaps most keys, which is why rings exist.",
+  "chat": {
+    "starters": [
+      "Why not just use hash % N for a cache cluster?",
+      "What happens to my database when a cache server is added?",
+      "Which hash function should I use to spread keys?"
+    ]
+  }
+}

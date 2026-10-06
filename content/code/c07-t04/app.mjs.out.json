@@ -1,0 +1,9 @@
+{
+  "stdout": "create 201 {\"title\":\"Neuromancer\",\"author\":\"William Gibson\",\"year\":1984}\ncreate 201 {\"title\":\"Dune\",\"author\":\"Frank Herbert\",\"year\":1965}\ninvalid 400 {\"error\":\"Invalid book\",\"fields\":[\"year\",\"author\"]}\nlist 200 [{\"title\":\"Dune\",\"author\":\"Frank Herbert\",\"year\":1965},{\"title\":\"Neuromancer\",\"author\":\"William Gibson\",\"year\":1984}]\nreplace 200 {\"title\":\"Dune\",\"author\":\"Frank Herbert\",\"year\":1966}\npartial 400 {\"error\":\"Invalid book\",\"fields\":[\"author\",\"year\"]}\nbad id 404 {\"error\":\"Book not found\"}\ndelete 204\nagain 404 {\"error\":\"Book not found\"}",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "MongoDB 8.2.6",
+  "hash": "e4fb06927cdd04f1",
+  "at": "2026-10-06T15:12:32.075Z"
+}

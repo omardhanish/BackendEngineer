@@ -1,0 +1,96 @@
+{
+  "title": "What an ORM does",
+  "idea": "An ORM (object-relational mapper) lets you query a database with JavaScript functions. It builds the SQL and returns rows as plain objects.",
+  "analogy": {
+    "text": "A translator at a meeting. You speak JavaScript, the translator speaks SQL to the database, then turns the reply back into JavaScript.",
+    "breaks": "A translator can mistranslate; the SQL an ORM sends is yours to check."
+  },
+  "points": [
+    "You describe each table once in JavaScript, as an object such as `books`.",
+    "Methods such as `select`, `from` and `where` build the SQL text for you.",
+    "Values travel apart from the SQL as parameters, so input cannot rewrite the query.",
+    "Trade-off: you learn another API, and slow queries still need SQL knowledge."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "From function calls to rows",
+    "actors": [
+      { "id": "you", "label": "Your code" },
+      { "id": "orm", "label": "Drizzle" },
+      { "id": "db", "label": "Postgres" }
+    ],
+    "messages": [
+      {
+        "from": "you",
+        "to": "orm",
+        "label": "select().from(books).where(…)",
+        "note": "You describe the query with function calls. Nothing is sent until you `await` it."
+      },
+      {
+        "from": "orm",
+        "to": "db",
+        "label": "select … where year > $1",
+        "note": "Drizzle builds the SQL text. The value 1970 travels apart from it, as `$1`."
+      },
+      {
+        "from": "db",
+        "to": "orm",
+        "label": "2 rows",
+        "dashed": true,
+        "note": "Postgres runs the SQL and returns the matching rows."
+      },
+      {
+        "from": "orm",
+        "to": "you",
+        "label": "array of objects",
+        "dashed": true,
+        "note": "Drizzle turns each row into a plain object, such as `{ title: 'Neuromancer' }`."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "orm.mjs",
+      "lang": "js",
+      "title": "Raw SQL and Drizzle",
+      "run": "captured",
+      "needs": ["postgres"],
+      "caption": "The same question asked twice: with a SQL string, then with Drizzle. Step through it, then press Run.",
+      "walk": [
+        { "lines": [1, 2, 3, 4], "text": "`pg` is the driver that talks to Postgres. Drizzle builds queries on top of it." },
+        { "lines": [6, 7, 8, 9, 10, 11], "text": "The table, described as a JavaScript object. Lesson 5 explains it." },
+        { "lines": [12, 13, 14, 15, 16, 17], "text": "Raw SQL creates and fills the table. This is setup, not the lesson." },
+        { "lines": [19, 20, 21], "text": "Without an ORM: you write the SQL and pass the value as `$1`." },
+        { "lines": [23, 24, 25], "text": "With Drizzle: the same query as function calls. Nothing is sent yet." },
+        { "lines": [26], "text": "`toSQL()` shows the SQL Drizzle will send. Compare it with the raw string." },
+        { "lines": [27, 28], "text": "`await` sends the query and returns plain objects. Closing the pool lets the script exit." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not skip SQL: when a query is slow, read the SQL the ORM sends.",
+    "An ORM does not make queries fast; indexes and query shape still matter.",
+    "Build queries with the ORM's methods; do not paste user input into SQL strings."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const q = db.select({ title: books.title }).from(books)\n  .where(eq(books.title, \"x' or 1=1 --\"));\nconsole.log(q.toSQL().params);",
+    "lang": "js",
+    "options": [
+      "[]",
+      "Error: invalid title",
+      "[ \"x' or 1=1 --\" ]",
+      "[ 'x', 1 ]"
+    ],
+    "answer": 2,
+    "why": "Drizzle sends the value as a parameter, apart from the SQL text, so it stays plain data."
+  },
+  "takeaway": "An ORM writes the SQL for you; you still own what it sends.",
+  "chat": {
+    "starters": [
+      "Is an ORM slower than raw SQL?",
+      "What is the difference between an ORM and a query builder?",
+      "Can I mix raw SQL with Drizzle?"
+    ]
+  }
+}

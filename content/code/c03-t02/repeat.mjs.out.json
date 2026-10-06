@@ -1,0 +1,9 @@
+{
+  "stdout": "PUT once: 1 twice: 1\nPOST once: 2 twice: 3\nDELETE once: 0 twice: 0",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": null,
+  "hash": "abd351214af04e5a",
+  "at": "2026-10-06T09:20:04.464Z"
+}

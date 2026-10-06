@@ -1,0 +1,8 @@
+{
+  "stdout": "main: start\nmath: loading\nmain: 5\nundefined",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "hash": "db2f04c3c454efde",
+  "at": "2026-10-06T09:17:35.538Z"
+}

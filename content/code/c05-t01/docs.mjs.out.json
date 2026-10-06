@@ -1,0 +1,9 @@
+{
+  "stdout": "[\n  { title: 'Emma' },\n  { title: 'Dune', author: 'Frank Herbert', year: 1965 }\n]",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "MongoDB 8.2.6",
+  "hash": "2d252d717fb5afc0",
+  "at": "2026-10-06T15:12:16.387Z"
+}

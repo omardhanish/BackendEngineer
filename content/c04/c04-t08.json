@@ -1,0 +1,347 @@
+{
+  "title": "Middleware",
+  "idea": "Middleware is a function that sits between the request and your handler: it can read or change them, then call next() to pass control on.",
+  "analogy": {
+    "text": "Airport security. Each checkpoint inspects you, may stamp your pass, and either waves you through or turns you back.",
+    "breaks": "Middleware also gets a turn on the way back, after next()."
+  },
+  "points": [
+    "Express calls middleware in the order you register it with `app.use`.",
+    "Calling `next()` passes control to the next function in the chain.",
+    "Sending a response without calling `next()` ends the request there.",
+    "Code after `next()` runs on the way back, once the handler is done."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "A request through the chain",
+    "scenario": {
+      "token": {
+        "label": "GET /books",
+        "tone": "req"
+      },
+      "stages": [
+        {
+          "id": "client",
+          "label": "Client",
+          "kind": "end"
+        },
+        {
+          "id": "logger",
+          "label": "logger",
+          "sub": "app.use(log)"
+        },
+        {
+          "id": "auth",
+          "label": "auth",
+          "sub": "checks token"
+        },
+        {
+          "id": "route",
+          "label": "Handler",
+          "sub": "GET /books",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "The client sends GET /books. Express starts at the first middleware.",
+          "at": "client",
+          "slot": "top",
+          "state": {
+            "client": "active"
+          },
+          "out": []
+        },
+        {
+          "caption": "logger runs its before-code and calls next().",
+          "at": "logger",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "logger": "active"
+          },
+          "out": [
+            "logger: before"
+          ]
+        },
+        {
+          "caption": "auth sees a valid token and calls next().",
+          "at": "auth",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "logger": "done",
+            "auth": "active"
+          },
+          "out": [
+            "logger: before",
+            "auth: ok"
+          ]
+        },
+        {
+          "caption": "The route handler builds the response and sends it.",
+          "at": "route",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "logger": "done",
+            "auth": "done",
+            "route": "active"
+          },
+          "out": [
+            "logger: before",
+            "auth: ok",
+            "handler: send books"
+          ]
+        },
+        {
+          "caption": "The response travels back through the same chain, in reverse.",
+          "at": "route",
+          "slot": "bottom",
+          "token": {
+            "label": "200 OK",
+            "tone": "ok"
+          },
+          "state": {
+            "client": "done",
+            "logger": "done",
+            "auth": "done",
+            "route": "active"
+          },
+          "out": [
+            "logger: before",
+            "auth: ok",
+            "handler: send books"
+          ]
+        },
+        {
+          "caption": "auth gets its after-next() turn. Nothing to do here.",
+          "at": "auth",
+          "slot": "bottom",
+          "token": {
+            "label": "200 OK",
+            "tone": "ok"
+          },
+          "state": {
+            "client": "done",
+            "logger": "done",
+            "auth": "active",
+            "route": "done"
+          },
+          "out": [
+            "logger: before",
+            "auth: ok",
+            "handler: send books",
+            "auth: after"
+          ]
+        },
+        {
+          "caption": "logger runs its after-code: it logs the status and the timing.",
+          "at": "logger",
+          "slot": "bottom",
+          "token": {
+            "label": "200 OK",
+            "tone": "ok"
+          },
+          "state": {
+            "client": "done",
+            "logger": "active",
+            "auth": "done",
+            "route": "done"
+          },
+          "out": [
+            "logger: before",
+            "auth: ok",
+            "handler: send books",
+            "auth: after",
+            "logger: after (200)"
+          ]
+        },
+        {
+          "caption": "The client gets 200 OK. That was the happy path.",
+          "at": "client",
+          "slot": "top",
+          "token": {
+            "label": "200 OK",
+            "tone": "ok"
+          },
+          "state": {
+            "client": "active",
+            "logger": "done",
+            "auth": "done",
+            "route": "done"
+          },
+          "out": [
+            "logger: before",
+            "auth: ok",
+            "handler: send books",
+            "auth: after",
+            "logger: after (200)"
+          ]
+        },
+        {
+          "caption": "A second request arrives with no token and reaches auth.",
+          "at": "auth",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "logger": "done",
+            "auth": "active"
+          },
+          "out": [
+            "logger: before"
+          ]
+        },
+        {
+          "caption": "auth sends 401 and never calls next(). The handler does not run.",
+          "at": "auth",
+          "slot": "bottom",
+          "token": {
+            "label": "401",
+            "tone": "err"
+          },
+          "state": {
+            "client": "done",
+            "logger": "done",
+            "auth": "blocked"
+          },
+          "out": [
+            "logger: before",
+            "auth: no token, send 401"
+          ]
+        },
+        {
+          "caption": "logger still gets its after-code turn and logs the 401.",
+          "at": "logger",
+          "slot": "bottom",
+          "token": {
+            "label": "401",
+            "tone": "err"
+          },
+          "state": {
+            "client": "done",
+            "logger": "active",
+            "auth": "blocked"
+          },
+          "out": [
+            "logger: before",
+            "auth: no token, send 401",
+            "logger: after (401)"
+          ]
+        },
+        {
+          "caption": "The client gets 401. A middleware can end a request early.",
+          "at": "client",
+          "slot": "top",
+          "token": {
+            "label": "401",
+            "tone": "err"
+          },
+          "state": {
+            "client": "active",
+            "logger": "done",
+            "auth": "blocked"
+          },
+          "out": [
+            "logger: before",
+            "auth: no token, send 401",
+            "logger: after (401)"
+          ]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "chain.mjs",
+      "lang": "js",
+      "title": "The idea in 14 lines",
+      "run": "browser",
+      "caption": "A tiny middleware engine. Change the order of the use() lines and watch the output."
+    },
+    {
+      "file": "app.mjs",
+      "lang": "js",
+      "title": "Real Express",
+      "run": "captured",
+      "caption": "The same idea with Express 5. Step through it, then press Run for the real output.",
+      "walk": [
+        {
+          "lines": [
+            3
+          ],
+          "text": "Create the app."
+        },
+        {
+          "lines": [
+            4,
+            5,
+            6,
+            7
+          ],
+          "text": "First middleware: log the request, then call next()."
+        },
+        {
+          "lines": [
+            8,
+            9,
+            10,
+            11
+          ],
+          "text": "Second middleware: no token means 401, and next() is never called."
+        },
+        {
+          "lines": [
+            12
+          ],
+          "text": "The route runs only if both middlewares let the request through."
+        },
+        {
+          "lines": [
+            14,
+            15
+          ],
+          "text": "Listen on a free port and build the test URL."
+        },
+        {
+          "lines": [
+            16,
+            17
+          ],
+          "text": "Call it twice: without a token, then with one."
+        },
+        {
+          "lines": [
+            18
+          ],
+          "text": "Close the server so the script can exit."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Forget both `next()` and a response, and the request hangs forever.",
+    "Order matters: middleware registered after a route never runs for it.",
+    "Error handlers need four arguments: `(err, req, res, next)`."
+  ],
+  "quiz": {
+    "q": "A middleware sends a response and never calls next(). What happens?",
+    "options": [
+      "The next middleware still runs",
+      "The request ends there",
+      "Express throws an error",
+      "The request hangs"
+    ],
+    "answer": 1,
+    "why": "Sending a response ends the cycle. Later middleware and the route never run."
+  },
+  "takeaway": "Middleware is a chain: pass it with next(), or end it with a response.",
+  "chat": {
+    "starters": [
+      "What is the difference between app.use and app.get?",
+      "How do I write an error-handling middleware?",
+      "Where does express.json() fit in?"
+    ]
+  }
+}

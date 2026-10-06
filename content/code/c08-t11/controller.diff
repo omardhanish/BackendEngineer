@@ -1,0 +1,12 @@
+ // src/controllers/auth.controller.js
+-import jwt from 'jsonwebtoken';
++import { signToken } from '../utils/jwt.js';
+ ...
+   if (!user) { /* 401, as before */ }
+-  const token = jwt.sign(
+-    { sub: String(user.id), email: user.email },
+-    process.env.JWT_SECRET,
+-    { expiresIn: '1h' },
+-  );
++  const token = signToken(user);
+   res.json({ token });

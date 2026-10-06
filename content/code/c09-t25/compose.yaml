@@ -1,0 +1,8 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: api.Dockerfile
+      target: prod
+      args:
+        APP_VERSION: "1.0.0"

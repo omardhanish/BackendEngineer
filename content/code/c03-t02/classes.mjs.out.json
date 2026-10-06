@@ -1,0 +1,9 @@
+{
+  "stdout": "200 OK -> success\n201 Created -> success\n204 No Content -> success\n301 Moved Permanently -> redirect\n400 Bad Request -> client error\n401 Unauthorized -> client error\n403 Forbidden -> client error\n404 Not Found -> client error\n500 Internal Server Error -> server error\n503 Service Unavailable -> server error",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": null,
+  "hash": "5cb323bbe6718f6b",
+  "at": "2026-10-06T09:20:04.524Z"
+}

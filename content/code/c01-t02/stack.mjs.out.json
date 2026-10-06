@@ -1,0 +1,8 @@
+{
+  "stdout": "first:  calling second\nsecond: calling third\nthird:  top of the stack\nsecond: back\nfirst:  back\nmain:   stack is empty again",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "hash": "9fda7f863dd1d013",
+  "at": "2026-10-06T07:49:57.287Z"
+}

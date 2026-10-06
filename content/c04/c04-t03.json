@@ -1,0 +1,82 @@
+{
+  "title": "Semantic versioning",
+  "idea": "Semantic versioning writes every release as `MAJOR.MINOR.PATCH`. The number tells you if an update fixes a bug, adds a feature, or can break your code.",
+  "analogy": {
+    "text": "A textbook. A reprint fixes typos (patch), a revised edition adds chapters (minor), a rewrite changes the structure (major). Your notes survive only the first two.",
+    "breaks": "Nothing enforces it: a maintainer can ship a breaking change as a patch."
+  },
+  "points": [
+    "Raising a number resets the ones to its right: minor bump `5.2.1` gives `5.3.0`.",
+    "`^5.2.1` accepts 5.2.1 up to, but not including, 6.0.0; `~5.2.1` stops before 5.3.0.",
+    "`npm install express` saves a `^` range; `package-lock.json` records the exact version.",
+    "`npm ci` installs exactly the versions in the lockfile, so every machine matches."
+  ],
+  "hero": {
+    "type": "anatomy",
+    "title": "Reading a version range",
+    "parts": [
+      {
+        "text": "^",
+        "label": "Caret",
+        "note": "Accept newer minor and patch releases, never a new major."
+      },
+      {
+        "text": "5",
+        "label": "Major",
+        "note": "Raised when an update can break code that worked before."
+      },
+      {
+        "text": ".2",
+        "label": "Minor",
+        "note": "Raised when a release adds features and stays backward compatible."
+      },
+      {
+        "text": ".1",
+        "label": "Patch",
+        "note": "Raised for bug fixes only."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "bump.mjs",
+      "lang": "js",
+      "title": "Bump a version",
+      "run": "browser",
+      "caption": "Edit the version or the kind, then run again."
+    },
+    {
+      "file": "range.mjs",
+      "lang": "js",
+      "title": "What a range accepts",
+      "run": "browser",
+      "caption": "Each line: a version, then whether `^5.2.1` and `~5.2.1` accept it. A simplified matcher for 1.0.0 and above."
+    }
+  ],
+  "pitfalls": [
+    "Packages below 1.0.0 may break on any minor: `^0.2.3` stops before 0.3.0.",
+    "Compare versions as three numbers, not text: `5.10.0` is newer than `5.9.0`.",
+    "Read the changelog before a major upgrade: Express 4 to 5 broke `app.get('*')`."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const bump = (version, kind) => {\n  const [major, minor, patch] = version.split('.').map(Number);\n  if (kind === 'major') return `${major + 1}.0.0`;\n  if (kind === 'minor') return `${major}.${minor + 1}.0`;\n  return `${major}.${minor}.${patch + 1}`;\n};\nconsole.log(bump('2.7.4', 'minor'), bump('2.7.4', 'major'));",
+    "lang": "js",
+    "options": [
+      "2.8.4 3.7.4",
+      "2.8.0 3.0.0",
+      "2.8.0 3.8.0",
+      "2.7.5 3.0.0"
+    ],
+    "answer": 1,
+    "why": "Raising minor resets patch to 0, giving 2.8.0. Raising major resets minor and patch, giving 3.0.0."
+  },
+  "takeaway": "A range says what you accept; the lockfile says what you got.",
+  "chat": {
+    "starters": [
+      "What does `~` mean in a version range?",
+      "Should I commit `package-lock.json` to the repository?",
+      "How do I upgrade a dependency to a new major version safely?"
+    ]
+  }
+}

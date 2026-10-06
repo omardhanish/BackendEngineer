@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="A living, book-style backend engineering course with a tutor on every page.">
+  <title>BackendEngineer — a living book</title>
+  <script src="/js/prepaint.js"></script>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="/fonts/newsreader.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/css/fonts.css">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/layout.css">
+  <link rel="stylesheet" href="/css/book.css">
+  <link rel="stylesheet" href="/css/anim.css">
+  <link rel="stylesheet" href="/css/chat.css">
+  <link rel="stylesheet" href="/css/code.css">
+</head>
+<body>
+  <a class="skip sr-only" href="#stage">Skip to the page</a>
+  <div id="app" class="app" data-toc="closed" data-dock="closed">
+    <aside id="toc" class="toc"></aside>
+    <div id="main" class="main"></div>
+    <aside id="dock" class="dock" aria-label="Tutor and notes"></aside>
+  </div>
+  <div id="scrim" class="scrim"></div>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+  <noscript><p style="padding:2rem;font:16px system-ui">This book needs JavaScript. It runs entirely on your own computer.</p></noscript>
+  <script src="/vendor/prism.js"></script>
+  <script src="/vendor/markdown-it.js"></script>
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>

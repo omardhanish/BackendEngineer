@@ -1,0 +1,80 @@
+{
+  "title": "Task definitions",
+  "idea": "A task definition is a JSON blueprint for a task, a running group of containers. It names the image, ports, size and roles.",
+  "points": [
+    "`family` names the blueprint; each registration adds a revision, such as `bookstore-api:2`.",
+    "Each entry in `containerDefinitions` sets one container's `image`, `portMappings` and environment.",
+    "On Fargate, set `networkMode` to `awsvpc` and pick a supported `cpu` and `memory` pair.",
+    "`executionRoleArn` lets ECS pull the image and send logs; `taskRoleArn` serves your code."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "docker run flags become fields",
+    "head": ["With docker run", "In the task definition", "Book Store value"],
+    "rows": [
+      ["--name api", "name", "api"],
+      ["bookstore-api:1.0", "image", "ECR address plus the same tag"],
+      ["-p 3000:3000", "portMappings", "containerPort 3000, no host side"],
+      ["-e PORT=3000", "environment", "name PORT, value 3000"],
+      ["Output in your terminal", "logConfiguration", "awslogs sends it to CloudWatch Logs"],
+      ["Nothing", "executionRoleArn", "Role ECS uses to pull the image"]
+    ],
+    "highlight": { "col": 1 },
+    "caption": "Fargate also wants a size for the whole task: `cpu` and `memory`."
+  },
+  "code": [
+    {
+      "file": "taskdef.json",
+      "lang": "json",
+      "title": "Task definition",
+      "run": "static",
+      "illustrative": true,
+      "caption": "The Book Store API as a Fargate task definition. `<account-id>` and `<region>` are placeholders.",
+      "walk": [
+        { "lines": [2], "text": "The family. Each registration under this name becomes the next revision." },
+        { "lines": [3, 4], "text": "ECS validates the definition for Fargate. Each Fargate task gets its own network interface." },
+        { "lines": [5, 6], "text": "The whole task: 256 CPU units and 512 MiB, one of the pairs Fargate accepts." },
+        { "lines": [7], "text": "The role's ARN, its full AWS identifier. ECS uses it to pull the image and write logs." },
+        { "lines": [10, 11], "text": "The container: a name, and the ECR image address with a version tag." },
+        { "lines": [12, 13], "text": "`containerPort` is where the app listens. `PORT` tells the app which port to use." },
+        { "lines": [14, 21], "text": "`awslogs` sends the container's output to a CloudWatch Logs group. Create the group first." }
+      ]
+    },
+    {
+      "file": "register.sh",
+      "lang": "bash",
+      "title": "Register it",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Register the file, then list the revisions. Each registration adds one.",
+      "walk": [
+        { "lines": [1], "text": "Send the JSON file to ECS. It replies with the new revision number." },
+        { "lines": [2], "text": "List every revision in the family, such as `bookstore-api:1`." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Create the log group named in `awslogs-group` first; ECS does not create it by default.",
+    "Keep secrets out of `environment`; reference them with `secrets` instead.",
+    "Make `containerPort` equal the port your app listens on; here, `PORT`."
+  ],
+  "quiz": {
+    "q": "You register `bookstore-api` again with a new image tag. What happens to running tasks?",
+    "options": [
+      "They restart on the new revision",
+      "They keep running the revision they started with",
+      "They stop until you redeploy",
+      "ECS rejects it: the family already exists"
+    ],
+    "answer": 1,
+    "why": "Registering only adds a revision, such as `bookstore-api:2`. Running tasks keep theirs; a service moves to the new revision when you update the service."
+  },
+  "takeaway": "Every `docker run` choice becomes a field, and every edit becomes a new revision.",
+  "chat": {
+    "starters": [
+      "What is the difference between the execution role and the task role?",
+      "How do I choose `cpu` and `memory` for a task?",
+      "Can one task run more than one container?"
+    ]
+  }
+}

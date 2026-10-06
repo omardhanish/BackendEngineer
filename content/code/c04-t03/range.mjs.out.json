@@ -1,0 +1,8 @@
+{
+  "stdout": "5.2.0 false false\n5.2.9 true true\n5.9.0 true false\n6.0.0 false false",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "hash": "c5a0c31a61e20cce",
+  "at": "2026-10-06T09:17:36.372Z"
+}

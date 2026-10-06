@@ -1,0 +1,77 @@
+{
+  "title": "Volumes in Compose",
+  "idea": "In Compose you declare a named volume once, under a top-level `volumes` key, then mount it into services by name.",
+  "points": [
+    "Compose prefixes the volume with the project name, such as `bookstore_pgdata`.",
+    "A service mounts it as `NAME:CONTAINER_PATH` under its own `volumes` key.",
+    "A path starting with `./` makes a bind mount of a host folder instead.",
+    "To share a volume, list it under each service's `volumes` key."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "What each command leaves behind",
+    "head": ["Command", "Containers", "Network", "Named volume", "Bind-mounted folder"],
+    "rows": [
+      ["`docker compose stop`", "Stopped, kept", "Kept", "Kept", "Untouched"],
+      ["`docker compose down`", "Removed", "Removed", "Kept", "Untouched"],
+      ["`docker compose down -v`", "Removed", "Removed", "Removed", "Untouched"]
+    ],
+    "highlight": { "col": 3 },
+    "caption": "Only `-v` removes volumes. Compose never deletes a bind-mounted host folder."
+  },
+  "code": [
+    {
+      "file": "compose.yaml",
+      "lang": "yaml",
+      "title": "compose.yaml",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Two named volumes and one bind mount. Assume the API saves covers and reads settings.",
+      "walk": [
+        { "lines": [5], "text": "`covers:/app/covers` mounts the named volume `covers` at `/app/covers`." },
+        { "lines": [6], "text": "`./config` is a bind mount, resolved from the folder holding `compose.yaml`. `:ro` is read-only." },
+        { "lines": [12], "text": "Database files go in `pgdata`. Postgres 18 and later keep data under `/var/lib/postgresql`." },
+        { "lines": [13, 14, 15], "text": "Declare each named volume once at the top level. An empty entry uses default settings." }
+      ]
+    },
+    {
+      "file": "session.sh",
+      "lang": "bash",
+      "title": "Keep and delete",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Set `DB_PASSWORD` in `.env` first. The data survives `down`; `down -v` removes it.",
+      "walk": [
+        { "lines": [1], "text": "Start the project. Compose creates `covers` and `pgdata`, prefixed with the project name." },
+        { "lines": [2], "text": "List volumes. Look for `<project>_pgdata`." },
+        { "lines": [3], "text": "Remove the containers and the network. The volumes stay." },
+        { "lines": [4], "text": "Start again. The database finds its files in `pgdata`." },
+        { "lines": [5], "text": "Remove containers, network and named volumes. The data is gone." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "`down -v` deletes named volumes and their data for good; add `-v` only to reset.",
+    "Check your image's data path. Postgres 18+ mounts `/var/lib/postgresql`; 17 and earlier, `/var/lib/postgresql/data`.",
+    "`POSTGRES_PASSWORD` only applies to an empty volume; it will not change an existing database's password."
+  ],
+  "quiz": {
+    "q": "After `docker compose down -v`, you run `docker compose up -d`. What does `db` start with?",
+    "options": [
+      "The old data, restored from the image",
+      "The old data, because volumes are permanent",
+      "An empty database; `down -v` deleted the volume",
+      "An error: the volume no longer exists"
+    ],
+    "answer": 2,
+    "why": "`-v` removes the named volumes. `up` declares a new, empty `pgdata`, so Postgres initializes a fresh database."
+  },
+  "takeaway": "Named volumes survive `down`; only `down -v` deletes their data.",
+  "chat": {
+    "starters": [
+      "How do I back up a named volume in Compose?",
+      "Can two services share one volume?",
+      "How do I use a volume that already exists?"
+    ]
+  }
+}

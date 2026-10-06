@@ -1,0 +1,9 @@
+{
+  "stdout": "no index: Seq Scan\nwith index: Index Scan books_title_idx\nlower(title): Seq Scan",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "PostgreSQL 18.4",
+  "hash": "88bd8d1adf921101",
+  "at": "2026-10-06T15:10:38.160Z"
+}

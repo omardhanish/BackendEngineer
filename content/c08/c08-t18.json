@@ -1,0 +1,81 @@
+{
+  "title": "Delete with an ownership check",
+  "idea": "Authentication proves who you are; authorization decides what you may do. Delete checks that the URL's `user_id` is the caller's.",
+  "points": [
+    "Look the row up first. No row means `404`.",
+    "A row owned by someone else gets `403`: known caller, not allowed.",
+    "Only the owner's request reaches `delete`, which replies `204` with no body.",
+    "`req.params.id` is text. Convert it with `Number()` and reject bad ids with `404`."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "Three requests to DELETE /codes/:id",
+    "scenario": {
+      "token": { "label": "DELETE /codes/:id", "tone": "req" },
+      "stages": [
+        { "id": "client", "label": "Client", "kind": "end" },
+        { "id": "auth", "label": "requireAuth", "sub": "token?" },
+        { "id": "find", "label": "Lookup", "sub": "row exists?" },
+        { "id": "owner", "label": "Owner check", "sub": "user_id = caller?" },
+        { "id": "delete", "label": "Delete", "sub": "remove the row", "kind": "end" }
+      ],
+      "steps": [
+        { "caption": "Ada sends `DELETE /codes/1` with her token.", "at": "client", "slot": "top", "state": { "client": "active" }, "out": [] },
+        { "caption": "`requireAuth` verifies the token and sets `req.user` to Ada, user 1.", "at": "auth", "slot": "top", "state": { "client": "done", "auth": "active" }, "out": ["requireAuth: user 1"] },
+        { "caption": "The lookup finds URL 1, so the request goes on.", "at": "find", "slot": "top", "state": { "client": "done", "auth": "done", "find": "active" }, "out": ["requireAuth: user 1", "lookup: found"] },
+        { "caption": "URL 1 has `user_id` 1, the same as Ada. The check passes.", "at": "owner", "slot": "top", "state": { "client": "done", "auth": "done", "find": "done", "owner": "active" }, "out": ["requireAuth: user 1", "lookup: found", "owner: match"] },
+        { "caption": "Only now does the route delete the row.", "at": "delete", "slot": "top", "state": { "client": "done", "auth": "done", "find": "done", "owner": "done", "delete": "active" }, "out": ["requireAuth: user 1", "lookup: found", "owner: match", "delete"] },
+        { "caption": "It replies `204` with no body.", "at": "delete", "slot": "bottom", "token": { "label": "204", "tone": "ok" }, "state": { "client": "done", "auth": "done", "find": "done", "owner": "done", "delete": "active" }, "out": ["requireAuth: user 1", "lookup: found", "owner: match", "delete", "204"] },
+        { "caption": "Grace sends `DELETE /codes/2`. Her token is valid and the URL exists, so she reaches the owner check.", "at": "owner", "slot": "top", "state": { "client": "done", "auth": "done", "find": "done", "owner": "active" }, "out": ["requireAuth: user 2", "lookup: found"] },
+        { "caption": "URL 2 has `user_id` 1, not 2. The route replies `403` and deletes nothing.", "at": "owner", "slot": "bottom", "token": { "label": "403", "tone": "err" }, "state": { "client": "done", "auth": "done", "find": "done", "owner": "blocked" }, "out": ["requireAuth: user 2", "lookup: found", "owner: mismatch", "403"] },
+        { "caption": "Ada sends `DELETE /codes/99`. Her token is valid, so the lookup runs.", "at": "find", "slot": "top", "state": { "client": "done", "auth": "done", "find": "active" }, "out": ["requireAuth: user 1"] },
+        { "caption": "No row has id 99, so there is no owner to check. The route replies `404`.", "at": "find", "slot": "bottom", "token": { "label": "404", "tone": "err" }, "state": { "client": "done", "auth": "done", "find": "blocked" }, "out": ["requireAuth: user 1", "lookup: none", "404"] }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "deleteurl.mjs",
+      "lang": "js",
+      "title": "DELETE /codes/:id",
+      "run": "captured",
+      "needs": ["postgres"],
+      "caption": "The service decides; the controller maps its answer to a status. The calls at the end cover every branch.",
+      "walk": [
+        { "lines": [11, 12, 13, 14], "text": "Find the row first. Only its `user_id` is needed." },
+        { "lines": [15], "text": "No row gives `not_found`, which the controller turns into `404`." },
+        { "lines": [16], "text": "Another owner means `forbidden`. Both ids are numbers, so `!==` compares correctly." },
+        { "lines": [17, 18], "text": "Only the owner gets this far: delete the row." },
+        { "lines": [27, 28], "text": "Convert the id and reject anything that is not a valid `serial` id as `404`." },
+        { "lines": [29, 30, 31, 32, 33, 34], "text": "Map each answer to a status: `404`, `403` or `204` with no body." },
+        { "lines": [104, 105, 106, 107, 108, 109], "text": "`401` without a token, `403` for a stranger, `204` for the owner, then `404` three ways." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Never delete by `id` alone. Check the owner first, or any user can delete any URL.",
+    "`sub` is a string. Convert it with `Number`, or every owner looks like a stranger."
+  ],
+  "quiz": {
+    "q": "Ada (user 1) owns URL 1. URL 9 does not exist. What prints?",
+    "code": "const a = await deleteUrl({ id: 1, userId: 2 });\nconst b = await deleteUrl({ id: 9, userId: 2 });\nconst c = await deleteUrl({ id: 1, userId: 1 });\nconsole.log(a, b, c);",
+    "lang": "js",
+    "options": [
+      "not_found not_found deleted",
+      "forbidden forbidden deleted",
+      "forbidden not_found forbidden",
+      "forbidden not_found deleted"
+    ],
+    "answer": 3,
+    "why": "User 2 does not own URL 1: `forbidden`. URL 9 has no row: `not_found`. User 1 owns URL 1, so it is `deleted`."
+  },
+  "takeaway": "Look up the row, compare its owner to the caller, then delete.",
+  "chat": {
+    "starters": [
+      "Why 403 and not 404 for someone else's URL?",
+      "What if two requests delete the same URL at once?",
+      "Should deleting be a soft delete instead?"
+    ]
+  }
+}

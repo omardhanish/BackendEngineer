@@ -1,0 +1,9 @@
+{
+  "stdout": "[\n  { _id: 'Faro', revenue: 130 },\n  { _id: 'Lisbon', revenue: 200 },\n  { _id: 'Porto', revenue: 115 }\n]",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "MongoDB 8.2.6",
+  "hash": "ef8f35fbc1edaf65",
+  "at": "2026-10-06T10:00:31.056Z"
+}

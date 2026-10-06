@@ -1,0 +1,245 @@
+{
+  "title": "Refactoring the Book Store",
+  "idea": "A refactor moves code without changing what it does. The Book Store splits into model, controller (the handlers), routes and app files.",
+  "points": [
+    "Move one layer at a time, then re-run the same requests.",
+    "A router, made with `express.Router()`, holds routes; `app.use('/books', router)` mounts it.",
+    "Mounted routes drop the prefix: `router.get('/:id')` answers `GET /books/:id`.",
+    "`app.js` builds and exports the app; `server.js` imports it and calls `listen`."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "Where each piece goes",
+    "head": [
+      "Old section",
+      "New file",
+      "Job"
+    ],
+    "rows": [
+      [
+        "`books`, `nextId`",
+        "`src/models/book.model.js`",
+        "Holds the data and exports functions"
+      ],
+      [
+        "Handler bodies",
+        "`src/controllers/books.controller.js`",
+        "Checks input, calls the model, replies"
+      ],
+      [
+        "`app.get`, `app.post`, …",
+        "`src/routes/books.routes.js`",
+        "Maps a method and path to a handler"
+      ],
+      [
+        "`express()`, `express.json()`",
+        "`src/app.js`",
+        "Builds and exports the app"
+      ],
+      [
+        "`app.listen`",
+        "`src/server.js`",
+        "Starts the server"
+      ],
+      [
+        "Inline `app.use(fn)` middleware",
+        "`src/middleware/*.js`",
+        "One function per file: `logger.js`, `auth.js`"
+      ]
+    ],
+    "highlight": {
+      "col": 1
+    },
+    "caption": "The model imports nothing from the project, so move it first and work down the rows."
+  },
+  "code": [
+    {
+      "file": "books.controller.js",
+      "lang": "js",
+      "title": "The controller",
+      "run": "static",
+      "caption": "A controller is a module of handler functions. These are part 2's handlers, now calling the model. Save as `src/controllers/books.controller.js`.",
+      "walk": [
+        {
+          "lines": [
+            1
+          ],
+          "text": "The controller reaches the data only through the model's exported functions."
+        },
+        {
+          "lines": [
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "text": "Helpers moved from part 2: the body check and the JSON error replies."
+        },
+        {
+          "lines": [
+            10,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "text": "The read handlers ask the model; `getBook` answers `404` when it returns `undefined`."
+        },
+        {
+          "lines": [
+            18,
+            19,
+            20,
+            21,
+            22
+          ],
+          "text": "`createBook` checks the body, asks the model to store it, and replies `201`."
+        },
+        {
+          "lines": [
+            24,
+            25,
+            26,
+            27,
+            28,
+            29
+          ],
+          "text": "`updateBook` keeps part 2's order: missing book first, then bad body, then the change."
+        },
+        {
+          "lines": [
+            31,
+            32,
+            33,
+            34
+          ],
+          "text": "`deleteBook` replies `204` if the model removed a book, `404` otherwise."
+        }
+      ]
+    },
+    {
+      "file": "books.routes.js",
+      "lang": "js",
+      "title": "The routes",
+      "run": "static",
+      "caption": "Only the map from method and path to handler stays here. Save as `src/routes/books.routes.js`.",
+      "walk": [
+        {
+          "lines": [
+            1,
+            2
+          ],
+          "text": "Import `Router` and every controller function as one namespace."
+        },
+        {
+          "lines": [
+            4,
+            6,
+            7,
+            8,
+            9,
+            10
+          ],
+          "text": "Paths are relative to the mount point: `/` here means `/books`."
+        },
+        {
+          "lines": [
+            12
+          ],
+          "text": "`app.js` imports this router and mounts it with `app.use('/books', booksRouter)`."
+        }
+      ]
+    },
+    {
+      "file": "check.mjs",
+      "lang": "js",
+      "title": "Same requests, new layout",
+      "run": "captured",
+      "caption": "Run from the project root. These are part 2's requests; compare the output, because only the layout changed.",
+      "walk": [
+        {
+          "lines": [
+            1
+          ],
+          "text": "`src/app.js` builds the app, adds `express.json()`, mounts the router, and exports it."
+        },
+        {
+          "lines": [
+            3,
+            4,
+            5
+          ],
+          "text": "Importing starts nothing. This script calls `listen(0)` to use any free port."
+        },
+        {
+          "lines": [
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13
+          ],
+          "text": "`call` sends one JSON request and prints the method, path, status and body."
+        },
+        {
+          "lines": [
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20
+          ],
+          "text": "Part 2's six requests: create, fix with `PUT`, two failures, then `DELETE` twice."
+        },
+        {
+          "lines": [
+            21,
+            22
+          ],
+          "text": "A final `GET /books` confirms which ids survived."
+        },
+        {
+          "lines": [
+            23,
+            24
+          ],
+          "text": "Close the server so the script can exit."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not add features while moving code: you cannot tell what broke.",
+    "Fix import paths after every move: `../` climbs one folder, `./` stays put.",
+    "Do not call `listen` in `app.js`: every import would start a server."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const router = express.Router();\nrouter.get('/:id', (req, res) => res.send('found'));\nconst app = express().use('/books', router);\nconst server = app.listen(0, async () => {\n  const url = `http://localhost:${server.address().port}`;\n  const a = await fetch(`${url}/books/7`);\n  const b = await fetch(`${url}/7`);\n  console.log(a.status, b.status);\n  server.close();\n});",
+    "lang": "js",
+    "options": [
+      "200 200",
+      "200 404",
+      "404 200",
+      "404 404"
+    ],
+    "answer": 1,
+    "why": "The router is mounted at `/books`, so `/books/7` matches `/:id`. A bare `/7` is outside the mount, so Express answers 404."
+  },
+  "takeaway": "Each file does one job; `app.js` only wires them together.",
+  "chat": {
+    "starters": [
+      "Why export the app instead of calling `listen` in `app.js`?",
+      "Can one router be mounted at two different paths?",
+      "How do I know a refactor did not break anything?"
+    ]
+  }
+}

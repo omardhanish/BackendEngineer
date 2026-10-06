@@ -1,0 +1,9 @@
+{
+  "stdout": "201 {\"user\":{\"id\":1,\"email\":\"ada@example.com\"}}\n409 {\"error\":\"Email already registered\"}\n400 {\"error\":\"Validation failed\",\"issues\":[{\"path\":\"password\",\"message\":\"Invalid input: expected string, received undefined\"}]}\nno HTTP needed: grace@example.com",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "PostgreSQL 18.4",
+  "hash": "92fb420f28aa9251",
+  "at": "2026-10-06T14:58:55.763Z"
+}

@@ -1,0 +1,159 @@
+{
+  "title": "Validate with Zod",
+  "idea": "Zod lets you describe valid data as a schema, then check untrusted input against it. Bad input becomes a clear 400 before any real work runs.",
+  "points": [
+    "`z.object({ ... })` declares the fields; `z.email()` and `z.string().min(8)` set rules.",
+    "`safeParse` never throws. It returns `success` with `data`, or `error`.",
+    "`error.issues` lists every problem, each with a `path` and a `message`.",
+    "`data` holds only the declared keys. Unknown keys such as `role` are dropped."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "What Zod says about each body",
+    "head": [
+      "Request body",
+      "success",
+      "Issue path",
+      "Message"
+    ],
+    "rows": [
+      [
+        "Valid email and password",
+        "true",
+        "-",
+        "-"
+      ],
+      [
+        "Bad email",
+        "false",
+        "email",
+        "Invalid email address"
+      ],
+      [
+        "Short password",
+        "false",
+        "password",
+        "Password must be at least 8 characters"
+      ],
+      [
+        "Empty object {}",
+        "false",
+        "email, password",
+        "Two issues, each: Invalid input: expected string, received undefined"
+      ],
+      [
+        "Extra field role",
+        "true",
+        "-",
+        "role is removed from data"
+      ],
+      [
+        "No JSON body",
+        "false",
+        "(empty)",
+        "Invalid input: expected object, received undefined"
+      ]
+    ],
+    "highlight": {
+      "col": 1
+    },
+    "caption": "Zod checks every field and reports all problems at once. Unknown keys are dropped, not rejected."
+  },
+  "code": [
+    {
+      "file": "validate.mjs",
+      "lang": "js",
+      "title": "Signup with Zod",
+      "run": "captured",
+      "caption": "Zod guards the controller. One good request and three bad ones: only the good one reaches the insert.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7,
+            8
+          ],
+          "text": "The schema: a valid email, and a password of at least 8 characters."
+        },
+        {
+          "lines": [
+            16
+          ],
+          "text": "`safeParse` checks the body. A missing body is `undefined`, which fails cleanly instead of crashing."
+        },
+        {
+          "lines": [
+            10,
+            11,
+            12,
+            13
+          ],
+          "text": "Turn Zod's issues into the API's 400 shape: a `path` string and a `message`."
+        },
+        {
+          "lines": [
+            17
+          ],
+          "text": "On failure, answer 400 and stop. Nothing below this line runs."
+        },
+        {
+          "lines": [
+            18,
+            19
+          ],
+          "text": "Use `parsed.data`, not `req.body`. Only validated fields get through."
+        },
+        {
+          "lines": [
+            23,
+            24
+          ],
+          "text": "A stand-in for lecture 7's hash and insert. It counts how often it runs."
+        },
+        {
+          "lines": [
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46
+          ],
+          "text": "Send one good body and three bad ones. Only the good one reaches the insert."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Validate on the server. Client-side checks help users, but anyone can call your API directly.",
+    "Read `parsed.data`, not `req.body`. The raw body still holds unchecked extra keys.",
+    "`z.email()` checks the format only. It cannot tell whether the mailbox exists."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const schema = z.object({ n: z.string().min(3) });\nconst r = schema.safeParse({ n: 'ab', extra: 1 });\nconsole.log(r.success, r.error.issues[0].path);",
+    "lang": "js",
+    "options": [
+      "true { n: 'ab' }",
+      "false [ 'extra' ]",
+      "false [ 'n' ]",
+      "It throws a ZodError"
+    ],
+    "answer": 2,
+    "why": "`safeParse` returns instead of throwing. `n` is too short, so it fails. `extra` is an unknown key, which Zod drops without an issue."
+  },
+  "takeaway": "Parse input with a schema at the door; use only the parsed result.",
+  "chat": {
+    "starters": [
+      "What is the difference between parse and safeParse?",
+      "Why does Zod drop unknown keys instead of rejecting them?",
+      "Should the frontend validate too, or only the server?"
+    ]
+  }
+}

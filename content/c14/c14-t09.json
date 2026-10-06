@@ -1,0 +1,133 @@
+{
+  "title": "Pull requests",
+  "idea": "A pull request asks a project's maintainers to merge your branch into their repository. Without write access, you work from a fork: your own copy.",
+  "analogy": {
+    "text": "Suggesting a change to a cookbook someone else owns: you photocopy it, mark your edits on the copy, then hand the owner a note asking them to adopt it.",
+    "breaks": "The note starts a discussion, and you can keep adding edits to it."
+  },
+  "points": [
+    "Clone your fork; Git names that remote `origin`. Add the original as `upstream`.",
+    "Work on a new branch, commit, and push that branch to `origin`.",
+    "On GitHub, open a pull request from your branch into the original's `main`.",
+    "Reviewers comment. Push more commits to the same branch, and the request updates."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "From fork to merge",
+    "scenario": {
+      "tiers": [["upstream"], ["fork"], ["local"]],
+      "nodes": {
+        "upstream": { "label": "Original repo", "sub": "upstream", "kind": "cloud" },
+        "fork": { "label": "Your fork", "sub": "origin", "kind": "cloud" },
+        "local": { "label": "Your laptop", "sub": "local clone", "kind": "client" }
+      },
+      "links": [
+        ["upstream", "fork", { "both": true }],
+        ["fork", "local", { "both": true }],
+        ["upstream", "local", { "dashed": true }]
+      ],
+      "groups": [{ "label": "GitHub", "nodes": ["upstream", "fork"] }],
+      "steps": [
+        {
+          "caption": "The original repository belongs to its maintainers. Without write access, you cannot push to it.",
+          "items": { "upstream": ["A"] },
+          "focus": ["upstream"]
+        },
+        {
+          "caption": "Forking copies it into your own account on GitHub. You can push to your fork.",
+          "send": [{ "from": "upstream", "to": "fork", "label": "fork", "tone": "info" }],
+          "items": { "fork": ["A"] }
+        },
+        {
+          "caption": "You clone your fork to your laptop. Git names that remote `origin`.",
+          "send": [{ "from": "fork", "to": "local", "label": "clone", "tone": "info" }],
+          "items": { "local": ["A"] }
+        },
+        {
+          "caption": "On a new branch, `fix-readme`, you commit B and push the branch to `origin`.",
+          "send": [{ "from": "local", "to": "fork", "label": "push" }],
+          "items": { "local": ["A", "B"], "fork": ["A", "B"] },
+          "badge": { "local": "fix-readme", "fork": "fix-readme" }
+        },
+        {
+          "caption": "You open a pull request: a proposal to merge `fix-readme` into the original's `main`. Nothing merges yet.",
+          "send": [{ "from": "fork", "to": "upstream", "label": "pull request", "tone": "warn" }],
+          "badge": { "upstream": "PR open" }
+        },
+        {
+          "caption": "Reviewers comment. You push another commit, C, to the same branch, and the open request picks it up.",
+          "send": [{ "from": "local", "to": "fork", "label": "push" }],
+          "items": { "local": ["A", "B", "C"], "fork": ["A", "B", "C"] }
+        },
+        {
+          "caption": "A maintainer merges the request. The original now holds your changes.",
+          "items": { "upstream": ["A", "B", "C"] },
+          "badge": { "upstream": "merged" }
+        },
+        {
+          "caption": "Later, other work lands in the original as D. Your fork and clone do not move until you sync them.",
+          "items": { "upstream": ["A", "B", "C", "D"] },
+          "state": { "fork": "stale", "local": "stale" },
+          "badge": { "upstream": null, "local": null, "fork": null }
+        },
+        {
+          "caption": "`git fetch upstream` downloads D. Merge it into your local `main`.",
+          "send": [{ "from": "upstream", "to": "local", "label": "fetch", "tone": "info" }],
+          "items": { "local": ["A", "B", "C", "D"] },
+          "state": { "local": null }
+        },
+        {
+          "caption": "`git push origin main` updates your fork on GitHub. All three copies match.",
+          "send": [{ "from": "local", "to": "fork", "label": "push" }],
+          "items": { "fork": ["A", "B", "C", "D"] },
+          "state": { "fork": null }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "contribute.sh",
+      "lang": "bash",
+      "title": "Fork, branch, sync",
+      "run": "captured",
+      "caption": "Real Git output. Bare repositories on disk play the original and your fork; the pull request itself happens on GitHub.",
+      "walk": [
+        { "lines": [1, 2, 3, 4, 5, 6], "text": "Create the maintainers' project with one commit." },
+        { "lines": [7, 8], "text": "Two bare copies play GitHub's part: `upstream.git` is the original, `fork.git` is your fork." },
+        { "lines": [9, 10], "text": "Clone your fork. Git names its URL `origin`." },
+        { "lines": [11, 12], "text": "Add the original as a second remote, `upstream`. `remote -v` lists both." },
+        { "lines": [13, 14, 15, 16], "text": "Branch, commit, then push the branch to your fork. On GitHub you would now open the pull request." },
+        { "lines": [17, 18, 19, 20, 21], "text": "Meanwhile the maintainers add a commit to the original." },
+        { "lines": [22, 23, 24, 25, 26], "text": "Fetch the original, fast-forward `main` to it, and push to update your fork." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Branch for each change; commits on your fork's `main` make syncing it harder.",
+    "Read the project's `CONTRIBUTING.md`, if it has one, before you start.",
+    "Keep each pull request to one change; small ones are easier to review."
+  ],
+  "quiz": {
+    "q": "What does the last command print?",
+    "code": "# on main; origin is your fork;\n# upstream has gained one new commit\ngit fetch upstream\ngit status -sb",
+    "lang": "bash",
+    "options": [
+      "## main",
+      "## main...upstream/main [behind 1]",
+      "## main...origin/main",
+      "## main...origin/main [behind 1]"
+    ],
+    "answer": 2,
+    "why": "`main` tracks `origin`, your fork, not `upstream`. Fetching `upstream` updates `upstream/main` only, so your fork still looks up to date."
+  },
+  "takeaway": "Branch in your fork, push it, then propose the merge with a pull request.",
+  "chat": {
+    "starters": [
+      "Do I need a fork if I have write access?",
+      "How do I keep my fork up to date?",
+      "What should a good pull request description say?"
+    ]
+  }
+}

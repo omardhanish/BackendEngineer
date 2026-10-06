@@ -1,0 +1,350 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "BackendEngineer topic page",
+  "description": "Structure of content/<chapter>/<id>.json. Word-count caps, cross-references and code checks live in tools/validate.mjs.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "title"
+  ],
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 60
+    },
+    "idea": {
+      "type": "string"
+    },
+    "analogy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "text"
+      ],
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "breaks": {
+          "type": "string"
+        }
+      }
+    },
+    "points": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 5,
+      "items": {
+        "type": "string"
+      }
+    },
+    "hero": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "anim",
+            "flow",
+            "seq",
+            "timeline",
+            "compare",
+            "table",
+            "anatomy"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 50
+        }
+      }
+    },
+    "code": {
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "file",
+          "lang",
+          "run"
+        ],
+        "properties": {
+          "file": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+          },
+          "lang": {
+            "enum": [
+              "js",
+              "javascript",
+              "json",
+              "bash",
+              "sh",
+              "sql",
+              "yaml",
+              "yml",
+              "docker",
+              "dockerfile",
+              "http",
+              "html",
+              "ejs",
+              "ts",
+              "diff",
+              "css"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 30
+          },
+          "caption": {
+            "type": "string"
+          },
+          "run": {
+            "enum": [
+              "browser",
+              "captured",
+              "static"
+            ]
+          },
+          "illustrative": {
+            "type": "boolean"
+          },
+          "walk": {
+            "type": "array",
+            "maxItems": 7,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "lines",
+                "text"
+              ],
+              "properties": {
+                "lines": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "text": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "needs": {
+            "type": "array",
+            "maxItems": 2,
+            "items": {
+              "enum": [
+                "postgres",
+                "mongo"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "pitfalls": {
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "type": "string"
+      }
+    },
+    "quiz": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "q",
+        "options",
+        "answer",
+        "why"
+      ],
+      "properties": {
+        "q": {
+          "type": "string"
+        },
+        "options": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 4,
+          "items": {
+            "type": "string"
+          }
+        },
+        "answer": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3
+        },
+        "why": {
+          "type": "string"
+        },
+        "code": {
+          "type": "string"
+        },
+        "lang": {
+          "type": "string"
+        }
+      }
+    },
+    "takeaway": {
+      "type": "string"
+    },
+    "chat": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "starters": {
+          "type": "array",
+          "maxItems": 5,
+          "items": {
+            "type": "string",
+            "maxLength": 90
+          }
+        }
+      }
+    },
+    "scenario": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "brief",
+        "rubric"
+      ],
+      "properties": {
+        "brief": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string"
+        },
+        "goal": {
+          "type": "string"
+        },
+        "rules": {
+          "type": "array",
+          "maxItems": 4,
+          "items": {
+            "type": "string"
+          }
+        },
+        "personaLabel": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "artifact": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "artifactTitle": {
+          "type": "string"
+        },
+        "artifactNote": {
+          "type": "string"
+        },
+        "rubric": {
+          "type": "array",
+          "minItems": 6,
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "criterion",
+              "levels"
+            ],
+            "properties": {
+              "criterion": {
+                "type": "string",
+                "maxLength": 50
+              },
+              "levels": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "challenges": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items"
+      ],
+      "properties": {
+        "intro": {
+          "type": "string"
+        },
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 12,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "prompt",
+              "starter",
+              "tests",
+              "solution",
+              "hints"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "prompt": {
+                "type": "string"
+              },
+              "starter": {
+                "type": "string"
+              },
+              "tests": {
+                "type": "string"
+              },
+              "solution": {
+                "type": "string"
+              },
+              "hints": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "mode": {
+                "enum": [
+                  "browser",
+                  "local"
+                ]
+              },
+              "file": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

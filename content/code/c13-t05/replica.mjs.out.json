@@ -1,0 +1,9 @@
+{
+  "stdout": "replica before: undefined\nreplica after: Ada",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": null,
+  "hash": "84d414c96708af25",
+  "at": "2026-10-06T09:53:52.728Z"
+}

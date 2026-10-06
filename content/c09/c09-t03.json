@@ -1,0 +1,106 @@
+{
+  "title": "Docker vs virtual machines",
+  "idea": "A virtual machine (VM) runs a whole operating system on virtual hardware. A container is an isolated process that shares the host's kernel.",
+  "analogy": {
+    "text": "VMs are houses, containers are apartments. Each house has its own foundation. Apartments share one, the kernel, but each has a locked door.",
+    "breaks": "Apartment walls are solid; a shared kernel is a thinner boundary."
+  },
+  "points": [
+    "A hypervisor is software that shares one machine's hardware among VMs.",
+    "Each VM boots its own operating system and kernel; containers use the host's kernel.",
+    "So a container starts as a process, with just the files your app needs.",
+    "On Mac, Docker Desktop runs a Linux VM to host your containers."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "VM or container",
+    "head": [
+      "Compared on",
+      "Virtual machine",
+      "Container"
+    ],
+    "rows": [
+      [
+        "Includes",
+        "Whole OS, drivers, programs, app",
+        "The app and the files it needs"
+      ],
+      [
+        "Kernel",
+        "Its own",
+        "Shared with the host"
+      ],
+      [
+        "Separated by",
+        "A hypervisor",
+        "Kernel isolation features"
+      ],
+      [
+        "Starts by",
+        "Booting an operating system",
+        "Starting a process"
+      ],
+      [
+        "Isolation",
+        "Harder boundary",
+        "Thinner boundary"
+      ]
+    ],
+    "highlight": {
+      "col": 2
+    },
+    "caption": "Sharing the kernel makes containers light, and their boundary thinner."
+  },
+  "code": [
+    {
+      "file": "kernel.sh",
+      "lang": "bash",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Ask for the kernel release on the host, then inside a container.",
+      "walk": [
+        {
+          "lines": [
+            1
+          ],
+          "text": "Print the kernel release of your own machine."
+        },
+        {
+          "lines": [
+            2
+          ],
+          "text": "Same question inside an Alpine container; `--rm` deletes it afterwards. On a Linux host the answers match."
+        },
+        {
+          "lines": [
+            3
+          ],
+          "text": "Alpine's own files, yet the host's kernel (on Mac, the Docker VM's)."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not rely on containers alone to contain untrusted code; they share the host kernel.",
+    "Need a different kernel, such as Windows on a Linux host? Use a VM."
+  ],
+  "quiz": {
+    "q": "A Linux server runs three containers. How many kernels are running?",
+    "options": [
+      "Four: the host's and one per container",
+      "Three, one per container",
+      "One, shared by the host and all containers",
+      "None; containers run without a kernel"
+    ],
+    "answer": 2,
+    "why": "Containers are isolated processes. They all use the host's kernel; only a VM boots a kernel of its own."
+  },
+  "takeaway": "Containers share the host kernel; VMs bring their own.",
+  "chat": {
+    "starters": [
+      "Can I run Docker inside a virtual machine?",
+      "Why does Docker Desktop need a Linux VM on Mac?",
+      "When should I choose a VM over a container?"
+    ]
+  }
+}

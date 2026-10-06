@@ -1,0 +1,9 @@
+{
+  "stdout": "nobody: 401 {\"error\":\"Unauthorized\"}\nada: 200 [\"def5678\",\"abc1234\"]\ngrace: 200 [\"ghi9012\"]\nalan: 200 []",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "PostgreSQL 18.4",
+  "hash": "40dc312c30b3b6ae",
+  "at": "2026-10-06T15:12:33.712Z"
+}

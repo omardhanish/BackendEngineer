@@ -1,0 +1,73 @@
+{
+  "title": "Publishing images to a registry",
+  "idea": "A registry stores images so other machines can pull them. The image name says where it lives: you tag it with that name, log in, and push.",
+  "points": [
+    "A name is `[host/]namespace/repository:tag`; a repository holds one app's versions.",
+    "`docker login` stores credentials. Pushing needs them, and so does pulling private images.",
+    "`docker push` uploads only the layers the registry does not already have.",
+    "A tag can be moved to another image; avoid reusing version tags."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "From your machine to a server",
+    "actors": [
+      { "id": "you", "label": "Your machine" },
+      { "id": "reg", "label": "Registry" },
+      { "id": "srv", "label": "Server" }
+    ],
+    "messages": [
+      { "from": "you", "to": "reg", "label": "docker login", "note": "Sign in once. For Docker Hub, a personal access token works in place of a password." },
+      { "from": "you", "to": "you", "label": "docker tag", "note": "Add the destination to the image name. This is local; nothing is uploaded yet." },
+      { "from": "you", "to": "reg", "label": "docker push", "note": "The registry receives the layers it lacks and records the tag, for example `1.0`." },
+      { "from": "srv", "to": "reg", "label": "docker pull", "note": "On another machine, pull by the same name. A private repository needs `docker login` there too." },
+      { "from": "reg", "to": "srv", "label": "layers", "dashed": true, "note": "The registry sends the layers, and the server starts the image with `docker run`." }
+    ]
+  },
+  "code": [
+    {
+      "file": "hub.sh",
+      "lang": "bash",
+      "title": "Docker Hub",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Publish `bookstore-api` to Docker Hub, the default registry when a name has no host. `<docker-id>` is your username.",
+      "walk": [
+        { "lines": [1], "text": "Sign in to Docker Hub with your Docker ID." },
+        { "lines": [2], "text": "Add a second name that starts with your Docker ID, the Docker Hub namespace." },
+        { "lines": [3], "text": "Upload it. Layers the registry already has are skipped." },
+        { "lines": [4], "text": "On any machine with access, download the image by that name." }
+      ]
+    },
+    {
+      "file": "private.sh",
+      "lang": "bash",
+      "title": "Private registry",
+      "run": "static",
+      "illustrative": true,
+      "caption": "A private registry works the same way, with its host name in front. Amazon ECR (chapter 10) is one.",
+      "walk": [
+        { "lines": [1, 2], "text": "Log in without a prompt. `--password-stdin` keeps the token out of shell history." },
+        { "lines": [3], "text": "Put the registry host in front of the namespace and repository." },
+        { "lines": [4], "text": "Push to that registry. Docker Hub is not involved." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "`docker push bookstore-api` aims at `docker.io/library`, which you cannot write to. Tag with your namespace first.",
+    "Never `COPY` secrets into an image: anyone who can pull it can read every layer.",
+    "Log in with `--password-stdin`; a `--password` flag exposes the token on the command line."
+  ],
+  "quiz": {
+    "q": "Which tag for the local image bookstore-api:1.0 lets you push to Docker Hub account acme?",
+    "options": [
+      "bookstore-api:acme",
+      "docker.io/bookstore-api:1.0",
+      "acme/bookstore-api:1.0",
+      "acme:bookstore-api/1.0"
+    ],
+    "answer": 2,
+    "why": "A name is namespace/repository:tag, and your Docker ID is your namespace. Without one, Docker Hub assumes `library`."
+  },
+  "takeaway": "A push goes where the image name says, so name it first.",
+  "chat": { "starters": ["What is the difference between a registry and a repository?", "How is Amazon ECR different from Docker Hub?", "Can I run my own registry?"] }
+}

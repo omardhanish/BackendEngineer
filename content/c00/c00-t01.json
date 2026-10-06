@@ -1,0 +1,58 @@
+{
+  "title": "Your path to production",
+  "idea": "A backend is the part of an app users never see but always depend on. This book takes you from JavaScript basics to a deployed, scalable service.",
+  "analogy": {
+    "text": "A restaurant: the dining room is the frontend, the kitchen is the backend. Guests judge the meal, but the kitchen decides whether it arrives.",
+    "breaks": "Unlike a kitchen, a backend serves thousands of tables at once, all day."
+  },
+  "points": [
+    "Each page is one idea, split into a few short frames.",
+    "Press → to step through. Press ? to see every shortcut.",
+    "Edit and run code right on the page.",
+    "Stuck? Ask the tutor. It already knows the page you are on."
+  ],
+  "hero": {
+    "type": "timeline",
+    "title": "The path, in four stages",
+    "items": [
+      {
+        "label": "Language",
+        "text": "JavaScript, then Node.js"
+      },
+      {
+        "label": "Services",
+        "text": "HTTP, Express, SQL and MongoDB"
+      },
+      {
+        "label": "Trust",
+        "text": "Sessions, JWT and roles"
+      },
+      {
+        "label": "Production",
+        "text": "Docker, AWS, scaling and Git"
+      }
+    ]
+  },
+  "quiz": {
+    "q": "Which part of an app is the backend?",
+    "options": [
+      "Buttons and page layout",
+      "Server code, data and rules",
+      "The browser's address bar"
+    ],
+    "answer": 1,
+    "why": "The backend runs on servers: it stores data, applies rules and answers requests."
+  },
+  "takeaway": "Learn the path in order: language, services, trust, production.",
+  "chat": {
+    "starters": [
+      "What does a backend engineer actually do?",
+      "Why use Node.js for the backend?",
+      "Give me a four-week study plan"
+    ]
+  },
+  "pitfalls": [
+    "Reading alone will not stick; edit and run the code yourself.",
+    "Do not skip JavaScript: every later chapter builds on it."
+  ]
+}

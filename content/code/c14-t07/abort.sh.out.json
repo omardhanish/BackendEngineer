@@ -1,0 +1,9 @@
+{
+  "stdout": "$ mkdir menu\n$ cd menu\n$ git init -b main\nInitialized empty Git repository in /home/ada/menu/.git/\n$ echo \"soup: 5\" > menu.txt\n$ git add menu.txt\n$ git commit -m \"Add menu\"\n[main (root-commit) dc76954] Add menu\n 1 file changed, 1 insertion(+)\n create mode 100644 menu.txt\n$ git switch -c cheaper\nSwitched to a new branch 'cheaper'\n$ echo \"soup: 4\" > menu.txt\n$ git commit -am \"Lower soup price\"\n[cheaper cc08cc2] Lower soup price\n 1 file changed, 1 insertion(+), 1 deletion(-)\n$ git switch main\nSwitched to branch 'main'\n$ echo \"soup: 6\" > menu.txt\n$ git commit -am \"Raise soup price\"\n[main 3142879] Raise soup price\n 1 file changed, 1 insertion(+), 1 deletion(-)\n$ git switch cheaper\nSwitched to branch 'cheaper'\n$ git rebase main\nRebasing (1/1)\rAuto-merging menu.txt\nCONFLICT (content): Merge conflict in menu.txt\nerror: could not apply cc08cc2... Lower soup price\nhint: Resolve all conflicts manually, mark them as resolved with\nhint: \"git add/rm <conflicted_files>\", then run \"git rebase --continue\".\nhint: You can instead skip this commit: run \"git rebase --skip\".\nhint: To abort and get back to the state before \"git rebase\", run \"git rebase --abort\".\nhint: Disable this message with \"git config advice.mergeConflict false\"\nCould not apply cc08cc2... Lower soup price\n$ git rebase --abort\n$ git log --oneline\ncc08cc2 Lower soup price\ndc76954 Add menu",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "git 2.47.0",
+  "hash": "90aa1630047ce54f",
+  "at": "2026-10-06T15:08:29.955Z"
+}

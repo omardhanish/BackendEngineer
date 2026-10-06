@@ -1,0 +1,46 @@
+{
+  "title": "EventEmitter basics",
+  "idea": "An EventEmitter lets one part of your program announce that something happened, while any number of listeners react to it.",
+  "analogy": {
+    "text": "A radio station broadcasts a song and every tuned-in radio plays it. The station never knows who is listening.",
+    "breaks": "Listeners run one after another, in the order they signed up."
+  },
+  "points": [
+    "`on(name, fn)` registers a listener; `once` runs it only one time.",
+    "`emit(name, ...args)` calls every listener, synchronously, in order.",
+    "Emitting an `error` event with no listener throws and can crash Node."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "One emit, many listeners",
+    "nodes": [
+      { "id": "emit", "label": "emit('order', 7)", "sub": "announce" },
+      { "id": "bus", "label": "EventEmitter", "sub": "keeps the list" },
+      { "id": "kitchen", "label": "Listener: kitchen", "sub": "logs: cook 7" },
+      { "id": "billing", "label": "Listener: billing", "sub": "logs: charge 7" }
+    ],
+    "edges": [
+      { "from": "emit", "to": "bus", "label": "publishes", "caption": "Your code calls emit('order', 7). The emitter looks up everyone registered for 'order'." },
+      { "from": "bus", "to": "kitchen", "label": "1st", "caption": "The first listener runs to completion. Nothing else runs yet." },
+      { "from": "bus", "to": "billing", "label": "2nd", "caption": "Then the second listener runs. Same arguments, in registration order." }
+    ]
+  },
+  "code": [
+    { "file": "emitter.mjs", "lang": "js", "run": "browser", "caption": "Edit it: add a third listener, or change once to on, and run again." }
+  ],
+  "pitfalls": [
+    "`emit('error')` with no 'error' listener throws, so always handle it.",
+    "Listeners run synchronously: a slow listener blocks the emitter.",
+    "Forgotten `on` listeners pile up and leak memory; remove them with `off`."
+  ],
+  "quiz": {
+    "q": "What does the last line print?",
+    "code": "import { EventEmitter } from 'node:events';\nconst shop = new EventEmitter();\nshop.on('order', () => {});\nshop.on('order', () => {});\nshop.once('order', () => {});\nshop.emit('order');\nshop.emit('order');\nconsole.log('listeners:', shop.listenerCount('order'));",
+    "lang": "js",
+    "options": ["listeners: 3", "listeners: 2", "listeners: 1", "listeners: 0"],
+    "answer": 1,
+    "why": "`once` removed itself after the first emit, leaving the two `on` listeners."
+  },
+  "takeaway": "Emit announces, listeners react, and the emitter keeps the list.",
+  "chat": { "starters": ["When would I use an EventEmitter in a real app?", "What is the difference between on and once?", "How do I stop a memory leak from listeners?"] }
+}

@@ -1,0 +1,59 @@
+{
+  "title": "Host and none networks",
+  "idea": "`--network host` makes a container share the host's network directly. `--network none` gives it no network at all except loopback, the container's own `localhost`.",
+  "points": [
+    "`--network host` skips network isolation: the container uses the host's own network.",
+    "The container has no IP of its own; its port 3000 is the host's.",
+    "`-p` is ignored in host mode, and two servers cannot share one port.",
+    "`--network none` creates only a loopback device; nothing else can connect in or out."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "Three network modes",
+    "head": ["Mode", "What the container gets", "Reached from outside by"],
+    "rows": [
+      ["bridge (default)", "Its own IP on a private network", "A published port (-p)"],
+      ["host", "The host's network, no IP of its own", "The host's own ports; -p is ignored"],
+      ["none", "Only a loopback device", "Not reachable"]
+    ],
+    "caption": "Choose a mode per container with --network."
+  },
+  "code": [
+    {
+      "file": "modes.sh",
+      "lang": "bash",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Host mode on Linux, then none mode.",
+      "walk": [
+        { "lines": [1], "text": "Host mode: the API's port 3000 is the host's port 3000. No `-p`." },
+        { "lines": [2], "text": "Request it through the host's own `localhost`." },
+        { "lines": [3], "text": "None mode: list the container's network interfaces. Only loopback (`lo`) appears." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Docker Desktop 4.34+ needs \"Enable host networking\" turned on in Settings first.",
+    "Do not add `-p` in host mode; Docker ignores it.",
+    "Host mode removes network isolation; any port your app opens is open on the host."
+  ],
+  "quiz": {
+    "q": "An app listens on port 3000 in a container started with `--network host`. How do you reach it?",
+    "options": [
+      "At the host's port 3000; no `-p` needed",
+      "Only with `-p 3000:3000`",
+      "Only with `-P`",
+      "You cannot; the container has no IP"
+    ],
+    "answer": 0,
+    "why": "Host mode shares the host's network, so the app's port is the host's port. `-p` is ignored."
+  },
+  "takeaway": "`host` shares the host's network, `none` removes the network, `bridge` is the default.",
+  "chat": {
+    "starters": [
+      "When would I use host networking?",
+      "Can a container on the none network still run my app?",
+      "What other network drivers does Docker have?"
+    ]
+  }
+}

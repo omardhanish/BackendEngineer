@@ -1,0 +1,67 @@
+{
+  "title": "Horizontal scaling",
+  "idea": "Horizontal scaling means adding more machines that run the same app, with a load balancer spreading requests across them, so capacity grows by adding servers.",
+  "analogy": {
+    "text": "A supermarket opening more checkout lanes. Each cashier works the same way, and a host points each shopper to a free lane.",
+    "breaks": "Shoppers carry their own basket; servers must not hold your data."
+  },
+  "points": [
+    "A load balancer receives every request and picks one server for it.",
+    "Any server may handle any request, so servers must be stateless.",
+    "Shared state moves out of the process into a database or cache.",
+    "Adding or losing a server changes capacity without changing the app."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Many servers, one shared store",
+    "dir": "TB",
+    "nodes": [
+      { "id": "clients", "label": "Clients" },
+      { "id": "lb", "label": "Load balancer", "sub": "picks a server" },
+      { "id": "s1", "label": "Server 1", "sub": "stateless" },
+      { "id": "s2", "label": "Server 2", "sub": "stateless" },
+      { "id": "s3", "label": "Server 3", "sub": "stateless" },
+      { "id": "db", "label": "Database / cache", "sub": "shared state" }
+    ],
+    "edges": [
+      { "from": "clients", "to": "lb", "label": "requests" },
+      { "from": "lb", "to": "s1", "label": "1st request" },
+      { "from": "lb", "to": "s2", "label": "2nd request" },
+      { "from": "lb", "to": "s3", "label": "3rd request" },
+      { "from": "s1", "to": "db" },
+      { "from": "s2", "to": "db" },
+      { "from": "s3", "to": "db" }
+    ],
+    "steps": [
+      { "caption": "Clients send every request to one address: the load balancer.", "active": ["clients", "lb"], "edges": [0] },
+      { "caption": "The load balancer sends the first request to server 1.", "active": ["lb", "s1"], "edges": [1] },
+      { "caption": "The next request may go to server 2. Each server must handle it the same way.", "active": ["lb", "s2"], "edges": [2] },
+      { "caption": "A later request may reach server 3. No server can rely on having seen this user before.", "active": ["lb", "s3"], "edges": [3] },
+      { "caption": "Sessions, counters and uploads live in the shared store, so every server sees the same data.", "active": ["s1", "s2", "s3", "db"], "edges": [4, 5, 6] }
+    ]
+  },
+  "pitfalls": [
+    "Do not keep sessions in server memory; the next request may hit another server.",
+    "Do not save uploads to local disk; store them in shared object storage.",
+    "Do not count in a process variable; each server keeps its own total."
+  ],
+  "quiz": {
+    "q": "Three servers sit behind a load balancer. Each keeps a request counter in a variable. What does that counter show?",
+    "options": [
+      "The total requests across all three servers",
+      "Only the requests that one server handled",
+      "Nothing; counters reset on every request",
+      "The same value on every server"
+    ],
+    "answer": 1,
+    "why": "Each process has its own memory. A counter in a variable counts only its own server's requests; use a shared store for totals."
+  },
+  "takeaway": "Scale out by adding stateless servers, and keep shared state outside them.",
+  "chat": {
+    "starters": [
+      "What are sticky sessions and why are they a trap?",
+      "How does a load balancer choose a server?",
+      "Where should I store sessions when I run many servers?"
+    ]
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "title": "What MongoDB is",
+  "idea": "MongoDB is a database that stores each record as a document: a JSON-like object that can hold nested objects and arrays.",
+  "points": [
+    "Documents live in collections, which play the role of SQL tables.",
+    "By default, documents in one collection need not share the same fields.",
+    "Rules are optional. Mongoose, covered soon, adds a schema in your app.",
+    "MongoDB stores documents as BSON, a binary form of JSON with extra types."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "SQL words and their MongoDB twins",
+    "head": ["SQL", "MongoDB", "What changes"],
+    "rows": [
+      ["table", "collection", "Documents in one collection can differ in shape."],
+      ["row", "document", "A document can nest objects and arrays."],
+      ["column", "field", "Fields are not declared up front."],
+      ["primary key", "`_id`", "Always present; usually an `ObjectId`."],
+      ["`JOIN`", "embed, or `$lookup`", "Related data often sits inside the document."],
+      ["`CREATE TABLE`", "not needed", "A collection appears on the first insert."]
+    ],
+    "highlight": { "col": 1 },
+    "caption": "Most SQL ideas have a MongoDB twin. The third column is where the two models differ."
+  },
+  "code": [
+    {
+      "file": "app.mjs",
+      "lang": "js",
+      "title": "Three shapes, one collection",
+      "run": "captured",
+      "needs": ["mongo"],
+      "caption": "The official `mongodb` driver. No table is declared first; three differently shaped documents go in, and each gets an `_id`."
+    }
+  ],
+  "pitfalls": [
+    "Optional schemas still need design: agree on field names and types early.",
+    "Field names are case-sensitive: `year` and `Year` are two different fields.",
+    "Do not embed lists that grow without limit; a document has a size limit."
+  ],
+  "quiz": {
+    "q": "You insert `{ title: 'Emma' }` into a `books` collection whose other documents have a `year`. What happens?",
+    "options": [
+      "Error: `year` is missing",
+      "It is stored as it is",
+      "`year: null` is added",
+      "MongoDB builds a schema first"
+    ],
+    "answer": 1,
+    "why": "A collection has no fixed fields unless you add validation rules. A missing field is simply absent, not null."
+  },
+  "takeaway": "A collection holds documents; each document carries its own fields.",
+  "chat": {
+    "starters": [
+      "When should I pick MongoDB over Postgres?",
+      "What is an ObjectId, and why not a number?",
+      "Can MongoDB enforce a schema?"
+    ]
+  }
+}

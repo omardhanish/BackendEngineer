@@ -1,0 +1,9 @@
+{
+  "stdout": "[\n  { _id: 'Ana', orders: 2, spent: 200, avg: 100, low: 80, high: 120 },\n  { _id: 'Ben', orders: 2, spent: 90, avg: 45, low: 40, high: 50 },\n  { _id: 'Cleo', orders: 2, spent: 85, avg: 42.5, low: 25, high: 60 },\n  { _id: 'Dev', orders: 1, spent: 150, avg: 150, low: 150, high: 150 },\n  { _id: 'Eli', orders: 1, spent: 130, avg: 130, low: 130, high: 130 }\n]\n[ { paid: 6 } ]",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "MongoDB 8.2.6",
+  "hash": "c2b84a1d653dfcdc",
+  "at": "2026-10-06T14:58:57.242Z"
+}

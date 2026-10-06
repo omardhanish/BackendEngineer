@@ -1,0 +1,57 @@
+{
+  "title": "Your first Node script",
+  "idea": "A Node script is a JavaScript file you run from the terminal with the `node` command, no browser or web page needed.",
+  "points": [
+    "Node reads the file and runs it from the first line to the last.",
+    "`console.log` writes a line to standard output, which your terminal shows.",
+    "Node exits after the last line, unless work is still pending, like a timer.",
+    "`console.error` writes to standard error, a separate stream for errors."
+  ],
+  "hero": {
+    "type": "anatomy",
+    "title": "Reading node hello.mjs Ada",
+    "parts": [
+      { "text": "node ", "label": "Program", "note": "Starts the Node.js runtime, which then loads your file." },
+      { "text": "hello", "label": "File name", "note": "Any name you choose. Node looks for it in the folder where you typed the command." },
+      { "text": ".mjs ", "label": "Extension", "note": "Marks an ES module, so `import` works. This book uses `.mjs`; the modules page explains it." },
+      { "text": "Ada", "label": "Argument", "note": "Extra words after the file name. Your script reads them from `process.argv`, starting at index 2." }
+    ]
+  },
+  "code": [
+    {
+      "file": "hello.mjs",
+      "lang": "js",
+      "title": "Hello, world",
+      "run": "browser",
+      "caption": "Run it here, then change the greeting. In a terminal, add a name after the file name to greet someone else."
+    },
+    {
+      "file": "exit.mjs",
+      "lang": "js",
+      "title": "When it exits",
+      "run": "browser",
+      "caption": "The last line runs, yet the timer still fires: Node waits for pending work before it exits."
+    }
+  ],
+  "pitfalls": [
+    "Run `node` in the file's folder, or pass its path; else you get `Cannot find module`.",
+    "Write the whole file name: `node hello` does not find `hello.mjs`.",
+    "Add the file name: `node` alone opens an interactive prompt; type `.exit` to leave it."
+  ],
+  "quiz": {
+    "q": "What does `node greet.mjs Ada Lovelace` print?",
+    "code": "// greet.mjs\nconsole.log(process.argv[2]);",
+    "lang": "js",
+    "options": ["Ada", "Lovelace", "greet.mjs", "node"],
+    "answer": 0,
+    "why": "`process.argv[0]` is the path to `node`, `[1]` is the script's path, and the first argument sits at index 2."
+  },
+  "takeaway": "Node runs the file you name, then waits only for pending work.",
+  "chat": {
+    "starters": [
+      "What does console.log actually write to?",
+      "Why do I need the .mjs extension?",
+      "How do I stop a script that never ends?"
+    ]
+  }
+}

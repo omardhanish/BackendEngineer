@@ -1,0 +1,120 @@
+{
+  "title": "A basic Express server",
+  "idea": "An Express server is a Node process that listens on a port and answers each request with the first route that matches.",
+  "points": [
+    "A route pairs a method and path with a handler.",
+    "`app.listen` opens the port. Without it, the process registers routes and exits.",
+    "Read the port from `process.env.PORT`; environment values are always strings.",
+    "A request that matches no route gets Express's built-in 404 reply."
+  ],
+  "hero": {
+    "type": "timeline",
+    "title": "From file to first reply",
+    "items": [
+      {
+        "label": "Load the env",
+        "text": "dotenv copies `.env` values into `process.env`, so `PORT` is available."
+      },
+      {
+        "label": "Create the app",
+        "text": "`express()` returns an app that will hold your routes and middleware."
+      },
+      {
+        "label": "Register a route",
+        "text": "`app.get('/', handler)` records the route. The handler does not run yet."
+      },
+      {
+        "label": "Listen",
+        "text": "`app.listen(port)` opens the port. Node stays alive, waiting for requests."
+      },
+      {
+        "label": "Handle a request",
+        "text": "`GET /` matches the route, so the handler runs and sends the reply."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "index.mjs",
+      "lang": "js",
+      "title": "src/index.js",
+      "run": "captured",
+      "caption": "Save as `src/index.js`. This copy calls itself once, then closes; in the project, `.env` sets `PORT`.",
+      "walk": [
+        {
+          "lines": [
+            1,
+            3
+          ],
+          "text": "Import Express and create the app."
+        },
+        {
+          "lines": [
+            4
+          ],
+          "text": "Read the port from the environment. Here `0` asks the system for any free port."
+        },
+        {
+          "lines": [
+            6
+          ],
+          "text": "Register one route. It sends plain text."
+        },
+        {
+          "lines": [
+            8,
+            9
+          ],
+          "text": "`listen` opens the port. `err` is set if that failed, so throw it."
+        },
+        {
+          "lines": [
+            10,
+            11,
+            12,
+            13
+          ],
+          "text": "Call the route and print the status and body."
+        },
+        {
+          "lines": [
+            14
+          ],
+          "text": "An unknown path gets the built-in 404."
+        },
+        {
+          "lines": [
+            15
+          ],
+          "text": "Close the server so the script can exit."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Forget `listen` and the script ends silently: nothing serves requests.",
+    "A busy port gives `EADDRINUSE` in the `listen` callback; throw `err` to see it.",
+    "Do not hard-code the port: read `process.env.PORT`, so each machine can choose its own."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "process.env.PORT = '8000';\nconst next = process.env.PORT + 1;\nconsole.log(next);",
+    "lang": "js",
+    "options": [
+      "8001",
+      "80001",
+      "NaN",
+      "undefined"
+    ],
+    "answer": 1,
+    "why": "Environment values are strings, so `+` joins the text. Use `Number(process.env.PORT)` for arithmetic."
+  },
+  "takeaway": "Routes describe replies; `listen` is what opens the port.",
+  "chat": {
+    "starters": [
+      "What is the difference between `res.send` and `res.json`?",
+      "How do I stop a server that is stuck on a port?",
+      "Why does `app.listen` take a callback?"
+    ]
+  }
+}

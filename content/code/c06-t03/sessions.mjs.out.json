@@ -1,0 +1,9 @@
+{
+  "stdout": "GET /me 401 {\"error\":\"Not logged in\"}\nPOST /login 200 {\"email\":\"ada@example.com\"}\nsid=<id>; Path=/; HttpOnly; SameSite=Lax\nGET /me 200 {\"userId\":1}\nPOST /logout 204\nGET /me 401 {\"error\":\"Not logged in\"}",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": null,
+  "hash": "eece14fd3a23b163",
+  "at": "2026-10-06T10:00:36.336Z"
+}

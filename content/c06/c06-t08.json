@@ -1,0 +1,319 @@
+{
+  "title": "Role-based authorization in Express",
+  "idea": "`requireRole(...roles)` builds a middleware. That middleware lets a request pass only when `req.user.role` is listed; otherwise it sends `403`.",
+  "analogy": {
+    "text": "An office building. The front desk checks your badge is real; each door reader then checks the badge level.",
+    "breaks": "Real readers check the badge themselves; `requireRole` trusts what `authenticate` stored."
+  },
+  "points": [
+    "`authenticate` runs first and sets `req.user`; `requireRole` then reads `req.user.role`.",
+    "`requireRole` sends `403`, never `401`: by then the caller is known.",
+    "List several roles to allow any of them: `requireRole('user', 'admin')`.",
+    "`requireRole` works the same whether `authenticate` reads a session or a JWT."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "Guards are set per route",
+    "scenario": {
+      "token": {
+        "label": "GET /books",
+        "tone": "req"
+      },
+      "stages": [
+        {
+          "id": "client",
+          "label": "Client",
+          "kind": "end"
+        },
+        {
+          "id": "auth",
+          "label": "authenticate",
+          "sub": "who are you?"
+        },
+        {
+          "id": "role",
+          "label": "requireRole",
+          "sub": "('admin')"
+        },
+        {
+          "id": "route",
+          "label": "Handler",
+          "sub": "route code",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "Ada has role `user`. She calls `GET /books`.",
+          "at": "client",
+          "slot": "top",
+          "token": {
+            "label": "GET /books",
+            "tone": "req"
+          },
+          "state": {
+            "client": "active"
+          },
+          "out": []
+        },
+        {
+          "caption": "`authenticate` verifies her token and sets `req.user`.",
+          "at": "auth",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "auth": "active"
+          },
+          "out": [
+            "authenticate: Ada, role user"
+          ]
+        },
+        {
+          "caption": "This route has no `requireRole`, so the request skips to the handler.",
+          "at": "route",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "auth": "done",
+            "route": "active"
+          },
+          "out": [
+            "authenticate: Ada, role user",
+            "handler: list books"
+          ]
+        },
+        {
+          "caption": "The handler answers `200`. Any logged-in user may list books.",
+          "at": "client",
+          "slot": "top",
+          "token": {
+            "label": "200 OK",
+            "tone": "ok"
+          },
+          "state": {
+            "client": "active",
+            "auth": "done",
+            "route": "done"
+          },
+          "out": [
+            "authenticate: Ada, role user",
+            "handler: list books"
+          ]
+        },
+        {
+          "caption": "Ada calls `GET /users`. This route adds `requireRole('admin')`.",
+          "at": "client",
+          "slot": "top",
+          "token": {
+            "label": "GET /users",
+            "tone": "req"
+          },
+          "state": {
+            "client": "active"
+          },
+          "out": []
+        },
+        {
+          "caption": "`authenticate` passes her on again.",
+          "at": "auth",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "auth": "active"
+          },
+          "out": [
+            "authenticate: Ada, role user"
+          ]
+        },
+        {
+          "caption": "`requireRole('admin')` looks for `user` in `['admin']` and finds nothing. It sends `403`.",
+          "at": "role",
+          "slot": "bottom",
+          "token": {
+            "label": "403",
+            "tone": "err"
+          },
+          "state": {
+            "client": "done",
+            "auth": "done",
+            "role": "blocked"
+          },
+          "out": [
+            "authenticate: Ada, role user",
+            "requireRole: user not in [admin]"
+          ]
+        },
+        {
+          "caption": "The client gets `403`. Ada is known, but not allowed.",
+          "at": "client",
+          "slot": "top",
+          "token": {
+            "label": "403",
+            "tone": "err"
+          },
+          "state": {
+            "client": "active",
+            "auth": "done",
+            "role": "blocked"
+          },
+          "out": [
+            "authenticate: Ada, role user",
+            "requireRole: user not in [admin]"
+          ]
+        },
+        {
+          "caption": "Grace has role `admin`. She calls the same route and passes both checks.",
+          "at": "role",
+          "slot": "top",
+          "token": {
+            "label": "GET /users",
+            "tone": "req"
+          },
+          "state": {
+            "client": "done",
+            "auth": "done",
+            "role": "active"
+          },
+          "out": [
+            "authenticate: Grace, role admin",
+            "requireRole: admin allowed"
+          ]
+        },
+        {
+          "caption": "The handler runs, and Grace gets `200` with the user list.",
+          "at": "route",
+          "slot": "top",
+          "token": {
+            "label": "200 OK",
+            "tone": "ok"
+          },
+          "state": {
+            "client": "done",
+            "auth": "done",
+            "role": "done",
+            "route": "active"
+          },
+          "out": [
+            "authenticate: Grace, role admin",
+            "requireRole: admin allowed",
+            "handler: list users"
+          ]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "app.mjs",
+      "lang": "js",
+      "title": "Guarding routes by role",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "Real Express and Postgres. Press Run to see each caller's status and body.",
+      "walk": [
+        {
+          "lines": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21
+          ],
+          "text": "Setup: a `users` table. Ada gets the default role `user`; Grace is an `admin`."
+        },
+        {
+          "lines": [
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32
+          ],
+          "text": "`authenticate`, as in the JWT lesson: verify the token and fill `req.user`, or send `401`."
+        },
+        {
+          "lines": [
+            34
+          ],
+          "text": "The rest parameter `...roles` collects the allowed roles into an array."
+        },
+        {
+          "lines": [
+            35,
+            36,
+            37,
+            38
+          ],
+          "text": "A role that is not listed gets `403`. A missing `req.user` is denied too."
+        },
+        {
+          "lines": [
+            42,
+            43
+          ],
+          "text": "`/books` needs a login. `/users` needs a login, then the `admin` role, in that order."
+        },
+        {
+          "lines": [
+            51,
+            52,
+            53
+          ],
+          "text": "Load both users from the database and sign each one's stored role into a token."
+        },
+        {
+          "lines": [
+            59,
+            60,
+            61,
+            62
+          ],
+          "text": "Call `/users` as nobody, as Ada and as Grace. Then call `/books` as Ada."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Put `authenticate` first. Without `req.user`, `requireRole` denies everyone, even admins.",
+    "A role copied into a JWT goes stale: a demoted admin keeps access until expiry.",
+    "Guard every route that needs it. A route without `requireRole` allows any logged-in user."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const guard = (role) => (user) =>\n  !user ? 401 : user.role === role ? 200 : 403;\nconst admin = guard('admin');\nconsole.log(admin(null), admin({ role: 'user' }), admin({ role: 'admin' }));",
+    "lang": "js",
+    "options": [
+      "401 403 200",
+      "403 401 200",
+      "401 200 403",
+      "403 403 200"
+    ],
+    "answer": 0,
+    "why": "`null` means nobody is logged in: 401. A known user with the wrong role gets 403. The right role passes with 200."
+  },
+  "takeaway": "`authenticate` answers 401, `requireRole` answers 403, in that order.",
+  "chat": {
+    "starters": [
+      "How do I allow several roles on one route?",
+      "Should the role live in the token or be read from the database?",
+      "How do I test that a route returns 403 for the wrong role?"
+    ]
+  }
+}

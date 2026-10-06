@@ -1,0 +1,124 @@
+{
+  "title": "Grouping with $group",
+  "idea": "`$group` merges documents that share the same key into one output document. You set the key in `_id` and compute every other field from the group.",
+  "analogy": {
+    "text": "Sorting a drawer of receipts into one envelope per month, then writing a total on each envelope.",
+    "breaks": "Envelopes keep the receipts; a group keeps only its key and totals."
+  },
+  "points": [
+    "`_id` is the group key. `'$city'` means: use each document's `city`.",
+    "`{ $sum: '$total' }` adds `total` across the group's documents.",
+    "`_id: null` puts every document in one group, for a grand total.",
+    "Use an object as `_id` to group by several fields at once."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "lanes",
+    "title": "Orders fall into groups by city",
+    "scenario": {
+      "lanes": [
+        { "id": "in", "label": "Incoming orders", "kind": "queue", "hint": "8 documents" },
+        { "id": "lisbon", "label": "Group: Lisbon", "kind": "area" },
+        { "id": "porto", "label": "Group: Porto", "kind": "area" },
+        { "id": "faro", "label": "Group: Faro", "kind": "area" }
+      ],
+      "tokens": {
+        "o1": { "label": "Ana · Lisbon · 120", "tone": "micro" },
+        "o2": { "label": "Ben · Porto · 50", "tone": "macro" },
+        "o3": { "label": "Ana · Lisbon · 80", "tone": "micro" },
+        "o4": { "label": "Cleo · Porto · 60", "tone": "macro" },
+        "o5": { "label": "Dev · Lisbon · 150", "tone": "micro" },
+        "o6": { "label": "Ben · Porto · 40", "tone": "macro" },
+        "o7": { "label": "Eli · Faro · 130", "tone": "io" },
+        "o8": { "label": "Cleo · Porto · 25", "tone": "macro" },
+        "rL": { "label": "Lisbon: 350", "tone": "micro" },
+        "rP": { "label": "Porto: 175", "tone": "macro" },
+        "rF": { "label": "Faro: 130", "tone": "io" }
+      },
+      "steps": [
+        {
+          "caption": "`$group` receives every order. The key `'$city'` decides which group each one joins.",
+          "at": { "in": ["o1", "o2", "o3", "o4", "o5", "o6", "o7", "o8"] },
+          "out": []
+        },
+        {
+          "caption": "Order 1 creates the Lisbon group. Order 2 creates the Porto group.",
+          "at": { "in": ["o3", "o4", "o5", "o6", "o7", "o8"], "lisbon": ["o1"], "porto": ["o2"] },
+          "active": ["o1", "o2"],
+          "out": []
+        },
+        {
+          "caption": "Orders with a known city join its group. No new group appears.",
+          "at": { "in": ["o6", "o7", "o8"], "lisbon": ["o1", "o3", "o5"], "porto": ["o2", "o4"] },
+          "active": ["o3", "o4", "o5"],
+          "out": []
+        },
+        {
+          "caption": "Order 7 brings a new city, so a Faro group appears.",
+          "at": { "lisbon": ["o1", "o3", "o5"], "porto": ["o2", "o4", "o6", "o8"], "faro": ["o7"] },
+          "active": ["o6", "o7", "o8"],
+          "out": []
+        },
+        {
+          "caption": "Each group collapses into one document. `$sum` added up the `total` of every order inside it.",
+          "at": { "lisbon": ["rL"], "porto": ["rP"], "faro": ["rF"] },
+          "active": ["rL", "rP", "rF"],
+          "out": []
+        },
+        {
+          "caption": "`$sort` on `_id` puts the documents in a fixed order. Group output alone has none.",
+          "at": { "lisbon": ["rL"], "porto": ["rP"], "faro": ["rF"] },
+          "out": [
+            "{ _id: 'Faro', revenue: 130 }",
+            "{ _id: 'Lisbon', revenue: 350 }",
+            "{ _id: 'Porto', revenue: 175 }"
+          ]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "group.mjs",
+      "lang": "js",
+      "title": "Three ways to choose the key",
+      "run": "captured",
+      "needs": ["mongo"],
+      "caption": "Same data as every page in this chapter. Step through it, then press Run.",
+      "walk": [
+        { "lines": [10], "text": "Group by `city`: `'$city'` reads each order's city. `$sum` adds up `total`." },
+        { "lines": [11], "text": "Group output has no promised order, so sort on `_id`, the key." },
+        { "lines": [16], "text": "`_id: null` gives every document the same key: one group, a grand total." },
+        { "lines": [20], "text": "The key can be an object: here two fields, `city` and `status`." },
+        { "lines": [22], "text": "One group per distinct pair. The same city with another status is a new group." },
+        { "lines": [23], "text": "Dot notation sorts on fields inside the key object." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "`_id: 'city'` without the `$` groups every document under the text 'city'.",
+    "After `$group`, only `_id` and your accumulator fields remain; other fields are gone.",
+    "Every non-`_id` field needs an accumulator: `{ x: '$total' }` raises an error."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const rows = await Order.aggregate([\n  { $group: { _id: '$status', total: { $sum: '$total' } } },\n  { $sort: { _id: 1 } },\n]);\nconsole.log(rows.map((r) => `${r._id}=${r.total}`).join(' '));",
+    "lang": "js",
+    "options": [
+      "paid=445 pending=60",
+      "cancelled=150 paid=445 pending=60",
+      "cancelled=1 paid=6 pending=1",
+      "all=655"
+    ],
+    "answer": 1,
+    "why": "No `$match`, so every status forms a group. Sorted by `_id`: cancelled, paid, pending."
+  },
+  "takeaway": "`$group` makes one document per `_id` value; accumulators fill the rest.",
+  "chat": {
+    "starters": [
+      "What is the difference between `_id` in `$group` and a document's `_id`?",
+      "Can I group by two fields at once?",
+      "How do I group by month when I have a date field?"
+    ]
+  }
+}

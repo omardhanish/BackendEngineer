@@ -1,0 +1,86 @@
+{
+  "title": "Pub/sub, queues and fan-out",
+  "idea": "In pub/sub, a publisher sends a message to a topic and every subscriber receives a copy. A queue instead gives each message to one consumer.",
+  "points": [
+    "A queue shares work: each message goes to one consumer.",
+    "A topic broadcasts: the publisher does not know who subscribes.",
+    "Fan-out means one event reaching many independent consumers, each at its own pace.",
+    "Common design: a topic feeds one queue per subscriber, and workers share each queue."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "One event, many subscribers",
+    "nodes": [
+      { "id": "pub", "label": "Orders service", "sub": "publishes once" },
+      { "id": "topic", "label": "Topic", "sub": "order.placed" },
+      { "id": "billing", "label": "Billing", "sub": "own queue" },
+      { "id": "email", "label": "Email", "sub": "own queue" },
+      { "id": "analytics", "label": "Analytics", "sub": "own queue" },
+      { "id": "fraud", "label": "Fraud check", "sub": "added later" }
+    ],
+    "edges": [
+      { "from": "pub", "to": "topic", "label": "event" },
+      { "from": "topic", "to": "billing" },
+      { "from": "topic", "to": "email" },
+      { "from": "topic", "to": "analytics" },
+      { "from": "topic", "to": "fraud", "dashed": true }
+    ],
+    "steps": [
+      {
+        "caption": "The orders service publishes one `order.placed` event to the topic. It does not know who listens.",
+        "active": ["pub", "topic"],
+        "edges": [0]
+      },
+      {
+        "caption": "The topic gives every subscription its own copy of the event.",
+        "active": ["topic", "billing", "email", "analytics"],
+        "edges": [1, 2, 3]
+      },
+      {
+        "caption": "Each subscriber reads from its own queue, so slow analytics does not delay billing.",
+        "active": ["analytics"],
+        "edges": [3]
+      },
+      {
+        "caption": "Later, a fraud-check subscriber joins. The publisher does not change at all.",
+        "active": ["topic", "fraud"],
+        "edges": [4]
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "fanout.mjs",
+      "lang": "js",
+      "title": "Topic and queue side by side",
+      "run": "browser",
+      "caption": "An `EventEmitter` acts as a topic. A shared array acts as a queue. Add a fourth subscriber and run again."
+    }
+  ],
+  "pitfalls": [
+    "Use a queue, not a topic, for a job only one worker should do.",
+    "A new subscriber may not see past events; check whether your messaging system keeps them.",
+    "Each subscriber's queue can still redeliver, so each handler must be idempotent."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "import { EventEmitter } from 'node:events';\n\nconst topic = new EventEmitter();\ntopic.on('paid', () => console.log('email'));\ntopic.on('paid', () => console.log('invoice'));\ntopic.emit('paid');\nconst jobs = ['x', 'y'];\nconsole.log(jobs.shift());\nconsole.log(jobs.shift());",
+    "lang": "js",
+    "options": [
+      "email, invoice, x, y",
+      "email, x, y",
+      "email, invoice, x, x",
+      "invoice, email, x, y"
+    ],
+    "answer": 0,
+    "why": "`emit` calls every listener in the order they were registered, like a topic. Each `shift` takes a different job, like a queue."
+  },
+  "takeaway": "Queues share work between workers; topics copy each event to every subscriber.",
+  "chat": {
+    "starters": [
+      "What happens to a message when a subscriber is offline?",
+      "How do competing consumers share one queue?",
+      "When should I use a topic instead of a queue?"
+    ]
+  }
+}

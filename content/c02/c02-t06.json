@@ -1,0 +1,96 @@
+{
+  "title": "npm and package.json",
+  "idea": "npm is Node's package manager: it downloads other people's packages into `node_modules` and records what your project needs in `package.json`.",
+  "analogy": {
+    "text": "A shopping list and a pantry: `package.json` is the list, `node_modules` is the pantry, and npm does the shopping.",
+    "breaks": "Unlike a list, `package.json` accepts a range of versions, not one exact item."
+  },
+  "points": [
+    "A package is reusable code shared through the npm registry, an online catalogue.",
+    "`npm install name` adds one package; plain `npm install` installs everything `package.json` lists.",
+    "`package-lock.json` pins the exact versions installed, so every machine gets the same code.",
+    "`npm run name` runs a `scripts` entry; `npm start` and `npm test` are shortcuts."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "What npm install does",
+    "actors": [
+      { "id": "you", "label": "You" },
+      { "id": "npm", "label": "npm" },
+      { "id": "reg", "label": "npm registry" },
+      { "id": "proj", "label": "Your project" }
+    ],
+    "messages": [
+      { "from": "you", "to": "npm", "label": "npm install dotenv", "note": "You ask npm for a package by name, from a terminal inside your project folder." },
+      { "from": "npm", "to": "reg", "label": "find dotenv", "note": "npm asks the public registry for a matching version of `dotenv`, plus anything it depends on." },
+      { "from": "reg", "to": "npm", "label": "package files", "dashed": true, "note": "The registry sends back the files for the chosen versions." },
+      { "from": "npm", "to": "proj", "label": "node_modules/", "note": "npm unpacks the code into the `node_modules` folder." },
+      { "from": "npm", "to": "proj", "label": "package.json", "note": "npm adds `dotenv` under `dependencies`, the list of packages the project needs." },
+      { "from": "npm", "to": "proj", "label": "package-lock.json", "note": "npm writes the exact versions it installed into `package-lock.json`." }
+    ]
+  },
+  "code": [
+    {
+      "file": "session.sh",
+      "lang": "bash",
+      "title": "Commands",
+      "run": "static",
+      "illustrative": true,
+      "caption": "A first session in a new project folder.",
+      "walk": [
+        { "lines": [1], "text": "Create a starter `package.json`, answering every question with its default." },
+        { "lines": [2], "text": "Download `dotenv` into `node_modules` and add it to `dependencies`." },
+        { "lines": [3], "text": "`--save-dev` lists a tool under `devDependencies`: needed while developing, not in production." },
+        { "lines": [4], "text": "Run the `dev` script. You add scripts by editing `package.json`; custom names need `npm run`." },
+        { "lines": [5], "text": "With no name, `npm install` installs what `package.json` lists, at the versions in `package-lock.json`." }
+      ]
+    },
+    {
+      "file": "package.json",
+      "lang": "json",
+      "title": "The manifest",
+      "run": "static",
+      "caption": "What `package.json` can look like after those commands.",
+      "walk": [
+        { "lines": [2, 3], "text": "Name and version identify your project." },
+        { "lines": [4], "text": "`type: module` makes `.js` files ES modules; without it they are CommonJS." },
+        { "lines": [5, 6, 7, 8], "text": "`scripts` names commands that you run with `npm run`." },
+        { "lines": [9], "text": "`dependencies` lists what the app needs at run time. Chapter 4 explains the `^`." },
+        { "lines": [10], "text": "`devDependencies` lists tools needed only while you develop." }
+      ]
+    },
+    {
+      "file": "app.mjs",
+      "lang": "js",
+      "title": "Using the package",
+      "run": "captured",
+      "caption": "A name without `./` is a package, so Node looks in `node_modules`. dotenv turns `KEY=value` text into an object of strings."
+    }
+  ],
+  "pitfalls": [
+    "Keep `node_modules` out of git with a `.gitignore` entry; `npm install` rebuilds it.",
+    "Commit `package-lock.json`, so teammates and servers install the same versions.",
+    "Check a package's exact name before installing; look-alike names exist to trick you."
+  ],
+  "quiz": {
+    "q": "A teammate clones your project (without `node_modules`) and runs `node app.mjs`. What happens?",
+    "code": "import dotenv from 'dotenv';",
+    "lang": "js",
+    "options": [
+      "It prints the parsed settings",
+      "Node downloads `dotenv` on the first run",
+      "It fails: `Cannot find package 'dotenv'`",
+      "npm installs `dotenv` automatically"
+    ],
+    "answer": 2,
+    "why": "`node_modules` is not in git, and Node never downloads packages. Run `npm install` first; it reads `package.json` and the lockfile."
+  },
+  "takeaway": "`package.json` lists what you need; `npm install` makes it so.",
+  "chat": {
+    "starters": [
+      "What is the difference between dependencies and devDependencies?",
+      "Do I need to commit package-lock.json?",
+      "What does the caret in ^18.0.5 mean?"
+    ]
+  }
+}

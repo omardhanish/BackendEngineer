@@ -1,0 +1,126 @@
+{
+  "title": "The MVC pattern",
+  "idea": "MVC splits code by job. The model owns data, the view shapes what the client receives, and the controller connects the two for each request.",
+  "analogy": {
+    "text": "A bank branch. The teller (controller) takes your slip, the vault (model) holds the money, and the receipt (view) shows you the result.",
+    "breaks": "Nothing enforces the split; it is a habit you keep."
+  },
+  "points": [
+    "The model holds data and rules, and knows nothing about HTTP.",
+    "The controller reads the request, calls the model, and chooses the response.",
+    "An API's view is its JSON; a web page's view is a template.",
+    "Imports run one way: routes, then controller, then model, never back."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "One request through the layers",
+    "scenario": {
+      "token": { "label": "GET /books/2", "tone": "req" },
+      "stages": [
+        { "id": "client", "label": "Client", "kind": "end" },
+        { "id": "routes", "label": "Routes", "sub": "books.routes.js" },
+        { "id": "ctl", "label": "Controller", "sub": "books.controller.js" },
+        { "id": "model", "label": "Model", "sub": "book.model.js", "kind": "end" }
+      ],
+      "steps": [
+        {
+          "caption": "A client sends `GET /books/2`. The request enters at the routes file.",
+          "at": "client", "slot": "top",
+          "state": { "client": "active" },
+          "out": []
+        },
+        {
+          "caption": "Routes match the method and path, then hand over to `getBook`. No logic lives here.",
+          "at": "routes", "slot": "top",
+          "state": { "client": "done", "routes": "active" },
+          "out": ["routes: GET /books/:id -> getBook"]
+        },
+        {
+          "caption": "The controller reads the request: `req.params.id` is the text \"2\", so it converts it with `Number`.",
+          "at": "ctl", "slot": "top",
+          "state": { "client": "done", "routes": "done", "ctl": "active" },
+          "out": ["routes: GET /books/:id -> getBook", "controller: id = 2"]
+        },
+        {
+          "caption": "The model looks the book up with `findById(2)`. It knows nothing about requests or status codes.",
+          "at": "model", "slot": "top",
+          "state": { "client": "done", "routes": "done", "ctl": "done", "model": "active" },
+          "out": ["routes: GET /books/:id -> getBook", "controller: id = 2", "model: findById(2)"]
+        },
+        {
+          "caption": "The model returns a plain book object, not a response.",
+          "at": "model", "slot": "bottom",
+          "token": { "label": "book", "tone": "ok" },
+          "state": { "client": "done", "routes": "done", "ctl": "done", "model": "active" },
+          "out": ["routes: GET /books/:id -> getBook", "controller: id = 2", "model: findById(2)", "model: returns the book"]
+        },
+        {
+          "caption": "The controller picks the view: `res.json(book)` sends the book as JSON with status 200.",
+          "at": "ctl", "slot": "bottom",
+          "token": { "label": "200 JSON", "tone": "ok" },
+          "state": { "client": "done", "routes": "done", "ctl": "active", "model": "done" },
+          "out": ["routes: GET /books/:id -> getBook", "controller: id = 2", "model: findById(2)", "model: returns the book", "controller: res.json(book)"]
+        },
+        {
+          "caption": "The client receives the JSON. For an API, that JSON is the view.",
+          "at": "client", "slot": "top",
+          "token": { "label": "200 JSON", "tone": "ok" },
+          "state": { "client": "active", "routes": "done", "ctl": "done", "model": "done" },
+          "out": ["routes: GET /books/:id -> getBook", "controller: id = 2", "model: findById(2)", "model: returns the book", "controller: res.json(book)"]
+        },
+        {
+          "caption": "A request for book 9 takes the same path in. The model finds nothing and returns `undefined`.",
+          "at": "model", "slot": "bottom",
+          "token": { "label": "undefined", "tone": "err" },
+          "state": { "client": "done", "routes": "done", "ctl": "done", "model": "active" },
+          "out": ["routes: GET /books/:id -> getBook", "controller: id = 9", "model: findById(9)", "model: returns undefined"]
+        },
+        {
+          "caption": "The controller turns the empty result into `404` and `{ error }`. Choosing the status is its job.",
+          "at": "ctl", "slot": "bottom",
+          "token": { "label": "404 JSON", "tone": "err" },
+          "state": { "client": "done", "routes": "done", "ctl": "active", "model": "done" },
+          "out": ["routes: GET /books/:id -> getBook", "controller: id = 9", "model: findById(9)", "model: returns undefined", "controller: 404 { error }"]
+        },
+        {
+          "caption": "The client gets the 404. The model never saw a status code.",
+          "at": "client", "slot": "top",
+          "token": { "label": "404 JSON", "tone": "err" },
+          "state": { "client": "active", "routes": "done", "ctl": "done", "model": "done" },
+          "out": ["routes: GET /books/:id -> getBook", "controller: id = 9", "model: findById(9)", "model: returns undefined", "controller: 404 { error }"]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "mvc.mjs",
+      "lang": "js",
+      "title": "Three roles in one file",
+      "run": "browser",
+      "caption": "The Book Store's three roles, shrunk to one file. Add a third view and call it from `show`."
+    }
+  ],
+  "pitfalls": [
+    "Keep `req`, `res` and `express` out of the model; it should run without a server.",
+    "Keep route files thin: they map a path to a controller function.",
+    "Do not build HTML strings in controllers; use a template as the view (next page)."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const books = [{ id: 1, title: 'Dune' }];\nconst findById = (id) => books.find((b) => b.id === id);\nconst asText = (b) => b.title.toUpperCase();\nconst show = (id, view) => {\n  const book = findById(id);\n  return book ? view(book) : 'missing';\n};\nconsole.log(show(1, asText), show(2, asText));",
+    "lang": "js",
+    "options": ["DUNE missing", "DUNE undefined", "Dune missing", "A TypeError"],
+    "answer": 0,
+    "why": "`show(1, …)` finds the book and the view upper-cases its title. For id 2 the model returns `undefined`, so the controller returns `missing`."
+  },
+  "takeaway": "When code feels tangled, ask which of the three jobs it does.",
+  "chat": {
+    "starters": [
+      "Where should input validation go: controller or model?",
+      "Is MVC the same as a layered architecture with services?",
+      "What is the view in a JSON API?"
+    ]
+  }
+}

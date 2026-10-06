@@ -1,0 +1,3 @@
+function triangle(n) {
+  // use nested loops; return n strings: '*', '**', '***', ...
+}

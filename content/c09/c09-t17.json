@@ -1,0 +1,106 @@
+{
+  "title": "The default bridge network",
+  "idea": "The default bridge is the private network every container joins unless you pick another. Containers on it reach each other by IP address, not by name.",
+  "analogy": {
+    "text": "An apartment block with numbered flats and no name board. You can knock on a flat only if you know its number.",
+    "breaks": "Every door is unlocked: any container can reach any other."
+  },
+  "points": [
+    "Without `--network`, `docker run` attaches the container to the `bridge` network.",
+    "Docker gives each container a private IP address on that network.",
+    "Containers on it reach each other by IP address; a name fails to resolve.",
+    "Outgoing connections use the host's IP address; incoming ones need a published port."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "Containers on the default bridge",
+    "scenario": {
+      "tiers": [["net"], ["br"], ["api", "tool"]],
+      "nodes": {
+        "net": { "label": "Internet", "kind": "cloud" },
+        "br": { "label": "default bridge", "kind": "gateway" },
+        "api": { "label": "api", "sub": "bookstore-api", "kind": "service" },
+        "tool": { "label": "tool", "sub": "alpine", "kind": "box" }
+      },
+      "links": [["net", "br"], ["br", "api"], ["br", "tool"]],
+      "groups": [{ "label": "Docker host", "nodes": ["br", "api", "tool"] }],
+      "steps": [
+        {
+          "caption": "Start two containers with no `--network` flag. Both join the default `bridge` network.",
+          "focus": ["br", "api", "tool"]
+        },
+        {
+          "caption": "Each box shows an example address. Docker hands them out from the bridge's private range.",
+          "badge": { "api": "172.17.0.2", "tool": "172.17.0.3" },
+          "focus": ["api", "tool"]
+        },
+        {
+          "caption": "`tool` calls `api` by IP address. The bridge passes the packet on, and it arrives.",
+          "send": [
+            { "from": "tool", "to": "br", "label": "by IP", "tone": "ok" },
+            { "from": "br", "to": "api", "label": "by IP", "tone": "ok" }
+          ]
+        },
+        {
+          "caption": "`tool` calls `api` by name. The default bridge has no name lookup, so the call fails.",
+          "send": [{ "from": "tool", "to": "br", "label": "by name", "tone": "err" }]
+        },
+        {
+          "caption": "From outside the host, a container answers only on a published port, such as `-p 8080:3000`.",
+          "send": [
+            { "from": "net", "to": "br", "label": ":8080", "tone": "info" },
+            { "from": "br", "to": "api", "label": ":3000", "tone": "info" }
+          ]
+        },
+        {
+          "caption": "Outgoing connections need no flag. They leave through the host's own IP address.",
+          "send": [
+            { "from": "api", "to": "br", "label": "out", "tone": "info" },
+            { "from": "br", "to": "net", "label": "host IP", "tone": "info" }
+          ]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "bridge.sh",
+      "lang": "bash",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Two containers on the default bridge: reach one by IP address, then by name.",
+      "walk": [
+        { "lines": [1], "text": "Start the API with no `--network` flag. It joins the default `bridge`." },
+        { "lines": [2], "text": "Start `tool` from `alpine`. `-dit` keeps it running in the background." },
+        { "lines": [3], "text": "Inspect the default network. Its `Containers` section lists each container's IP address." },
+        { "lines": [4], "text": "Call the API from `tool` by IP address: copy `api`'s address from the output. This works." },
+        { "lines": [5], "text": "Call it by name. The name does not resolve, so the call fails." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Names fail on the default bridge; use a custom network (next page).",
+    "On Docker Desktop the host cannot reach a container's IP; publish a port.",
+    "Avoid the default bridge in production; Docker's docs recommend user-defined networks."
+  ],
+  "quiz": {
+    "q": "Two containers run on the default bridge. How can `tool` reach `api`?",
+    "options": [
+      "By the name `api`",
+      "By `localhost:3000`",
+      "By `api`'s IP address",
+      "Only through a published port"
+    ],
+    "answer": 2,
+    "why": "The default bridge has no name lookup. `localhost` is the container itself, and a published port is for traffic from outside."
+  },
+  "takeaway": "On the default bridge, containers find each other only by IP address.",
+  "chat": {
+    "starters": [
+      "How do I find a container's IP address?",
+      "What does NAT mean here, and why does Docker use it?",
+      "Why is the default bridge not recommended for production?"
+    ]
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "stdout": "loop done\ntimer due at 10 ms, ran late: true",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "hash": "daa34017785b12df",
+  "at": "2026-10-06T09:16:12.097Z"
+}

@@ -1,0 +1,9 @@
+{
+  "stdout": "[\n  { customer: 'Eli', total: 130, who: [ { tier: 'gold' } ] },\n  { customer: 'Dev', total: 150, who: [ { tier: 'bronze' } ] }\n]\n[ { _id: 'gold', revenue: 330 }, { _id: 'silver', revenue: 115 } ]",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "MongoDB 8.2.6",
+  "hash": "fcfdc650cc978901",
+  "at": "2026-10-06T15:10:35.045Z"
+}

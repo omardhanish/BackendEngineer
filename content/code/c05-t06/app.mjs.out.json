@@ -1,0 +1,9 @@
+{
+  "stdout": "GET /books/2 200 {\"id\":2,\"title\":\"Neuromancer\",\"author\":\"William Gibson\",\"year\":1984}\nGET /books/abc 404 {\"error\":\"Book not found\"}\nPOST /books 201 {\"id\":4,\"title\":\"Hyperion\",\"author\":\"Dan Simmons\",\"year\":1898}\nPUT /books/4 200 {\"id\":4,\"title\":\"Hyperion\",\"author\":\"Dan Simmons\",\"year\":1989}\nPUT /books/4 400 {\"error\":\"Send title, author and year\"}\nPUT /books/9 404 {\"error\":\"Book not found\"}\nDELETE /books/4 204\nDELETE /books/4 404 {\"error\":\"Book not found\"}\nids left: 1 2 3",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "PostgreSQL 18.4",
+  "hash": "dbaaff0270e76f65",
+  "at": "2026-10-06T10:01:21.402Z"
+}

@@ -1,0 +1,220 @@
+{
+  "title": "Array method challenges",
+  "idea": "Most array methods hand back a new array, one value or a yes or no. Pick the method by the result you need.",
+  "analogy": {
+    "text": "A spreadsheet column. A formula fills a new column from each cell, a filter hides rows, and the total at the bottom folds the column into one number.",
+    "breaks": "Spreadsheet filters only hide rows; `filter` builds a new, shorter array."
+  },
+  "points": [
+    "`map`, `filter` and `slice` return a new array and leave the original unchanged.",
+    "`reduce` folds an array into one value; `find` returns the first match or `undefined`.",
+    "`some`, `every` and `includes` return `true` or `false`.",
+    "`sort` reorders the array in place; `flat` unwraps one level of nesting."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "A chain, one result at a time",
+    "scenario": {
+      "token": { "label": "[1, 2, 3, 4, 5, 6]", "tone": "req" },
+      "stages": [
+        { "id": "src", "label": "numbers", "kind": "end" },
+        { "id": "filter", "label": "filter", "sub": "n % 2 === 0" },
+        { "id": "map", "label": "map", "sub": "n * 2" },
+        { "id": "reduce", "label": "reduce", "sub": "total + n" },
+        { "id": "res", "label": "total", "kind": "end" }
+      ],
+      "steps": [
+        {
+          "caption": "Start with `numbers`. Each method takes an array in and hands a new result on.",
+          "at": "src",
+          "slot": "top",
+          "state": { "src": "active" }
+        },
+        {
+          "caption": "`filter` receives the whole array and runs its test once per item.",
+          "at": "filter",
+          "slot": "top",
+          "state": { "src": "done", "filter": "active" }
+        },
+        {
+          "caption": "It returns a new array of the items that passed. `numbers` is unchanged.",
+          "at": "filter",
+          "slot": "bottom",
+          "token": { "label": "[2, 4, 6]", "tone": "req" },
+          "state": { "src": "done", "filter": "active" }
+        },
+        {
+          "caption": "Chaining: the new array from `filter` is the input of `map`.",
+          "at": "map",
+          "slot": "top",
+          "token": { "label": "[2, 4, 6]", "tone": "req" },
+          "state": { "src": "done", "filter": "done", "map": "active" }
+        },
+        {
+          "caption": "`map` returns an array of the same length, one result per item.",
+          "at": "map",
+          "slot": "bottom",
+          "token": { "label": "[4, 8, 12]", "tone": "req" },
+          "state": { "src": "done", "filter": "done", "map": "active" }
+        },
+        {
+          "caption": "`reduce` also gets a start value, here `0`, and a function that adds one item.",
+          "at": "reduce",
+          "slot": "top",
+          "token": { "label": "[4, 8, 12]", "tone": "req" },
+          "state": { "src": "done", "filter": "done", "map": "done", "reduce": "active" }
+        },
+        {
+          "caption": "It adds 4, then 8, then 12 to the running total and returns that one value.",
+          "at": "reduce",
+          "slot": "bottom",
+          "token": { "label": "24", "tone": "ok" },
+          "state": { "src": "done", "filter": "done", "map": "done", "reduce": "active" }
+        },
+        {
+          "caption": "The chain ends with a plain number. `numbers` still holds its six items.",
+          "at": "res",
+          "slot": "top",
+          "token": { "label": "24", "tone": "ok" },
+          "state": { "src": "done", "filter": "done", "map": "done", "reduce": "done", "res": "active" }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "array-methods.mjs",
+      "lang": "js",
+      "title": "Ten array methods",
+      "run": "browser",
+      "caption": "Run it. Change `n > 4` in `find` to `n > 40` and predict the result. Then check `original`."
+    }
+  ],
+  "challenges": {
+    "intro": "Methods like `map` take a small arrow function, such as `(n) => n * 2`; a later lesson explains it. Open a hint when stuck.",
+    "items": [
+      {
+        "id": "double", "title": "Double every number",
+        "prompt": "Write `doubleAll(nums)`. Return an array with every number multiplied by 2.",
+        "starter": "double.starter.js", "tests": "double.tests.js", "solution": "double.solution.js",
+        "hints": [
+          "You want one result for every item, so the new array has the same length.",
+          "`map` calls your function on each item and collects the results in a new array.",
+          "Write `nums.map(...)` with an arrow function that returns `n * 2`, and `return` the whole expression."
+        ]
+      },
+      {
+        "id": "evens", "title": "Keep the even numbers",
+        "prompt": "Write `keepEvens(nums)`. Return an array with only the even numbers, in their original order.",
+        "starter": "evens.starter.js", "tests": "evens.tests.js", "solution": "evens.solution.js",
+        "hints": [
+          "You want some of the items, so the result may be shorter.",
+          "`filter` keeps an item when your function returns `true` for it.",
+          "Test `n % 2 === 0`. Avoid `n % 2 === 1`: odd negative numbers leave remainder -1."
+        ]
+      },
+      {
+        "id": "sum", "title": "Add up a list",
+        "prompt": "Write `sum(nums)`. Return the total of all the numbers. For an empty array, return `0`.",
+        "starter": "sum.starter.js", "tests": "sum.tests.js", "solution": "sum.solution.js",
+        "hints": [
+          "Many values become one value. That is a job for `reduce`.",
+          "`reduce` takes a function `(total, n)` and a start value. Think about what the total is for no numbers.",
+          "Return `total + n` from the function, and pass `0` as the second argument of `reduce`."
+        ]
+      },
+      {
+        "id": "long-word", "title": "Find the first long word",
+        "prompt": "Write `firstLongWord(words)`. Return the first word with 6 or more letters, or `undefined` if no word is that long.",
+        "starter": "long-word.starter.js", "tests": "long-word.tests.js", "solution": "long-word.solution.js",
+        "hints": [
+          "You want one item, not an array of matches.",
+          "`find` returns the first item for which your function returns `true`, or `undefined` when none match.",
+          "Test `word.length >= 6`. `find` already gives `undefined` when nothing matches."
+        ]
+      },
+      {
+        "id": "negative", "title": "Is any number negative?",
+        "prompt": "Write `hasNegative(nums)`. Return `true` if at least one number is below 0, otherwise `false`.",
+        "starter": "negative.starter.js", "tests": "negative.tests.js", "solution": "negative.solution.js",
+        "hints": [
+          "The answer is a yes or no, not a new array.",
+          "`some` returns `true` as soon as your function returns `true` for any item.",
+          "Use `nums.some(...)` with the test `n < 0`. On an empty array `some` returns `false`."
+        ]
+      },
+      {
+        "id": "allowed", "title": "Only allowed values",
+        "prompt": "Write `onlyAllowed(items, allowed)`. Return `true` if every item is in the `allowed` array, otherwise `false`. An empty `items` array gives `true`.",
+        "starter": "allowed.starter.js", "tests": "allowed.tests.js", "solution": "allowed.solution.js",
+        "hints": [
+          "Check each item against the list, then ask whether all of them passed.",
+          "`every` returns `true` only when your function returns `true` for every item.",
+          "Inside `every`, test `allowed.includes(item)`. An empty `items` array gives `true` by itself."
+        ]
+      },
+      {
+        "id": "last-items", "title": "Take the last items",
+        "prompt": "Write `lastItems(items, n)`. Return a new array with the last `n` items. `n` can be 0 or larger than the array.",
+        "starter": "last-items.starter.js", "tests": "last-items.tests.js", "solution": "last-items.solution.js",
+        "hints": [
+          "A negative start index counts from the end: `slice(-2)` returns the last two items.",
+          "Careful: `-0` is just `0`, so `slice(-0)` returns the whole array. Handle `n` of 0 on its own, or compute the start.",
+          "Compute the start yourself: `items.length - n`, but never below 0. `Math.max(0, x)` returns the larger of 0 and `x`."
+        ]
+      },
+      {
+        "id": "ascending", "title": "Sort numbers ascending",
+        "prompt": "Write `sortAscending(nums)`. Return a new array with the numbers from smallest to largest. Do not change the original array.",
+        "starter": "ascending.starter.js", "tests": "ascending.tests.js", "solution": "ascending.solution.js",
+        "hints": [
+          "`sort` compares items as text unless you give it a compare function.",
+          "`(a, b) => a - b` puts the smaller number first. `sort` also reorders the array it is called on.",
+          "Copy first with spread, then sort the copy: `[...nums].sort(...)`."
+        ]
+      },
+      {
+        "id": "flatten", "title": "Flatten one level",
+        "prompt": "Write `flattenOnce(list)`. Return a new array where every nested array is opened by one level. Deeper nesting stays as it is.",
+        "starter": "flatten.starter.js", "tests": "flatten.tests.js", "solution": "flatten.solution.js",
+        "hints": [
+          "Opening nested arrays is called flattening. Arrays have a method for it.",
+          "`flat(depth)` opens that many levels of nesting. Check what the default depth is.",
+          "The default depth is 1, so a plain `list.flat()` is enough."
+        ]
+      },
+      {
+        "id": "unique", "title": "Remove duplicates",
+        "prompt": "Write `unique(items)`. Return a new array without duplicates. Keep the first appearance of each item, in the original order.",
+        "starter": "unique.starter.js", "tests": "unique.tests.js", "solution": "unique.solution.js",
+        "hints": [
+          "Keep an item only if it is the first of its kind.",
+          "`filter` passes the index as a second argument. `items.indexOf(item)` gives the position of the first match.",
+          "Keep the item when `items.indexOf(item) === i`, where `i` is the index `filter` passes in."
+        ]
+      }
+    ]
+  },
+  "pitfalls": [
+    "A `{ }` arrow body needs `return`; without it `map` fills the array with `undefined`.",
+    "Pass a compare function to `sort`; the default order is text, so 10 sorts before 9.",
+    "Give `reduce` a start value, or it throws a TypeError on an empty array."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const nums = [2, 4];\nconsole.log(\n  nums.find((n) => n > 5),\n  nums.filter((n) => n > 5)\n);",
+    "lang": "js",
+    "options": ["null []", "[] []", "undefined []", "undefined undefined"],
+    "answer": 2,
+    "why": "`find` returns one item, or `undefined` when nothing matches. `filter` always returns an array, here an empty one."
+  },
+  "takeaway": "Chain methods to reshape data, and copy before you `sort`.",
+  "chat": {
+    "starters": [
+      "How do I choose between map, filter and reduce?",
+      "Why does sort put 10 before 9?",
+      "Which array methods change the original array?"
+    ]
+  }
+}

@@ -1,0 +1,90 @@
+{
+  "title": "Routing requests by hand",
+  "idea": "Routing means choosing the code that answers a request from its method and path. When no route matches, you reply `404`.",
+  "analogy": {
+    "text": "A mail room sorting letters. Each one goes to the pigeonhole for its address; a letter with no matching pigeonhole goes to the return bin.",
+    "breaks": "Mail has one address; a request is matched on method and path."
+  },
+  "points": [
+    "`req.url` is the path plus the query string, like `?limit=5`. `new URL` splits them.",
+    "Match `req.method` and the path together: `GET /notes` and `POST /notes` differ.",
+    "A known path with the wrong method gets `405`; an unknown path gets `404`.",
+    "The body arrives later, in chunks. The next lesson reads it."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "How a request finds its handler",
+    "nodes": [
+      { "id": "req", "label": "Request arrives", "sub": "method + url" },
+      { "id": "split", "label": "Parse the URL", "sub": "pathname, query" },
+      { "id": "match", "label": "Find the route", "sub": "method + path" },
+      { "id": "list", "label": "List notes", "sub": "GET /notes" },
+      { "id": "one", "label": "Read one note", "sub": "GET /notes/:id" },
+      { "id": "wrong", "label": "405 reply", "sub": "Method Not Allowed" },
+      { "id": "none", "label": "404 reply", "sub": "Not Found" }
+    ],
+    "edges": [
+      { "from": "req", "to": "split" },
+      { "from": "split", "to": "match" },
+      { "from": "match", "to": "list" },
+      { "from": "match", "to": "one" },
+      { "from": "match", "to": "wrong", "dashed": true },
+      { "from": "match", "to": "none", "dashed": true }
+    ],
+    "steps": [
+      { "caption": "A request arrives. Node has already parsed its method and `url`.", "active": ["req"], "edges": [] },
+      { "caption": "`new URL(req.url, base)` separates the pathname from the query string.", "active": ["req", "split"], "edges": [0] },
+      { "caption": "Compare the method and pathname with each route, in order.", "active": ["split", "match"], "edges": [1] },
+      { "caption": "`GET /notes` fits the list route, so that handler runs.", "active": ["match", "list"], "edges": [2] },
+      { "caption": "`GET /notes/2` fits the one-note route. You extract the id yourself.", "active": ["match", "one"], "edges": [3] },
+      { "caption": "`POST /notes` has a known path but the wrong method: reply `405` with an `Allow` header listing valid methods.", "active": ["match", "wrong"], "edges": [4] },
+      { "caption": "`GET /nope` matches nothing: reply `404`. Every request must end in some reply.", "active": ["match", "none"], "edges": [5] }
+    ]
+  },
+  "code": [
+    {
+      "file": "url.mjs",
+      "lang": "js",
+      "title": "Splitting a URL",
+      "run": "browser",
+      "caption": "Edit the URL and run again. Predict each line before you press Run."
+    },
+    {
+      "file": "router.mjs",
+      "lang": "js",
+      "title": "A router for /notes",
+      "run": "captured",
+      "caption": "A router called five times by its own script. Step through it, then press Run.",
+      "walk": [
+        { "lines": [3, 4, 5, 6, 7], "text": "A small in-memory store and a `send` helper that writes a JSON reply." },
+        { "lines": [10, 11], "text": "Parse the URL, then split the pathname: `/notes/2` gives `notes` and `2`." },
+        { "lines": [13, 14, 15], "text": "Wrong resource or extra segments: no route matches, so reply 404." },
+        { "lines": [16, 17, 18], "text": "Right path, wrong method: reply 405 and list the allowed methods in `Allow`." },
+        { "lines": [19, 20, 21, 22], "text": "No id means the whole list. A missing `limit` is `null`; `??` falls back to the note count." },
+        { "lines": [23, 24], "text": "With an id, look the note up: `404` if it is missing, `200` otherwise." },
+        { "lines": [27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38], "text": "The script sends five requests to its own server, prints each answer, then closes." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Never compare `req.url` to a path directly: `/notes?limit=1` is not `/notes`.",
+    "Query values are strings or `null`; convert and validate them before use.",
+    "End the route list with a fallback reply; unmatched requests otherwise hang."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const url = new URL('/notes?limit=2', 'http://localhost');\nconst limit = url.searchParams.get('limit');\nconsole.log(limit + 1, Number(limit) + 1, url.searchParams.get('page'));",
+    "lang": "js",
+    "options": ["3 3 null", "21 3 undefined", "3 21 null", "21 3 null"],
+    "answer": 3,
+    "why": "Query values are strings, so `'2' + 1` joins into '21'. `Number` converts it. A missing key gives `null`."
+  },
+  "takeaway": "A router is `if` statements over the method and the parsed path.",
+  "chat": {
+    "starters": [
+      "Why does `req.url` include the query string?",
+      "When should I return 405 instead of 404?",
+      "How does Express do this routing for me?"
+    ]
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "title": "Version control and Git",
+  "idea": "Version control records every change to a project as a history you can read, compare and undo. Git is a free, open-source version-control system.",
+  "points": [
+    "A repository is a project folder plus its complete history.",
+    "A commit is a saved snapshot of your files, with a message.",
+    "A branch is a separate line of work that you can merge back later.",
+    "Git is distributed: a normal clone copies the whole repository, history included."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "Every copy holds the history",
+    "scenario": {
+      "tiers": [["ada"], ["server"], ["bob"]],
+      "nodes": {
+        "ada": { "label": "Ada's laptop", "kind": "client" },
+        "server": { "label": "Shared server", "kind": "server" },
+        "bob": { "label": "Bob's laptop", "kind": "client" }
+      },
+      "links": [["ada", "server"], ["server", "bob"]],
+      "steps": [
+        {
+          "caption": "Ada saves two commits, A and B. They live in her own copy of the repository.",
+          "items": { "ada": ["A", "B"] },
+          "focus": ["ada"]
+        },
+        {
+          "caption": "She pushes them, which uploads her commits to a shared server. It now holds the same history.",
+          "send": [{ "from": "ada", "to": "server", "label": "push" }],
+          "items": { "server": ["A", "B"] }
+        },
+        {
+          "caption": "Bob clones the repository: a full copy of it, every commit included.",
+          "send": [{ "from": "server", "to": "bob", "label": "clone" }],
+          "items": { "bob": ["A", "B"] }
+        },
+        {
+          "caption": "The server goes down. Both laptops still hold the complete history.",
+          "state": { "server": "down" },
+          "badge": { "server": "offline" },
+          "focus": ["ada", "bob"]
+        },
+        {
+          "caption": "Ada keeps working. Commit C is saved on her own machine, with no server needed.",
+          "items": { "ada": ["A", "B", "C"] },
+          "focus": ["ada"]
+        }
+      ]
+    }
+  },
+  "pitfalls": [
+    "Git is not GitHub. Git is the tool; GitHub is one website that hosts repositories.",
+    "Renamed copies of a folder record nothing about what changed or why."
+  ],
+  "quiz": {
+    "q": "What does \"distributed\" mean in Git?",
+    "options": [
+      "Git needs a server to save a commit",
+      "Only the server keeps the history",
+      "A normal clone holds the full history",
+      "Your files are split between developers"
+    ],
+    "answer": 2,
+    "why": "Each clone is a complete repository with every commit, so you can commit, read history and branch without a network."
+  },
+  "takeaway": "Git saves snapshots as commits, and every clone holds the whole history.",
+  "chat": {
+    "starters": [
+      "Do I need GitHub to use Git?",
+      "What problem does version control solve for a team?",
+      "Is Git the only version control system?"
+    ]
+  }
+}

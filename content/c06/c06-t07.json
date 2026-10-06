@@ -1,0 +1,182 @@
+{
+  "title": "Role-based access control",
+  "idea": "Role-based access control (RBAC) decides what a user may do from the role they hold, not from who they are.",
+  "analogy": {
+    "text": "Hotel key cards are either guest or staff. Each door checks the card type, not the holder's name.",
+    "breaks": "Nothing guards a door until your code adds the check."
+  },
+  "points": [
+    "A permission is one allowed action, such as `books:write`.",
+    "A role is a named bundle of permissions. This book uses `user` and `admin`.",
+    "A user holds a role, so editing the role updates every holder.",
+    "A request passes when the caller's role holds the needed permission; otherwise `403`."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Users, roles, permissions",
+    "nodes": [
+      {
+        "id": "ada",
+        "label": "Ada",
+        "sub": "a user"
+      },
+      {
+        "id": "grace",
+        "label": "Grace",
+        "sub": "a user"
+      },
+      {
+        "id": "user",
+        "label": "user",
+        "sub": "a role"
+      },
+      {
+        "id": "admin",
+        "label": "admin",
+        "sub": "a role"
+      },
+      {
+        "id": "read",
+        "label": "books:read",
+        "sub": "a permission"
+      },
+      {
+        "id": "write",
+        "label": "books:write",
+        "sub": "a permission"
+      },
+      {
+        "id": "usersread",
+        "label": "users:read",
+        "sub": "a permission"
+      }
+    ],
+    "edges": [
+      {
+        "from": "ada",
+        "to": "user"
+      },
+      {
+        "from": "grace",
+        "to": "admin"
+      },
+      {
+        "from": "user",
+        "to": "read"
+      },
+      {
+        "from": "admin",
+        "to": "read"
+      },
+      {
+        "from": "admin",
+        "to": "write"
+      },
+      {
+        "from": "admin",
+        "to": "usersread"
+      }
+    ],
+    "steps": [
+      {
+        "caption": "Ada holds the `user` role. Grace holds the `admin` role.",
+        "active": [
+          "ada",
+          "grace",
+          "user",
+          "admin"
+        ],
+        "edges": [
+          0,
+          1
+        ]
+      },
+      {
+        "caption": "Permissions attach to roles, never to people. Follow the arrows from each role.",
+        "active": [
+          "user",
+          "admin",
+          "read",
+          "write",
+          "usersread"
+        ],
+        "edges": [
+          2,
+          3,
+          4,
+          5
+        ]
+      },
+      {
+        "caption": "Ada reads books. Her role holds `books:read`, so the request passes.",
+        "active": [
+          "ada",
+          "user",
+          "read"
+        ],
+        "edges": [
+          0,
+          2
+        ]
+      },
+      {
+        "caption": "Ada lists users. Her role has no path to `users:read`, so she gets `403`.",
+        "active": [
+          "ada",
+          "user",
+          "usersread"
+        ],
+        "edges": [
+          0
+        ]
+      },
+      {
+        "caption": "Grace lists users. `admin` holds `users:read`, so she passes.",
+        "active": [
+          "grace",
+          "admin",
+          "usersread"
+        ],
+        "edges": [
+          1,
+          5
+        ]
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "permissions.mjs",
+      "lang": "js",
+      "title": "Roles and permissions",
+      "run": "browser",
+      "caption": "Run it. Then add `'books:write'` to `user` and see which line changes."
+    }
+  ],
+  "pitfalls": [
+    "Avoid one role per person. A role describes a job, not an individual.",
+    "Start new users on the lowest role and promote them on purpose.",
+    "Deny when the role is unknown or missing; never allow by default."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const permissions = { user: ['read'], admin: ['read', 'write'] };\nconst can = (role, action) =>\n  permissions[role]?.includes(action) ?? false;\npermissions.user.push('write');\nconsole.log(can('user', 'write'), can('admin', 'write'), can('guest', 'read'));",
+    "lang": "js",
+    "options": [
+      "false true false",
+      "true false false",
+      "true true false",
+      "true true true"
+    ],
+    "answer": 2,
+    "why": "Permissions belong to the role, so adding `write` to `user` changes every user. A role nobody defined gets nothing."
+  },
+  "takeaway": "Give permissions to roles, roles to users, and check on the server.",
+  "chat": {
+    "starters": [
+      "What is the difference between a role and a permission?",
+      "Can one user hold several roles?",
+      "How do I let users edit only their own records?"
+    ]
+  }
+}

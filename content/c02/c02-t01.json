@@ -1,0 +1,69 @@
+{
+  "title": "What Node.js is",
+  "idea": "Node.js is a runtime that lets JavaScript run outside the browser, so you can write servers, tools and scripts in the same language.",
+  "analogy": {
+    "text": "JavaScript is a recipe, and a runtime is the kitchen that cooks it. Chrome's kitchen serves a web page; Node's kitchen serves files and network connections.",
+    "breaks": "Recipes are portable; code using browser-only objects like `document` is not."
+  },
+  "points": [
+    "Node.js runs your JavaScript with V8, the engine inside Chrome.",
+    "Built-in modules such as `fs` and `http` add files and networking.",
+    "One thread serves many requests, because async I/O waits happen outside your code.",
+    "npm, installed with Node, gives you ready-made packages to reuse."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "What sits under your code",
+    "nodes": [
+      { "id": "app", "label": "Your JavaScript", "sub": "app.mjs" },
+      { "id": "v8", "label": "V8 engine", "sub": "runs the code" },
+      { "id": "core", "label": "Built-in modules", "sub": "fs, http, path" },
+      { "id": "uv", "label": "libuv", "sub": "waits in background" },
+      { "id": "os", "label": "Operating system", "sub": "files, network" }
+    ],
+    "edges": [
+      { "from": "app", "to": "v8", "label": "runs on", "caption": "V8, the engine from Chrome, compiles and runs your JavaScript. On its own it has no file or network access." },
+      { "from": "app", "to": "core", "label": "calls", "caption": "Your code calls built-in modules: `fs` for files, `http` for servers, `path` for file paths." },
+      { "from": "core", "to": "uv", "label": "hands off", "caption": "Those modules pass slow work, such as reading a file, to libuv, a C library inside Node." },
+      { "from": "uv", "to": "os", "label": "asks", "caption": "libuv asks the operating system for the data, then calls your code back. The event loop page shows how." }
+    ]
+  },
+  "code": [
+    {
+      "file": "server.mjs",
+      "lang": "js",
+      "title": "A tiny server",
+      "run": "captured",
+      "caption": "Server-side JavaScript. The process stays alive between requests, so `visits` keeps counting. HTTP gets its own chapter.",
+      "walk": [
+        { "lines": [1], "text": "`http` is a built-in module, so there is nothing to install." },
+        { "lines": [3], "text": "`visits` lives outside the handler, so it survives from one request to the next." },
+        { "lines": [4, 5, 6, 7], "text": "The handler runs once per request: add one, then reply with the count." },
+        { "lines": [9], "text": "Port `0` asks the operating system for any free port." },
+        { "lines": [10, 11, 12], "text": "The script calls its own server twice with `fetch`, which Node 20 includes." },
+        { "lines": [13], "text": "Close the server so the script can exit." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not run long CPU-heavy loops in a handler; one slow request stalls all others.",
+    "Keep important data in a database; variables like `visits` reset when the process restarts.",
+    "Do not use browser-only names such as `window` or `document`; Node does not define them."
+  ],
+  "quiz": {
+    "q": "The counter now lives inside the handler. What do two requests receive?",
+    "code": "const server = http.createServer((req, res) => {\n  let visits = 0;\n  visits += 1;\n  res.end(`visit ${visits}`);\n});",
+    "lang": "js",
+    "options": ["visit 1, then visit 2", "visit 1, then visit 1", "visit 0, then visit 0", "A ReferenceError"],
+    "answer": 1,
+    "why": "The handler runs once per request, so `visits` restarts at 0 each time. Outside the handler it lives as long as the process."
+  },
+  "takeaway": "A Node server is one long-running process, so module-level variables outlive requests.",
+  "chat": {
+    "starters": [
+      "Is Node.js a language or a framework?",
+      "Why can one thread handle many requests?",
+      "What can Node do that browser JavaScript cannot?"
+    ]
+  }
+}

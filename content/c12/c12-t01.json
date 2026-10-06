@@ -1,0 +1,86 @@
+{
+  "title": "The auth backend project",
+  "idea": "The auth backend is a Node service that registers users, verifies their email, logs them in with tokens, and lets them reset a forgotten password.",
+  "points": [
+    "The stack is Node.js, Express 5, MongoDB with Mongoose, JSON Web Tokens and Nodemailer.",
+    "It has no front end, so you test every route with an API client.",
+    "Each lesson adds one piece and shows only what it adds.",
+    "Chapter 6 explained authentication; here you build a full service."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "One user's journey through the service",
+    "scenario": {
+      "tiers": [["client"], ["api"], ["db", "mail"]],
+      "nodes": {
+        "client": { "label": "Client", "kind": "client", "sub": "Postman or browser" },
+        "api": { "label": "Express API", "kind": "server", "sub": "auth-backend" },
+        "db": { "label": "MongoDB", "kind": "db", "sub": "users collection" },
+        "mail": { "label": "Mail server", "kind": "service", "sub": "sends the emails" }
+      },
+      "links": [
+        ["client", "api", { "label": "HTTP", "both": true }],
+        ["api", "db"],
+        ["api", "mail", { "dashed": true }]
+      ],
+      "steps": [
+        {
+          "caption": "A visitor registers. The client sends a username, email and password to the API.",
+          "send": [{ "from": "client", "to": "api", "label": "register", "tone": "req" }],
+          "focus": ["api"]
+        },
+        {
+          "caption": "The API hashes the password and saves the user in MongoDB. The account starts unverified.",
+          "send": [{ "from": "api", "to": "db", "label": "save user", "tone": "info" }],
+          "badge": { "db": "unverified" },
+          "state": { "db": "new" }
+        },
+        {
+          "caption": "It also emails a verification link. Opening that link proves the address is real.",
+          "send": [{ "from": "api", "to": "mail", "label": "send link", "tone": "info" }],
+          "focus": ["mail"]
+        },
+        {
+          "caption": "The user opens the link. The API marks the account verified.",
+          "send": [
+            { "from": "client", "to": "api", "label": "open link", "tone": "req" },
+            { "from": "api", "to": "db", "label": "verified", "tone": "info" }
+          ],
+          "badge": { "db": "verified" },
+          "state": { "db": "ok" }
+        },
+        {
+          "caption": "Now the user logs in with their password.",
+          "send": [{ "from": "client", "to": "api", "label": "log in", "tone": "req" }],
+          "focus": ["api"]
+        },
+        {
+          "caption": "The API checks the password and replies with two cookies: an access token and a refresh token.",
+          "send": [{ "from": "api", "to": "client", "label": "2 cookies", "tone": "ok" }],
+          "focus": ["client"]
+        },
+        {
+          "caption": "Later requests carry the access token, so the API knows the caller without asking for the password.",
+          "send": [{ "from": "client", "to": "api", "label": "token", "tone": "req" }],
+          "focus": ["api"]
+        },
+        {
+          "caption": "The access token expires. The client trades the refresh token for a new one and stays logged in.",
+          "send": [
+            { "from": "client", "to": "api", "label": "refresh", "tone": "warn" },
+            { "from": "api", "to": "client", "label": "new token", "tone": "ok" }
+          ]
+        }
+      ]
+    }
+  },
+  "takeaway": "Build one service: register, verify, log in, stay logged in, recover.",
+  "chat": {
+    "starters": [
+      "Why does the API send a verification email?",
+      "Why use two tokens instead of one?",
+      "Why test with an API client and not a front end?"
+    ]
+  }
+}

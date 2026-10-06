@@ -1,0 +1,108 @@
+{
+  "title": "Working with Buffers",
+  "idea": "Buffer methods let you create bytes from text, numbers or a size, edit them by index, and decode them with `toString(encoding)`.",
+  "points": [
+    "`Buffer.from(text)` encodes text to bytes; `Buffer.from([104, 105])` takes byte values.",
+    "`Buffer.alloc(n)` makes `n` zero-filled bytes; `buf[i]` reads or writes one byte.",
+    "`toString('hex')` and `toString('base64')` write the same bytes as plain text.",
+    "`subarray` shares memory with the original; `Buffer.from(buf)` copies it."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "memory",
+    "title": "Share or copy",
+    "scenario": {
+      "code": [
+        "const a = Buffer.from('cat');",
+        "const b = a.subarray(0, 2);",
+        "const c = Buffer.from(a);",
+        "b[0] = 0x62;",
+        "console.log(a.toString(), c.toString());"
+      ],
+      "steps": [
+        {
+          "caption": "`Buffer.from('cat')` encodes the text as three bytes: 99, 97, 116. `a` points at that Buffer.",
+          "line": 0,
+          "stack": [{ "name": "Global", "vars": { "a": { "ref": "o1" }, "b": "<uninitialized>", "c": "<uninitialized>" } }],
+          "heap": [{ "id": "o1", "label": "Buffer a", "props": { "0": "99", "1": "97", "2": "116" } }]
+        },
+        {
+          "caption": "`subarray(0, 2)` returns a new Buffer that is a window onto a's first two bytes. Nothing is copied.",
+          "line": 1,
+          "stack": [{ "name": "Global", "vars": { "a": { "ref": "o1" }, "b": { "ref": "o2" }, "c": "<uninitialized>" } }],
+          "heap": [
+            { "id": "o1", "label": "Buffer a", "props": { "0": "99", "1": "97", "2": "116" } },
+            { "id": "o2", "label": "Buffer b (view)", "props": { "bytes 0-1 of": { "ref": "o1", "label": "Buffer a" } } }
+          ]
+        },
+        {
+          "caption": "`Buffer.from(a)` copies all three bytes into a separate Buffer. `c` has its own memory.",
+          "line": 2,
+          "stack": [{ "name": "Global", "vars": { "a": { "ref": "o1" }, "b": { "ref": "o2" }, "c": { "ref": "o3" } } }],
+          "heap": [
+            { "id": "o1", "label": "Buffer a", "props": { "0": "99", "1": "97", "2": "116" } },
+            { "id": "o2", "label": "Buffer b (view)", "props": { "bytes 0-1 of": { "ref": "o1", "label": "Buffer a" } } },
+            { "id": "o3", "label": "Buffer c (copy)", "props": { "0": "99", "1": "97", "2": "116" } }
+          ]
+        },
+        {
+          "caption": "`b[0] = 0x62` writes through the window, so a's first byte becomes 98. The copy keeps 99.",
+          "line": 3,
+          "stack": [{ "name": "Global", "vars": { "a": { "ref": "o1" }, "b": { "ref": "o2" }, "c": { "ref": "o3" } } }],
+          "heap": [
+            { "id": "o1", "label": "Buffer a", "props": { "0": "98", "1": "97", "2": "116" } },
+            { "id": "o2", "label": "Buffer b (view)", "props": { "bytes 0-1 of": { "ref": "o1", "label": "Buffer a" } } },
+            { "id": "o3", "label": "Buffer c (copy)", "props": { "0": "99", "1": "97", "2": "116" } }
+          ]
+        },
+        {
+          "caption": "`a` now decodes to `bat`, while the copy `c` still decodes to `cat`.",
+          "line": 4,
+          "stack": [{ "name": "Global", "vars": { "a": { "ref": "o1" }, "b": { "ref": "o2" }, "c": { "ref": "o3" } } }],
+          "heap": [
+            { "id": "o1", "label": "Buffer a", "props": { "0": "98", "1": "97", "2": "116" } },
+            { "id": "o2", "label": "Buffer b (view)", "props": { "bytes 0-1 of": { "ref": "o1", "label": "Buffer a" } } },
+            { "id": "o3", "label": "Buffer c (copy)", "props": { "0": "99", "1": "97", "2": "116" } }
+          ]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "convert.mjs",
+      "lang": "js",
+      "title": "Create and convert",
+      "run": "browser",
+      "caption": "Three routes to the same two bytes. Edit the text and watch `equals` change."
+    },
+    {
+      "file": "chunks.mjs",
+      "lang": "js",
+      "title": "Chunks to JSON",
+      "run": "browser",
+      "caption": "Data often arrives in pieces. Join the pieces first, then decode once."
+    }
+  ],
+  "pitfalls": [
+    "Edits through `subarray` change the original; copy with `Buffer.from(buf)` first.",
+    "Join chunks (pieces of data) with `Buffer.concat` before decoding; a character can split across chunks.",
+    "Prefer `Buffer.alloc`; `allocUnsafe` skips zero-filling and can expose old memory."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const a = Buffer.from('hot');\nconst b = a.subarray(1);\nconst c = Buffer.from(a);\nb[0] = 0x61; // 0x61 is 'a'\nconsole.log(a.toString(), c.toString());",
+    "lang": "js",
+    "options": ["hot hot", "hat hat", "hat hot", "hot hat"],
+    "answer": 2,
+    "why": "`subarray` is a view on the same bytes, so writing through `b` changes `a`. `Buffer.from(a)` copied the bytes first, so `c` stays `hot`."
+  },
+  "takeaway": "`Buffer.from` makes bytes, `toString` decodes them, and `subarray` only borrows.",
+  "chat": {
+    "starters": [
+      "What is the difference between slice and subarray?",
+      "When should I use base64 or hex?",
+      "How do I read a number from a Buffer?"
+    ]
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "stdout": "sync threw: ENOENT\nreadFile returned\ncallback got: ENOENT",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "hash": "f5554800eaa4d654",
+  "at": "2026-10-06T09:16:11.982Z"
+}

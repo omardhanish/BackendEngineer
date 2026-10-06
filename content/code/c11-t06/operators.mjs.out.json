@@ -1,0 +1,9 @@
+{
+  "stdout": "gt 3\nin 2\nor 2\nexists 0\nregex 4\nexpr 4\n[ { customer: 'Ben', total: 50 }, { customer: 'Eli', total: 130 } ]",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "MongoDB 8.2.6",
+  "hash": "eb1945e7d90e0586",
+  "at": "2026-10-06T15:09:44.609Z"
+}

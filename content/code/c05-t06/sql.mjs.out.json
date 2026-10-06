@@ -1,0 +1,9 @@
+{
+  "stdout": "select \"id\", \"title\", \"author\", \"year\" from \"books\" where \"books\".\"id\" = $1 [ 2 ]\nupdate \"books\" set \"year\" = $1 where \"books\".\"id\" = $2 [ 1966, 2 ]\nupdate \"books\" set \"year\" = $1 [ 1966 ]",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "PostgreSQL 18.4",
+  "hash": "d083b08fb39f02b5",
+  "at": "2026-10-06T10:01:22.639Z"
+}

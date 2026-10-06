@@ -1,0 +1,47 @@
+{
+  "title": "Starting with one server",
+  "idea": "A one-server setup runs your app and its database on a single machine. It is the simplest design, and a sound place to start.",
+  "points": [
+    "One machine runs the app, the database and local files.",
+    "It is simple: one thing to deploy, and database calls stay on the machine.",
+    "The app and the database compete for the same CPU, memory and disk.",
+    "One failure or restart takes the app and the database down together."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "What the two share on one machine",
+    "head": ["Shared resource", "The app uses it for", "The database uses it for", "Running short looks like"],
+    "rows": [
+      ["CPU", "Running your code and handling requests", "Running queries, sorting and joining", "Slow responses everywhere"],
+      ["Memory", "Process memory and open connections", "Caching data and indexes", "Swapping or out-of-memory crashes"],
+      ["Disk", "Logs and uploaded files", "Data files and transaction logs", "A full disk stops writes"],
+      ["The machine itself", "Stops when the machine stops", "Stops too; data sits on one disk", "The whole app is down until it returns"]
+    ],
+    "highlight": { "col": 3 },
+    "caption": "Which limit you reach first depends on your workload. Measure before you change anything."
+  },
+  "pitfalls": [
+    "Measure CPU, memory and disk first; do not guess which limit you hit.",
+    "Keep the database port closed to the internet; only your app needs it.",
+    "Back up the database to another place; one disk is a single copy."
+  ],
+  "quiz": {
+    "q": "Your app and database run on one server. The machine fails. What happens?",
+    "options": [
+      "Only the app stops; the database keeps serving",
+      "Both stop until the machine returns",
+      "Traffic moves to a second server",
+      "The database keeps serving cached reads"
+    ],
+    "answer": 1,
+    "why": "Both share one machine, so one failure stops both. Spare servers and copies come later, and you add them on purpose."
+  },
+  "takeaway": "Everything on one server shares its limits and fails together.",
+  "chat": {
+    "starters": [
+      "How do I tell whether the app or the database is the bottleneck?",
+      "Why not run the database on a separate machine from the start?",
+      "What should I back up on a single server?"
+    ]
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "stdout": "[\n  { _id: 'Faro', revenue: 130 },\n  { _id: 'Lisbon', revenue: 350 },\n  { _id: 'Porto', revenue: 175 }\n]\n[ { _id: null, revenue: 655 } ]\n[\n  { _id: { city: 'Faro', status: 'paid' }, revenue: 130 },\n  { _id: { city: 'Lisbon', status: 'cancelled' }, revenue: 150 },\n  { _id: { city: 'Lisbon', status: 'paid' }, revenue: 200 },\n  { _id: { city: 'Porto', status: 'paid' }, revenue: 115 },\n  { _id: { city: 'Porto', status: 'pending' }, revenue: 60 }\n]",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "MongoDB 8.2.6",
+  "hash": "ef5be20a76cf278a",
+  "at": "2026-10-06T10:01:23.273Z"
+}

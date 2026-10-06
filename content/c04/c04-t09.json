@@ -1,0 +1,128 @@
+{
+  "title": "Custom and error middleware",
+  "idea": "Error-handling middleware takes four arguments. Calling `next(err)` skips every normal middleware and lands there; a middleware factory returns a configured middleware.",
+  "analogy": {
+    "text": "A factory line with an emergency chute. A faulty part drops down the chute past every station, straight to the repair desk.",
+    "breaks": "The repair desk can still send a normal reply to the client."
+  },
+  "points": [
+    "`next(err)` skips normal middleware and runs the next one with four arguments.",
+    "In Express 5, a rejected promise from an async handler calls `next(err)` for you.",
+    "A factory such as `requireRole('admin')` returns a middleware that remembers `'admin'`.",
+    "Order matters: register error handlers last, after every route."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "An error skips the chain",
+    "scenario": {
+      "token": { "label": "GET /books", "tone": "req" },
+      "stages": [
+        { "id": "client", "label": "Client", "kind": "end" },
+        { "id": "logger", "label": "logger", "sub": "app.use" },
+        { "id": "session", "label": "session", "sub": "async, throws" },
+        { "id": "route", "label": "Handler", "sub": "GET /books" },
+        { "id": "err", "label": "Error handler", "sub": "(err, req, res, next)", "kind": "end" }
+      ],
+      "steps": [
+        {
+          "caption": "The client sends GET /books. Express starts at the first middleware.",
+          "at": "client",
+          "slot": "top",
+          "state": { "client": "active" },
+          "out": []
+        },
+        {
+          "caption": "logger prints the URL and calls `next()`.",
+          "at": "logger",
+          "slot": "top",
+          "state": { "client": "done", "logger": "active" },
+          "out": ["logger: /books"]
+        },
+        {
+          "caption": "session is async. It awaits, then throws. The promise rejects.",
+          "at": "session",
+          "slot": "top",
+          "state": { "client": "done", "logger": "done", "session": "error" },
+          "out": ["logger: /books"]
+        },
+        {
+          "caption": "Express 5 calls `next(err)` for the rejection. The handler is skipped.",
+          "at": "route",
+          "slot": "top",
+          "token": { "label": "Error", "tone": "err" },
+          "state": { "client": "done", "logger": "done", "session": "error", "route": "blocked" },
+          "out": ["logger: /books"]
+        },
+        {
+          "caption": "The four-argument handler receives the error and logs it.",
+          "at": "err",
+          "slot": "top",
+          "token": { "label": "Error", "tone": "err" },
+          "state": { "client": "done", "logger": "done", "session": "error", "route": "blocked", "err": "active" },
+          "out": ["logger: /books", "error handler: session store is down"]
+        },
+        {
+          "caption": "It sends a safe 500 response, hiding the internal message.",
+          "at": "err",
+          "slot": "bottom",
+          "token": { "label": "500", "tone": "err" },
+          "state": { "client": "done", "logger": "done", "session": "error", "route": "blocked", "err": "active" },
+          "out": ["logger: /books", "error handler: session store is down"]
+        },
+        {
+          "caption": "The client gets 500. The handler never ran.",
+          "at": "client",
+          "slot": "top",
+          "token": { "label": "500", "tone": "err" },
+          "state": { "client": "active", "logger": "done", "session": "error", "route": "blocked", "err": "done" },
+          "out": ["logger: /books", "error handler: session store is down"]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "app.mjs",
+      "lang": "js",
+      "title": "Error handler in Express",
+      "run": "captured",
+      "caption": "An async middleware throws. Press Run to see where the error lands.",
+      "walk": [
+        { "lines": [4, 5, 6, 7], "text": "Normal middleware: log the URL, then call `next()`." },
+        { "lines": [8, 9, 10, 11], "text": "An async middleware that throws. Express 5 passes the rejection to `next(err)`." },
+        { "lines": [12, 13, 14, 15], "text": "The route is skipped, so its log line never appears." },
+        { "lines": [16, 17, 18, 19], "text": "Four arguments mark this as the error handler. It sends a safe 500." },
+        { "lines": [21, 22, 23, 24, 25], "text": "Call the app once, print the status and body, then close." }
+      ]
+    },
+    {
+      "file": "factory.mjs",
+      "lang": "js",
+      "title": "A factory and its closure",
+      "run": "browser",
+      "caption": "Edit it: add `requireRole('viewer')` and test a viewer. Each result remembers its own role."
+    }
+  ],
+  "pitfalls": [
+    "Declare error handlers last; one placed before the routes never sees their errors.",
+    "Keep all four parameters, even unused ones, or Express treats it as normal middleware.",
+    "Never send `err.stack` or raw internal messages to the client."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const requireRole = (role) => (user) => user.role === role;\nconst isAdmin = requireRole('admin');\nconst isEditor = requireRole('editor');\nconsole.log(isAdmin({ role: 'editor' }), isEditor({ role: 'editor' }));",
+    "lang": "js",
+    "options": ["true true", "false false", "true false", "false true"],
+    "answer": 3,
+    "why": "Each call to the factory closes over its own `role`. isAdmin wants admin, isEditor wants editor."
+  },
+  "takeaway": "Errors skip ahead to the four-argument handler; factories bake in settings.",
+  "chat": {
+    "starters": [
+      "Do I still need try/catch in async handlers on Express 5?",
+      "How do I send different status codes from the error handler?",
+      "How would requireRole read the user from the request?"
+    ]
+  }
+}

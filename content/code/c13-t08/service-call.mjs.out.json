@@ -1,0 +1,9 @@
+{
+  "stdout": "order paid\norder failed: payments unreachable",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": null,
+  "hash": "042c04973ef7d035",
+  "at": "2026-10-06T09:53:53.223Z"
+}

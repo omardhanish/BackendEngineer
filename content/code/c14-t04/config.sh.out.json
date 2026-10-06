@@ -1,0 +1,9 @@
+{
+  "stdout": "$ git config --global user.name \"Ada Lovelace\"\n$ git config --global user.email \"ada@example.com\"\n$ mkdir work-app\n$ cd work-app\n$ git init -b main\nInitialized empty Git repository in /home/ada/work-app/.git/\n$ git config user.email \"ada@work.example\"\n$ git config user.email\nada@work.example\n$ git config --show-origin --get-all user.email\nfile:/home/ada/.gitconfig\tada@example.com\nfile:.git/config\tada@work.example",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "git 2.47.0",
+  "hash": "70f9339414848210",
+  "at": "2026-10-06T10:01:28.563Z"
+}

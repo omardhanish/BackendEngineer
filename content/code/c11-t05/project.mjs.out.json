@@ -1,0 +1,9 @@
+{
+  "stdout": "[\n  { total: 50, name: 'Ben', lines: 1 },\n  { total: 40, name: 'Ben', lines: 2 },\n  { total: 25, name: 'Cleo', lines: 1 }\n]\n[ { customer: 'Eli', status: 'paid', city: 'Faro', total: 130 } ]",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "MongoDB 8.2.6",
+  "hash": "22a986d86012e7db",
+  "at": "2026-10-06T15:09:04.945Z"
+}

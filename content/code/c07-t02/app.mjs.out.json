@@ -1,0 +1,9 @@
+{
+  "stdout": "connected to app_db\nrejected: MongooseServerSelectionError",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "MongoDB 8.2.6",
+  "hash": "f3af181c1bd85604",
+  "at": "2026-10-06T15:09:48.157Z"
+}

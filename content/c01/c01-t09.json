@@ -1,0 +1,112 @@
+{
+  "title": "Loops in JavaScript",
+  "idea": "A loop repeats a block of code while its test is true, or once per item. Each repeat is called a pass.",
+  "analogy": {
+    "text": "Laps on a track. Before each lap you check whether you have run enough; if not, you run one more.",
+    "breaks": "A runner tires; a loop whose check never fails runs forever."
+  },
+  "points": [
+    "`for` and `while` test first, so the body may never run.",
+    "Use `for` when you can count the passes, `while` when you cannot.",
+    "`for...of` visits each value of an array or string, with no index to manage.",
+    "`break` leaves the loop; `continue` skips to the next pass."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "memory",
+    "title": "A loop, pass by pass",
+    "scenario": {
+      "code": [
+        "let total = 0;",
+        "let i = 1;",
+        "while (i <= 3) {",
+        "  total += i;",
+        "  i++;",
+        "}",
+        "console.log(total);"
+      ],
+      "steps": [
+        {
+          "caption": "`total` starts at 0.",
+          "line": 0,
+          "stack": [{ "name": "Global", "vars": { "total": "0", "i": "<uninitialized>" } }]
+        },
+        {
+          "caption": "`i` starts at 1. It counts the passes.",
+          "line": 1,
+          "stack": [{ "name": "Global", "vars": { "total": "0", "i": "1" } }]
+        },
+        {
+          "caption": "The test `i <= 3` is true (1 <= 3), so the body runs.",
+          "line": 2,
+          "stack": [{ "name": "Global", "vars": { "total": "0", "i": "1" } }]
+        },
+        {
+          "caption": "The body adds `i` to `total`: `total` is 1.",
+          "line": 3,
+          "stack": [{ "name": "Global", "vars": { "total": "1", "i": "1" } }]
+        },
+        {
+          "caption": "`i++` makes `i` 2. Control jumps back to the test.",
+          "line": 4,
+          "stack": [{ "name": "Global", "vars": { "total": "1", "i": "2" } }]
+        },
+        {
+          "caption": "Pass 2 repeats the test, the body and the update. `total` is 3, `i` is 3.",
+          "line": 4,
+          "stack": [{ "name": "Global", "vars": { "total": "3", "i": "3" } }]
+        },
+        {
+          "caption": "Pass 3 does the same: `total` is 6, `i` is 4.",
+          "line": 4,
+          "stack": [{ "name": "Global", "vars": { "total": "6", "i": "4" } }]
+        },
+        {
+          "caption": "The test `i <= 3` is now false (4 <= 3), so the loop ends. The body does not run again.",
+          "line": 2,
+          "stack": [{ "name": "Global", "vars": { "total": "6", "i": "4" } }]
+        },
+        {
+          "caption": "The program continues after the loop and prints 6.",
+          "line": 6,
+          "stack": [{ "name": "Global", "vars": { "total": "6", "i": "4" } }]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "loops.mjs",
+      "lang": "js",
+      "title": "for, while, for...of",
+      "run": "browser",
+      "caption": "Add `20` to the array, then swap `break` for `continue` and compare the output.",
+      "walk": [
+        { "lines": [2, 3, 4], "text": "A `for` loop: start `i` at 0, test before each pass, add 1 after each pass." },
+        { "lines": [6, 7, 8], "text": "`while` repeats until its test fails. Here the pass count depends on the data." },
+        { "lines": [10, 11, 12, 13, 14], "text": "`for...of` hands you each value. `continue` skips 4; `break` stops the loop at 10." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Update the counter inside a `while` loop, or the test never fails and it runs forever.",
+    "Use `for...of` for array values; `for...in` gives keys as strings, such as '0'.",
+    "Write `i < prices.length`, not `<=`; `<=` reads one item past the end, giving `undefined`."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "let out = '';\nfor (let i = 0; i < 5; i++) {\n  if (i === 1) continue;\n  if (i === 3) break;\n  out += i;\n}\nconsole.log(out);",
+    "lang": "js",
+    "options": ["012", "0234", "024", "02"],
+    "answer": 3,
+    "why": "`i = 1` is skipped by `continue`. At `i = 3` the loop stops, so only 0 and 2 were added."
+  },
+  "takeaway": "Test, run, update, repeat. Pick the loop that matches what you know.",
+  "chat": {
+    "starters": [
+      "When should I use while instead of for?",
+      "What happens if the test is false on the first pass?",
+      "How do I stop an infinite loop?"
+    ]
+  }
+}

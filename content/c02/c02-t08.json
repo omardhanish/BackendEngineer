@@ -1,0 +1,144 @@
+{
+  "title": "Blocking and non-blocking code",
+  "idea": "Blocking code makes the thread wait until its work finishes. Non-blocking code starts the work, returns at once, and handles the result later.",
+  "points": [
+    "Node runs your JavaScript on one thread, so one slow call delays everything.",
+    "Sync functions, like `readFileSync`, hold that thread until the disk answers.",
+    "Async calls hand work off; the event loop (next page) runs your callback later.",
+    "`await` pauses only your function; the thread keeps serving other work."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "lanes",
+    "title": "Two requests, one thread",
+    "scenario": {
+      "lanes": [
+        { "id": "stack", "label": "Call stack", "kind": "stack", "hint": "the one thread" },
+        { "id": "wait", "label": "Waiting", "kind": "queue", "hint": "not started yet" },
+        { "id": "disk", "label": "Disk", "kind": "area", "hint": "slow work happens here" }
+      ],
+      "tokens": {
+        "reqA": { "label": "request A", "tone": "neutral" },
+        "reqB": { "label": "request B", "tone": "neutral" },
+        "hA": { "label": "handler A", "tone": "sync" },
+        "hB": { "label": "handler B", "tone": "sync" },
+        "syncA": { "label": "readFileSync", "tone": "sync" },
+        "syncB": { "label": "readFileSync", "tone": "sync" },
+        "asyncA": { "label": "readFile(cb)", "tone": "sync" },
+        "asyncB": { "label": "readFile(cb)", "tone": "sync" },
+        "dA": { "label": "read A", "tone": "io" },
+        "dB": { "label": "read B", "tone": "io" },
+        "cbA": { "label": "callback A", "tone": "macro" },
+        "cbB": { "label": "callback B", "tone": "macro" }
+      },
+      "steps": [
+        {
+          "caption": "Blocking version. Requests A and B arrive, and each handler calls `readFileSync`.",
+          "at": { "wait": ["reqA", "reqB"] },
+          "out": []
+        },
+        {
+          "caption": "The thread starts handler A. Request B keeps waiting.",
+          "at": { "stack": ["hA"], "wait": ["reqB"] },
+          "active": "hA",
+          "out": ["A start"]
+        },
+        {
+          "caption": "`readFileSync` waits for the disk. The thread can run nothing else, so B stays stuck.",
+          "at": { "stack": ["hA", "syncA"], "wait": ["reqB"], "disk": ["dA"] },
+          "active": "syncA",
+          "out": ["A start"]
+        },
+        {
+          "caption": "The disk answers and handler A finishes.",
+          "at": { "stack": ["hA"], "wait": ["reqB"] },
+          "active": "hA",
+          "out": ["A start", "A done"]
+        },
+        {
+          "caption": "Only now can the thread take request B.",
+          "at": { "stack": ["hB"] },
+          "active": "hB",
+          "out": ["A start", "A done", "B start"]
+        },
+        {
+          "caption": "B blocks on its own read the same way. B waited for all of A's read.",
+          "at": { "stack": ["hB", "syncB"], "disk": ["dB"] },
+          "active": "syncB",
+          "out": ["A start", "A done", "B start"]
+        },
+        {
+          "caption": "Result: two reads, strictly one after the other.",
+          "at": {},
+          "out": ["A start", "A done", "B start", "B done"]
+        },
+        {
+          "caption": "Non-blocking version. The same requests arrive, and each handler calls `readFile` with a callback.",
+          "at": { "wait": ["reqA", "reqB"] },
+          "out": []
+        },
+        {
+          "caption": "`readFile` hands the read to the disk and returns at once. Handler A can finish.",
+          "at": { "stack": ["hA", "asyncA"], "wait": ["reqB"], "disk": ["dA"] },
+          "active": "asyncA",
+          "out": ["A start"]
+        },
+        {
+          "caption": "Handler A has returned, so the free thread takes B at once. Both reads now run together.",
+          "at": { "stack": ["hB", "asyncB"], "disk": ["dA", "dB"] },
+          "active": "asyncB",
+          "out": ["A start", "B start"]
+        },
+        {
+          "caption": "Say A's read finishes first. Node runs its callback on the free thread.",
+          "at": { "stack": ["cbA"], "disk": ["dB"] },
+          "active": "cbA",
+          "out": ["A start", "B start", "A done"]
+        },
+        {
+          "caption": "Then B's callback runs. Nobody waited in line behind a read.",
+          "at": { "stack": ["cbB"] },
+          "active": "cbB",
+          "out": ["A start", "B start", "A done", "B done"]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "order.mjs",
+      "lang": "js",
+      "title": "Sync, then callback",
+      "run": "browser",
+      "caption": "The numbers show the order. The callback waits until every sync line has finished."
+    },
+    {
+      "file": "stall.mjs",
+      "lang": "js",
+      "title": "A blocked timer",
+      "run": "browser",
+      "caption": "The timer is due at 10 ms, yet it fires only after the 50 ms loop ends."
+    }
+  ],
+  "pitfalls": [
+    "Do not use `readFileSync` while serving requests: one slow read freezes every user.",
+    "The result of an async call is available only inside its callback, or after `await`.",
+    "A long loop or a huge `JSON.parse` blocks the thread like a sync read."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "import fs from 'node:fs';\n\nfs.writeFileSync('n.txt', 'x');\nfs.readFile('n.txt', () => console.log('B'));\nfs.readFileSync('n.txt');\nconsole.log('A');",
+    "lang": "js",
+    "options": ["B then A", "A then B", "Only A", "Only B"],
+    "answer": 1,
+    "why": "The callback runs only after the script's sync code finishes, even though `readFile` started first."
+  },
+  "takeaway": "In a server, use the async version of any call that waits.",
+  "chat": {
+    "starters": [
+      "Is readFileSync ever okay to use?",
+      "Does async code run in parallel on other threads?",
+      "How can I tell whether a function blocks?"
+    ]
+  }
+}

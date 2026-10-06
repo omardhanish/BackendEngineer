@@ -1,0 +1,77 @@
+{
+  "title": "Multi-stage builds",
+  "idea": "A multi-stage build uses several `FROM` stages in one Dockerfile. By default only the last stage becomes the image, so build tools stay behind.",
+  "analogy": {
+    "text": "A workshop and a shop window. You saw, sand and glue in the workshop; only the finished chair goes in the window.",
+    "breaks": "The workshop stays in the build cache and speeds up later builds."
+  },
+  "points": [
+    "Each `FROM` starts a fresh stage; name it with `AS build`.",
+    "`COPY --from=build` copies chosen files out of an earlier stage.",
+    "Layer caching works inside every stage, so keep slow steps early.",
+    "Docker's BuildKit builder skips stages the final stage does not use."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Two stages, one image",
+    "dir": "LR",
+    "nodes": [
+      { "id": "build", "label": "Stage build", "sub": "dev tools + source" },
+      { "id": "dist", "label": "dist/ folder", "sub": "compiled output" },
+      { "id": "left", "label": "Left behind", "sub": "not copied over" },
+      { "id": "rt", "label": "Stage runtime", "sub": "production deps" },
+      { "id": "img", "label": "Final image", "sub": "last stage only" }
+    ],
+    "edges": [
+      { "from": "build", "to": "dist" },
+      { "from": "dist", "to": "rt" },
+      { "from": "rt", "to": "img" },
+      { "from": "build", "to": "left", "dashed": true }
+    ],
+    "steps": [
+      { "caption": "The `build` stage installs every dependency, dev tools included, and copies in the source.", "active": ["build"], "edges": [] },
+      { "caption": "`npm run build` writes the compiled app to `dist/`. That folder is all the app needs from this stage.", "active": ["build", "dist"], "edges": [0] },
+      { "caption": "A second `FROM` starts a clean `runtime` stage. It installs production dependencies only.", "active": ["rt"], "edges": [] },
+      { "caption": "`COPY --from=build` brings `dist/` across. It is the only link between the stages.", "active": ["dist", "rt"], "edges": [1] },
+      { "caption": "The last stage is the image. The compiler and dev dependencies never entered it.", "active": ["rt", "img"], "edges": [2] },
+      { "caption": "Everything else in `build` is left behind. It stays in the build cache, not in the image.", "active": ["left"], "edges": [3] }
+    ]
+  },
+  "code": [
+    {
+      "file": "Dockerfile",
+      "lang": "docker",
+      "title": "Two-stage Dockerfile",
+      "run": "static",
+      "illustrative": true,
+      "caption": "The Book Store API has no build step today. This assumes a `build` script that compiles into `dist/`.",
+      "walk": [
+        { "lines": [1], "text": "Name the first stage `build`. It holds everything needed to compile." },
+        { "lines": [3, 4, 5], "text": "Install all dependencies, dev tools included, then copy the source." },
+        { "lines": [6], "text": "Run the build script. Its output lands in `/app/dist`." },
+        { "lines": [8, 9], "text": "A second `FROM` starts a fresh image. Nothing from `build` carries over." },
+        { "lines": [10, 11], "text": "Install production dependencies only." },
+        { "lines": [12], "text": "Copy only `dist` out of the `build` stage." },
+        { "lines": [13, 14], "text": "Document the port and start the compiled app." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Copy only what runs: `COPY --from=build /app .` drags the whole build stage along.",
+    "Each stage starts clean: repeat `WORKDIR` and `ENV` in the stage that needs them.",
+    "Keep the runtime stage last; the last `FROM` is the image you get."
+  ],
+  "quiz": {
+    "q": "A Dockerfile has stages build, then runtime. What does docker build produce?",
+    "options": [
+      "Two images, one per stage",
+      "One image: the last stage plus files it copied",
+      "One image holding both stages in full",
+      "The build stage, because it comes first"
+    ],
+    "answer": 1,
+    "why": "Only the last stage becomes the image. Earlier stages contribute files solely through `COPY --from`."
+  },
+  "takeaway": "Compile where the tools live; ship from a clean stage with only the output.",
+  "chat": { "starters": ["How much smaller does a multi-stage image get?", "Can I run tests in a build stage?", "What does `--target` do?"] }
+}

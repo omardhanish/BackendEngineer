@@ -1,0 +1,29 @@
+{
+  "name": "backend-engineer-examples",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Libraries that the book's runnable examples import. Used only by `npm run capture`; the book itself does not need them to be read.",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "bcryptjs": "3.0.3",
+    "cookie-parser": "1.4.7",
+    "cors": "2.8.6",
+    "dotenv": "18.0.5",
+    "drizzle-orm": "0.45.3",
+    "ejs": "7.0.1",
+    "embedded-postgres": "18.4.0-beta.17",
+    "express": "5.2.1",
+    "express-session": "1.19.0",
+    "express-validator": "7.3.2",
+    "helmet": "8.3.0",
+    "jsonwebtoken": "9.0.3",
+    "mailgen": "2.0.36",
+    "mongodb-memory-server": "11.3.0",
+    "mongoose": "9.11.0",
+    "morgan": "1.12.1",
+    "nanoid": "5.1.16",
+    "nodemailer": "10.0.15",
+    "pg": "8.23.1",
+    "zod": "4.6.5"
+  }
+}

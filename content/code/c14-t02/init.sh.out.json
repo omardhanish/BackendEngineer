@@ -1,0 +1,9 @@
+{
+  "stdout": "$ mkdir notes\n$ cd notes\n$ echo \"# Notes\" > README.md\n$ git init -b main\nInitialized empty Git repository in /home/ada/notes/.git/\n$ ls -A\n.git\nREADME.md\n$ ls -A .git\nHEAD\nconfig\ndescription\nhooks\ninfo\nobjects\nrefs\n$ cat .git/HEAD\nref: refs/heads/main\n$ git status\nOn branch main\n\nNo commits yet\n\nUntracked files:\n  (use \"git add <file>...\" to include in what will be committed)\n\tREADME.md\n\nnothing added to commit but untracked files present (use \"git add\" to track)\n$ git log\nfatal: your current branch 'main' does not have any commits yet\n$ mkdir sub\n$ cd sub\n$ git rev-parse --show-toplevel\n/home/ada/notes",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "git 2.47.0",
+  "hash": "542c5006faf217ff",
+  "at": "2026-10-06T10:01:00.226Z"
+}

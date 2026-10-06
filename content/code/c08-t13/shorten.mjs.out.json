@@ -1,0 +1,9 @@
+{
+  "stdout": "401 Unauthorized\n400 [{\"path\":\"url\",\"message\":\"Invalid URL\"}]\n201 7 true",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": null,
+  "hash": "c78db7bcf77b7b19",
+  "at": "2026-10-06T10:01:29.789Z"
+}

@@ -1,0 +1,44 @@
+{
+  "title": "System design",
+  "idea": "System design is choosing how servers, databases and queues fit together. A good design keeps a backend fast and running as users and data grow.",
+  "points": [
+    "A bottleneck is the part that limits everything else; each design step removes one.",
+    "Every step adds new parts to run and new ways to fail.",
+    "Start simple, and change the design only when a measured limit forces it.",
+    "This chapter walks the journey from one server to many services, step by step."
+  ],
+  "hero": {
+    "type": "timeline",
+    "title": "The usual journey, in order",
+    "items": [
+      { "label": "One server", "text": "App and database share one machine. Simple, and enough to start." },
+      { "label": "A bigger machine", "text": "Vertical scaling: more CPU and memory on the same server." },
+      { "label": "More machines", "text": "Horizontal scaling: several servers behind a load balancer." },
+      { "label": "Scale the database", "text": "Read replicas for reads; shards when data outgrows one machine." },
+      { "label": "Split the app", "text": "Separate services that talk through APIs, queues and events." }
+    ]
+  },
+  "pitfalls": [
+    "Do not copy a large company's architecture for a small app.",
+    "Do not add moving parts you cannot monitor; their failures stay invisible."
+  ],
+  "quiz": {
+    "q": "Pages load slowly for your users. What is the best first step?",
+    "options": [
+      "Split the app into microservices",
+      "Shard the database",
+      "Measure to find the bottleneck",
+      "Buy the largest server available"
+    ],
+    "answer": 2,
+    "why": "A fix only helps if it targets the real limit. Measure first, then pick the step that removes that limit."
+  },
+  "takeaway": "Add complexity only when a measured bottleneck demands it.",
+  "chat": {
+    "starters": [
+      "How do I tell which bottleneck to fix first?",
+      "What does a system designer actually do day to day?",
+      "Where should I start when designing a backend from scratch?"
+    ]
+  }
+}

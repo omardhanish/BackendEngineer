@@ -1,0 +1,82 @@
+{
+  "title": "Indexes in PostgreSQL",
+  "idea": "An index is a separate sorted structure on a column. It lets Postgres find matching rows without reading the whole table.",
+  "points": [
+    "Without an index, Postgres does a sequential scan: it reads every row.",
+    "The default index type is a B-tree: sorted keys that point at table rows.",
+    "`create index` builds one; `primary key` and `unique` constraints build theirs for you.",
+    "Each index uses disk space and slows writes: index columns you search by."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "scrubber",
+    "title": "Scan or index",
+    "scenario": {
+      "kind": "scan",
+      "table": "books",
+      "column": "title",
+      "rows": ["Ubik", "Kim", "Walden", "Matilda", "Dune", "Rebecca", "Emma", "Hyperion", "Solaris", "Beloved", "Gilead", "Ulysses", "Lolita", "Dracula", "Ivanhoe", "Persuasion"],
+      "target": "Dune",
+      "steps": [
+        { "caption": "No index: Postgres reads rows in table order. It reaches Dune at row 5.", "mode": "seq", "n": 5 },
+        { "caption": "It still reads to the end: another Dune could follow, so it checks every row.", "mode": "seq", "n": 16 },
+        { "caption": "With an index on `title`, the lookup starts at the root. Dune sorts before Gilead, so it takes the first leaf.", "mode": "index", "n": 1 },
+        { "caption": "The leaf page holds the key Dune and a pointer to its table row.", "mode": "index", "n": 2 },
+        { "caption": "One more jump reaches the row: three page reads here instead of sixteen row reads.", "mode": "index", "n": 3 },
+        { "caption": "Real pages hold many more keys, so the tree stays only a few levels deep.", "mode": "index", "n": 3 }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "explain.mjs",
+      "lang": "js",
+      "title": "Ask Postgres for its plan",
+      "run": "captured",
+      "needs": ["postgres"],
+      "caption": "A lookup by title on 20,003 books, planned three ways. It prints plan types, not timings, which change on every run.",
+      "walk": [
+        { "lines": [5, 6, 7, 8, 9], "text": "`explain (format json)` returns the plan as data. We keep its node type and index name." },
+        { "lines": [11, 12, 13, 14, 15], "text": "The Book Store table with its three seed books." },
+        { "lines": [16, 17, 18], "text": "20,000 filler rows give the index work to save. Their titles look like `Book 1`." },
+        { "lines": [19], "text": "`analyze` refreshes the statistics the planner reads. Postgres also does this itself, in the background." },
+        { "lines": [21, 23], "text": "With no index on `title`, Postgres must read the whole table." },
+        { "lines": [24, 25, 26], "text": "Build the index, refresh the statistics, ask again. The planner now chooses differently." },
+        { "lines": [22, 27], "text": "The index holds `title`, not `lower(title)`, so this query cannot use it." }
+      ]
+    },
+    {
+      "file": "schema.mjs",
+      "lang": "js",
+      "title": "The index in a Drizzle schema",
+      "run": "captured",
+      "caption": "The third argument of `pgTable` lists indexes. `npx drizzle-kit generate` writes the migration and `npx drizzle-kit migrate` applies it."
+    }
+  ],
+  "pitfalls": [
+    "A function on the column, such as `lower(title)`, stops a plain index being used.",
+    "Postgres often scans a tiny table anyway: test indexes with realistic row counts.",
+    "A leading wildcard, as in `like '%une'`, cannot use a B-tree index."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "// books: 20,003 rows, index on title; plan() as above\nconsole.log(await plan(\n  `select * from books where lower(title) = 'dune'`));\nconsole.log(await plan(\n  `select * from books where title = 'Dune'`));",
+    "lang": "js",
+    "options": [
+      "Index Scan books_title_idx, twice",
+      "Seq Scan, then Index Scan books_title_idx",
+      "Seq Scan, twice",
+      "Index Scan books_title_idx, then Seq Scan"
+    ],
+    "answer": 1,
+    "why": "The index is sorted by `title`, not `lower(title)`, so the first query scans every row. The second matches the index."
+  },
+  "takeaway": "Index the columns you search by; check the plan with `explain`.",
+  "chat": {
+    "starters": [
+      "How do I decide which columns to index?",
+      "What does an index on two columns do?",
+      "Why did Postgres ignore my index?"
+    ]
+  }
+}

@@ -1,0 +1,266 @@
+{
+  "title": "Mongoose setup",
+  "idea": "Mongoose is a library that gives MongoDB documents a shape in your app: a schema describes the fields, and a model reads and writes one collection.",
+  "points": [
+    "`mongoose.connect(uri)` opens the default connection; call it once, at startup.",
+    "A schema lists each field's type and rules, such as `required` and `trim`.",
+    "`mongoose.model('Book', schema)` returns a model bound to the `books` collection.",
+    "Mongoose casts values to the schema's types, then validates, before any insert."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "A book on its way to MongoDB",
+    "scenario": {
+      "token": {
+        "label": "book object",
+        "tone": "req"
+      },
+      "stages": [
+        {
+          "id": "input",
+          "label": "Your object",
+          "sub": "Book.create(…)",
+          "kind": "end"
+        },
+        {
+          "id": "cast",
+          "label": "Cast",
+          "sub": "types, trim"
+        },
+        {
+          "id": "validate",
+          "label": "Validate",
+          "sub": "required, rules"
+        },
+        {
+          "id": "db",
+          "label": "MongoDB",
+          "sub": "insert",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "`Book.create` gets a plain object. The title has spaces and `year` is the string `'1965'`.",
+          "at": "input",
+          "slot": "top",
+          "token": {
+            "label": "' Dune ', '1965'",
+            "tone": "req"
+          },
+          "state": {
+            "input": "active"
+          },
+          "out": []
+        },
+        {
+          "caption": "Cast turns `'1965'` into the number `1965`. `trim` strips the spaces from the title.",
+          "at": "cast",
+          "slot": "top",
+          "token": {
+            "label": "'Dune', 1965",
+            "tone": "req"
+          },
+          "state": {
+            "input": "done",
+            "cast": "active"
+          },
+          "out": [
+            "cast: '1965' becomes 1965",
+            "cast: title trimmed"
+          ]
+        },
+        {
+          "caption": "Validation checks the cast values: `title`, `author` and `year` are all present.",
+          "at": "validate",
+          "slot": "top",
+          "state": {
+            "input": "done",
+            "cast": "done",
+            "validate": "active"
+          },
+          "out": [
+            "cast: '1965' becomes 1965",
+            "cast: title trimmed",
+            "validate: all fields present"
+          ]
+        },
+        {
+          "caption": "Only now does Mongoose send the insert. The stored document also gets `_id` and `__v`.",
+          "at": "db",
+          "slot": "top",
+          "state": {
+            "input": "done",
+            "cast": "done",
+            "validate": "done",
+            "db": "active"
+          },
+          "out": [
+            "cast: '1965' becomes 1965",
+            "cast: title trimmed",
+            "validate: all fields present",
+            "insert: document stored"
+          ]
+        },
+        {
+          "caption": "A second book has no `author`, and its `year` is the string `'soon'`.",
+          "at": "input",
+          "slot": "top",
+          "token": {
+            "label": "'Untitled', 'soon'",
+            "tone": "req"
+          },
+          "state": {
+            "input": "active"
+          },
+          "out": []
+        },
+        {
+          "caption": "`'soon'` cannot become a number. Mongoose records a `CastError` for `year` and carries on.",
+          "at": "cast",
+          "slot": "top",
+          "token": {
+            "label": "CastError: year",
+            "tone": "err"
+          },
+          "state": {
+            "input": "done",
+            "cast": "error"
+          },
+          "out": [
+            "cast: 'soon' is not a number"
+          ]
+        },
+        {
+          "caption": "`author` is missing, so `required` fails. Both problems end up in one `ValidationError`.",
+          "at": "validate",
+          "slot": "top",
+          "token": {
+            "label": "ValidationError",
+            "tone": "err"
+          },
+          "state": {
+            "input": "done",
+            "cast": "error",
+            "validate": "error"
+          },
+          "out": [
+            "cast: 'soon' is not a number",
+            "validate: author is required"
+          ]
+        },
+        {
+          "caption": "`create` rejects with that error. The insert never happens, so MongoDB stores nothing.",
+          "at": "input",
+          "slot": "bottom",
+          "token": {
+            "label": "ValidationError",
+            "tone": "err"
+          },
+          "state": {
+            "input": "active",
+            "cast": "error",
+            "validate": "error"
+          },
+          "out": [
+            "cast: 'soon' is not a number",
+            "validate: author is required",
+            "create rejects, nothing stored"
+          ]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "app.mjs",
+      "lang": "js",
+      "title": "Schema, model, validation",
+      "run": "captured",
+      "needs": [
+        "mongo"
+      ],
+      "caption": "One schema and one model. Step through it, then press Run for the real output.",
+      "walk": [
+        {
+          "lines": [
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "text": "The schema sets each field's type and rules. `Book` is the model for the `books` collection."
+        },
+        {
+          "lines": [
+            9
+          ],
+          "text": "Connect once. Here `MONGO_URI` points at a local MongoDB."
+        },
+        {
+          "lines": [
+            10
+          ],
+          "text": "`create` casts `'1965'` to a number and trims the title before saving."
+        },
+        {
+          "lines": [
+            12,
+            13,
+            14
+          ],
+          "text": "This book has no author and a `year` that is not a number, so `create` rejects."
+        },
+        {
+          "lines": [
+            15,
+            16,
+            17,
+            18
+          ],
+          "text": "`err.errors` has one entry per bad field: a `CastError` for `year`, a `ValidatorError` for `author`."
+        },
+        {
+          "lines": [
+            19
+          ],
+          "text": "Only the first book was stored. `select` hides `_id` and `__v`; `lean()` returns plain objects."
+        },
+        {
+          "lines": [
+            20
+          ],
+          "text": "Disconnect so the script can exit."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Fields missing from the schema are dropped silently: a typo such as `Year` is never saved.",
+    "Update methods skip validators unless you pass `runValidators: true`.",
+    "A schema guards only your app; other clients can still write any shape."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const Book = mongoose.model('Book', new mongoose.Schema({\n  title: { type: String, trim: true },\n  year: Number,\n}));\nconst b = new Book({ title: ' Emma ', year: '1815', mood: 'calm' });\nconsole.log(`${b.title}|${typeof b.year}|${b.mood}`);",
+    "lang": "js",
+    "options": [
+      "Emma|number|calm",
+      "Emma|number|undefined",
+      " Emma |string|calm",
+      "Emma|string|undefined"
+    ],
+    "answer": 1,
+    "why": "Mongoose trims the title and casts `'1815'` to a number. `mood` is not in the schema, so it is dropped."
+  },
+  "takeaway": "Before `create` or `save` writes, Mongoose casts and checks against the schema.",
+  "chat": {
+    "starters": [
+      "Do I have to define a schema in Mongoose?",
+      "What does `.lean()` do?",
+      "Why did Mongoose name my collection `books`?"
+    ]
+  }
+}

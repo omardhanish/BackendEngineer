@@ -1,0 +1,130 @@
+{
+  "title": "Git diff and stash",
+  "idea": "`git diff` shows what changed between two of Git's three areas. `git stash` shelves uncommitted changes so you can switch tasks with a clean tree.",
+  "analogy": {
+    "text": "Your desk is the working tree, the outbox is staging, the filing cabinet is the last commit.",
+    "breaks": "Staging copies a file; the desk copy stays where it is."
+  },
+  "points": [
+    "Changes move through three areas: working tree, staging area, last commit.",
+    "Plain `git diff` compares the working tree with the staging area.",
+    "`git diff --staged` compares the staging area with the last commit.",
+    "`git stash` shelves changes to tracked files, staged or not, and cleans the tree."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "lanes",
+    "title": "Where a change lives",
+    "scenario": {
+      "code": [
+        "echo \"price = 12\" > app.txt",
+        "git diff",
+        "git add app.txt",
+        "git diff --staged",
+        "git stash",
+        "git stash pop"
+      ],
+      "lanes": [
+        { "id": "work", "label": "Working tree", "kind": "area", "hint": "files you edit" },
+        { "id": "stage", "label": "Staging area", "kind": "area", "hint": "next commit" },
+        { "id": "commit", "label": "Last commit", "kind": "area", "hint": "HEAD" },
+        { "id": "stash", "label": "Stash", "kind": "stack", "hint": "newest first" }
+      ],
+      "tokens": {
+        "w10": { "label": "app.txt: 10", "tone": "neutral" },
+        "s10": { "label": "app.txt: 10", "tone": "neutral" },
+        "c10": { "label": "app.txt: 10", "tone": "neutral" },
+        "w12": { "label": "app.txt: 12", "tone": "io" },
+        "s12": { "label": "app.txt: 12", "tone": "io" },
+        "saved": { "label": "app.txt: 12", "tone": "io" }
+      },
+      "steps": [
+        {
+          "caption": "app.txt is committed with price 10. All three areas hold the same file.",
+          "at": { "work": ["w10"], "stage": ["s10"], "commit": ["c10"] },
+          "out": []
+        },
+        {
+          "caption": "You edit the file. Only the working tree changes.",
+          "line": 0,
+          "at": { "work": ["w12"], "stage": ["s10"], "commit": ["c10"] },
+          "active": "w12",
+          "out": []
+        },
+        {
+          "caption": "`git diff` compares the working tree with the staging area.",
+          "line": 1,
+          "at": { "work": ["w12"], "stage": ["s10"], "commit": ["c10"] },
+          "active": "w12",
+          "out": ["$ git diff", "-price = 10", "+price = 12"]
+        },
+        {
+          "caption": "`git add` copies the change into the staging area. Now plain `git diff` would print nothing.",
+          "line": 2,
+          "at": { "work": ["w12"], "stage": ["s12"], "commit": ["c10"] },
+          "active": "s12",
+          "out": ["$ git diff", "-price = 10", "+price = 12", "$ git add app.txt"]
+        },
+        {
+          "caption": "`git diff --staged` compares the staging area with the last commit.",
+          "line": 3,
+          "at": { "work": ["w12"], "stage": ["s12"], "commit": ["c10"] },
+          "active": "s12",
+          "out": ["$ git diff", "-price = 10", "+price = 12", "$ git add app.txt", "$ git diff --staged", "-price = 10", "+price = 12"]
+        },
+        {
+          "caption": "`git stash` moves the change to the stash. Working tree and staging area match the last commit again.",
+          "line": 4,
+          "at": { "work": ["w10"], "stage": ["s10"], "commit": ["c10"], "stash": ["saved"] },
+          "active": "saved",
+          "out": ["$ git diff", "-price = 10", "+price = 12", "$ git add app.txt", "$ git diff --staged", "-price = 10", "+price = 12", "$ git stash"]
+        },
+        {
+          "caption": "`git stash pop` returns the change to the working tree and drops the entry. It comes back unstaged.",
+          "line": 5,
+          "at": { "work": ["w12"], "stage": ["s10"], "commit": ["c10"] },
+          "active": "w12",
+          "out": ["$ git diff", "-price = 10", "+price = 12", "$ git add app.txt", "$ git diff --staged", "-price = 10", "+price = 12", "$ git stash", "$ git stash pop"]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "session.sh",
+      "lang": "bash",
+      "title": "Diff, then stash",
+      "run": "captured",
+      "caption": "Press Run. Compare the two diffs, then the status lines before and after the stash.",
+      "walk": [
+        { "lines": [1, 2, 3, 4, 5, 6], "text": "Create a repository with one commit, then edit the file to price 12." },
+        { "lines": [7], "text": "`git diff` prints the edit: working tree against staging area." },
+        { "lines": [8, 9], "text": "After `git add`, the same edit shows under `--staged`: staging area against last commit." },
+        { "lines": [10, 11], "text": "`git stash` leaves a clean tree, so `git status --short` prints nothing." },
+        { "lines": [12], "text": "The stash holds one entry, labelled with the commit it was made on." },
+        { "lines": [13, 14], "text": "`git stash pop` restores the edit. Status shows it unstaged: a space, then `M`." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "A bare `git diff` prints nothing after `git add`; use `git diff --staged` instead.",
+    "`git stash` skips files Git has never tracked; add `-u` to include them.",
+    "`git stash pop` restores changes unstaged; add `--index` to keep them staged."
+  ],
+  "quiz": {
+    "q": "What does the last command print?",
+    "code": "# app.txt is committed with the text v1\necho \"v2\" > app.txt\ngit add app.txt\necho \"v3\" > app.txt\ngit diff",
+    "lang": "bash",
+    "options": ["-v1 and +v3", "-v2 and +v3", "-v1 and +v2", "No output"],
+    "answer": 1,
+    "why": "Plain `git diff` compares the working tree (v3) with the staging area (v2). The committed v1 is not involved."
+  },
+  "takeaway": "Diff before you commit; stash when you must switch with unfinished work.",
+  "chat": {
+    "starters": [
+      "How do I see the diff for one file only?",
+      "What is the difference between `git stash pop` and `git stash apply`?",
+      "Can I stash just some of my files?"
+    ]
+  }
+}

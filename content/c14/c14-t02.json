@@ -1,0 +1,133 @@
+{
+  "title": "Git init and the .git folder",
+  "idea": "`git init` turns a folder into a repository by creating a hidden `.git` folder. That folder holds the history and settings; your files stay outside it.",
+  "analogy": {
+    "text": "A desk with a filing cabinet beside it. The desk holds today's pages; the cabinet keeps every earlier version.",
+    "breaks": "`.git` sits inside the folder, so copying or deleting the folder takes it too."
+  },
+  "points": [
+    "`git init` creates `.git` in the current folder. Nothing else changes.",
+    "`HEAD` names the current branch, which does not exist until the first commit.",
+    "Git finds the repository by looking for `.git` here, then in each parent folder.",
+    "Git calls new files untracked: no commit holds them yet. `git add` fixes that."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "What lives inside .git",
+    "head": [
+      "Entry",
+      "What it holds",
+      "Changes when you run"
+    ],
+    "rows": [
+      [
+        "HEAD",
+        "The branch you are on",
+        "git switch"
+      ],
+      [
+        "config",
+        "Settings for this repository only",
+        "git config"
+      ],
+      [
+        "objects/",
+        "Every saved file version and commit",
+        "git add, git commit"
+      ],
+      [
+        "refs/",
+        "One pointer per branch and tag",
+        "git commit, git branch"
+      ],
+      [
+        "index",
+        "The staging area: the next commit",
+        "git add"
+      ]
+    ],
+    "highlight": {
+      "col": 0
+    },
+    "caption": "`index` appears when you first stage a file with `git add`. The other entries exist right after `git init`."
+  },
+  "code": [
+    {
+      "file": "init.sh",
+      "lang": "bash",
+      "title": "A new repository",
+      "run": "captured",
+      "caption": "Real Git output. The last command runs in a subfolder, yet Git still finds the repository.",
+      "walk": [
+        {
+          "lines": [
+            1,
+            2,
+            3
+          ],
+          "text": "Make a folder with one file. It is not a repository yet."
+        },
+        {
+          "lines": [
+            4
+          ],
+          "text": "`-b main` names the first branch. Git creates `.git` and says so."
+        },
+        {
+          "lines": [
+            5,
+            6
+          ],
+          "text": "Your file and `.git` sit side by side. The second `ls` lists Git's own files inside `.git`."
+        },
+        {
+          "lines": [
+            7
+          ],
+          "text": "`HEAD` points at `main`, a branch with no commits yet."
+        },
+        {
+          "lines": [
+            8,
+            9
+          ],
+          "text": "`README.md` is untracked, and `git log` has no commits to list."
+        },
+        {
+          "lines": [
+            10,
+            11,
+            12
+          ],
+          "text": "From a subfolder, Git walks up to the folder that holds `.git`."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Run `git status` before `git init`. If it works, you are already inside a repository.",
+    "Do not run `git init` in your home folder; `git status` would list everything inside it.",
+    "Deleting `.git` erases this copy of the history. Your files stay, untracked."
+  ],
+  "quiz": {
+    "q": "What does the second command print?",
+    "code": "git init -b main\ncat .git/HEAD",
+    "lang": "bash",
+    "options": [
+      "main",
+      "ref: refs/heads/main",
+      "A 40-character commit hash",
+      "Nothing; the file is empty"
+    ],
+    "answer": 1,
+    "why": "`HEAD` stores the name of the current branch as a reference, even before that branch has a commit."
+  },
+  "takeaway": "A repository is your files plus `.git`, and `git init` creates the second part.",
+  "chat": {
+    "starters": [
+      "Can I move a project and keep its history?",
+      "What is the difference between git init and git clone?",
+      "Why is my first branch called master instead of main?"
+    ]
+  }
+}

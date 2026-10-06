@@ -1,0 +1,67 @@
+{
+  "title": "The $match operators",
+  "idea": "A `$match` filter is built from query operators: comparisons, lists, logic, existence checks, regex patterns and `$expr` for computed tests.",
+  "analogy": {
+    "text": "A shop's filter panel: price above 100, colour in red or blue, in stock. Only products passing every filter stay on screen.",
+    "breaks": "The panel offers fixed filters; `$match` accepts any condition, including `$or` and `$expr`."
+  },
+  "points": [
+    "Several conditions in one filter object are combined with AND.",
+    "`$or` and `$and` take a list of filters; `$in` takes a list of values.",
+    "`$exists` checks that a field is present, not what it contains.",
+    "`$expr` runs aggregation expressions, so it can compare two fields or call `$size`."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "Operators by job",
+    "head": ["Job", "Operators", "A document passes when"],
+    "rows": [
+      ["Compare", "$gt $gte $lt $lte $ne", "the field compares true to the value"],
+      ["List", "$in $nin", "the field equals a listed value ($nin: none of them)"],
+      ["Combine", "$and $or $nor", "all, any or none of the listed filters pass"],
+      ["Presence", "$exists", "the field is present (true) or absent (false)"],
+      ["Text", "$regex", "a string field matches the pattern"],
+      ["Computed", "$expr", "an aggregation expression is true"]
+    ],
+    "caption": "Most operators go inside a field: `{ total: { $gt: 100 } }`. `$and`, `$or`, `$nor` and `$expr` go at the top."
+  },
+  "code": [
+    {
+      "file": "operators.mjs",
+      "lang": "js",
+      "title": "Count what each filter matches",
+      "run": "captured",
+      "needs": ["mongo"],
+      "caption": "Each filter prints how many of the 8 orders it matches. Step through, then press Run.",
+      "walk": [
+        { "lines": [9, 10, 11, 12], "text": "Count what a filter matches. `$count` outputs nothing when no order passes, so return 0." },
+        { "lines": [15, 16], "text": "A comparison on `total` and a list test on `status`." },
+        { "lines": [17], "text": "`$or` takes a list of filters; one match is enough." },
+        { "lines": [18], "text": "`$exists`: no order has a `discount` field, so the count is 0." },
+        { "lines": [19, 20], "text": "`$regex` tests text. `$expr` tests an expression: orders with more than one item." },
+        { "lines": [27, 28, 29, 30], "text": "A real filter: three conditions in one object are ANDed, and `$or` offers two alternatives." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "A regex is case-sensitive; add `$options: 'i'` to ignore case.",
+    "Repeating a key in a JS object keeps the last; put both operators under one key.",
+    "`$exists: true` still matches `null` values; add `$ne: null` to require a value."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const rows = await Order.aggregate([\n  { $match: { $or: [{ city: 'Faro' }, { total: { $lte: 40 } }] } },\n  { $count: 'n' },\n]);\nconsole.log(rows[0].n);",
+    "lang": "js",
+    "options": ["1", "2", "4", "3"],
+    "answer": 3,
+    "why": "Eli matches on city. Ben's 40 and Cleo's 25 pass `$lte: 40`: three orders. `$lt: 40` would skip Ben."
+  },
+  "takeaway": "Small operators, combined: test each filter by counting what it matches.",
+  "chat": {
+    "starters": [
+      "When do I need `$expr` instead of a normal filter?",
+      "How do I match documents whose array contains a value?",
+      "Can `$match` use `$where` or full-text search?"
+    ]
+  }
+}

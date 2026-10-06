@@ -1,0 +1,140 @@
+{
+  "title": "Installing Docker",
+  "idea": "Docker has two parts: the `docker` client you type into, and the daemon, a background service that does the work. Docker Desktop installs both.",
+  "points": [
+    "Docker Engine is the daemon, its API and the client.",
+    "Docker Desktop bundles Docker Engine and runs on Mac, Windows and Linux.",
+    "On a Linux server, install Docker Engine alone, following the steps for your distribution.",
+    "Verify with `docker --version`, then `docker run hello-world`, which pulls a test image."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "What hello-world proves",
+    "actors": [
+      {
+        "id": "you",
+        "label": "You"
+      },
+      {
+        "id": "cli",
+        "label": "docker client"
+      },
+      {
+        "id": "daemon",
+        "label": "Docker daemon"
+      },
+      {
+        "id": "hub",
+        "label": "Docker Hub"
+      }
+    ],
+    "messages": [
+      {
+        "from": "you",
+        "to": "cli",
+        "label": "docker run hello-world",
+        "note": "You type the command. The client only relays: it sends requests and prints what comes back."
+      },
+      {
+        "from": "cli",
+        "to": "daemon",
+        "label": "run hello-world",
+        "note": "The client sends the request to the daemon, usually over a local socket."
+      },
+      {
+        "from": "daemon",
+        "to": "hub",
+        "label": "pull hello-world",
+        "note": "On a first run the image is not local, so the daemon pulls it from Docker Hub, the default registry (an image store)."
+      },
+      {
+        "from": "hub",
+        "to": "daemon",
+        "label": "image",
+        "dashed": true,
+        "note": "The registry sends the image back. Later runs find it on your machine and skip this step."
+      },
+      {
+        "from": "daemon",
+        "to": "daemon",
+        "label": "create container",
+        "note": "The daemon creates a container from the image and starts it. The program prints a message and exits."
+      },
+      {
+        "from": "daemon",
+        "to": "cli",
+        "label": "output",
+        "dashed": true,
+        "note": "The daemon streams the container's output back to the client."
+      },
+      {
+        "from": "cli",
+        "to": "you",
+        "label": "Hello from Docker!",
+        "dashed": true,
+        "note": "Your terminal shows the message. Client, daemon and image download all worked."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "check.sh",
+      "lang": "bash",
+      "title": "Verify",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Three checks, from the client alone to the whole chain.",
+      "walk": [
+        {
+          "lines": [
+            1
+          ],
+          "text": "Print the client's version. It does not contact the daemon."
+        },
+        {
+          "lines": [
+            2
+          ],
+          "text": "Print a Client section and a Server section. The server part comes from the daemon."
+        },
+        {
+          "lines": [
+            3
+          ],
+          "text": "Pull and run a tiny test image. It prints a message and exits."
+        }
+      ]
+    },
+    {
+      "file": "linux.sh",
+      "lang": "bash",
+      "title": "Linux: no sudo",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Docker Engine on Linux: let your user reach the daemon without `sudo`."
+    }
+  ],
+  "pitfalls": [
+    "On a \"cannot connect\" error, check that Docker Desktop or the daemon is running.",
+    "Joining the `docker` group gives root-level privileges; add only users you trust."
+  ],
+  "quiz": {
+    "q": "`docker --version` works, but `docker run hello-world` cannot connect. What is wrong?",
+    "options": [
+      "Node.js is not installed on the host",
+      "The client works, but the daemon is unreachable",
+      "The hello-world image no longer exists",
+      "Docker needs a Dockerfile in this folder"
+    ],
+    "answer": 1,
+    "why": "`--version` is answered by the client alone. `run` must reach the daemon, so a connection failure points at a stopped or unreachable daemon."
+  },
+  "takeaway": "Install Docker, then prove it with `docker run hello-world`.",
+  "chat": {
+    "starters": [
+      "Do I need Docker Desktop, or is Docker Engine enough?",
+      "Why does docker run need the daemon to be running?",
+      "What is Docker Hub?"
+    ]
+  }
+}

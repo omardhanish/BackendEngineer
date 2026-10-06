@@ -1,0 +1,106 @@
+{
+  "title": "Networking in Compose",
+  "idea": "By default, Compose puts every service on one private network. Services reach each other by service name, such as `db`, not by IP address.",
+  "points": [
+    "`up` creates the network `<project>_default`. The project name defaults to your folder's name.",
+    "Docker's built-in DNS turns a service name into the container's IP address.",
+    "Services talk on the container port; `ports` only matters for traffic from outside.",
+    "Custom `networks` split services: two services can talk only if they share a network."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "Services find each other by name",
+    "scenario": {
+      "tiers": [["you"], ["api"], ["db"]],
+      "nodes": {
+        "you": { "label": "Your machine", "kind": "user" },
+        "api": { "label": "api", "sub": "bookstore-api", "kind": "service" },
+        "db": { "label": "db", "sub": "postgres", "kind": "db" }
+      },
+      "links": [["you", "api"], ["api", "db"]],
+      "groups": [{ "label": "bookstore_default", "nodes": ["api", "db"] }],
+      "steps": [
+        {
+          "caption": "In a folder named `bookstore`, `up` creates the network `bookstore_default` and joins both services.",
+          "state": { "api": "new", "db": "new" },
+          "focus": ["api", "db"]
+        },
+        {
+          "caption": "`api` connects to host `db`, port 5432. Docker's DNS turns `db` into the container's IP address.",
+          "send": [{ "from": "api", "to": "db", "label": "db:5432", "tone": "req" }],
+          "state": { "api": "ok", "db": "ok" }
+        },
+        {
+          "caption": "Publishing port 3000 on `api` lets your machine reach it at `localhost:3000`.",
+          "send": [{ "from": "you", "to": "api", "label": ":3000", "tone": "req" }]
+        },
+        {
+          "caption": "`db` publishes nothing, so `localhost:5432` on your machine does not reach it. Only services on the network can.",
+          "send": [{ "from": "you", "to": "db", "label": ":5432", "tone": "err" }]
+        },
+        {
+          "caption": "Publish `db` as `5433:5432` and your machine uses 5433. `api` still connects to `db:5432`.",
+          "send": [
+            { "from": "you", "to": "db", "label": ":5433", "tone": "info" },
+            { "from": "api", "to": "db", "label": "db:5432", "tone": "ok" }
+          ],
+          "badge": { "db": "5433:5432" }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "compose.yaml",
+      "lang": "yaml",
+      "title": "Default network",
+      "run": "static",
+      "illustrative": true,
+      "caption": "No `networks` key, so both services join the default network. Put `DB_PASSWORD` in a `.env` file.",
+      "walk": [
+        { "lines": [4, 5], "text": "Publish `api` to your machine. `db` has no `ports`, so only services can reach it." },
+        { "lines": [7], "text": "The host in the URL is `db`, the service name. `localhost` would mean `api` itself." },
+        { "lines": [7], "text": "`5432` is the container port Postgres listens on. Services use it, whatever the host port." }
+      ]
+    },
+    {
+      "file": "networks.yaml",
+      "lang": "yaml",
+      "title": "Custom networks",
+      "run": "static",
+      "illustrative": true,
+      "caption": "A fragment: only the network keys. Each service lists the networks it joins.",
+      "walk": [
+        { "lines": [2, 3, 4], "text": "`proxy` joins only `front`." },
+        { "lines": [5, 6, 7, 8], "text": "`api` joins both networks, so it reaches `proxy` and `db`." },
+        { "lines": [9, 10, 11], "text": "`db` joins only `back`. `proxy` cannot reach it." },
+        { "lines": [12, 13, 14], "text": "Top-level `networks` declares them. Compose names them `<project>_front` and `<project>_back`." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "`db` resolves only inside the network; from your laptop use `localhost` and a published port.",
+    "Publish `db` only when you must, as `127.0.0.1:5432:5432`, so other machines cannot connect.",
+    "Use service names, never container IPs: Docker assigns addresses dynamically."
+  ],
+  "quiz": {
+    "q": "Service `db` is published as `5433:5432`. What host and port should `api` use for it?",
+    "options": [
+      "`db:5432`",
+      "`db:5433`",
+      "`localhost:5433`",
+      "`localhost:5432`"
+    ],
+    "answer": 0,
+    "why": "Services use the service name and the container port. Host port 5433 is for your machine, and `localhost` inside `api` means `api`."
+  },
+  "takeaway": "Inside Compose, call services by name and use the container port.",
+  "chat": {
+    "starters": [
+      "Can two Compose projects talk to each other?",
+      "How do I see which containers are on a network?",
+      "Why do I get `getaddrinfo ENOTFOUND db` when I run the app outside Docker?"
+    ]
+  }
+}

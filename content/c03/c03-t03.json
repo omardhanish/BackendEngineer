@@ -1,0 +1,129 @@
+{
+  "title": "Your first HTTP server",
+  "idea": "`http.createServer` lets you answer web requests with one handler function. Node calls it once per request, with `req` to read and `res` to reply.",
+  "analogy": {
+    "text": "A receptionist with one instruction card. Each visitor hands over a note, gets a written reply, and the receptionist waits for the next.",
+    "breaks": "Replies can overlap: a second visitor may arrive before the first is answered."
+  },
+  "points": [
+    "`server.listen(port)` opens a numbered door on your machine; `0` picks a free one.",
+    "`req` carries the `method`, `url` and `headers` of the request.",
+    "`res.writeHead(status, headers)` sets status and headers; `res.end(body)` sends the body and finishes.",
+    "A listening server keeps the process alive until you call `server.close()`."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "One request through your server",
+    "scenario": {
+      "token": { "label": "GET /hi", "tone": "req" },
+      "stages": [
+        { "id": "client", "label": "Client", "kind": "end" },
+        { "id": "http", "label": "http server", "sub": "listening on a port" },
+        { "id": "handler", "label": "Your handler", "sub": "(req, res)", "kind": "end" }
+      ],
+      "steps": [
+        {
+          "caption": "The server is already listening. A client sends `GET /hi` to its port.",
+          "at": "client",
+          "slot": "top",
+          "state": { "client": "active" },
+          "out": []
+        },
+        {
+          "caption": "Node's `http` code reads the request and builds `req` and `res` for it.",
+          "at": "http",
+          "slot": "top",
+          "state": { "client": "done", "http": "active" },
+          "out": []
+        },
+        {
+          "caption": "Node calls your handler once with `req` and `res`. This one logs the request.",
+          "at": "handler",
+          "slot": "top",
+          "state": { "client": "done", "http": "done", "handler": "active" },
+          "out": ["request: GET /hi"]
+        },
+        {
+          "caption": "The handler calls `res.writeHead` and `res.end('hello')`. That completes the response.",
+          "at": "handler",
+          "slot": "bottom",
+          "token": { "label": "200 hello", "tone": "ok" },
+          "state": { "client": "done", "http": "done", "handler": "active" },
+          "out": ["request: GET /hi"]
+        },
+        {
+          "caption": "`http` writes the status line, headers and body to the connection.",
+          "at": "http",
+          "slot": "bottom",
+          "token": { "label": "200 hello", "tone": "ok" },
+          "state": { "client": "done", "http": "active", "handler": "done" },
+          "out": ["request: GET /hi"]
+        },
+        {
+          "caption": "The client reads the response and prints it. The server keeps listening for the next request.",
+          "at": "client",
+          "slot": "top",
+          "token": { "label": "200 hello", "tone": "ok" },
+          "state": { "client": "active", "http": "done", "handler": "done" },
+          "out": ["request: GET /hi", "200 hello"]
+        },
+        {
+          "caption": "Now suppose a handler forgets `res.end()`. The request reaches it as before.",
+          "at": "handler",
+          "slot": "top",
+          "token": { "label": "GET /oops", "tone": "req" },
+          "state": { "client": "done", "http": "done", "handler": "active" },
+          "out": ["request: GET /hi", "200 hello", "request: GET /oops"]
+        },
+        {
+          "caption": "Nothing is sent back. The client keeps waiting for a reply.",
+          "at": "handler",
+          "slot": "top",
+          "token": { "label": "waiting", "tone": "err" },
+          "state": { "client": "done", "http": "done", "handler": "blocked" },
+          "out": ["request: GET /hi", "200 hello", "request: GET /oops"]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "server.mjs",
+      "lang": "js",
+      "title": "A server that calls itself",
+      "run": "captured",
+      "caption": "A server on a free port, called twice with `fetch`, which a later lesson covers. Step through it, then press Run.",
+      "walk": [
+        { "lines": [3, 7], "text": "`createServer` takes your handler. Node calls it for every request." },
+        { "lines": [4], "text": "`req.method` and `req.url` tell you what the client asked for." },
+        { "lines": [5], "text": "`writeHead` sets the status and headers. Call it before the body." },
+        { "lines": [6], "text": "`res.end` sends the body and finishes the response." },
+        { "lines": [9], "text": "`listen(0)` opens any free port. The callback runs when the server is ready." },
+        { "lines": [10, 11, 12, 13, 14], "text": "The script calls its own server twice with `fetch` and prints each answer." },
+        { "lines": [15], "text": "`close` stops the server so the script can exit." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Call `res.end()` on every path; a handler that forgets it leaves the client hanging.",
+    "Set status and headers before `res.end()`; later `writeHead` or `setHeader` calls throw `ERR_HTTP_HEADERS_SENT`.",
+    "Listen on `0` in tests; a fixed port that is taken fails with `EADDRINUSE`."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const server = http.createServer((req, res) => {\n  res.writeHead(201);\n  res.end(req.method);\n});\nserver.listen(0, async () => {\n  const url = `http://localhost:${server.address().port}`;\n  const res = await fetch(url, { method: 'POST' });\n  console.log(res.status, await res.text());\n  server.close();\n});",
+    "lang": "js",
+    "options": ["200 POST", "201 POST", "201 /", "201 Created"],
+    "answer": 1,
+    "why": "`writeHead(201)` sets the status. `res.end(req.method)` sends the method name as the body, and the client sent POST."
+  },
+  "takeaway": "A response is finished only when your handler calls `res.end()`.",
+  "chat": {
+    "starters": [
+      "What does `server.listen` do, and why does it need a port?",
+      "Why does my server say EADDRINUSE?",
+      "Do I need Express, or is `node:http` enough?"
+    ]
+  }
+}

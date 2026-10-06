@@ -1,0 +1,53 @@
+{
+  "title": "Installing Node.js",
+  "idea": "Setting up Node.js means installing the runtime once, then checking that your terminal can find `node` and `npm`.",
+  "points": [
+    "This book's examples are verified on Node 20; production needs a supported LTS.",
+    "The installer from nodejs.org includes `npm`, the package manager.",
+    "A version manager such as `nvm` installs several Node versions and switches between them."
+  ],
+  "hero": {
+    "type": "timeline",
+    "title": "From download to ready",
+    "items": [
+      { "label": "Install Node", "text": "Run the installer. It adds `node` and `npm` to your terminal." },
+      { "label": "Check versions", "text": "Open a new terminal. Each command should print a version number." },
+      { "label": "Pick an editor", "text": "Any code editor works. One with a built-in terminal saves switching windows." },
+      { "label": "Make a folder", "text": "Give each project its own folder. Commands and files then stay together." }
+    ]
+  },
+  "code": [
+    {
+      "file": "setup.sh",
+      "lang": "bash",
+      "title": "Check and prepare",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Typed in a terminal. The first two lines are optional.",
+      "walk": [
+        { "lines": [1, 2], "text": "Optional: `nvm` on macOS or Linux installs a Node version and switches to it." },
+        { "lines": [3, 4], "text": "Print both versions. If `node` is not found, open a new terminal and retry." },
+        { "lines": [5, 6], "text": "Create a project folder and move into it. Your files and commands live here." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Open a new terminal after installing; an old one may not find `node`.",
+    "Avoid `sudo` with `npm`; a version manager prevents permission errors.",
+    "Run production on a supported LTS release; old versions stop receiving security fixes."
+  ],
+  "quiz": {
+    "q": "Which command prints the Node version you installed?",
+    "options": ["npm --version", "node install", "node --version", "npm start"],
+    "answer": 2,
+    "why": "`node --version` asks the `node` program for its version. `npm --version` reports npm, a separate tool."
+  },
+  "takeaway": "You are ready when `node --version` and `npm --version` both print a version.",
+  "chat": {
+    "starters": [
+      "Should I use nvm or the installer from nodejs.org?",
+      "Why does my terminal say command not found: node?",
+      "What is the difference between node and npm?"
+    ]
+  }
+}

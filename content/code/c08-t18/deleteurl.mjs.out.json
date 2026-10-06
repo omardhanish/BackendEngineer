@@ -1,0 +1,9 @@
+{
+  "stdout": "nobody deletes 1: 401 {\"error\":\"Unauthorized\"}\ngrace deletes 1: 403 {\"error\":\"You do not own this URL\"}\nada deletes 1: 204\nada deletes 1: 404 {\"error\":\"Short URL not found\"}\nada deletes abc: 404 {\"error\":\"Short URL not found\"}\nada deletes 99999999999: 404 {\"error\":\"Short URL not found\"}\nrows left: 2",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "PostgreSQL 18.4",
+  "hash": "b6e8edbba6443a16",
+  "at": "2026-10-06T15:13:55.410Z"
+}

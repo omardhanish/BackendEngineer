@@ -1,0 +1,81 @@
+{
+  "title": "Docker and containers",
+  "idea": "Docker packages an app and everything it needs to run into an image. A container runs that image in isolation, on a machine with Docker.",
+  "analogy": {
+    "text": "A shipping container. Goods are packed once into a standard box, and any ship, train or truck can carry it without unpacking.",
+    "breaks": "Linux containers still need Linux underneath, even on a Mac."
+  },
+  "points": [
+    "A container is an isolated process with its own files and network.",
+    "Containers share the host's kernel, the core of its operating system.",
+    "Containers are lightweight, so one host can run many at once.",
+    "Teams ship the same tested image from a laptop to production."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "One image, three machines",
+    "scenario": {
+      "tiers": [["dev"], ["img"], ["laptop", "test", "prod"]],
+      "nodes": {
+        "dev": { "label": "You", "kind": "user" },
+        "img": { "label": "bookstore-api", "kind": "box", "sub": "image" },
+        "laptop": { "label": "Your laptop", "kind": "server", "sub": "Docker installed" },
+        "test": { "label": "Test server", "kind": "server", "sub": "Docker installed" },
+        "prod": { "label": "Production", "kind": "server", "sub": "Docker installed" }
+      },
+      "links": [["dev", "img", { "label": "build" }], ["img", "laptop"], ["img", "test"], ["img", "prod"]],
+      "steps": [
+        {
+          "caption": "You package the Book Store API, Node.js and its packages into one image.",
+          "send": [{ "from": "dev", "to": "img", "label": "build", "tone": "info" }],
+          "state": { "img": "new" }
+        },
+        {
+          "caption": "A machine with Docker can start a container from the image. Here, your laptop does.",
+          "send": [{ "from": "img", "to": "laptop", "label": "image" }],
+          "state": { "laptop": "ok" },
+          "badge": { "laptop": "api: up" }
+        },
+        {
+          "caption": "The test server gets the same image and starts its own container.",
+          "send": [{ "from": "img", "to": "test", "label": "image" }],
+          "state": { "test": "ok" },
+          "badge": { "test": "api: up" }
+        },
+        {
+          "caption": "Production does the same. Node.js and the packages are identical on all three machines.",
+          "send": [{ "from": "img", "to": "prod", "label": "image" }],
+          "state": { "prod": "ok" },
+          "badge": { "prod": "api: up" }
+        },
+        {
+          "caption": "Each host runs its own container. The image itself never changes.",
+          "focus": ["img"]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "workflow.sh",
+      "lang": "bash",
+      "run": "static",
+      "illustrative": true,
+      "caption": "The whole workflow in three commands, run on any machine that has Docker and the project.",
+      "walk": [
+        { "lines": [1], "text": "Build an image named `bookstore-api` from the recipe in `Dockerfile`." },
+        { "lines": [2], "text": "Start a container named `api` from it, in the background. Later pages explain each flag." },
+        { "lines": [3], "text": "Call the API through port 3000 on your own machine." }
+      ]
+    }
+  ],
+  "takeaway": "Docker turns installing an app into starting a container.",
+  "chat": {
+    "starters": [
+      "Is Docker the same as a virtual machine?",
+      "What do I need installed to use Docker?",
+      "Why do teams use containers instead of installing apps directly?"
+    ]
+  }
+}

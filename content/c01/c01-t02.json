@@ -1,0 +1,84 @@
+{
+  "title": "How JavaScript runs code",
+  "idea": "JavaScript runs your code in two passes: first it sets up memory for every variable and function, then it executes line by line using a call stack.",
+  "analogy": {
+    "text": "A chef first lays out every ingredient on the counter, then cooks step by step. A sub-recipe puts a new card on top of the pile.",
+    "breaks": "Real stacks hold one function call per card, and cards are tiny and fast."
+  },
+  "points": [
+    "Creation phase: variables and functions are registered before any line runs.",
+    "Execution phase: lines run in order, one at a time.",
+    "Calling a function pushes a new frame on the call stack.",
+    "Returning pops the frame and resumes the caller."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "memory",
+    "title": "The call stack, step by step",
+    "scenario": {
+      "code": [
+        "const price = 10;",
+        "function double(n) {",
+        "  return n * 2;",
+        "}",
+        "const result = double(price);",
+        "console.log(result);"
+      ],
+      "steps": [
+        {
+          "caption": "Creation phase: JavaScript registers price, double and result before running anything.",
+          "stack": [{ "name": "Global", "vars": { "price": "<uninitialized>", "double": "ƒ double(n)", "result": "<uninitialized>" } }]
+        },
+        {
+          "caption": "Line 1 runs: price is initialised to 10.",
+          "line": 0,
+          "stack": [{ "name": "Global", "vars": { "price": "10", "double": "ƒ double(n)", "result": "<uninitialized>" } }]
+        },
+        {
+          "caption": "Line 5 calls double(price). JavaScript pauses here and pushes a new frame.",
+          "line": 4,
+          "stack": [
+            { "name": "Global", "vars": { "price": "10", "double": "ƒ double(n)", "result": "<uninitialized>" } },
+            { "name": "double(10)", "vars": { "n": "10" } }
+          ]
+        },
+        {
+          "caption": "Inside the new frame, n * 2 gives 20, ready to return.",
+          "line": 2,
+          "stack": [
+            { "name": "Global", "vars": { "price": "10", "double": "ƒ double(n)", "result": "<uninitialized>" } },
+            { "name": "double(10)", "vars": { "n": "10", "return": "20" } }
+          ]
+        },
+        {
+          "caption": "double returns 20 and its frame is popped. result receives 20.",
+          "line": 4,
+          "stack": [{ "name": "Global", "vars": { "price": "10", "double": "ƒ double(n)", "result": "20" } }]
+        },
+        {
+          "caption": "Line 6 prints 20. The stack holds only Global again: the program is done.",
+          "line": 5,
+          "stack": [{ "name": "Global", "vars": { "price": "10", "double": "ƒ double(n)", "result": "20" } }]
+        }
+      ]
+    }
+  },
+  "code": [
+    { "file": "stack.mjs", "lang": "js", "title": "Call stack", "run": "browser", "caption": "Run it, then add a fourth function and predict the order before you press Run." },
+    { "file": "hoist.mjs", "lang": "js", "title": "Hoisting", "run": "browser", "caption": "Functions are ready early. var exists but is empty. let sits in a dead zone." }
+  ],
+  "pitfalls": [
+    "`let` and `const` exist before their line, but reading them early throws a ReferenceError.",
+    "Infinite recursion keeps pushing frames until the stack overflows with a RangeError."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "console.log(a);\nvar a = 5;",
+    "lang": "js",
+    "options": ["5", "undefined", "ReferenceError", "null"],
+    "answer": 1,
+    "why": "`var a` is registered in the creation phase as undefined. The `= 5` only runs on line 2."
+  },
+  "takeaway": "Memory first, then execution; every call is a frame on the stack.",
+  "chat": { "starters": ["What is an execution context?", "Why does var print undefined?", "What is a stack overflow?"] }
+}

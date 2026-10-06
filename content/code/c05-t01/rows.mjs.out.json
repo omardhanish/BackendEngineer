@@ -1,0 +1,9 @@
+{
+  "stdout": "23502 null value in column \"author\" of relation \"books\" violates not-null constraint",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "PostgreSQL 18.4",
+  "hash": "abb23c143733b5ac",
+  "at": "2026-10-06T15:12:15.769Z"
+}

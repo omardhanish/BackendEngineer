@@ -1,0 +1,9 @@
+{
+  "stdout": "200 text/html; charset=utf-8\n<h1>Book Store</h1>\n<ul>\n  <li>Dune by Frank Herbert (1965)</li>\n  <li>Neuromancer by William Gibson (1984)</li>\n  <li>The Dispossessed by Ursula K. Le Guin (1974)</li>\n  <li>&lt;b&gt;Hyperion&lt;/b&gt; by Dan Simmons (1989)</li>\n</ul>",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": null,
+  "hash": "128b6ae66430a562",
+  "at": "2026-10-06T10:01:58.542Z"
+}

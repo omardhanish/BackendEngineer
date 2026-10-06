@@ -1,0 +1,321 @@
+{
+  "title": "Sessions stored with Drizzle",
+  "idea": "Storing sessions in Postgres keeps each login as a row with an owner and an expiry, so sessions survive restarts and are shared by every server.",
+  "analogy": {
+    "text": "A hotel's front-desk ledger. The receptionist may change shift, but the ledger still lists each guest, their key number and checkout time.",
+    "breaks": "Reading a ledger is cheap; every request here costs a database query."
+  },
+  "points": [
+    "A `sessions` row holds the id, the owning `user_id` and `expires_at`.",
+    "Login inserts the row. Only the id travels in the cookie.",
+    "Each request runs one query joining `sessions` to `users`, skipping expired rows.",
+    "Logout deletes the row. A restart deletes nothing, so sessions survive."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "A session as a row in Postgres",
+    "scenario": {
+      "tiers": [
+        [
+          "browser"
+        ],
+        [
+          "app"
+        ],
+        [
+          "db"
+        ]
+      ],
+      "nodes": {
+        "browser": {
+          "label": "Browser",
+          "kind": "user"
+        },
+        "app": {
+          "label": "Express server",
+          "kind": "server"
+        },
+        "db": {
+          "label": "Postgres",
+          "sub": "sessions table",
+          "kind": "db"
+        }
+      },
+      "links": [
+        [
+          "browser",
+          "app"
+        ],
+        [
+          "app",
+          "db"
+        ]
+      ],
+      "steps": [
+        {
+          "caption": "Ada logs in. Her password checks out, so the server creates a session.",
+          "send": [
+            {
+              "from": "browser",
+              "to": "app",
+              "label": "POST /login"
+            }
+          ]
+        },
+        {
+          "caption": "The server inserts one row: a random id (shortened here), Ada's user id and an expiry time.",
+          "send": [
+            {
+              "from": "app",
+              "to": "db",
+              "label": "INSERT",
+              "tone": "warn"
+            }
+          ],
+          "items": {
+            "db": [
+              "a1f3"
+            ]
+          }
+        },
+        {
+          "caption": "Only the id goes back, in an `httpOnly` cookie. The browser keeps it.",
+          "send": [
+            {
+              "from": "app",
+              "to": "browser",
+              "label": "Set-Cookie",
+              "tone": "ok"
+            }
+          ]
+        },
+        {
+          "caption": "Each later request carries the cookie. One query finds the row and joins Ada's user record.",
+          "send": [
+            {
+              "from": "browser",
+              "to": "app",
+              "label": "GET /me"
+            },
+            {
+              "from": "app",
+              "to": "db",
+              "label": "SELECT",
+              "tone": "info"
+            }
+          ]
+        },
+        {
+          "caption": "The server restarts and forgets everything in memory. The `sessions` table is untouched.",
+          "state": {
+            "app": "down"
+          },
+          "badge": {
+            "app": "restarting"
+          },
+          "focus": [
+            "db"
+          ]
+        },
+        {
+          "caption": "The new process receives the same cookie, finds the same row, and knows Ada.",
+          "state": {
+            "app": null
+          },
+          "badge": {
+            "app": null
+          },
+          "send": [
+            {
+              "from": "browser",
+              "to": "app",
+              "label": "GET /me"
+            },
+            {
+              "from": "app",
+              "to": "db",
+              "label": "SELECT",
+              "tone": "info"
+            }
+          ]
+        },
+        {
+          "caption": "A day later the row is past its `expires_at`. The query returns no row, so the answer is `401`.",
+          "badge": {
+            "browser": "24 h later"
+          },
+          "send": [
+            {
+              "from": "browser",
+              "to": "app",
+              "label": "GET /me"
+            },
+            {
+              "from": "app",
+              "to": "db",
+              "label": "SELECT",
+              "tone": "info"
+            },
+            {
+              "from": "db",
+              "to": "app",
+              "label": "no row",
+              "tone": "err"
+            },
+            {
+              "from": "app",
+              "to": "browser",
+              "label": "401",
+              "tone": "err"
+            }
+          ]
+        },
+        {
+          "caption": "A cleanup query deletes expired rows. Without it, the table keeps them forever.",
+          "badge": {
+            "browser": null
+          },
+          "send": [
+            {
+              "from": "app",
+              "to": "db",
+              "label": "DELETE",
+              "tone": "warn"
+            }
+          ],
+          "items": {
+            "db": []
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "store.mjs",
+      "lang": "js",
+      "title": "A sessions table with Drizzle",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "Real Postgres. These three functions replace the `Map` calls from the last page.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "text": "`users` has email, hash and role. Each `sessions` row has a text id, an owner and an expiry."
+        },
+        {
+          "lines": [
+            18,
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "text": "`create table` keeps the demo self-contained. A real project would use migrations."
+        },
+        {
+          "lines": [
+            25,
+            26,
+            27,
+            28,
+            29,
+            30
+          ],
+          "text": "Insert one row under a random id, valid for 24 hours. Only the id goes in the cookie."
+        },
+        {
+          "lines": [
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39
+          ],
+          "text": "One query joins `sessions` to `users`, skips the hash, and drops expired rows."
+        },
+        {
+          "lines": [
+            41,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48
+          ],
+          "text": "Logout deletes the row. Expired rows vanish only when `purgeExpired` deletes them."
+        },
+        {
+          "lines": [
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57
+          ],
+          "text": "Ada gets two sessions, one already expired. Predict each lookup and the purge before you press Run."
+        },
+        {
+          "lines": [
+            59,
+            60,
+            61,
+            63,
+            64,
+            65
+          ],
+          "text": "A fresh pool stands in for a server restart. Then log out and look the session up again."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Filter on `expiresAt` in every lookup; an expired row still exists in the table.",
+    "Delete expired rows regularly, or `sessions` only ever grows.",
+    "Select only `id`, `email` and `role` in the join; never `passwordHash`."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const rows = [{ id: 'a', expiresAt: 100 }, { id: 'b', expiresAt: 300 }];\nconst now = 200;\nconst live = (id) =>\n  rows.some((r) => r.id === id && r.expiresAt > now);\nconsole.log(live('a'), live('b'), live('c'));",
+    "lang": "js",
+    "options": [
+      "true true false",
+      "true true true",
+      "false true true",
+      "false true false"
+    ],
+    "answer": 3,
+    "why": "Row `a` exists but `expiresAt` is not after `now`, so it fails. `b` passes. `c` has no row."
+  },
+  "takeaway": "The database, not the process, remembers who is logged in.",
+  "chat": {
+    "starters": [
+      "Why is `sessions.id` a `text` column and not a serial number?",
+      "Should I keep sessions in Redis instead of Postgres?",
+      "How do I delete expired sessions automatically?"
+    ]
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "title": "Match and project",
+  "idea": "`$match` keeps only the documents that pass a filter. `$project` decides which fields each document carries on.",
+  "points": [
+    "`$match` uses the same filter syntax as `find()`.",
+    "Put `$match` first, so later stages handle fewer documents.",
+    "In `$project`: `1` keeps a field, `0` drops it, `_id` stays unless `_id: 0`.",
+    "Set a field to an expression, such as `'$customer'`, to rename or compute it."
+  ],
+  "hero": {
+    "type": "compare",
+    "title": "Two stages, two jobs",
+    "left": {
+      "title": "$match",
+      "items": [
+        "Passes on only documents that satisfy the filter",
+        "Output: fewer documents, each one unchanged",
+        "Cannot add, rename or remove fields"
+      ]
+    },
+    "right": {
+      "title": "$project",
+      "items": [
+        "Keeps, drops, renames or computes fields",
+        "Output: the same documents in a new shape",
+        "Cannot remove a document"
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "project.mjs",
+      "lang": "js",
+      "title": "Filter, then reshape",
+      "run": "captured",
+      "needs": ["mongo"],
+      "caption": "Two pipelines on the shared data. Step through them, then press Run.",
+      "walk": [
+        { "lines": [10], "text": "Keep paid orders from Porto, using the filter syntax `find()` takes." },
+        { "lines": [12], "text": "`_id: 0` hides the id. Without it, `_id` comes back." },
+        { "lines": [13, 14], "text": "`total: 1` keeps a field. `name: '$customer'` copies another field under a new name." },
+        { "lines": [15], "text": "An expression computes a new field: here, how many items the order has." },
+        { "lines": [17], "text": "`$sort` runs after `$project`, so it can only use fields kept or created there." },
+        { "lines": [22, 23], "text": "Exclusion form: with only `0` values, every other field stays. Here `items` and `_id` go." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not mix `1` and `0` in one `$project`; only `_id: 0` may be mixed.",
+    "A stage after `$project` sees only the fields you kept.",
+    "A misspelt field in `$match` is not an error; it matches nothing."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const rows = await Order.aggregate([\n  { $project: { _id: 0, customer: 1 } },\n  { $match: { status: 'paid' } },\n]);\nconsole.log(rows.length);",
+    "lang": "js",
+    "options": ["8", "6", "0", "1"],
+    "answer": 2,
+    "why": "`$project` kept only `customer`, so `status` no longer exists when `$match` runs. No document passes."
+  },
+  "takeaway": "`$match` picks documents, `$project` picks fields; match first.",
+  "chat": {
+    "starters": [
+      "Does a `$match` at the start of a pipeline use indexes?",
+      "What is the difference between `$project` and `$addFields`?",
+      "How do I keep only some fields of a nested object?"
+    ]
+  }
+}

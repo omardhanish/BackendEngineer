@@ -1,0 +1,89 @@
+/* The tutor dock: tabs, thread bar, conversation, composer, notes. Also the message styles reused on the saved-chats page. */
+.dock-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px 0; }
+.dock-tabs { display: flex; gap: 2px; padding: 3px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--hair); }
+.dock-tab { display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 14px; border-radius: 9px; font: 500 13px/1 var(--font-ui); color: var(--ink-2); }
+.dock-tab.is-on { background: var(--surface); color: var(--ink); box-shadow: var(--sh-1); }
+.dock-close { display: none; }
+@media (max-width: 1283.98px) { .dock-close { display: inline-grid; } }
+.pane { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.ctx-chip { display: flex; align-items: center; gap: 8px; margin: 10px 14px 0; padding: 7px 11px; border-radius: 10px; font-size: 12px; color: var(--ink-2); background: var(--accent-soft); border: 1px solid var(--accent-line); }
+.ctx-chip b { color: var(--ink); font-weight: 600; }
+.ctx-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.seg-ctl { display: flex; margin: 10px 14px 0; padding: 3px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--hair); }
+.seg-ctl button { flex: 1; height: 28px; border-radius: 8px; font: 500 12.5px var(--font-ui); color: var(--ink-2); }
+.seg-ctl .is-on { background: var(--surface); color: var(--ink); box-shadow: var(--sh-1); }
+.thread-bar { display: flex; align-items: center; gap: 2px; padding: 8px 10px 0 14px; }
+.thread-pick { position: relative; flex: 1; min-width: 0; }
+.thread-btn { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; height: 34px; padding: 0 10px; border-radius: 10px; font: 500 13px var(--font-ui); }
+.thread-btn:hover { background: var(--surface-2); }
+.thread-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.thread-menu { position: absolute; z-index: 20; left: 0; right: 0; top: calc(100% + 4px); max-height: 280px; overflow: auto; padding: 6px; border-radius: 12px; background: var(--surface); border: 1px solid var(--hair-2); box-shadow: var(--sh-3); }
+.thread-menu button { display: flex; justify-content: space-between; gap: 10px; width: 100%; padding: 8px 10px; border-radius: 8px; text-align: left; font-size: 13px; }
+.thread-menu button:hover, .thread-menu button.is-on { background: var(--accent-soft-2); }
+.thread-menu small { color: var(--ink-3); white-space: nowrap; }
+.thread-none { padding: 10px; font-size: 12.5px; color: var(--ink-3); }
+
+.msgs { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; padding: 14px 14px 8px; overscroll-behavior: contain; }
+.msgs-intro { margin: auto 0; padding: 22px 8px; text-align: center; }
+.intro-title { margin-bottom: 8px; font: 500 24px var(--font-serif); }
+.msg { max-width: 94%; }
+.msg-user { align-self: flex-end; }
+.msg-user .msg-text { padding: 9px 13px; border-radius: 16px 16px 4px 16px; font-size: 14px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--accent); color: var(--accent-ink); }
+.msg-user.is-system .msg-text { font-style: italic; background: var(--surface-3); color: var(--ink-2); }
+.msg-quote { margin: 0 0 6px; padding: 6px 10px; border-left: 3px solid var(--accent-line); border-radius: 4px; font-size: 12px; line-height: 1.4; color: var(--ink-3); background: var(--surface-2); }
+.msg-ai { align-self: stretch; max-width: 100%; }
+.msg-who { margin-bottom: 4px; font: 600 11px var(--font-ui); letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-2); }
+.msg-ai.is-scripted .msg-md { padding: 12px 14px; border-radius: 14px; background: var(--accent-soft); border: 1px solid var(--accent-line); }
+.msg-md { font: 400 16px/1.55 var(--font-serif); overflow-wrap: anywhere; }
+.msg-md > :first-child { margin-top: 0; }
+.msg-md > :last-child { margin-bottom: 0; }
+.msg-md p { margin: 0 0 0.7em; }
+.msg-md ul, .msg-md ol { margin: 0 0 0.7em; padding-left: 1.3em; list-style: revert; }
+.msg-md li { margin: 0.2em 0; }
+.msg-md h1, .msg-md h2, .msg-md h3, .msg-md h4 { margin: 1em 0 0.4em; font: 600 15px var(--font-ui); }
+.msg-md a { color: var(--accent-2); }
+.msg-md :not(pre) > code { padding: 1px 5px; border-radius: 5px; font: 500 0.86em var(--font-mono); background: var(--surface-3); }
+.msg-md blockquote { margin: 0 0 0.7em; padding-left: 12px; border-left: 3px solid var(--accent-line); color: var(--ink-2); }
+.msg-md table { display: block; overflow: auto; margin: 0 0 0.8em; border-collapse: collapse; font: 400 13.5px var(--font-ui); }
+.msg-md th, .msg-md td { padding: 5px 9px; border: 1px solid var(--hair-2); vertical-align: top; }
+.msg-md th { white-space: nowrap; }
+.msg-md th { background: var(--surface-2); }
+.msg-md.is-streaming > :last-child::after { content: ""; display: inline-block; width: 7px; height: 1em; margin-left: 3px; vertical-align: -2px; border-radius: 2px; background: var(--accent); animation: caret 1s steps(2) infinite; }
+@keyframes caret { 50% { opacity: 0; } }
+.typing { display: inline-flex; gap: 4px; padding: 8px 2px; }
+.typing i { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-4); animation: bounce 1s infinite; }
+.typing i:nth-child(2) { animation-delay: 0.15s; }
+.typing i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes bounce { 40% { transform: translateY(-4px); background: var(--accent); } }
+.msg-note { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding: 8px 10px; border-radius: 10px; font: 400 12.5px/1.4 var(--font-ui); color: var(--ink-2); background: var(--surface-2); }
+.msg-note.is-error { background: var(--bad-soft); color: color-mix(in oklch, var(--bad) 78%, var(--ink)); }
+.msg-note.is-interrupted, .msg-note.is-length { background: var(--warn-soft); }
+.msg-actions { display: flex; gap: 6px; margin-top: 6px; opacity: 0; transition: opacity var(--d2); }
+.msg-ai:hover .msg-actions, .msg-actions:focus-within, .msg-note.is-error ~ .msg-actions { opacity: 1; }
+.msg-flag { display: inline-block; margin-top: 6px; padding: 2px 8px; border-radius: var(--r-pill); font: 600 10.5px var(--font-ui); letter-spacing: 0.06em; text-transform: uppercase; background: var(--warn-soft); color: color-mix(in oklch, var(--warn) 70%, var(--ink)); }
+
+.starters { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 14px 10px; }
+.starter { padding: 7px 11px; border-radius: var(--r-pill); font: 500 12.5px var(--font-ui); color: var(--ink-2); background: var(--surface); border: 1px solid var(--hair-2); transition: border-color var(--d2), background var(--d2), color var(--d2); }
+.starter:hover { color: var(--ink); border-color: var(--accent); background: var(--accent-soft); }
+.composer { margin: 0 12px 12px; padding: 8px; border-radius: 16px; background: var(--surface); border: 1px solid var(--hair-2); box-shadow: var(--sh-1); transition: border-color var(--d2), box-shadow var(--d2); }
+.composer:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 14%, transparent); }
+.composer-row { display: flex; align-items: flex-end; gap: 8px; }
+.composer-ta { flex: 1; min-height: 34px; max-height: 160px; padding: 7px 6px; border: 0; background: transparent; resize: none; outline: none; font: 400 14.5px/1.45 var(--font-ui); }
+.composer-ta::placeholder { color: var(--ink-4); }
+.send { display: grid; place-items: center; flex: none; width: 34px; height: 34px; border-radius: 11px; background: var(--accent); color: var(--accent-ink); transition: transform var(--d2) var(--ease); }
+.send:hover { transform: scale(1.06); }
+.send.is-stop { background: var(--ink); color: var(--bg); }
+.quote-chip { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; padding: 6px 8px; border-radius: 10px; font-size: 12px; color: var(--ink-2); background: var(--surface-2); }
+.quote-chip span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.debrief-btn { margin: 4px 0 2px 4px; }
+.dock-empty { display: grid; place-content: center; justify-items: center; gap: 12px; height: 100%; padding: 32px; text-align: center; color: var(--ink-3); }
+
+.notes { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 12px 14px 14px; }
+.notes-ta { flex: 1; padding: 14px; border-radius: 14px; resize: none; outline: none; font: 400 16px/1.6 var(--font-serif); background: var(--surface-2); border: 1px solid var(--hair); }
+.notes-ta:focus { border-color: var(--accent-line); box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 12%, transparent); }
+.notes-foot { display: flex; justify-content: space-between; padding: 8px 4px 0; font-size: 12px; }
+.notes-status { color: var(--ink-3); }
+
+/* the saved-chats page renders the same messages without the dock chrome */
+.hist-pane .msgs { overflow: visible; padding: 0; }
+.hist-pane .msg-user .msg-text { font-size: 14.5px; }

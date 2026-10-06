@@ -1,0 +1,61 @@
+{
+  "title": "List my URLs",
+  "idea": "`GET /codes` returns only the URLs that belong to the logged-in user. The user comes from the verified token, never from the request.",
+  "points": [
+    "`requireAuth` runs first and sets `req.user` from the verified token.",
+    "`where(eq(urls.userId, userId))` keeps other users' rows out of the result.",
+    "Without `orderBy`, Postgres promises no row order. `desc(urls.id)` lists newest first.",
+    "No rows is not an error: reply `200` with an empty array."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "One table, a different list per caller",
+    "head": ["id", "short_code", "user_id", "Ada (user 1) gets", "Grace (user 2) gets"],
+    "rows": [
+      ["1", "abc1234", "1", "yes", "no"],
+      ["2", "def5678", "1", "yes", "no"],
+      ["3", "ghi9012", "2", "no", "yes"]
+    ],
+    "highlight": { "col": 2 },
+    "caption": "The `user_id` column decides who sees a row. The filter value comes from the caller's token."
+  },
+  "code": [
+    {
+      "file": "listurls.mjs",
+      "lang": "js",
+      "title": "GET /codes",
+      "run": "captured",
+      "needs": ["postgres"],
+      "caption": "Service, controller and route are new. Four callers use the same route.",
+      "walk": [
+        { "lines": [12, 13, 14, 15, 16], "text": "Name the three columns the response needs. Nothing else leaves the server." },
+        { "lines": [18], "text": "The filter: only rows whose `user_id` equals the caller's id." },
+        { "lines": [19], "text": "`orderBy` makes the order certain: newest first." },
+        { "lines": [24, 25], "text": "The id comes from `req.user`, never from the URL or the body." },
+        { "lines": [28, 29, 30], "text": "Guard the route with `requireAuth`. Register it before `/:shortCode`." },
+        { "lines": [34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44], "text": "Lecture 12's middleware, condensed: verify the token, then set `req.user`." },
+        { "lines": [94, 95, 96, 97], "text": "No token gives `401`. Each user sees only their own list. Alan has none: `200` with `[]`." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Never read the user id from the query string or body. Use `req.user.id`.",
+    "This route returns every row. Add `limit` and `offset` before lists get long."
+  ],
+  "quiz": {
+    "q": "Grace sends `GET /codes?userId=1` with her own token. What prints?",
+    "code": "// Ada (1) owns 2 URLs. Grace (2) owns 1.\nconst rows = await listUrls(req.user.id);\nconsole.log(rows.length);",
+    "lang": "js",
+    "options": ["0", "2", "1", "3"],
+    "answer": 2,
+    "why": "The service filters by `req.user.id`, the id inside the verified token. The query string is never read, so Grace sees only her one URL."
+  },
+  "takeaway": "Filter by the id from the verified token, never by a client-supplied id.",
+  "chat": {
+    "starters": [
+      "How do I add pagination to this list?",
+      "Why not return userId and createdAt too?",
+      "Should this route return the full short link?"
+    ]
+  }
+}

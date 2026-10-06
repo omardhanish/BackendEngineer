@@ -1,0 +1,63 @@
+{
+  "title": "Events in Node.js",
+  "idea": "An event is a named signal that something happened. You register a handler, also called a listener, and Node calls it each time the event fires.",
+  "analogy": {
+    "text": "A doorbell. You do not stand at the door waiting; you carry on with your day and answer when it rings.",
+    "breaks": "Node answers one ring at a time; later rings wait their turn."
+  },
+  "points": [
+    "Objects announce events by name. A server emits `request`; `process` emits `exit`.",
+    "Register a handler once with `.on(name, handler)`; Node passes it the event's data.",
+    "Your code never waits in a loop; between events the thread stays free.",
+    "So one thread can serve many connections, each reacting only when its event fires."
+  ],
+  "hero": {
+    "type": "timeline",
+    "title": "Life of an event-driven server",
+    "items": [
+      { "label": "Register", "text": "Your script calls `on` for each event, then `listen`. Setup ends." },
+      { "label": "Wait", "text": "The thread is free. The open server keeps Node running." },
+      { "label": "Event fires", "text": "A request arrives, so the server emits `request`." },
+      { "label": "Handler runs", "text": "Node calls your handler with `req` and `res`. It returns when done." },
+      { "label": "Wait again", "text": "The thread is free once more. The next request repeats steps 3 and 4." }
+    ]
+  },
+  "code": [
+    {
+      "file": "events.mjs",
+      "lang": "js",
+      "title": "A server's events",
+      "run": "captured",
+      "caption": "Step through it, then press Run. Every `event:` line comes from a handler you registered. HTTP servers get their own chapter.",
+      "walk": [
+        { "lines": [3], "text": "Create a server. It is an event source: it emits events by name." },
+        { "lines": [4, 5, 6, 7], "text": "Register a `request` handler. It runs once per request and receives `req` and `res`." },
+        { "lines": [8], "text": "Register a `close` handler. It runs after the server shuts down." },
+        { "lines": [9, 10], "text": "Register a `listening` handler. Its first line runs when the server is ready." },
+        { "lines": [11, 12], "text": "The server sends itself one request, waits for the reply, then closes." },
+        { "lines": [14], "text": "Start listening on a free port. This fires `listening` and starts the chain." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Register handlers once, at startup; adding one per request makes listeners pile up.",
+    "Keep handlers short: a slow one holds the thread, so every other event waits.",
+    "Attach handlers before the event can fire; Node does not replay missed events."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "process.on('exit', () => console.log('B'));\nconsole.log('A');",
+    "lang": "js",
+    "options": ["A then B", "B then A", "Only A", "Only B"],
+    "answer": 0,
+    "why": "`on` only registers the handler. It runs when `exit` fires, after the last line, so A prints first."
+  },
+  "takeaway": "Events turn waiting into reacting: register early, keep handlers short.",
+  "chat": {
+    "starters": [
+      "How is an event different from a callback?",
+      "Why does my server keep running after the script ends?",
+      "Which Node objects emit events?"
+    ]
+  }
+}

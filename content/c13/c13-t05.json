@@ -1,0 +1,103 @@
+{
+  "title": "Read replicas",
+  "idea": "A read replica is a read-only copy of your database that serves reads. All writes go to the primary, which copies each change to its replicas.",
+  "analogy": {
+    "text": "A head office keeps the master price list. Branches keep photocopies for customers to read; a new price reaches them only after a copy is sent.",
+    "breaks": "Databases copy changes automatically and continuously, not by hand."
+  },
+  "points": [
+    "All writes go to the primary, the one database that accepts them.",
+    "The primary sends each change to its read-only replicas.",
+    "Reads can go to any replica, so read capacity grows with each one.",
+    "Copying takes time, so a replica can return old data. This is replication lag."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "Writes to the primary, reads from replicas",
+    "scenario": {
+      "tiers": [["app"], ["primary"], ["r1", "r2"]],
+      "nodes": {
+        "app": { "label": "App server", "kind": "server" },
+        "primary": { "label": "Primary", "kind": "db", "sub": "accepts writes" },
+        "r1": { "label": "Replica 1", "kind": "db", "sub": "read only" },
+        "r2": { "label": "Replica 2", "kind": "db", "sub": "read only" }
+      },
+      "links": [
+        ["app", "primary", { "label": "writes" }],
+        ["primary", "r1", { "dashed": true }],
+        ["primary", "r2", { "dashed": true }],
+        ["app", "r1", { "label": "reads", "dashed": true }],
+        ["app", "r2", { "dashed": true }]
+      ],
+      "groups": [{ "label": "Replicated database", "nodes": ["primary", "r1", "r2"] }],
+      "steps": [
+        {
+          "caption": "All three databases hold the same data. One user's name is `Ann`.",
+          "badge": { "primary": "name=Ann", "r1": "name=Ann", "r2": "name=Ann" }
+        },
+        {
+          "caption": "The user changes the name to `Ada`. The write goes to the primary only.",
+          "send": [{ "from": "app", "to": "primary", "label": "UPDATE", "tone": "warn" }],
+          "badge": { "primary": "name=Ada" },
+          "state": { "primary": "new" }
+        },
+        {
+          "caption": "The primary sends the change on. Replica 1 has it; replica 2 does not yet.",
+          "send": [{ "from": "primary", "to": "r1", "label": "change", "tone": "info" }],
+          "badge": { "r1": "name=Ada" },
+          "state": { "primary": "up", "r2": "stale" }
+        },
+        {
+          "caption": "A read that lands on replica 2 now returns the old name. That is replication lag.",
+          "send": [{ "from": "r2", "to": "app", "label": "name=Ann", "tone": "err" }],
+          "focus": ["r2"]
+        },
+        {
+          "caption": "The change reaches replica 2. Reads agree again, until the next write.",
+          "send": [{ "from": "primary", "to": "r2", "label": "change", "tone": "info" }],
+          "badge": { "r2": "name=Ada" },
+          "state": { "r2": "up" }
+        },
+        {
+          "caption": "When a user must see their own write, read that data from the primary.",
+          "send": [{ "from": "app", "to": "primary", "label": "SELECT", "tone": "ok" }],
+          "focus": ["primary"]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "replica.mjs",
+      "lang": "js",
+      "title": "Replication lag, in code",
+      "run": "browser",
+      "caption": "A write lands on the primary first. The replica sees it only after `replicate()` runs."
+    }
+  ],
+  "pitfalls": [
+    "Do not read from a replica right after a write when the user must see it.",
+    "Replicas do not speed up writes: every write still goes to the primary.",
+    "Watch replication lag; a replica that falls behind serves stale data."
+  ],
+  "quiz": {
+    "q": "Which two values does the snippet print, in order?",
+    "options": [
+      "Ada, then Ada",
+      "undefined, then undefined",
+      "Ada, then undefined",
+      "undefined, then Ada"
+    ],
+    "answer": 3,
+    "why": "The write reaches only the primary. The replica gets it when `replicate()` runs, so the first read is `undefined`."
+  },
+  "takeaway": "Replicas add read capacity, not write capacity, and can lag behind.",
+  "chat": {
+    "starters": [
+      "What is the difference between a replica and a backup?",
+      "What happens to the replicas if the primary fails?",
+      "How do I route reads to a replica from Node.js?"
+    ]
+  }
+}

@@ -1,0 +1,266 @@
+{
+  "title": "Event-driven architecture",
+  "idea": "Event-driven architecture is a design where a service publishes an event, a record that something happened, and other services react on their own.",
+  "analogy": {
+    "text": "A shop-floor announcement: \"Order 7 is paid.\" Packing, billing and delivery each hear it and act. The announcer never assigns the work.",
+    "breaks": "A spoken announcement is lost if missed; a broker can keep events."
+  },
+  "points": [
+    "The publisher emits an event and moves on; it does not call anyone.",
+    "A broker receives events and delivers each one to every subscribed service.",
+    "Consumers react independently, so you add a new one without touching the publisher.",
+    "The cost: effects arrive later, and no single call chain shows the whole flow."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "One event, many reactions",
+    "scenario": {
+      "tiers": [
+        [
+          "client"
+        ],
+        [
+          "orders"
+        ],
+        [
+          "bus"
+        ],
+        [
+          "mail",
+          "stock",
+          "bill"
+        ]
+      ],
+      "nodes": {
+        "client": {
+          "label": "Customer",
+          "kind": "user"
+        },
+        "orders": {
+          "label": "Orders service",
+          "kind": "service"
+        },
+        "bus": {
+          "label": "Event broker",
+          "kind": "topic",
+          "sub": "routes events"
+        },
+        "mail": {
+          "label": "Email service",
+          "kind": "service"
+        },
+        "stock": {
+          "label": "Inventory",
+          "kind": "service"
+        },
+        "bill": {
+          "label": "Billing",
+          "kind": "service"
+        }
+      },
+      "links": [
+        [
+          "client",
+          "orders"
+        ],
+        [
+          "orders",
+          "bus"
+        ],
+        [
+          "bus",
+          "mail",
+          {
+            "dashed": true
+          }
+        ],
+        [
+          "bus",
+          "stock",
+          {
+            "dashed": true
+          }
+        ],
+        [
+          "bus",
+          "bill",
+          {
+            "dashed": true
+          }
+        ]
+      ],
+      "steps": [
+        {
+          "caption": "A customer places an order. The Orders service saves it.",
+          "send": [
+            {
+              "from": "client",
+              "to": "orders",
+              "label": "place order"
+            }
+          ]
+        },
+        {
+          "caption": "Orders publishes `OrderPlaced`. It names no receiver, and it replies to the customer at once.",
+          "send": [
+            {
+              "from": "orders",
+              "to": "bus",
+              "label": "OrderPlaced",
+              "tone": "info"
+            },
+            {
+              "from": "orders",
+              "to": "client",
+              "label": "201",
+              "tone": "ok"
+            }
+          ]
+        },
+        {
+          "caption": "The broker delivers a copy to every service subscribed to `OrderPlaced`.",
+          "send": [
+            {
+              "from": "bus",
+              "to": "mail",
+              "label": "OrderPlaced",
+              "tone": "info"
+            },
+            {
+              "from": "bus",
+              "to": "stock",
+              "label": "OrderPlaced",
+              "tone": "info"
+            },
+            {
+              "from": "bus",
+              "to": "bill",
+              "label": "OrderPlaced",
+              "tone": "info"
+            }
+          ]
+        },
+        {
+          "caption": "Each consumer reacts on its own: a receipt, a stock reservation, an invoice.",
+          "state": {
+            "mail": "ok",
+            "stock": "ok",
+            "bill": "ok"
+          },
+          "badge": {
+            "mail": "receipt",
+            "stock": "reserved",
+            "bill": "invoice"
+          }
+        },
+        {
+          "caption": "Inventory goes down. The next order is still accepted and published as before.",
+          "send": [
+            {
+              "from": "client",
+              "to": "orders",
+              "label": "place order"
+            },
+            {
+              "from": "orders",
+              "to": "bus",
+              "label": "OrderPlaced",
+              "tone": "info"
+            }
+          ],
+          "state": {
+            "mail": null,
+            "stock": "down",
+            "bill": null
+          },
+          "badge": {
+            "mail": null,
+            "stock": "down",
+            "bill": null
+          },
+          "items": {
+            "bus": [
+              "Placed"
+            ]
+          }
+        },
+        {
+          "caption": "A durable broker keeps the event for Inventory. Email and Billing carry on.",
+          "send": [
+            {
+              "from": "bus",
+              "to": "mail",
+              "label": "OrderPlaced",
+              "tone": "info"
+            },
+            {
+              "from": "bus",
+              "to": "bill",
+              "label": "OrderPlaced",
+              "tone": "info"
+            }
+          ],
+          "focus": [
+            "stock"
+          ]
+        },
+        {
+          "caption": "Inventory restarts, receives the waiting event and catches up. The publisher never knew.",
+          "send": [
+            {
+              "from": "bus",
+              "to": "stock",
+              "label": "OrderPlaced",
+              "tone": "info"
+            }
+          ],
+          "state": {
+            "stock": "ok"
+          },
+          "badge": {
+            "stock": "caught up"
+          },
+          "items": {
+            "bus": null
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "events.mjs",
+      "lang": "js",
+      "title": "A tiny pub/sub",
+      "run": "browser",
+      "caption": "Add a third `bus.on` listener: `placeOrder` does not change. Unlike a real broker, `EventEmitter` runs listeners synchronously, in one process."
+    }
+  ],
+  "pitfalls": [
+    "Use a direct call, not an event, when the caller needs the answer now.",
+    "Assume an event can arrive twice; make each consumer safe to run again (idempotent, see queues).",
+    "Treat event fields as a contract; renaming one silently breaks consumers you cannot see."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "import { EventEmitter } from 'node:events';\nconst bus = new EventEmitter();\nbus.on('paid', () => console.log('email'));\nbus.emit('paid');\nbus.on('paid', () => console.log('stock'));\nbus.emit('paid');",
+    "lang": "js",
+    "options": [
+      "email, stock",
+      "email, stock, email, stock",
+      "email, email, stock",
+      "email, email"
+    ],
+    "answer": 2,
+    "why": "A listener only hears events emitted after it subscribes. The first emit reached email alone; the second reached both."
+  },
+  "takeaway": "Publish what happened; let other services decide how to react.",
+  "chat": {
+    "starters": [
+      "How is an event different from a command or a request?",
+      "What happens to an event if a consumer is down?",
+      "How do I trace one order across several event-driven services?"
+    ]
+  }
+}

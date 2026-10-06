@@ -1,0 +1,9 @@
+{
+  "stdout": "do...while 1\nfor...in apples 3\nfor...in pears 0",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": null,
+  "hash": "df96c043008d1626",
+  "at": "2026-10-06T15:12:27.272Z"
+}

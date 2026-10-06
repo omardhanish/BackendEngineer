@@ -1,0 +1,4 @@
+/* Dev-only page: every engine sample, one after another. ?only=name  ?theme=dark  ?w=860  ?step=3 */
+body { overflow: auto; }
+.gal { display: grid; gap: 28px; padding: 24px; max-width: var(--gal-w, 1000px); margin: 0 auto; }
+.gal-item > h2 { margin: 0 0 8px; font: 600 12px var(--font-ui); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }

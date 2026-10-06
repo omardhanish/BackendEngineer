@@ -1,0 +1,9 @@
+{
+  "stdout": "201 {\"user\":{\"id\":1,\"email\":\"ada@example.com\"}}\n409 {\"error\":\"Email already registered\"}\nhash equals password: false\npassword matches hash: true",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "PostgreSQL 18.4",
+  "hash": "fd50c9dd38c717c8",
+  "at": "2026-10-06T09:58:30.662Z"
+}

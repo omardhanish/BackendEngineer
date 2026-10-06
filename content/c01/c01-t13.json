@@ -1,0 +1,135 @@
+{
+  "title": "Higher-order functions and closures",
+  "idea": "A higher-order function takes a function or returns one. A nested function, defined inside another, keeps its outer variables alive: a closure.",
+  "analogy": {
+    "text": "A function made inside another leaves with a backpack of the outer variables. It opens that backpack every time it runs, wherever it is called.",
+    "breaks": "The backpack holds the variables themselves, not copies of their values."
+  },
+  "points": [
+    "The function you pass is a callback; the receiver decides when to call it.",
+    "`map` transforms each item, `filter` keeps matching items, `forEach` runs code per item.",
+    "An inner function can read the variables of the function around it.",
+    "Those variables stay alive while the inner function can still be called."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "memory",
+    "title": "A closure outliving its frame",
+    "scenario": {
+      "code": [
+        "function makeAdder(n) {",
+        "  return function (x) {",
+        "    return x + n;",
+        "  };",
+        "}",
+        "const add5 = makeAdder(5);",
+        "console.log(add5(2));"
+      ],
+      "steps": [
+        {
+          "caption": "Line 6 calls `makeAdder(5)`. JavaScript pushes a frame that holds the parameter `n`.",
+          "line": 5,
+          "stack": [
+            { "name": "Global", "vars": { "makeAdder": "ƒ makeAdder(n)", "add5": "<uninitialized>" } },
+            { "name": "makeAdder(5)", "vars": { "n": "5" } }
+          ]
+        },
+        {
+          "caption": "The inner function is created with a link to `n`. That link is the closure, so `n` now lives on the heap.",
+          "line": 1,
+          "stack": [
+            { "name": "Global", "vars": { "makeAdder": "ƒ makeAdder(n)", "add5": "<uninitialized>" } },
+            { "name": "makeAdder(5)", "vars": { "n": { "ref": "e1", "label": "5" }, "return": { "ref": "f1", "label": "ƒ (x)" } } }
+          ],
+          "heap": [
+            { "id": "f1", "label": "ƒ (x)", "props": { "closure": { "ref": "e1", "label": "scope" } } },
+            { "id": "e1", "label": "variables of makeAdder(5)", "props": { "n": "5" } }
+          ]
+        },
+        {
+          "caption": "`makeAdder` returns and its frame is popped. `add5` holds the inner function, and `n` stays alive on the heap.",
+          "line": 5,
+          "stack": [
+            { "name": "Global", "vars": { "makeAdder": "ƒ makeAdder(n)", "add5": { "ref": "f1", "label": "ƒ (x)" } } }
+          ],
+          "heap": [
+            { "id": "f1", "label": "ƒ (x)", "props": { "closure": { "ref": "e1", "label": "scope" } } },
+            { "id": "e1", "label": "variables of makeAdder(5)", "props": { "n": "5" } }
+          ]
+        },
+        {
+          "caption": "Line 7 calls `add5(2)`. A new frame holds `x`. The frame of `makeAdder` is gone.",
+          "line": 6,
+          "stack": [
+            { "name": "Global", "vars": { "makeAdder": "ƒ makeAdder(n)", "add5": { "ref": "f1", "label": "ƒ (x)" } } },
+            { "name": "add5(2)", "vars": { "x": "2" } }
+          ],
+          "heap": [
+            { "id": "f1", "label": "ƒ (x)", "props": { "closure": { "ref": "e1", "label": "scope" } } },
+            { "id": "e1", "label": "variables of makeAdder(5)", "props": { "n": "5" } }
+          ]
+        },
+        {
+          "caption": "`x + n`: `x` is in this frame; `n` is found through the closure. 2 + 5 is 7.",
+          "line": 2,
+          "stack": [
+            { "name": "Global", "vars": { "makeAdder": "ƒ makeAdder(n)", "add5": { "ref": "f1", "label": "ƒ (x)" } } },
+            { "name": "add5(2)", "vars": { "x": "2", "return": "7" } }
+          ],
+          "heap": [
+            { "id": "f1", "label": "ƒ (x)", "props": { "closure": { "ref": "e1", "label": "scope" } } },
+            { "id": "e1", "label": "variables of makeAdder(5)", "props": { "n": "5" } }
+          ]
+        },
+        {
+          "caption": "The frame is popped and 7 is printed. Another `add5` call would still find `n` as 5.",
+          "line": 6,
+          "stack": [
+            { "name": "Global", "vars": { "makeAdder": "ƒ makeAdder(n)", "add5": { "ref": "f1", "label": "ƒ (x)" } } }
+          ],
+          "heap": [
+            { "id": "f1", "label": "ƒ (x)", "props": { "closure": { "ref": "e1", "label": "scope" } } },
+            { "id": "e1", "label": "variables of makeAdder(5)", "props": { "n": "5" } }
+          ]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "callbacks.mjs",
+      "lang": "js",
+      "title": "Passing functions",
+      "run": "browser",
+      "caption": "Run it. `repeat` calls your function; `map` and `filter` call it once per item."
+    },
+    {
+      "file": "closures.mjs",
+      "lang": "js",
+      "title": "Counters with closures",
+      "run": "browser",
+      "caption": "Run it. Each `makeCounter()` call creates its own `count`, so `a` and `b` stay separate."
+    }
+  ],
+  "pitfalls": [
+    "Pass `fn`, not `fn()`: the parentheses call it now and pass the result.",
+    "With `var` in a loop, closures share one variable and see its last value.",
+    "You cannot `break` out of `forEach`; use `for...of` when you may stop early."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const fns = [];\nfor (var i = 0; i < 3; i++) {\n  fns.push(() => i);\n}\nconsole.log(fns[0](), fns[2]());",
+    "lang": "js",
+    "options": ["0 2", "3 3", "2 2", "undefined undefined"],
+    "answer": 1,
+    "why": "`var i` is one shared variable. The loop ends with `i` at 3, so every arrow function returns 3."
+  },
+  "takeaway": "Pass functions in, return them out; an inner function keeps its outer variables.",
+  "chat": {
+    "starters": [
+      "What is a callback?",
+      "Why does my closure see the last value in a loop?",
+      "When would I return a function from a function?"
+    ]
+  }
+}

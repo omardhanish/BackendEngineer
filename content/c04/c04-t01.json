@@ -1,0 +1,117 @@
+{
+  "title": "Introduction to Express",
+  "idea": "Express is a small web framework on top of Node's `http` module. It routes each request to your function and gives you helpers to answer.",
+  "analogy": {
+    "text": "A phone switchboard. The operator hears which extension a caller wants and connects the call to that desk. An unknown extension gets a refusal.",
+    "breaks": "Extensions are fixed numbers; Express paths can contain parameters like `:id`."
+  },
+  "points": [
+    "An Express app is one function that Node's `http` server calls for every request.",
+    "A route pairs a method and a path pattern with a handler: `app.get('/books', fn)`.",
+    "A handler gets the request, `req`, and the response, `res`, with helpers like `res.json()`.",
+    "Middleware, added with `app.use`, is a function that runs before the routes below it."
+  ],
+  "hero": {
+    "type": "compare",
+    "title": "Plain http versus Express",
+    "left": {
+      "title": "Node's built-in http module",
+      "items": [
+        "Compare `req.method` and `req.url` in `if` branches",
+        "Set the content type and call `JSON.stringify` yourself",
+        "Collect the body in chunks, then parse it",
+        "Write your own reply for unknown paths"
+      ]
+    },
+    "right": {
+      "title": "Express",
+      "tone": "good",
+      "items": [
+        "`app.get('/books/:id', fn)` matches method and path",
+        "`res.json(data)` sets the type and sends the body",
+        "`express.json()` parses a JSON body into `req.body`",
+        "Unmatched requests get a 404 reply automatically"
+      ]
+    },
+    "verdict": "Same server underneath, less repeated code: Express handles the routine parts."
+  },
+  "code": [
+    {
+      "file": "app.mjs",
+      "lang": "js",
+      "title": "Middleware, a route, a 404",
+      "run": "captured",
+      "caption": "A logger, one route and an unknown path. Press Run for the real output.",
+      "walk": [
+        {
+          "lines": [
+            3
+          ],
+          "text": "`express()` creates the app."
+        },
+        {
+          "lines": [
+            4,
+            5,
+            6,
+            7
+          ],
+          "text": "Middleware: log every request, then `next()` passes it on."
+        },
+        {
+          "lines": [
+            8
+          ],
+          "text": "A route. `req.params.name` reads the path; `res.json` sends the reply."
+        },
+        {
+          "lines": [
+            10,
+            11
+          ],
+          "text": "Listen on a free port (0) and build the base URL."
+        },
+        {
+          "lines": [
+            12,
+            13,
+            14
+          ],
+          "text": "Request two paths. `/nope` has no route, so Express answers 404 itself."
+        },
+        {
+          "lines": [
+            15
+          ],
+          "text": "Close the server so the script can exit."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Express 4 tutorials can break on Express 5: `app.get('*')` now throws at startup.",
+    "Routes match in the order you write them: put `/books/new` before `/books/:id`.",
+    "Express's default 404 is an HTML page; an API should send JSON errors instead."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const app = express();\napp.get('/books/:id', (req, res) => res.send('one'));\napp.get('/books/new', (req, res) => res.send('form'));\nconst server = app.listen(0, async () => {\n  const url = `http://localhost:${server.address().port}/books/new`;\n  console.log(await (await fetch(url)).text());\n  server.close();\n});",
+    "lang": "js",
+    "options": [
+      "Cannot GET /books/new",
+      "form",
+      "Nothing: the app crashes",
+      "one"
+    ],
+    "answer": 3,
+    "why": "Routes are tried in order. `/books/:id` matches `/books/new` first, with `id` set to `new`, so its handler answers."
+  },
+  "takeaway": "Express tries middleware and routes in the order added; no match means 404.",
+  "chat": {
+    "starters": [
+      "What is the difference between Node.js and Express?",
+      "Why does Express 5 reject `app.get('*')`?",
+      "What exactly are `req` and `res`?"
+    ]
+  }
+}

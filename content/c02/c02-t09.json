@@ -1,0 +1,71 @@
+{
+  "title": "The event loop",
+  "idea": "Node runs your JavaScript on one thread. The event loop hands it finished background work, one callback at a time, whenever the stack is empty.",
+  "analogy": {
+    "text": "A restaurant with one waiter and a busy kitchen. The waiter never cooks: he takes orders and delivers each dish the moment it is ready.",
+    "breaks": "If the waiter stalls on one table, every other table waits."
+  },
+  "points": [
+    "Your JavaScript runs on a single thread, one task at a time.",
+    "Slow work (timers, files, network) is handed to libuv and the OS.",
+    "Finished work queues a callback; the loop runs it when the stack is empty.",
+    "Promise callbacks (microtasks) jump the queue before the next timer."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "lanes",
+    "title": "Who runs when",
+    "scenario": {
+      "code": [
+        "console.log('A');",
+        "setTimeout(() => console.log('B'), 0);",
+        "Promise.resolve().then(() => console.log('C'));",
+        "console.log('D');"
+      ],
+      "lanes": [
+        { "id": "stack", "label": "Call stack", "kind": "stack" },
+        { "id": "bg", "label": "libuv / OS", "kind": "area", "hint": "timers and I/O wait here" },
+        { "id": "micro", "label": "Microtask queue", "kind": "queue", "hint": "promise callbacks" },
+        { "id": "macro", "label": "Callback queue", "kind": "queue", "hint": "timers, I/O callbacks" }
+      ],
+      "tokens": {
+        "main": { "label": "main()", "tone": "neutral" },
+        "logA": { "label": "log('A')", "tone": "sync" },
+        "setT": { "label": "setTimeout(…)", "tone": "timer" },
+        "prom": { "label": "Promise.then(…)", "tone": "micro" },
+        "logD": { "label": "log('D')", "tone": "sync" },
+        "timerCb": { "label": "timer callback", "tone": "timer" },
+        "thenCb": { "label": ".then callback", "tone": "micro" }
+      },
+      "steps": [
+        { "caption": "The script starts. main() sits on the call stack.", "at": { "stack": ["main"] }, "active": "main", "out": [] },
+        { "caption": "Line 1 runs at once and prints A.", "line": 0, "at": { "stack": ["main", "logA"] }, "active": "logA", "out": ["A"] },
+        { "caption": "Line 2: setTimeout hands the timer to libuv and moves on. It does not wait.", "line": 1, "at": { "stack": ["main", "setT"], "bg": ["timerCb"] }, "active": "setT", "out": ["A"] },
+        { "caption": "Line 3: the promise is already resolved, so its callback is queued as a microtask.", "line": 2, "at": { "stack": ["main", "prom"], "bg": ["timerCb"], "micro": ["thenCb"] }, "active": "prom", "out": ["A"] },
+        { "caption": "Line 4 runs at once and prints D. All of this was synchronous.", "line": 3, "at": { "stack": ["main", "logD"], "bg": ["timerCb"], "micro": ["thenCb"] }, "active": "logD", "out": ["A", "D"] },
+        { "caption": "The script ends. The stack is empty, so the loop looks for work. Microtasks go first.", "at": { "stack": [], "bg": ["timerCb"], "micro": ["thenCb"] }, "out": ["A", "D"] },
+        { "caption": "The loop runs the microtask: C prints.", "at": { "stack": ["thenCb"], "bg": ["timerCb"] }, "active": "thenCb", "out": ["A", "D", "C"] },
+        { "caption": "The 0 ms timer has finished, so libuv queues its callback.", "at": { "macro": ["timerCb"] }, "out": ["A", "D", "C"] },
+        { "caption": "Stack empty, no microtasks left: the loop takes the timer callback. B prints last.", "at": { "stack": ["timerCb"] }, "active": "timerCb", "out": ["A", "D", "C", "B"] },
+        { "caption": "Order: A D C B. Synchronous code, then microtasks, then timers.", "at": {}, "out": ["A", "D", "C", "B"] }
+      ]
+    }
+  },
+  "code": [
+    { "file": "order.mjs", "lang": "js", "title": "Order of output", "run": "browser", "caption": "Run it. Then move the last console.log above the Promise line and predict again." },
+    { "file": "tick.cjs", "lang": "js", "title": "nextTick vs promise", "run": "captured", "caption": "process.nextTick has its own queue, drained before promise callbacks (CommonJS)." }
+  ],
+  "pitfalls": [
+    "A long loop blocks the thread: timers, requests and everything else wait.",
+    "`setTimeout(fn, 0)` is not instant. It still waits for the stack to clear.",
+    "CPU-heavy work belongs in a worker thread or another process."
+  ],
+  "quiz": {
+    "q": "In the first snippet, what order does it print?",
+    "options": ["A D B C", "A D C B", "A B C D", "A C D B"],
+    "answer": 1,
+    "why": "Synchronous code first (A, D), then the microtask (C), then the timer callback (B)."
+  },
+  "takeaway": "One thread, many waiting jobs: sync first, microtasks next, timers after.",
+  "chat": { "starters": ["Why do promises run before setTimeout?", "What is libuv?", "How do I avoid blocking the event loop?"] }
+}

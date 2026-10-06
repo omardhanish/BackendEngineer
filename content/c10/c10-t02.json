@@ -1,0 +1,81 @@
+{
+  "title": "Safe first steps in AWS",
+  "idea": "A new AWS account starts with a root user that has full access, billing included. Secure it, work as an administrative user, and set a budget alert.",
+  "points": [
+    "The root user is the email and password you signed up with.",
+    "Multi-factor authentication (MFA) adds a second proof at sign-in, like a code.",
+    "IAM is AWS's users-and-permissions service. Create your administrative user there.",
+    "A cost budget alerts you when actual or forecast spend crosses your threshold."
+  ],
+  "hero": {
+    "type": "timeline",
+    "title": "Safe first steps, in order",
+    "items": [
+      { "label": "Secure root", "text": "Sign up, then turn on MFA for the root user." },
+      { "label": "Create an admin user", "text": "Make an administrative user in IAM for everyday work." },
+      { "label": "Open Billing", "text": "Root activates IAM access to Billing. Your admin user also needs billing permissions." },
+      { "label": "Put root away", "text": "Sign in as the admin user from now on. Create no root access keys." },
+      { "label": "Set a budget", "text": "Create a cost budget with an email alert before you create any resources." },
+      { "label": "Check your identity", "text": "Run `aws sts get-caller-identity` to see who the AWS CLI acts as." }
+    ]
+  },
+  "code": [
+    {
+      "file": "budget.json",
+      "lang": "json",
+      "title": "Budget limit",
+      "run": "static",
+      "illustrative": true,
+      "caption": "A monthly cost budget. Replace `<monthly-limit>` with your own number; `Unit` is a currency code."
+    },
+    {
+      "file": "notifications.json",
+      "lang": "json",
+      "title": "Alert rule",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Who is told, and when. This rule emails you once spend passes the threshold.",
+      "walk": [
+        { "lines": [4], "text": "`ACTUAL` alerts on money already spent. A `FORECASTED` alert needs weeks of usage history first." },
+        { "lines": [5, 6, 7], "text": "Alert when spend is greater than 80 percent of the budget amount." },
+        { "lines": [10], "text": "Send the alert by email. An Amazon SNS topic is the other option." }
+      ]
+    },
+    {
+      "file": "session.sh",
+      "lang": "bash",
+      "title": "AWS CLI commands",
+      "run": "static",
+      "illustrative": true,
+      "caption": "The AWS CLI is AWS's command-line tool. Run these as your admin user, never as root.",
+      "walk": [
+        { "lines": [1], "text": "Ask AWS who the CLI is acting as. The `Arn` must not end in `:root`." },
+        { "lines": [2, 3, 4, 5], "text": "Create the budget from two JSON files: the limit, and who is alerted." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Avoid long-term access keys for people; AWS prefers temporary credentials (roles, IAM Identity Center).",
+    "Never commit access keys or copy them into an image; whoever reads them acts as you.",
+    "A budget alert is not a spending cap: charges can pass the threshold before it arrives."
+  ],
+  "quiz": {
+    "q": "Why do daily work as an administrative user instead of root?",
+    "options": [
+      "Root cannot create resources",
+      "Root has full access, so misuse does the most harm",
+      "Root is billed at a higher rate",
+      "Only IAM users can run the AWS CLI"
+    ],
+    "answer": 1,
+    "why": "Root has complete access, billing included. Keep it for the few tasks that need it, with MFA on."
+  },
+  "takeaway": "Lock root with MFA, work as an admin user, and set a budget.",
+  "chat": {
+    "starters": [
+      "Which tasks actually need the root user?",
+      "What is the difference between an IAM user and a role?",
+      "Why can my admin user not see the Billing page?"
+    ]
+  }
+}

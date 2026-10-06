@@ -1,0 +1,8 @@
+{
+  "stdout": "1 before the sync read\n2 sync read got hello\n3 after calling readFile\n4 callback got hello",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "hash": "c1d514ff361642d8",
+  "at": "2026-10-06T09:16:12.013Z"
+}

@@ -1,0 +1,103 @@
+{
+  "title": "Custom Docker builds",
+  "idea": "A custom build changes what `docker build` does: which Dockerfile it reads, which stage it stops at, and which values it receives.",
+  "points": [
+    "`-f api.Dockerfile` reads another file; the context is still the folder you name.",
+    "`ARG` declares a build-time value; `--build-arg NAME=value` sets it for one build.",
+    "`--target dev` builds a multi-stage Dockerfile only up to the stage named `dev`.",
+    "An `ARG` is not set in the running container; copy it with `ENV`."
+  ],
+  "hero": {
+    "type": "anatomy",
+    "title": "A custom docker build command",
+    "parts": [
+      {
+        "text": "docker build ",
+        "label": "Command",
+        "note": "Reads a Dockerfile and builds an image from it."
+      },
+      {
+        "text": "-f api.Dockerfile ",
+        "label": "Dockerfile",
+        "note": "Names the file to read. Without `-f`, Docker reads `Dockerfile` in the context."
+      },
+      {
+        "text": "--build-arg APP_VERSION=1.0.0 ",
+        "label": "Build argument",
+        "note": "Gives the `ARG` named `APP_VERSION` a value for this build only."
+      },
+      {
+        "text": "--target prod ",
+        "label": "Target stage",
+        "note": "Builds up to the stage named `prod`. Stages after it are not built."
+      },
+      {
+        "text": "-t bookstore-api:1.0.0 ",
+        "label": "Image name",
+        "note": "The name and tag for the new image."
+      },
+      {
+        "text": ".",
+        "label": "Context",
+        "note": "The build context: the folder Docker sends to the builder."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "api.Dockerfile",
+      "lang": "docker",
+      "title": "Stages and ARG",
+      "run": "static",
+      "illustrative": true,
+      "caption": "One file, two buildable stages. `dev` and `prod` both start from `base`.",
+      "walk": [
+        { "lines": [1, 2], "text": "An `ARG` above the first `FROM` sets the Node version. `--build-arg NODE_VERSION=…` can change it." },
+        { "lines": [3, 4], "text": "Shared setup lives in `base`: the working folder and the package files." },
+        { "lines": [6, 7, 8], "text": "`dev` builds on `base` and installs every dependency. Build it with `--target dev`." },
+        { "lines": [11, 12], "text": "`prod` declares `APP_VERSION` with a default. `--build-arg APP_VERSION=…` overrides it." },
+        { "lines": [13], "text": "`ENV` keeps the value in the image, so the app can read `process.env.APP_VERSION`." },
+        { "lines": [14, 15], "text": "`prod` installs production dependencies only, then copies the source." }
+      ]
+    },
+    {
+      "file": "compose.yaml",
+      "lang": "yaml",
+      "title": "The same build in Compose",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Compose's long `build` form. Run `docker compose build` or `docker compose up --build`.",
+      "walk": [
+        { "lines": [4, 5], "text": "`context` is the build folder. `dockerfile` is resolved from it, like `-f`." },
+        { "lines": [6], "text": "`target` picks the stage, like `--target`." },
+        { "lines": [7, 8], "text": "`args` sets `ARG` values for this build, like `--build-arg`." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Never pass secrets with `--build-arg`; `docker history` shows build arguments.",
+    "An `ARG` above the first `FROM` is not visible in stages; redeclare it inside.",
+    "In Compose, a relative `dockerfile:` path starts from `context`, not from `compose.yaml`."
+  ],
+  "quiz": {
+    "q": "You run `docker build --target dev .` on this Dockerfile. Which stages run?",
+    "code": "FROM node:20-alpine AS base\nFROM base AS dev\nFROM base AS prod",
+    "lang": "docker",
+    "options": [
+      "`dev` only; it ignores `base`",
+      "`base`, `dev` and `prod`",
+      "`prod`, the last stage",
+      "`base`, then `dev`; `prod` is skipped"
+    ],
+    "answer": 3,
+    "why": "`--target dev` stops at `dev`. That stage builds on `base`, so both run, and `prod` is not built."
+  },
+  "takeaway": "Use `ARG` and `--build-arg` for values, `--target` for stages, `-f` for files.",
+  "chat": {
+    "starters": [
+      "What is the difference between `ARG` and `ENV`?",
+      "How do I build a different Dockerfile from Compose?",
+      "Why does a changed build argument rebuild some layers?"
+    ]
+  }
+}

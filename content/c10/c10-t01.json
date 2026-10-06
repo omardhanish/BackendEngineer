@@ -1,0 +1,124 @@
+{
+  "title": "Why container orchestration",
+  "idea": "An orchestrator runs containers for you. You declare what should run, and it keeps that true by starting, replacing and spreading containers across machines.",
+  "points": [
+    "By hand, you start, check and replace every container on every machine yourself.",
+    "A Docker restart policy revives a crashed container, but only on its own machine.",
+    "An orchestrator keeps comparing desired state, what you asked for, with what actually runs.",
+    "Amazon ECS is AWS's orchestrator. This chapter runs `bookstore-api` on it."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "Desired state, kept true",
+    "scenario": {
+      "tiers": [["you", "client"], ["orch", "lb"], ["m1", "m2"]],
+      "nodes": {
+        "you": { "label": "You", "kind": "user" },
+        "client": { "label": "Clients", "kind": "client" },
+        "orch": { "label": "Orchestrator", "kind": "service" },
+        "lb": { "label": "Load balancer", "kind": "lb" },
+        "m1": { "label": "Machine 1", "kind": "server" },
+        "m2": { "label": "Machine 2", "kind": "server" }
+      },
+      "links": [
+        ["you", "orch"],
+        ["orch", "m1", { "dashed": true }],
+        ["orch", "m2", { "dashed": true }],
+        ["client", "lb"],
+        ["lb", "m1"],
+        ["lb", "m2"]
+      ],
+      "steps": [
+        {
+          "caption": "You declare the desired state: two copies of `bookstore-api`. You do not pick the machines.",
+          "send": [{ "from": "you", "to": "orch", "label": "2 copies", "tone": "info" }],
+          "badge": { "orch": "want: 2" }
+        },
+        {
+          "caption": "The orchestrator starts a copy on each machine. Run by hand, you would visit both machines yourself.",
+          "send": [
+            { "from": "orch", "to": "m1", "label": "start", "tone": "info" },
+            { "from": "orch", "to": "m2", "label": "start", "tone": "info" }
+          ],
+          "state": { "m1": "new", "m2": "new" },
+          "badge": { "orch": "have 2 of 2", "m1": "api: up", "m2": "api: up" }
+        },
+        {
+          "caption": "The load balancer spreads requests across both copies.",
+          "send": [
+            { "from": "client", "to": "lb", "label": "GET /books" },
+            { "from": "lb", "to": "m1", "label": "GET /books" },
+            { "from": "lb", "to": "m2", "label": "GET /books" }
+          ],
+          "state": { "m1": "ok", "m2": "ok" }
+        },
+        {
+          "caption": "Machine 2 fails. Run by hand, its container stays gone until you notice.",
+          "state": { "m2": "down" },
+          "badge": { "orch": "have 1 of 2", "m2": "down" },
+          "focus": ["m2"]
+        },
+        {
+          "caption": "The balancer sends requests only to the copy that is up, so clients still get answers.",
+          "send": [
+            { "from": "client", "to": "lb", "label": "GET /books" },
+            { "from": "lb", "to": "m1", "label": "GET /books" }
+          ]
+        },
+        {
+          "caption": "The orchestrator sees one copy against two wanted and starts a replacement on the healthy machine.",
+          "send": [{ "from": "orch", "to": "m1", "label": "start", "tone": "info" }],
+          "state": { "m1": "new" },
+          "badge": { "orch": "have 2 of 2", "m1": "api x2" }
+        },
+        {
+          "caption": "You deploy v2 by changing the declared image. The orchestrator replaces copies gradually, keeping the API up.",
+          "send": [{ "from": "you", "to": "orch", "label": "image v2", "tone": "info" }],
+          "state": { "m1": "ok" },
+          "badge": { "orch": "v2: 2 of 2", "m1": "api v2 x2" }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "reconcile.mjs",
+      "lang": "js",
+      "title": "Desired vs running",
+      "run": "browser",
+      "caption": "A toy model of the check an orchestrator repeats, not ECS code. Predict the output, then set `desired` to 3.",
+      "walk": [
+        { "lines": [1, 2], "text": "Desired state is 2 copies. Two named copies are running now." },
+        { "lines": [5, 6], "text": "Compare: while fewer copies run than wanted, start another one." },
+        { "lines": [7], "text": "Report what is wanted and what runs." },
+        { "lines": [10], "text": "First pass: running matches desired, so nothing changes." },
+        { "lines": [11, 12], "text": "`api-2` crashes. The next pass notices the gap and starts `api-3`." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Skip orchestration for one container on one machine; it adds moving parts to learn.",
+    "Store data outside containers: a replacement starts fresh from the image.",
+    "Never hard-code one copy's address; a replacement runs somewhere else with a new one."
+  ],
+  "quiz": {
+    "q": "What does the second line of output show?",
+    "options": [
+      "want 2, running: api-1",
+      "want 2, running: api-1 api-2",
+      "want 2, running: api-1 api-3",
+      "want 1, running: api-1 api-3"
+    ],
+    "answer": 2,
+    "why": "The filter removes `api-2`. `reconcile` sees one copy against two wanted and starts `api-3`."
+  },
+  "takeaway": "Declare the state you want; the orchestrator keeps reality matching it.",
+  "chat": {
+    "starters": [
+      "Do I need an orchestrator for one small app?",
+      "How is ECS different from Kubernetes?",
+      "What happens to my containers if a machine dies?"
+    ]
+  }
+}

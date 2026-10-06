@@ -1,0 +1,54 @@
+{
+  "title": "Operators in JavaScript",
+  "idea": "An operator combines values, its operands, into one new value. Operators and operands together make an expression.",
+  "analogy": {
+    "text": "A calculator. The keys `+` and `*` are operators, the numbers you enter are operands, and every press yields one new value.",
+    "breaks": "JavaScript operators also accept strings and silently convert types."
+  },
+  "points": [
+    "Precedence is the order operators run: `*` before `+`. Parentheses override it.",
+    "`+` joins text if either side is a string; `-` and `*` use numbers.",
+    "`==` converts types before comparing; `===` never does, so prefer it.",
+    "`&&`, `||` and `??` return one operand and may skip the right side."
+  ],
+  "hero": {
+    "type": "anatomy",
+    "title": "Reading one expression",
+    "parts": [
+      { "text": "qty * price", "label": "1st: multiply", "note": "`*` binds tighter than `+`, so it runs first. Arithmetic gives a number." },
+      { "text": " + fee", "label": "2nd: add", "note": "Then `+` adds `fee`. Both sides are numbers, so this is addition, not text joining." },
+      { "text": " > budget", "label": "3rd: compare", "note": "A comparison yields `true` or `false`. It binds tighter than `&&`." },
+      { "text": " && inStock", "label": "4th: logical AND", "note": "Runs last. A falsy left side (`false`, `0`, `0n`, `''`, `null`, `undefined`, `NaN`) is the result; otherwise the right side." }
+    ]
+  },
+  "code": [
+    {
+      "file": "ops.mjs",
+      "lang": "js",
+      "title": "Operators that surprise",
+      "run": "browser",
+      "caption": "Run it. Then change `port` to `null` and predict both results."
+    }
+  ],
+  "pitfalls": [
+    "Input from files, forms or URLs is text: convert with `Number()` before adding.",
+    "`||` also replaces `0` and `''` with the default; `??` replaces only `null` and `undefined`.",
+    "Mixing `??` with `||` or `&&` needs parentheses, or it is a SyntaxError."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const a = '3';\nconst b = 4;\nconsole.log(a + b, a * b, a == 3);",
+    "lang": "js",
+    "options": ["7 12 true", "34 12 true", "34 12 false", "7 7 false"],
+    "answer": 1,
+    "why": "`+` joins when one side is a string, giving '34'. `*` converts '3' to a number. `==` converts too, so it is true."
+  },
+  "takeaway": "Operators follow precedence and may convert types: use `===` and `??`.",
+  "chat": {
+    "starters": [
+      "What is the difference between == and ===?",
+      "When should I use ?? instead of ||?",
+      "What do truthy and falsy mean?"
+    ]
+  }
+}

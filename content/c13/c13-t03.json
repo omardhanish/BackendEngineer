@@ -1,0 +1,63 @@
+{
+  "title": "Vertical scaling",
+  "idea": "Vertical scaling means giving one machine more CPU, memory or disk, so the same app handles more load without any change to its code.",
+  "analogy": {
+    "text": "Replacing a delivery van with a bigger truck. One driver, one vehicle, more cargo per trip. Nothing about the route or the driver changes.",
+    "breaks": "Trucks stop getting bigger; servers have a largest size too."
+  },
+  "points": [
+    "You resize the machine or move to a bigger instance type.",
+    "The app and its data stay on one machine, so nothing needs redesign.",
+    "Every machine has a ceiling, and the biggest sizes cost disproportionately more.",
+    "Resizing often means a restart, and one machine is still one point of failure."
+  ],
+  "hero": {
+    "type": "compare",
+    "title": "Why it is easy, and where it stops",
+    "left": {
+      "title": "What you gain",
+      "tone": "good",
+      "items": [
+        "No code changes: the app runs as before",
+        "No new moving parts to operate",
+        "Local memory and files still work",
+        "Often a fast first fix for slow responses"
+      ]
+    },
+    "right": {
+      "title": "What you hit",
+      "tone": "bad",
+      "items": [
+        "A hardware ceiling: the largest machine available",
+        "Cost grows faster than capacity at the top",
+        "Resizing may restart the machine and cause downtime",
+        "If the machine fails, the whole app is down"
+      ]
+    },
+    "verdict": "Vertical scaling is the simplest step, not a path without an end."
+  },
+  "pitfalls": [
+    "Do not assume a bigger machine fixes slow queries; check the real bottleneck first.",
+    "Plan a maintenance window before resizing; the machine may restart.",
+    "Do not treat one large server as high availability; it can still fail."
+  ],
+  "quiz": {
+    "q": "You move a slow app to one machine with twice the CPU and memory. What is still true?",
+    "options": [
+      "Traffic is now spread across two servers",
+      "A single failure still takes the whole app down",
+      "You can keep doing this with no upper limit",
+      "The app must be rewritten to be stateless"
+    ],
+    "answer": 1,
+    "why": "Vertical scaling makes one machine bigger. It stays a single point of failure, has a ceiling, and needs no code changes."
+  },
+  "takeaway": "Vertical scaling is simple, but it has a ceiling and one point of failure.",
+  "chat": {
+    "starters": [
+      "How do I know if my bottleneck is CPU or memory?",
+      "Why does cost rise faster than capacity on large machines?",
+      "When is vertical scaling the right first choice?"
+    ]
+  }
+}

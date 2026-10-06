@@ -1,0 +1,86 @@
+{
+  "title": "Connecting to MongoDB Atlas",
+  "idea": "MongoDB Atlas is MongoDB's hosted service. Your app reaches a cluster, a set of MongoDB servers Atlas runs for you, through one connection string.",
+  "points": [
+    "Create a cluster in Atlas: the servers that will hold your databases.",
+    "Create a database user. It is separate from your Atlas login.",
+    "Add your IP address to the IP access list; only listed addresses connect.",
+    "Copy the connection string and store it, with the real password, in `MONGO_URI`."
+  ],
+  "hero": {
+    "type": "anatomy",
+    "title": "An Atlas connection string, part by part",
+    "parts": [
+      {
+        "text": "mongodb+srv://",
+        "label": "Scheme",
+        "note": "`+srv` makes the driver look up the cluster's servers in DNS, and enables TLS, so traffic is encrypted.",
+        "tone": "a"
+      },
+      {
+        "text": "<user>:<password>@",
+        "label": "Credentials",
+        "note": "A database user, not your Atlas login. Percent-encode special characters such as `@` in the password.",
+        "tone": "b"
+      },
+      {
+        "text": "<cluster>.<id>.mongodb.net",
+        "label": "Host",
+        "note": "The cluster's address, which Atlas generates. With `+srv` you give one host and no port.",
+        "tone": "c"
+      },
+      {
+        "text": "/<db>",
+        "label": "Database",
+        "note": "The database your app uses. Mongoose takes its name from here; the `dbName` option overrides it.",
+        "tone": "d"
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "example.env",
+      "lang": "bash",
+      "title": "Keep it in the environment",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Placeholders only. Node 20 can load such a file: `node --env-file=.env app.mjs`."
+    },
+    {
+      "file": "app.mjs",
+      "lang": "js",
+      "title": "Connect, and fail cleanly",
+      "run": "captured",
+      "needs": [
+        "mongo"
+      ],
+      "caption": "Run here against a local MongoDB; the code is the same for Atlas. A refused or blocked connection rejects, so catch it."
+    }
+  ],
+  "pitfalls": [
+    "Never commit the connection string: it contains a password. Keep it in the environment.",
+    "A password with `@`, `/` or `:` breaks the string unless you percent-encode it.",
+    "The right password still fails if your IP is not on the access list."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const url = new URL(\n  'mongodb+srv://ada:s%40fe@cluster0.abc12.mongodb.net/shop',\n);\nconst password = decodeURIComponent(url.password);\nconsole.log(url.pathname.slice(1), password);",
+    "lang": "js",
+    "options": [
+      "shop s%40fe",
+      "ada s@fe",
+      "shop s@fe",
+      "/shop s@fe"
+    ],
+    "answer": 2,
+    "why": "The path after the host names the database. `%40` is an encoded `@`, so decoding the password gives `s@fe`."
+  },
+  "takeaway": "Atlas needs a user, an allowed IP and one connection string in the environment.",
+  "chat": {
+    "starters": [
+      "What is an Atlas cluster, exactly?",
+      "Can I use a local MongoDB instead of Atlas?",
+      "How do I keep the connection string out of Git?"
+    ]
+  }
+}

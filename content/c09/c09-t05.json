@@ -1,0 +1,64 @@
+{
+  "title": "Docker images and containers",
+  "idea": "An image is a read-only template built from layers. A container is a running instance of an image, with its own writable layer.",
+  "analogy": {
+    "text": "A class and its objects. The class is written once; each object is created from it and keeps its own state.",
+    "breaks": "An image never changes after the build."
+  },
+  "points": [
+    "`docker build` turns a Dockerfile into an image made of read-only layers.",
+    "`docker run` creates a container from an image and starts it.",
+    "Each container adds its own thin writable layer on top.",
+    "One image can start many containers, and stopping them leaves the image untouched."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "One image, two containers",
+    "nodes": [
+      { "id": "df", "label": "Dockerfile", "sub": "the recipe" },
+      { "id": "img", "label": "Image shop:1", "sub": "read-only layers" },
+      { "id": "a", "label": "Container shop-a", "sub": "own writable layer" },
+      { "id": "b", "label": "Container shop-b", "sub": "own writable layer" }
+    ],
+    "edges": [
+      { "from": "df", "to": "img", "label": "docker build", "caption": "`docker build` runs each Dockerfile line and stores the result as read-only layers in an image." },
+      { "from": "img", "to": "a", "label": "docker run", "caption": "`docker run` starts a container from the image and adds a writable layer on top." },
+      { "from": "img", "to": "b", "label": "docker run", "caption": "Run it again and you get a second container. Both share the same image layers." }
+    ]
+  },
+  "code": [
+    {
+      "file": "session.sh",
+      "lang": "bash",
+      "run": "static",
+      "illustrative": true,
+      "caption": "A shell session: build one image, start two containers from it, then stop one.",
+      "walk": [
+        { "lines": [1], "text": "Build an image from the Dockerfile here and tag it `shop:1`." },
+        { "lines": [2, 3], "text": "Start two detached containers from the same image. `--name` labels each one." },
+        { "lines": [4], "text": "List running containers. Both appear, with the image they came from." },
+        { "lines": [5], "text": "List images named `shop`. There is one, however many containers use it." },
+        { "lines": [6], "text": "Stop `shop-a`. The container keeps existing; it just is not running." },
+        { "lines": [7], "text": "`-a` lists stopped containers too. Without it, `shop-a` would not show." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Files written inside a container never change its image; rebuild the image to keep changes.",
+    "`docker rm` deletes a container's writable layer, and every file written there.",
+    "Run `docker ps -a` to find stopped containers; plain `docker ps` hides them."
+  ],
+  "quiz": {
+    "q": "You start three containers from one image. How many images exist?",
+    "options": [
+      "Three, one per container",
+      "Zero until the containers stop",
+      "One, shared by all three",
+      "Three, but only one is running"
+    ],
+    "answer": 2,
+    "why": "Containers are instances, not copies. They share the image's read-only layers and add only a writable layer each."
+  },
+  "takeaway": "Build an image once; start as many containers from it as you need.",
+  "chat": { "starters": ["Where does a container store files it writes?", "How do I keep data after a container is removed?", "Can I turn a container back into an image?"] }
+}

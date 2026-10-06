@@ -1,0 +1,9 @@
+{
+  "stdout": "302 https://example.com/docs\n404 {\"error\":\"Short URL not found\"}\n/health 200",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "PostgreSQL 18.4",
+  "hash": "cd78f4d00626187f",
+  "at": "2026-10-06T15:11:29.661Z"
+}

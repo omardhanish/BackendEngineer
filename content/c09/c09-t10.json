@@ -1,0 +1,60 @@
+{
+  "title": "Your first Dockerfile",
+  "idea": "A Dockerfile is a recipe: each line adds a layer to an image, and Docker reuses every layer that has not changed.",
+  "analogy": {
+    "text": "Baking a layer cake. Change the top layer and you only rebake the top; change the bottom and you start over.",
+    "breaks": "Layers stack in the order you write them; order is the whole trick."
+  },
+  "points": [
+    "`FROM` picks the base image your app builds on.",
+    "`COPY` and `RUN` each create a new cached layer.",
+    "Copy `package.json` first, install, then copy the rest, so installs stay cached.",
+    "`CMD` is the command that runs when the container starts."
+  ],
+  "hero": {
+    "type": "compare",
+    "title": "Order decides the cache",
+    "left": {
+      "title": "Slow: copy everything first",
+      "tone": "bad",
+      "items": ["COPY . . runs before npm install", "Any code edit invalidates the install layer", "Every rebuild reinstalls all packages"]
+    },
+    "right": {
+      "title": "Fast: dependencies first",
+      "tone": "good",
+      "items": ["COPY package*.json, then RUN npm ci", "Code edits only rebuild the last layers", "Installs come from cache in seconds"]
+    },
+    "verdict": "Order lines from least to most often changed."
+  },
+  "code": [
+    {
+      "file": "Dockerfile",
+      "lang": "docker",
+      "run": "static",
+      "illustrative": true,
+      "caption": "A production-minded Dockerfile for a Node 20 app. Step through it line by line.",
+      "walk": [
+        { "lines": [1], "text": "Start from a small official Node 20 image. Alpine keeps it light." },
+        { "lines": [2], "text": "Work inside /app so paths stay short and predictable." },
+        { "lines": [3], "text": "Copy only the package files first. This layer rarely changes." },
+        { "lines": [4], "text": "Install production dependencies. Cached until the package files change." },
+        { "lines": [5], "text": "Now copy your source. Edits here no longer trigger a reinstall." },
+        { "lines": [6], "text": "Document the port. It does not publish it; the -p flag does." },
+        { "lines": [7], "text": "Set the start command that every container runs." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Copying `node_modules` from your laptop bloats the image; add a `.dockerignore`.",
+    "Apple Silicon builds arm64 images; add `--platform linux/amd64` for most servers.",
+    "Run as a non-root user in production: add `USER node`."
+  ],
+  "quiz": {
+    "q": "You edit only server.js. Which layers rebuild?",
+    "options": ["Every layer", "From COPY . . onward", "Only CMD", "None; Docker ignores edits"],
+    "answer": 1,
+    "why": "Layers above the changed COPY come from cache. That line and the ones after it rebuild."
+  },
+  "takeaway": "Put what changes least at the top, so Docker can reuse its cache.",
+  "chat": { "starters": ["What is the difference between an image and a container?", "Why alpine, and what are the trade-offs?", "What does npm ci do differently from npm install?"] }
+}

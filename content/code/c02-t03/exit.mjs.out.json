@@ -1,0 +1,8 @@
+{
+  "stdout": "1: the script starts\n2: the last line runs\n3: the timer fires",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "hash": "adbc6a56c17bc6fc",
+  "at": "2026-10-06T09:17:35.452Z"
+}

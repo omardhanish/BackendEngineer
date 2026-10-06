@@ -1,0 +1,49 @@
+{
+  "title": "How HTTP works",
+  "idea": "HTTP is the agreed language of the web: a client sends a request, the server sends back one response, and then they are done.",
+  "analogy": {
+    "text": "Ordering at a counter. You say what you want, the clerk hands over one answer, and the next order starts fresh.",
+    "breaks": "A browser may send many orders at once on one connection."
+  },
+  "points": [
+    "A request has a method, a path, headers and an optional body.",
+    "A response has a status code, headers and an optional body.",
+    "HTTP is stateless: the server does not remember earlier requests.",
+    "HTTPS is the same conversation, encrypted with TLS."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "One request, one response",
+    "actors": [
+      { "id": "b", "label": "Browser" },
+      { "id": "s", "label": "Server" }
+    ],
+    "messages": [
+      { "from": "b", "to": "s", "label": "GET /books HTTP/1.1", "note": "The browser sends a request line, then headers such as `Host` and `Accept`." },
+      { "from": "s", "to": "s", "label": "run your code", "note": "The server runs your code: routing, authentication, a database query." },
+      { "from": "s", "to": "b", "label": "200 OK + JSON body", "note": "The server answers with a status line, headers and a body.", "dashed": true },
+      { "from": "b", "to": "b", "label": "use the response", "note": "The browser uses the response. This exchange is over; the next request starts fresh." }
+    ]
+  },
+  "code": [
+    { "file": "server.mjs", "lang": "js", "title": "A real exchange", "run": "captured", "caption": "Node's `http` module: a server, one request to it, and what comes back." }
+  ],
+  "pitfalls": [
+    "Do not assume one request per connection; clients reuse connections.",
+    "A 200 status with an error message in the body confuses every client.",
+    "Plain HTTP exposes passwords and tokens; use HTTPS outside localhost."
+  ],
+  "quiz": {
+    "q": "What does \"HTTP is stateless\" mean?",
+    "options": [
+      "The server forgets the client after each request",
+      "The server has no database or memory",
+      "Requests cannot carry any data",
+      "The connection closes after every request"
+    ],
+    "answer": 0,
+    "why": "Each request must carry what the server needs. HTTP itself keeps nothing between requests."
+  },
+  "takeaway": "One request, one response, no memory in between.",
+  "chat": { "starters": ["What is the difference between HTTP and HTTPS?", "What are HTTP headers for?", "How is HTTP/2 different from HTTP/1.1?"] }
+}

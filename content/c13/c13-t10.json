@@ -1,0 +1,117 @@
+{
+  "title": "Synchronous service calls",
+  "idea": "A synchronous call is one service sending an HTTP request to another and waiting for the answer. The caller shares that service's speed and failures.",
+  "points": [
+    "The caller's response time includes every call it waits on.",
+    "While waiting, each request holds a connection and memory.",
+    "A timeout caps the wait; without one, a slow service stalls its callers.",
+    "Retry only requests that are safe to repeat, with growing delays between tries."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "How one slow service spreads",
+    "scenario": {
+      "tiers": [["client"], ["orders"], ["inventory"]],
+      "nodes": {
+        "client": { "label": "Clients", "kind": "user" },
+        "orders": { "label": "Orders service", "kind": "service" },
+        "inventory": { "label": "Inventory service", "kind": "service" }
+      },
+      "links": [["client", "orders"], ["orders", "inventory"]],
+      "steps": [
+        {
+          "caption": "Orders needs stock data, so it sends an HTTP request to Inventory and waits for the reply.",
+          "send": [
+            { "from": "client", "to": "orders", "label": "POST /orders" },
+            { "from": "orders", "to": "inventory", "label": "GET /stock" }
+          ]
+        },
+        {
+          "caption": "Healthy case: Inventory answers, then Orders answers the client. The client waits for both calls.",
+          "send": [
+            { "from": "inventory", "to": "orders", "label": "200", "tone": "ok" },
+            { "from": "orders", "to": "client", "label": "201", "tone": "ok" }
+          ]
+        },
+        {
+          "caption": "Inventory slows down. Orders keeps waiting, and each waiting request holds a connection and memory.",
+          "send": [{ "from": "client", "to": "orders", "label": "POST /orders" }],
+          "state": { "inventory": "busy" },
+          "badge": { "inventory": "slow" },
+          "items": { "orders": ["r1", "r2"] }
+        },
+        {
+          "caption": "With no timeout, waiting requests pile up in Orders faster than they finish.",
+          "send": [{ "from": "client", "to": "orders", "label": "POST /orders" }],
+          "state": { "orders": "busy" },
+          "items": { "orders": ["r1", "r2", "r3", "r4", "r5", "r6"] }
+        },
+        {
+          "caption": "Orders runs out of connections or memory, so even requests that never touch Inventory fail. That is a cascading failure.",
+          "send": [{ "from": "client", "to": "orders", "label": "GET /orders/7", "tone": "err" }],
+          "state": { "orders": "down" },
+          "badge": { "orders": "full" }
+        },
+        {
+          "caption": "Fix one: set a timeout. Orders gives up after a short wait, frees the request and returns an error fast.",
+          "send": [
+            { "from": "orders", "to": "inventory", "label": "GET /stock", "tone": "warn" },
+            { "from": "orders", "to": "client", "label": "fast error", "tone": "err" }
+          ],
+          "state": { "orders": null },
+          "badge": { "orders": "timeout" },
+          "items": { "orders": ["r1"] }
+        },
+        {
+          "caption": "Fix two: retry only brief glitches, with growing delays. Instant retries add load to a service that is already struggling.",
+          "send": [{ "from": "orders", "to": "inventory", "label": "retry", "tone": "warn" }],
+          "badge": { "orders": "backoff" },
+          "items": { "orders": null }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "retry.mjs",
+      "lang": "js",
+      "title": "Timeout and retry",
+      "run": "captured",
+      "caption": "A stand-in Inventory service hangs on its first call. The caller times out, waits and retries.",
+      "walk": [
+        { "lines": [4, 5, 6, 7], "text": "A stand-in Inventory service. Its first call never replies; later calls do." },
+        { "lines": [8, 9], "text": "Listen on a free port and build the URL." },
+        { "lines": [13], "text": "`AbortSignal.timeout(200)` aborts the request after 200 ms, so `fetch` rejects." },
+        { "lines": [14, 15], "text": "On success, print the reply and stop retrying." },
+        { "lines": [16, 17], "text": "A timeout lands here as a `TimeoutError`." },
+        { "lines": [18], "text": "Wait longer after each failure, so a struggling service gets room to recover." },
+        { "lines": [21, 22], "text": "Shut the server down so the script can exit." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Set a timeout on every outgoing call; a missing one lets a hung service hang you.",
+    "Do not retry instantly or in unlimited loops; retry storms overload a struggling service.",
+    "Do not retry a POST that changes data unless repeating it is safe."
+  ],
+  "quiz": {
+    "q": "The first call hangs and the second answers. What does the script print?",
+    "options": [
+      "attempt 1 in stock",
+      "attempt 1 TimeoutError, then attempt 2 in stock",
+      "attempt 1 TimeoutError, attempt 2 TimeoutError, attempt 3 TimeoutError",
+      "Nothing: the script waits forever"
+    ],
+    "answer": 1,
+    "why": "The 200 ms timeout aborts the hung call and `fetch` rejects with `TimeoutError`. The loop waits, retries, and the second call succeeds."
+  },
+  "takeaway": "Every synchronous call needs a timeout, and every retry needs a limit.",
+  "chat": {
+    "starters": [
+      "What is a retry storm and how do I avoid one?",
+      "How long should a timeout be?",
+      "What is a circuit breaker and when do I need one?"
+    ]
+  }
+}

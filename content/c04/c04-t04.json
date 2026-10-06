@@ -1,0 +1,66 @@
+{
+  "title": "REST API design principles",
+  "idea": "A REST API exposes resources: a noun in the URL names the thing, the HTTP method names the action, and the status code reports the result.",
+  "analogy": {
+    "text": "A library catalogue. Every book has one fixed shelf address, your request slip says borrow or return, and the desk replies with a stamp.",
+    "breaks": "A librarian remembers you; a REST server forgets you after each request."
+  },
+  "points": [
+    "A URL names a resource, a noun such as `/books/7`, never an action.",
+    "The method is the action: `GET` reads, `POST` creates, `DELETE` removes.",
+    "The status code is the result: `201` created, `404` not found.",
+    "Each request carries everything the server needs; it keeps no client state."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "Four requests, one resource",
+    "head": ["Request", "Action", "Success", "Missing"],
+    "rows": [
+      ["`GET /books`", "List all books", "200", "-"],
+      ["`GET /books/7`", "Read one book", "200", "404"],
+      ["`POST /books`", "Create a book", "201", "-"],
+      ["`DELETE /books/7`", "Remove a book", "204", "404"]
+    ],
+    "highlight": { "col": 0 },
+    "caption": "The path is always plural nouns. Only the method and the status code change."
+  },
+  "code": [
+    {
+      "file": "app.mjs",
+      "lang": "js",
+      "title": "A /books API",
+      "run": "captured",
+      "caption": "Express 5 serving `/books`, calling itself with `fetch`. Press Run for the real output.",
+      "walk": [
+        { "lines": [3, 4], "text": "Keep books in memory; the next id starts at 2." },
+        { "lines": [6], "text": "`express.json()` fills `req.body`, which is `undefined` without it." },
+        { "lines": [8, 9, 10, 11, 12, 13], "text": "`GET` returns the list, or one book; a missing id gets 404." },
+        { "lines": [14, 15, 16, 17, 18], "text": "`POST` stores the book and answers 201 with its new URL." },
+        { "lines": [19, 20, 21, 22], "text": "`DELETE` answers 204 with no body, or 404 if the id is unknown." },
+        { "lines": [24, 25, 26, 27, 28, 29, 30, 31, 32], "text": "A helper sends one request and prints the method, path and status." },
+        { "lines": [33, 34, 35, 36, 37], "text": "Create, read, delete, then read again. Close the server." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Keep verbs out of paths such as `/getBook` or `/deleteBook/7`; the method is the verb.",
+    "Do not mix `/book` and `/books`; choose plural and keep it everywhere.",
+    "Return `404` for a missing resource, not `200` with an error message."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const books = new Map([[1, 'Dune']]);\nconst del = (id) => (books.delete(id) ? 204 : 404);\nconsole.log(del(1), del(1));",
+    "lang": "js",
+    "options": ["204 204", "204 404", "404 204", "404 404"],
+    "answer": 1,
+    "why": "The first delete removes the book, so 204. The second finds nothing, so 404."
+  },
+  "takeaway": "Nouns in the URL, verbs in the method, results in the status.",
+  "chat": {
+    "starters": [
+      "What is the difference between PUT and PATCH?",
+      "Why should a REST server be stateless?",
+      "Should a missing list return 404 or an empty array?"
+    ]
+  }
+}

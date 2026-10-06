@@ -1,0 +1,310 @@
+{
+  "title": "Authentication middleware",
+  "idea": "`authenticate` is middleware that turns the session cookie into `req.user`, or answers `401`. Register it once and every route after it is protected.",
+  "points": [
+    "`authenticate` reads the `sid` cookie and looks the session up in Postgres.",
+    "A valid session sets `req.user`, a property later handlers read, then calls `next()`.",
+    "Routes registered before `app.use(authenticate)` stay public; routes after it need a login.",
+    "Each login creates a new session id, so a planted id never gains access."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "One check in front of every route",
+    "scenario": {
+      "token": {
+        "label": "GET /me",
+        "tone": "req"
+      },
+      "stages": [
+        {
+          "id": "client",
+          "label": "Client",
+          "kind": "end"
+        },
+        {
+          "id": "cp",
+          "label": "cookieParser",
+          "sub": "fills req.cookies"
+        },
+        {
+          "id": "auth",
+          "label": "authenticate",
+          "sub": "cookie to user"
+        },
+        {
+          "id": "route",
+          "label": "Handler",
+          "sub": "GET /me",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "Ada's browser calls `GET /me` and attaches its `sid` cookie.",
+          "at": "client",
+          "slot": "top",
+          "state": {
+            "client": "active"
+          },
+          "out": []
+        },
+        {
+          "caption": "`cookieParser()` copies the `Cookie` header into `req.cookies`.",
+          "at": "cp",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "cp": "active"
+          },
+          "out": [
+            "cookieParser: req.cookies.sid set"
+          ]
+        },
+        {
+          "caption": "`authenticate` looks the id up in `sessions`. The row exists and has not expired, so the caller is Ada.",
+          "at": "auth",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "cp": "done",
+            "auth": "active"
+          },
+          "out": [
+            "cookieParser: req.cookies.sid set",
+            "authenticate: session found, Ada"
+          ]
+        },
+        {
+          "caption": "`authenticate` stored her on `req.user` and called `next()`. The handler answers from `req.user`.",
+          "at": "route",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "cp": "done",
+            "auth": "done",
+            "route": "active"
+          },
+          "out": [
+            "cookieParser: req.cookies.sid set",
+            "authenticate: session found, Ada",
+            "handler: respond with req.user"
+          ]
+        },
+        {
+          "caption": "The response travels back to the browser: `200` with Ada's id, email and role.",
+          "at": "route",
+          "slot": "bottom",
+          "token": {
+            "label": "200",
+            "tone": "ok"
+          },
+          "state": {
+            "client": "done",
+            "cp": "done",
+            "auth": "done",
+            "route": "active"
+          },
+          "out": [
+            "cookieParser: req.cookies.sid set",
+            "authenticate: session found, Ada",
+            "handler: respond with req.user"
+          ]
+        },
+        {
+          "caption": "A later request has no cookie, or one whose session was deleted. `authenticate` finds no live session.",
+          "at": "auth",
+          "slot": "top",
+          "token": {
+            "label": "GET /me",
+            "tone": "req"
+          },
+          "state": {
+            "client": "done",
+            "cp": "done",
+            "auth": "active"
+          },
+          "out": [
+            "cookieParser: parsed cookies",
+            "authenticate: no live session"
+          ]
+        },
+        {
+          "caption": "It sends `401` and never calls `next()`, so the handler does not run.",
+          "at": "auth",
+          "slot": "bottom",
+          "token": {
+            "label": "401",
+            "tone": "err"
+          },
+          "state": {
+            "client": "done",
+            "cp": "done",
+            "auth": "blocked"
+          },
+          "out": [
+            "cookieParser: parsed cookies",
+            "authenticate: no live session",
+            "send 401"
+          ]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "app.mjs",
+      "lang": "js",
+      "title": "Login, authenticate, logout",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "Real Express and Postgres. Role checks arrive later, with `requireRole`.",
+      "walk": [
+        {
+          "lines": [
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27
+          ],
+          "text": "Both tables, as before, and Ada with a demo password. Cost `4` keeps the demo fast."
+        },
+        {
+          "lines": [
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43
+          ],
+          "text": "The last page's session functions: create a row, find its live user, delete a row."
+        },
+        {
+          "lines": [
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51
+          ],
+          "text": "`authenticate` turns the cookie into a user. No cookie, unknown id or expired session means `401`."
+        },
+        {
+          "lines": [
+            56,
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63,
+            64
+          ],
+          "text": "`/login` comes first, so it needs no cookie. Bad input is `400`; a wrong password is `401`."
+        },
+        {
+          "lines": [
+            65,
+            66,
+            67
+          ],
+          "text": "Every login creates a new session id, so an id an attacker planted never becomes valid."
+        },
+        {
+          "lines": [
+            70,
+            72,
+            74,
+            75,
+            76,
+            77,
+            78
+          ],
+          "text": "`app.use(authenticate)` guards every route registered after it. Handlers read `req.user` without checking again."
+        },
+        {
+          "lines": [
+            80,
+            81,
+            82,
+            83,
+            84,
+            85,
+            86,
+            87,
+            88,
+            89,
+            90,
+            91,
+            92,
+            93,
+            94,
+            95,
+            96,
+            97,
+            98,
+            99,
+            100
+          ],
+          "text": "The script calls its own server as a browser would: no login, bad logins, a good one, logout."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Register `app.use(authenticate)` after public routes like `/login`, or nobody can log in.",
+    "Stop with `return res.status(401)...`; without `return`, `next()` still runs the handler.",
+    "Mount `cookieParser()` before `authenticate`, or `req.cookies` is `undefined` and requests fail with `500`."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const res = { status: (n) => ({ json: () => console.log('sent', n) }) };\nconst next = () => console.log('next');\nfunction authenticate(req, res, next) {\n  if (!req.user) res.status(401).json({ error: 'login required' });\n  next();\n}\nauthenticate({}, res, next);",
+    "lang": "js",
+    "options": [
+      "sent 401",
+      "next",
+      "sent 401, then next",
+      "Nothing"
+    ],
+    "answer": 2,
+    "why": "No `return` follows the `401`, so execution continues and `next()` runs too. The handler would run on a rejected request."
+  },
+  "takeaway": "Write the login check once as middleware, and handlers can trust `req.user`.",
+  "chat": {
+    "starters": [
+      "Should `authenticate` query the database on every request?",
+      "How do I protect a whole group of routes at once?",
+      "Why does `authenticate` send `401` instead of redirecting to a login page?"
+    ]
+  }
+}

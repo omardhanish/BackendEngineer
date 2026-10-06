@@ -1,0 +1,9 @@
+{
+  "stdout": "live: { id: 1, email: 'ada@example.com', role: 'user' }\nexpired: null\npurged: 1\nafter restart: ada@example.com\nafter logout: null",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "PostgreSQL 18.4",
+  "hash": "a9e55f1d971e6d31",
+  "at": "2026-10-06T15:10:37.873Z"
+}

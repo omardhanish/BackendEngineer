@@ -1,0 +1,11 @@
+services:
+  api:
+    build: .
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD}

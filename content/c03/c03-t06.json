@@ -1,0 +1,90 @@
+{
+  "title": "API clients: curl, Postman, fetch",
+  "idea": "An API client lets you send any request you design and read the raw response, so you can test a route before any frontend exists.",
+  "analogy": {
+    "text": "Tasting a dish in the kitchen before any guests arrive. You taste exactly what the kitchen made, with no dining room in between.",
+    "breaks": "Tasting skips the dining room, so browser-only behavior can still surprise you."
+  },
+  "points": [
+    "A browser's address bar can only send `GET`; other methods need a client.",
+    "`curl` runs in the terminal: a command sends a request and prints the response.",
+    "Postman is a graphical client: fill in method, URL, headers and body, then send.",
+    "`fetch` is built into Node 20, so scripts and tests can call your API."
+  ],
+  "hero": {
+    "type": "anatomy",
+    "title": "A curl command, part by part",
+    "parts": [
+      {
+        "text": "curl ",
+        "label": "Program",
+        "note": "Sends a request and prints the response. Postman and `fetch` do the same job."
+      },
+      {
+        "text": "-i ",
+        "label": "Show headers",
+        "note": "Also prints the response status line and headers, not only the body."
+      },
+      {
+        "text": "-H 'Content-Type: application/json' ",
+        "label": "Header",
+        "note": "One request header. Postman: the Headers tab. `fetch`: the `headers` option."
+      },
+      {
+        "text": "-d '{\"text\":\"buy tea\"}' ",
+        "label": "Body",
+        "note": "The body. `-d` alone makes curl send `POST`. Postman: Body tab. `fetch`: `body`."
+      },
+      {
+        "text": "http://localhost:$PORT/notes",
+        "label": "URL",
+        "note": "The host and the path your server routes on. `$PORT` stands for its port."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "requests.sh",
+      "lang": "bash",
+      "title": "curl in the terminal",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Three requests from a second terminal, while your server is running."
+    },
+    {
+      "file": "client.mjs",
+      "lang": "js",
+      "title": "The same idea with fetch",
+      "run": "captured",
+      "caption": "A stand-in server and `fetch`: send a POST, then ask for a missing route. Step through it, then press Run.",
+      "walk": [
+        { "lines": [3, 4, 5, 6, 7], "text": "A stand-in server: `POST /notes` gets 201, anything else gets 404." },
+        { "lines": [11, 12, 13, 14, 15], "text": "The same parts as the curl command: method, headers and body." },
+        { "lines": [16], "text": "`status` is the number, `ok` is true for 2xx, and `json()` parses the body." },
+        { "lines": [17, 18], "text": "A 404 still resolves: `fetch` rejects on network errors, not on HTTP statuses." },
+        { "lines": [19], "text": "Close the server so the script can exit." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "`fetch` rejects on network errors, not on 404 or 500; check `res.ok` yourself.",
+    "Send `Content-Type: application/json` with a JSON body; many servers will not parse it otherwise.",
+    "In bash and zsh, wrap JSON in single quotes so the shell keeps its double quotes."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const server = http.createServer((req, res) => res.writeHead(404).end('no'));\nserver.listen(0, async () => {\n  const res = await fetch(`http://localhost:${server.address().port}`);\n  console.log(res.ok, res.status, await res.text());\n  server.close();\n});",
+    "lang": "js",
+    "options": ["true 404 no", "Nothing: fetch throws", "false 404 no", "false 404"],
+    "answer": 2,
+    "why": "`fetch` resolves for any HTTP status. `ok` is false outside 2xx, but the body is still readable."
+  },
+  "takeaway": "Every client sends the same parts: method, URL, headers and body.",
+  "chat": {
+    "starters": [
+      "What does `curl -v` show that `curl -i` does not?",
+      "Should I test with Postman, curl or fetch?",
+      "Why does my POST body arrive empty on the server?"
+    ]
+  }
+}

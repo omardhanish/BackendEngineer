@@ -1,0 +1,202 @@
+{
+  "title": "Custom modules",
+  "idea": "A custom module is a file of your own that exports a few functions and keeps the rest private.",
+  "points": [
+    "Give each module one job: the model, `book.model.js`, holds the books and nothing else.",
+    "Callers import the whole API with `import * as Book from './book.model.js'`.",
+    "Return copies, so a caller cannot edit stored objects by accident.",
+    "Node loads a module once, so every importer shares the same store."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Inside and outside book.model.js",
+    "nodes": [
+      {
+        "id": "ctl",
+        "label": "Importer",
+        "sub": "books.controller.js"
+      },
+      {
+        "id": "api",
+        "label": "Exports",
+        "sub": "findAll … remove",
+        "tone": "good"
+      },
+      {
+        "id": "priv",
+        "label": "Private scope",
+        "sub": "books, nextId"
+      },
+      {
+        "id": "bad",
+        "label": "undefined",
+        "sub": "Book.books",
+        "tone": "bad"
+      }
+    ],
+    "edges": [
+      {
+        "from": "ctl",
+        "to": "api",
+        "label": "calls"
+      },
+      {
+        "from": "api",
+        "to": "priv"
+      },
+      {
+        "from": "ctl",
+        "to": "bad",
+        "dashed": true
+      }
+    ],
+    "steps": [
+      {
+        "caption": "Inside `book.model.js`, `books` and `nextId` sit in the module's own scope. Nothing outside can name them.",
+        "active": [
+          "priv"
+        ],
+        "edges": []
+      },
+      {
+        "caption": "Five `export` lines form the public API: `findAll`, `findById`, `create`, `update` and `remove`.",
+        "active": [
+          "api"
+        ],
+        "edges": []
+      },
+      {
+        "caption": "Another file imports those functions and calls them. It never touches the data directly.",
+        "active": [
+          "ctl",
+          "api"
+        ],
+        "edges": [
+          0
+        ]
+      },
+      {
+        "caption": "Only the exported functions read and change the private state.",
+        "active": [
+          "api",
+          "priv"
+        ],
+        "edges": [
+          1
+        ]
+      },
+      {
+        "caption": "Asking for `books` by name finds nothing: `Book.books` is `undefined`, and `import { books }` is a SyntaxError.",
+        "active": [
+          "ctl",
+          "bad"
+        ],
+        "edges": [
+          2
+        ]
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "book.model.js",
+      "lang": "js",
+      "title": "The module",
+      "run": "static",
+      "caption": "The Book Store data as its own module. In the project it lives at `src/models/book.model.js`.",
+      "walk": [
+        {
+          "lines": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "text": "These two names are not exported, so no other file can reach them."
+        },
+        {
+          "lines": [
+            8
+          ],
+          "text": "`findAll` returns copies, so a caller cannot edit the stored books."
+        },
+        {
+          "lines": [
+            10,
+            11,
+            12,
+            13
+          ],
+          "text": "`findById` returns a copy, or `undefined` when no book has that id."
+        },
+        {
+          "lines": [
+            15,
+            16,
+            17,
+            18,
+            19
+          ],
+          "text": "`create` keeps only the three named fields and assigns the next id."
+        },
+        {
+          "lines": [
+            21,
+            22,
+            23,
+            24,
+            25,
+            26
+          ],
+          "text": "`update` replaces a book; `undefined` means no such id."
+        },
+        {
+          "lines": [
+            28,
+            29,
+            30,
+            31,
+            32,
+            33
+          ],
+          "text": "`remove` answers `true` or `false`. The model never sends HTTP replies."
+        }
+      ]
+    },
+    {
+      "file": "demo.mjs",
+      "lang": "js",
+      "title": "Using the module",
+      "run": "captured",
+      "caption": "A script beside the module imports it. From `src/controllers/`, the path would be `../models/book.model.js`."
+    }
+  ],
+  "pitfalls": [
+    "Do not export the `books` array: any importer could push to it or splice items out.",
+    "Avoid circular imports, where two files import each other: an export may not be ready.",
+    "Do not send HTTP replies from the model: return `undefined` and let the caller pick `404`."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "import * as Book from './book.model.js';\n\nconst a = Book.findById(2);\na.year = 1900;\nBook.remove(1);\nconsole.log(Book.findById(2).year, Book.findAll().length);",
+    "lang": "js",
+    "options": [
+      "1900 2",
+      "1900 3",
+      "1984 2",
+      "1984 3"
+    ],
+    "answer": 2,
+    "why": "`findById` returns a copy, so editing it leaves the stored year at 1984. `remove(1)` leaves two books."
+  },
+  "takeaway": "Export behavior, not data: callers get functions, never the array.",
+  "chat": {
+    "starters": [
+      "Should I use named exports or `export default`?",
+      "Why does the model return copies of the books?",
+      "How do I import a file from a parent folder?"
+    ]
+  }
+}

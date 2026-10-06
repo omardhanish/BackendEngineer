@@ -1,0 +1,9 @@
+{
+  "stdout": "now: 120\nafter 3 events: 70",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": null,
+  "hash": "6096ebc5af89e62f",
+  "at": "2026-10-06T09:54:00.552Z"
+}

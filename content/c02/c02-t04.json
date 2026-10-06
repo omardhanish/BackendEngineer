@@ -1,0 +1,69 @@
+{
+  "title": "Node.js vs the browser",
+  "idea": "Node.js and the browser run the same JavaScript language, but each supplies different objects around it.",
+  "analogy": {
+    "text": "The same song played in a studio and on a stage. The notes are identical; the equipment around you is not.",
+    "breaks": "Unlike notes, some built-in objects exist in both places, such as `fetch`."
+  },
+  "points": [
+    "The language is shared: syntax, `Array`, `Promise` and `Map` work in both.",
+    "The environment adds the rest: a browser adds the page, Node adds the machine.",
+    "Both environments also provide `console`, timers, `fetch` and `URL`.",
+    "Browsers sandbox a page; a Node script has the permissions of its user."
+  ],
+  "hero": {
+    "type": "compare",
+    "title": "Same language, different surroundings",
+    "left": {
+      "title": "Browser",
+      "items": [
+        "Runs inside a web page, in a sandbox",
+        "Global object: `window` (also `globalThis`)",
+        "Reads and changes the page through `document`",
+        "No free file access and no listening servers",
+        "Loads code with script tags or `import`"
+      ]
+    },
+    "right": {
+      "title": "Node.js",
+      "items": [
+        "Runs as a process on your computer",
+        "Global object: `global` (also `globalThis`)",
+        "No page: `document` does not exist",
+        "Reads files and listens for connections",
+        "Loads code with `require` or `import`; the modules page explains both"
+      ]
+    },
+    "verdict": "The language is shared; the built-in objects are not."
+  },
+  "code": [
+    {
+      "file": "env.mjs",
+      "lang": "js",
+      "title": "What exists here?",
+      "run": "browser",
+      "caption": "`typeof` is safe on names that may not exist. Run it here, then paste the same lines into a browser console and compare."
+    }
+  ],
+  "pitfalls": [
+    "Do not use `document` or `window` in Node code; both throw a ReferenceError.",
+    "Guard shared code with `typeof window !== 'undefined'` before touching browser-only objects.",
+    "Read unfamiliar scripts before running them; Node gives them your full file and network access."
+  ],
+  "quiz": {
+    "q": "What does this print when run with `node`?",
+    "code": "console.log(typeof window, typeof process);",
+    "lang": "js",
+    "options": ["object object", "object undefined", "undefined undefined", "undefined object"],
+    "answer": 3,
+    "why": "Node has no page, so `typeof window` is `undefined`. `process` is a Node object, so its type is `object`."
+  },
+  "takeaway": "Before you reuse code, check which built-in objects it touches.",
+  "chat": {
+    "starters": [
+      "Can I reuse browser code in Node?",
+      "What is globalThis?",
+      "Why is `fetch` available in both places?"
+    ]
+  }
+}

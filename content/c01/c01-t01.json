@@ -1,0 +1,67 @@
+{
+  "title": "JavaScript and the V8 engine",
+  "idea": "JavaScript is a language. An engine such as V8 runs it. A runtime such as Node.js or a browser wraps an engine and adds what the language lacks.",
+  "analogy": {
+    "text": "A car engine only turns fuel into motion. Wheels, pedals and a dashboard connect it to the road and the driver. The runtime is the whole car.",
+    "breaks": "One engine fits many cars: Chrome and Node.js both use V8."
+  },
+  "points": [
+    "The ECMAScript standard defines the language, so different engines run the same code.",
+    "V8 compiles your code as it runs, optimizing the busy parts.",
+    "File access (`fs`) and page access (`document`) come from runtimes, not from ECMAScript.",
+    "Node.js wraps V8 with file and network features, so JavaScript runs on servers."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "One engine, two runtimes",
+    "nodes": [
+      { "id": "code", "label": "Your code", "sub": "app.mjs" },
+      { "id": "v8", "label": "V8 engine", "sub": "parse, compile, run" },
+      { "id": "node", "label": "Node.js runtime", "sub": "fs, http, process" },
+      { "id": "browser", "label": "Browser runtime", "sub": "document, window" },
+      { "id": "os", "label": "Operating system", "sub": "disk, network" }
+    ],
+    "edges": [
+      { "from": "code", "to": "v8", "label": "run" },
+      { "from": "v8", "to": "node", "label": "in Node.js" },
+      { "from": "v8", "to": "browser", "label": "in Chrome" },
+      { "from": "node", "to": "os" },
+      { "from": "browser", "to": "os" }
+    ],
+    "steps": [
+      { "caption": "Your source goes to V8. It parses and compiles the code, then runs the language: variables, loops, `Array`, `Promise`.", "active": ["code", "v8"], "edges": [0] },
+      { "caption": "Node.js adds `fs`, `http` and `process` around V8. Now your code can read files and listen for requests.", "active": ["v8", "node"], "edges": [1] },
+      { "caption": "A browser adds `document` and `window` instead. Chrome uses V8; Firefox and Safari use other engines.", "active": ["v8", "browser"], "edges": [2] },
+      { "caption": "Both runtimes reach the disk and network through the operating system. The language itself never does.", "active": ["node", "browser", "os"], "edges": [3, 4] }
+    ]
+  },
+  "code": [
+    {
+      "file": "names.mjs",
+      "lang": "js",
+      "title": "Language or runtime?",
+      "run": "browser",
+      "caption": "Run it. In a browser tab, `document` would be an object and `process` would be `undefined`."
+    }
+  ],
+  "pitfalls": [
+    "Do not use `window` or `document` in Node.js code: only browsers provide them.",
+    "Check your Node.js version before using new language features; older engines lack them."
+  ],
+  "quiz": {
+    "q": "In Node.js, what does this print?",
+    "code": "console.log(typeof Promise, typeof document);",
+    "lang": "js",
+    "options": ["undefined undefined", "function object", "function undefined", "object undefined"],
+    "answer": 2,
+    "why": "`Promise` is part of the language, so every modern engine has it. `document` belongs to browsers; Node.js does not provide it."
+  },
+  "takeaway": "Same engine, different runtime: check where a feature comes from.",
+  "chat": {
+    "starters": [
+      "Is Node.js a language, a framework or a runtime?",
+      "What does V8 actually do with my code?",
+      "Why does document not exist in Node.js?"
+    ]
+  }
+}

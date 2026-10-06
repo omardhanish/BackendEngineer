@@ -1,0 +1,117 @@
+{
+  "title": "Postgres in Docker",
+  "idea": "Docker can run PostgreSQL for you. One command starts a container, an isolated process, from the `postgres:18` image, so you install nothing yourself.",
+  "points": [
+    "An image is a packaged copy of the software; chapter 9 covers them.",
+    "The image requires `POSTGRES_PASSWORD`. The user and database default to `postgres`.",
+    "`-p 5432:5432` publishes the container's port on your machine, host side first.",
+    "A named volume keeps the data when the container stops or is removed."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "A database container and its volume",
+    "scenario": {
+      "tiers": [["app"], ["pg"], ["vol"]],
+      "nodes": {
+        "app": { "label": "Node app", "sub": "on your machine", "kind": "service" },
+        "pg": { "label": "bookstore-db", "sub": "postgres:18", "kind": "db" },
+        "vol": { "label": "bookstore-data", "sub": "named volume", "kind": "box" }
+      },
+      "links": [
+        ["app", "pg", { "label": "localhost:5432" }],
+        ["pg", "vol", { "label": "data files", "dashed": true }]
+      ],
+      "groups": [{ "label": "Docker", "nodes": ["pg", "vol"] }],
+      "steps": [
+        {
+          "caption": "`docker run` pulls the `postgres:18` image if needed and starts a container named `bookstore-db`.",
+          "state": { "pg": "new" },
+          "badge": { "pg": "running" },
+          "focus": ["pg"]
+        },
+        {
+          "caption": "`-v` mounts a named volume. Postgres writes its data files into `bookstore-data`.",
+          "send": [{ "from": "pg", "to": "vol", "label": "files", "tone": "info" }],
+          "focus": ["vol"]
+        },
+        {
+          "caption": "`-p 5432:5432` forwards port 5432 on your machine to the container. Your app connects to `localhost:5432`.",
+          "send": [{ "from": "app", "to": "pg", "label": ":5432", "tone": "req" }]
+        },
+        {
+          "caption": "Your app runs a query. The tables and rows land in the volume.",
+          "send": [
+            { "from": "app", "to": "pg", "label": "INSERT", "tone": "req" },
+            { "from": "pg", "to": "vol", "label": "write", "tone": "info" }
+          ]
+        },
+        {
+          "caption": "`docker stop` stops the container. Nothing listens on the port, so connections fail.",
+          "send": [{ "from": "app", "to": "pg", "label": "fails", "tone": "err" }],
+          "state": { "pg": "down" },
+          "badge": { "pg": "stopped" }
+        },
+        {
+          "caption": "`docker start` starts the same container again. The volume still holds your tables.",
+          "send": [{ "from": "app", "to": "pg", "label": "SELECT", "tone": "ok" }],
+          "state": { "pg": "up" },
+          "badge": { "pg": "running" },
+          "focus": ["vol"]
+        },
+        {
+          "caption": "After `docker stop`, `docker rm` removes the container, not the named volume. A new `docker run` with the same `-v` finds the data.",
+          "state": { "pg": "old" },
+          "badge": { "pg": "removed" },
+          "focus": ["vol"]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "run.sh",
+      "lang": "bash",
+      "title": "Start and connect",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Needs Docker installed (chapter 9 covers it). Step through the flags; `demo-password` is a demo value.",
+      "walk": [
+        { "lines": [1], "text": "`docker run` starts a new container. `--name` gives it a name you can reuse." },
+        { "lines": [2], "text": "`-e` sets an environment variable. `demo-password` is a demo value; choose your own." },
+        { "lines": [3], "text": "`-v name:path` mounts a named volume, created if missing. This path is the one for Postgres 18." },
+        { "lines": [4, 5], "text": "`-p host:container` publishes a port, host first. `-d` runs in the background; the image comes last." },
+        { "lines": [6], "text": "`docker ps` lists running containers. `bookstore-db` should appear." },
+        { "lines": [7, 8], "text": "`DATABASE_URL` holds one connection string; lesson 4 takes it apart. `check.mjs` connects with it." },
+        { "lines": [9, 10], "text": "Stop and restart the container. The volume keeps your data." }
+      ]
+    },
+    {
+      "file": "check.mjs",
+      "lang": "js",
+      "title": "Check the connection",
+      "run": "captured",
+      "needs": ["postgres"],
+      "caption": "The script works the same against your container. The recorded run used a PostgreSQL 18 started for this book."
+    }
+  ],
+  "pitfalls": [
+    "`POSTGRES_PASSWORD` only applies to an empty data directory; an old volume keeps its password.",
+    "Postgres 18 images recommend the mount `/var/lib/postgresql`; older guides use `/var/lib/postgresql/data`.",
+    "Port 5432 busy? Publish another host port, like `-p 5433:5432`, and change the URL."
+  ],
+  "quiz": {
+    "q": "Your container uses `-p 5433:5432`. Which port goes in `DATABASE_URL`?",
+    "options": ["5432", "5433", "Both work", "Neither; Docker chooses"],
+    "answer": 1,
+    "why": "In `-p host:container` the host side comes first. Your app, outside Docker, connects to the host port."
+  },
+  "takeaway": "One `docker run` gives you Postgres; a named volume keeps its data.",
+  "chat": {
+    "starters": [
+      "What is the difference between an image and a container?",
+      "Why do I need a volume for the database?",
+      "How do I connect to this database from a GUI client?"
+    ]
+  }
+}

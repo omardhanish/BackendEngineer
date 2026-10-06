@@ -1,0 +1,79 @@
+{
+  "title": "Event sourcing",
+  "idea": "Event sourcing saves every change as an event that is never edited, and computes the current state by replaying the events in order.",
+  "analogy": {
+    "text": "A paper ledger. You never erase a line; you add a new one. The balance is whatever the lines add up to.",
+    "breaks": "Adding up a short ledger is quick; replaying a long log is slow."
+  },
+  "points": [
+    "Events are facts, such as `Deposited 100`. You only append them, never edit them.",
+    "Current state is a reduce over the events: apply each one, oldest first.",
+    "Replay only part of the log to see the state at an earlier moment.",
+    "Long logs replay slowly, so systems often save snapshots of state along the way."
+  ],
+  "hero": {
+    "type": "timeline",
+    "title": "Replaying a bank account",
+    "items": [
+      {
+        "label": "Opened",
+        "text": "`Opened` is stored. Replaying it gives balance 0."
+      },
+      {
+        "label": "Deposit",
+        "text": "`Deposited 100` is appended. Replay: 0 + 100 gives balance 100."
+      },
+      {
+        "label": "Withdrawal",
+        "text": "`Withdrew 30` is appended. Replay: 100 - 30 gives balance 70."
+      },
+      {
+        "label": "Deposit",
+        "text": "`Deposited 50` is appended. Replay: 70 + 50 gives balance 120."
+      },
+      {
+        "label": "Read the present",
+        "text": "Replay all four events, oldest first, to get the current balance: 120."
+      },
+      {
+        "label": "Read the past",
+        "text": "Stop after event 3 to see that the balance was 70 at that moment."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "ledger.mjs",
+      "lang": "js",
+      "title": "State from events",
+      "run": "browser",
+      "caption": "The events are the stored truth; the balance is recomputed on demand. Change `slice(0, 3)` to see another moment."
+    }
+  ],
+  "pitfalls": [
+    "Never edit or delete a stored event; append a correcting event instead.",
+    "Publishing events is not event sourcing; the stored log itself must be the source of truth.",
+    "Old events stay in the log, so new code must still read their old shape."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const events = [100, -30, 50, -20];\nconst sum = (list) => list.reduce((s, n) => s + n, 0);\nconsole.log(sum(events.slice(0, 3)), sum(events));",
+    "lang": "js",
+    "options": [
+      "70 100",
+      "120 100",
+      "100 120",
+      "120 120"
+    ],
+    "answer": 1,
+    "why": "`slice(0, 3)` replays the first three events: 100 - 30 + 50 = 120. Replaying all four ends at 100."
+  },
+  "takeaway": "Store what happened; compute the state by replaying it.",
+  "chat": {
+    "starters": [
+      "How is event sourcing different from just keeping an audit log?",
+      "How do snapshots work, and when do I need them?",
+      "How do I fix a wrong event if I can never edit it?"
+    ]
+  }
+}

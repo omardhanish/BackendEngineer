@@ -1,0 +1,75 @@
+{
+  "title": "Optimizing Docker images",
+  "idea": "Fast, small images need three habits: order layers by change rate, exclude unneeded files with `.dockerignore`, and start from a small base image.",
+  "points": [
+    "Docker rebuilds a layer when its inputs change, and every layer after it.",
+    "The build context is the folder you send to Docker; `.dockerignore` trims it.",
+    "Ignored files cannot trigger a rebuild or reach the image through `COPY`.",
+    "Small bases (`-alpine`, `-slim`) mean less to download and store."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "scrubber",
+    "title": "Rebuilds with the cache (times illustrative)",
+    "scenario": {
+      "kind": "layers",
+      "layers": [
+        { "cmd": "FROM node:20-alpine", "cost": 3 },
+        { "cmd": "WORKDIR /app" },
+        { "cmd": "COPY package*.json ./", "watch": ["package.json", "package-lock.json"], "cost": 1 },
+        { "cmd": "RUN npm ci --omit=dev", "cost": 30 },
+        { "cmd": "COPY . .", "watch": ["*"], "cost": 2 },
+        { "cmd": "CMD [\"node\", \"server.js\"]" }
+      ],
+      "steps": [
+        { "caption": "The first build has an empty cache, so every line runs.", "edited": ["*initial*"] },
+        { "caption": "Edit `src/routes.js`. Only `COPY . .` depends on it, so the install is not repeated.", "edited": ["src/routes.js"] },
+        { "caption": "Edit `README.md`, which `.dockerignore` lists. Docker never sees the change, so every layer comes from cache.", "edited": [] },
+        { "caption": "Add a dependency. `package.json` is copied above the install, so the slow layer runs again.", "edited": ["package.json"] }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "dockerignore.txt",
+      "lang": "bash",
+      "title": ".dockerignore",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Save it as `.dockerignore` in the root of the build context, next to the Dockerfile.",
+      "walk": [
+        { "lines": [1], "text": "Your laptop's packages. The image runs its own `npm ci`." },
+        { "lines": [2], "text": "Git history is large and never needed at runtime." },
+        { "lines": [3], "text": "Secrets must never be copied into an image layer." },
+        { "lines": [4], "text": "Log files in any folder. `**/` matches any depth; plain `*.log` matches only the root." },
+        { "lines": [5], "text": "Docs the app does not need. Editing them no longer touches the cache." }
+      ]
+    },
+    {
+      "file": "cache.sh",
+      "lang": "bash",
+      "title": "Watch the cache",
+      "run": "static",
+      "illustrative": true,
+      "caption": "The second build reuses the install layer. `--no-cache` ignores the cache and runs every line."
+    }
+  ],
+  "pitfalls": [
+    "List `.env` in `.dockerignore`; otherwise `COPY . .` bakes your secrets into the image.",
+    "Test before switching to Alpine: its C library differs, and some native packages break.",
+    "Avoid `latest` as a base: tags move, so two builds can differ."
+  ],
+  "quiz": {
+    "q": "Which change makes the npm ci layer run again on the next build?",
+    "options": [
+      "Editing server.js",
+      "Editing README.md, which .dockerignore lists",
+      "Running docker ps",
+      "Editing package-lock.json"
+    ],
+    "answer": 3,
+    "why": "`COPY package*.json` copies the lockfile, so changing it invalidates that layer and every layer after it, including the install."
+  },
+  "takeaway": "For each line and file ask: does it change often, and must it ship?",
+  "chat": { "starters": ["What exactly goes into the build context?", "When should I pick `node:20-slim` over Alpine?", "How do I clear the build cache?"] }
+}

@@ -1,0 +1,8 @@
+{
+  "stdout": "logger: GET /books\n401\nlogger: GET /books\n200",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "hash": "9e0d02b6b14c8b27",
+  "at": "2026-10-06T07:49:57.515Z"
+}

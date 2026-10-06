@@ -1,0 +1,243 @@
+{
+  "title": "Blue-green and rolling deployments",
+  "idea": "A deployment strategy decides how new code replaces old in production. Blue-green switches all traffic at once; rolling replaces servers a few at a time.",
+  "analogy": {
+    "text": "Resurfacing a road. Blue-green: open a second road and redirect everyone. Rolling: close one lane at a time while cars use the others.",
+    "breaks": "Software has a hard part roads lack: the data both versions use."
+  },
+  "points": [
+    "Blue-green keeps two full copies: the live one and the new version.",
+    "You test the new copy, then switch the load balancer; rollback is switching back.",
+    "Rolling replaces instances in small batches, so old and new versions serve together.",
+    "Blue-green needs double capacity temporarily; rolling needs little extra but reverts slowly."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "Blue-green: switch, then roll back",
+    "scenario": {
+      "tiers": [
+        [
+          "users"
+        ],
+        [
+          "lb"
+        ],
+        [
+          "blue",
+          "green"
+        ],
+        [
+          "db"
+        ]
+      ],
+      "nodes": {
+        "users": {
+          "label": "Users",
+          "kind": "user"
+        },
+        "lb": {
+          "label": "Load balancer",
+          "kind": "lb"
+        },
+        "blue": {
+          "label": "Blue",
+          "kind": "server"
+        },
+        "green": {
+          "label": "Green",
+          "kind": "server"
+        },
+        "db": {
+          "label": "Shared database",
+          "kind": "db"
+        }
+      },
+      "links": [
+        [
+          "users",
+          "lb"
+        ],
+        [
+          "lb",
+          "blue"
+        ],
+        [
+          "lb",
+          "green"
+        ],
+        [
+          "blue",
+          "db",
+          {
+            "dashed": true
+          }
+        ],
+        [
+          "green",
+          "db",
+          {
+            "dashed": true
+          }
+        ]
+      ],
+      "steps": [
+        {
+          "caption": "The load balancer sends all user traffic to Blue, which runs version 1.",
+          "send": [
+            {
+              "from": "users",
+              "to": "lb",
+              "label": "GET /"
+            },
+            {
+              "from": "lb",
+              "to": "blue",
+              "label": "GET /"
+            }
+          ],
+          "state": {
+            "blue": "ok",
+            "green": "old"
+          },
+          "badge": {
+            "blue": "v1 live",
+            "green": "empty"
+          }
+        },
+        {
+          "caption": "Deploy version 2 to Green. It receives no user traffic yet.",
+          "state": {
+            "green": "new"
+          },
+          "badge": {
+            "green": "v2 idle"
+          },
+          "focus": [
+            "green"
+          ]
+        },
+        {
+          "caption": "Run checks against Green while users stay on Blue.",
+          "send": [
+            {
+              "from": "lb",
+              "to": "green",
+              "label": "checks",
+              "tone": "info"
+            }
+          ]
+        },
+        {
+          "caption": "Switch: the load balancer now sends all user traffic to Green. Blue keeps running, idle.",
+          "send": [
+            {
+              "from": "users",
+              "to": "lb",
+              "label": "GET /"
+            },
+            {
+              "from": "lb",
+              "to": "green",
+              "label": "GET /"
+            }
+          ],
+          "state": {
+            "blue": "old",
+            "green": "ok"
+          },
+          "badge": {
+            "blue": "v1 idle",
+            "green": "v2 live"
+          }
+        },
+        {
+          "caption": "Problem found in version 2? Point the balancer back at Blue, which is still running.",
+          "send": [
+            {
+              "from": "users",
+              "to": "lb",
+              "label": "GET /"
+            },
+            {
+              "from": "lb",
+              "to": "blue",
+              "label": "GET /"
+            }
+          ],
+          "state": {
+            "blue": "ok",
+            "green": "hot"
+          },
+          "badge": {
+            "blue": "v1 live",
+            "green": "v2 bug"
+          }
+        },
+        {
+          "caption": "Both colours use one database, so each schema change must work for both versions.",
+          "send": [
+            {
+              "from": "blue",
+              "to": "db",
+              "label": "v1",
+              "tone": "warn"
+            },
+            {
+              "from": "green",
+              "to": "db",
+              "label": "v2",
+              "tone": "warn"
+            }
+          ],
+          "focus": [
+            "db"
+          ]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "rolling.mjs",
+      "lang": "js",
+      "title": "A rolling update",
+      "run": "browser",
+      "caption": "Two versions serve together mid-rollout. Return `false` from `healthy` and the rollout stops. Some tools start the new instance first, to keep capacity."
+    },
+    {
+      "file": "rollout.sh",
+      "lang": "bash",
+      "title": "Kubernetes rolling update",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Kubernetes, a system that runs containers, rolls out gradually by default. Update the image, watch, undo if needed."
+    }
+  ],
+  "pitfalls": [
+    "Change schemas in two steps: add first, remove only after the old version is gone.",
+    "Add a health check, a request asking if an instance is ready, so rollouts wait.",
+    "Let old instances finish in-flight requests before they stop; allow a drain time."
+  ],
+  "quiz": {
+    "q": "The check fails from the second new instance on. What does this print?",
+    "code": "const pool = ['v1', 'v1', 'v1'];\nconst healthy = (v, i) => i < 1;\nfor (let i = 0; i < pool.length; i++) {\n  pool[i] = 'v2';\n  if (!healthy(pool[i], i)) break;\n}\nconsole.log(pool.join(' '));",
+    "lang": "js",
+    "options": [
+      "v2 v2 v1",
+      "v2 v2 v2",
+      "v2 v1 v1",
+      "v1 v1 v1"
+    ],
+    "answer": 0,
+    "why": "The loop starts a second v2, its check fails, and the loop breaks. The third instance is never touched, so it stays v1."
+  },
+  "takeaway": "Blue-green switches at once, rolling replaces gradually; plan the rollback either way.",
+  "chat": {
+    "starters": [
+      "When would I pick blue-green over a rolling update?",
+      "How do I change a database schema during a zero-downtime deploy?",
+      "What is a canary deployment, and how is it different?"
+    ]
+  }
+}

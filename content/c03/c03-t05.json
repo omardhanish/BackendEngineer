@@ -1,0 +1,146 @@
+{
+  "title": "A notes API from scratch",
+  "idea": "A custom JSON server needs a route table (an object keyed by method and path), a body reader and one `try/catch` for errors.",
+  "analogy": {
+    "text": "A help desk with one outgoing window. Every slip is read at the desk, and whatever the outcome, the answer leaves through that same window.",
+    "breaks": "A desk serves one visitor at a time; a server overlaps many requests."
+  },
+  "points": [
+    "Each handler returns `[status, data]`, so every reply is sent from one place.",
+    "The body arrives in chunks: collect them, join them, then `JSON.parse` the text.",
+    "`JSON.parse` throws a `SyntaxError` on bad input; the `catch` turns it into `400`.",
+    "Any other error becomes `500`: log it, but keep details from the client."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "Two POSTs through the server",
+    "scenario": {
+      "token": { "label": "POST /notes", "tone": "req" },
+      "stages": [
+        { "id": "client", "label": "Client", "kind": "end" },
+        { "id": "route", "label": "Route lookup", "sub": "method + path" },
+        { "id": "read", "label": "Read body", "sub": "readJson" },
+        { "id": "handler", "label": "Handler", "sub": "validate, store" },
+        { "id": "send", "label": "send", "sub": "status + JSON", "kind": "end" }
+      ],
+      "steps": [
+        {
+          "caption": "The client posts `{\"text\":\"buy tea\"}` to `/notes`.",
+          "at": "client",
+          "slot": "top",
+          "state": { "client": "active" },
+          "out": []
+        },
+        {
+          "caption": "The table has `POST /notes`, so that handler is chosen. An unknown route would get `notFound`.",
+          "at": "route",
+          "slot": "top",
+          "state": { "client": "done", "route": "active" },
+          "out": []
+        },
+        {
+          "caption": "`readJson` joins the chunks and `JSON.parse` succeeds.",
+          "at": "read",
+          "slot": "top",
+          "state": { "client": "done", "route": "done", "read": "active" },
+          "out": []
+        },
+        {
+          "caption": "`text` is a string, so the handler stores note 1 and returns `[201, note]`.",
+          "at": "handler",
+          "slot": "top",
+          "state": { "client": "done", "route": "done", "read": "done", "handler": "active" },
+          "out": []
+        },
+        {
+          "caption": "`send` writes the status and the JSON body.",
+          "at": "send",
+          "slot": "top",
+          "token": { "label": "201", "tone": "ok" },
+          "state": { "client": "done", "route": "done", "read": "done", "handler": "done", "send": "active" },
+          "out": []
+        },
+        {
+          "caption": "The client prints the status and body. The note now lives in the server's memory.",
+          "at": "client",
+          "slot": "top",
+          "token": { "label": "201", "tone": "ok" },
+          "state": { "client": "active", "route": "done", "read": "done", "handler": "done", "send": "done" },
+          "out": ["POST /notes 201 {\"id\":1,\"text\":\"buy tea\"}"]
+        },
+        {
+          "caption": "A second POST sends truncated JSON: `{\"text\":`.",
+          "at": "client",
+          "slot": "top",
+          "token": { "label": "POST /notes", "tone": "req" },
+          "state": { "client": "active" },
+          "out": ["POST /notes 201 {\"id\":1,\"text\":\"buy tea\"}"]
+        },
+        {
+          "caption": "`JSON.parse` throws a `SyntaxError` inside `readJson`. Validation and storing never run.",
+          "at": "read",
+          "slot": "top",
+          "token": { "label": "SyntaxError", "tone": "err" },
+          "state": { "client": "done", "route": "done", "read": "error", "handler": "blocked" },
+          "out": ["POST /notes 201 {\"id\":1,\"text\":\"buy tea\"}"]
+        },
+        {
+          "caption": "The `catch` block maps `SyntaxError` to `400` and sends it. The server keeps running.",
+          "at": "send",
+          "slot": "top",
+          "token": { "label": "400", "tone": "err" },
+          "state": { "client": "done", "route": "done", "read": "error", "handler": "blocked", "send": "active" },
+          "out": ["POST /notes 201 {\"id\":1,\"text\":\"buy tea\"}"]
+        },
+        {
+          "caption": "The client prints the 400 line. One bad request did not stop the server.",
+          "at": "client",
+          "slot": "top",
+          "token": { "label": "400", "tone": "err" },
+          "state": { "client": "active", "route": "done", "read": "error", "handler": "blocked", "send": "done" },
+          "out": ["POST /notes 201 {\"id\":1,\"text\":\"buy tea\"}", "POST /notes 400 {\"error\":\"bad JSON\"}"]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "api.mjs",
+      "lang": "js",
+      "title": "A notes server",
+      "run": "captured",
+      "caption": "The whole server, plus a script that sends good and bad requests. Step through it, then press Run.",
+      "walk": [
+        { "lines": [3], "text": "`notes` lives outside any handler, so all requests share it. A restart clears it." },
+        { "lines": [4, 5, 6, 7], "text": "`send` is the only place a reply leaves: status, JSON header, JSON body." },
+        { "lines": [8, 9, 10, 11, 12], "text": "`readJson` collects the chunks, joins them, turns the bytes into text and parses it." },
+        { "lines": [14, 15, 16], "text": "Handlers return `[status, data]`. `notFound` is the fallback for unknown routes." },
+        { "lines": [17, 18, 19, 20, 21, 22, 23], "text": "`POST /notes` reads the body, validates `text`, stores the note and returns `201`." },
+        { "lines": [26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37], "text": "One handler per request: look up the route, await it, send. `catch` maps errors to 400 or 500." },
+        { "lines": [39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51], "text": "The script sends five requests, good and bad, prints each reply, then closes the server." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Wrap async handlers in `try/catch`; an unhandled rejection crashes the process by default.",
+    "Cap the body size in real servers; `readJson` buffers whatever a client sends.",
+    "Check the type of every parsed field before use; never trust the body."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const status = (text) => {\n  try { JSON.parse(text); return 201; }\n  catch (err) { return err instanceof SyntaxError ? 400 : 500; }\n};\nconsole.log(status('{\"text\":\"tea\"}'), status('{\"text\":'), status(''));",
+    "lang": "js",
+    "options": ["201 400 400", "201 400 500", "201 201 400", "400 400 400"],
+    "answer": 0,
+    "why": "Valid JSON parses, so 201. Truncated JSON and an empty string both throw `SyntaxError`, so both give 400."
+  },
+  "takeaway": "Route by table, parse defensively, and answer every request exactly once.",
+  "chat": {
+    "starters": [
+      "Why does the request body arrive in chunks?",
+      "What happens if an async handler throws and nothing catches it?",
+      "How would I add `DELETE /notes/:id` to this server?"
+    ]
+  }
+}

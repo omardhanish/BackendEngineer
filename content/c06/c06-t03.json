@@ -1,0 +1,192 @@
+{
+  "title": "Session-based authentication",
+  "idea": "Session-based authentication keeps the login on the server: it stores a session after a correct password, and the browser holds only a random session id.",
+  "analogy": {
+    "text": "A coat check. You hand over your coat and get a numbered ticket; the cloakroom keeps the coat, and you carry only the ticket.",
+    "breaks": "A ticket is shown once; a session id travels with every request."
+  },
+  "points": [
+    "A cookie is a value the browser stores and sends back automatically.",
+    "`httpOnly` hides the cookie from page JavaScript, so a script cannot read the id.",
+    "On each request, the server looks the id up to learn who is calling.",
+    "Logout deletes the session, so a copied id stops working at once."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "A session from login to logout",
+    "actors": [
+      {
+        "id": "b",
+        "label": "Browser"
+      },
+      {
+        "id": "s",
+        "label": "Express server"
+      },
+      {
+        "id": "m",
+        "label": "sessions Map"
+      }
+    ],
+    "messages": [
+      {
+        "from": "b",
+        "to": "s",
+        "label": "POST /login",
+        "note": "The browser sends email and password, once."
+      },
+      {
+        "from": "s",
+        "to": "s",
+        "label": "check password",
+        "note": "The server compares the password with the stored hash."
+      },
+      {
+        "from": "s",
+        "to": "m",
+        "label": "set(sid, user 1)",
+        "note": "It creates a random id and stores the session under it."
+      },
+      {
+        "from": "s",
+        "to": "b",
+        "label": "Set-Cookie: sid",
+        "note": "The id goes back in a cookie. The browser keeps it."
+      },
+      {
+        "from": "b",
+        "to": "s",
+        "label": "GET /me + Cookie",
+        "note": "Every later request carries the cookie automatically."
+      },
+      {
+        "from": "s",
+        "to": "m",
+        "label": "get(sid)",
+        "note": "The server looks the id up."
+      },
+      {
+        "from": "m",
+        "to": "s",
+        "label": "user 1",
+        "dashed": true,
+        "note": "The session names the user, so the request is Ada's."
+      },
+      {
+        "from": "s",
+        "to": "b",
+        "label": "200 { userId: 1 }",
+        "note": "The handler answers as user 1."
+      },
+      {
+        "from": "b",
+        "to": "s",
+        "label": "POST /logout",
+        "note": "On logout the browser sends the cookie once more."
+      },
+      {
+        "from": "s",
+        "to": "m",
+        "label": "delete(sid)",
+        "note": "The server deletes the session. The id is dead, even if someone copied it."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "sessions.mjs",
+      "lang": "js",
+      "title": "Login, /me and logout",
+      "run": "captured",
+      "caption": "`demo-password` is a demo value. The `Map` is lost on restart; the next page moves sessions to Postgres.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7,
+            8
+          ],
+          "text": "Stand-ins: one user with a hashed password, and a `Map` that will hold sessions."
+        },
+        {
+          "lines": [
+            11
+          ],
+          "text": "`cookieParser()` fills `req.cookies` from the `Cookie` header, as `express.json()` fills `req.body`."
+        },
+        {
+          "lines": [
+            14,
+            15,
+            16,
+            17,
+            18
+          ],
+          "text": "Find the user and check the password. Either failure gives the same `401` message."
+        },
+        {
+          "lines": [
+            19,
+            20,
+            21
+          ],
+          "text": "Store the session under a random id. Send only the id, in a cookie that limits cross-site sending."
+        },
+        {
+          "lines": [
+            26,
+            27,
+            28
+          ],
+          "text": "Later requests: look the cookie's id up. No session means `401`; otherwise you know the user."
+        },
+        {
+          "lines": [
+            32,
+            33
+          ],
+          "text": "Logout deletes the session on the server, then clears the browser's cookie."
+        },
+        {
+          "lines": [
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53
+          ],
+          "text": "The script calls its own server and copies the cookie by hand, as a browser would."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Make ids with `crypto.randomUUID()`. Counters or user ids are easy to guess.",
+    "Delete the session on logout; clearing only the cookie leaves a copied id valid.",
+    "Set `secure: true` when serving HTTPS, so browsers never send the cookie over HTTP."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const sessions = new Map([['a1', 1]]);\nconst who = (sid) => sessions.get(sid) ?? 'nobody';\nconst before = who('a1');\nsessions.delete('a1');\nconsole.log(before, who('a1'), who('zz'));",
+    "lang": "js",
+    "options": [
+      "1 1 nobody",
+      "1 nobody nobody",
+      "nobody nobody nobody",
+      "1 nobody 1"
+    ],
+    "answer": 1,
+    "why": "Deleting the entry removes the server's record, so the old id gives `nobody`. An id that never existed does too."
+  },
+  "takeaway": "Treat the session id like a password: random, protected, and deleted on logout.",
+  "chat": {
+    "starters": [
+      "Why store an id in the cookie instead of the user's email?",
+      "What happens if someone steals a session id?",
+      "Should I use `express-session` instead of writing this by hand?"
+    ]
+  }
+}

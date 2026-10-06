@@ -1,0 +1,58 @@
+{
+  "title": "Working with images",
+  "idea": "Image commands build, name, list and remove images. One image can carry several `name:tag` labels, such as `1.0` and `latest`, and keeps one ID.",
+  "points": [
+    "`docker build -t bookstore-api:1.0 .` builds the Dockerfile in this folder into an image.",
+    "`docker pull node:20-alpine` downloads an image from Docker Hub, a public registry, without building.",
+    "`docker tag` gives an existing image another name. Nothing is copied.",
+    "`docker rmi` removes one name; the image goes with its last name."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "One image, two names",
+    "head": ["Name", "Tag", "Image ID"],
+    "rows": [
+      ["bookstore-api", "1.0", "a1b2c3d4e5f6"],
+      ["bookstore-api", "latest", "a1b2c3d4e5f6"],
+      ["node", "20-alpine", "9f8e7d6c5b4a"]
+    ],
+    "highlight": { "col": 2 },
+    "caption": "`1.0` and `latest` are two names for one image. Delete one name and the image stays."
+  },
+  "code": [
+    {
+      "file": "images.sh",
+      "lang": "bash",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Build an image, give it a second name, inspect it, then clean up.",
+      "walk": [
+        { "lines": [1], "text": "Build from the folder `.` (the build context). Name the image `bookstore-api:1.0`." },
+        { "lines": [2], "text": "Add the name `latest` to the image you just built." },
+        { "lines": [3], "text": "List the `bookstore-api` images. Both tags show the same image ID." },
+        { "lines": [4], "text": "Show the image's layers, one row per layer, with the command that made each." },
+        { "lines": [5], "text": "Download `node:20-alpine` from Docker Hub without building anything." },
+        { "lines": [6], "text": "Remove the `latest` name. `1.0` still points at the image, so it stays." },
+        { "lines": [7], "text": "Delete dangling images: untagged leftovers, often from rebuilding the same tag." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "`latest` is only the default tag, not a promise of newest. Pin `20-alpine` or `1.0`.",
+    "Removing an image's last name fails while any container, even a stopped one, uses it.",
+    "Rebuilding a tag leaves the old image untagged; clear those with `docker image prune`."
+  ],
+  "quiz": {
+    "q": "You tagged bookstore-api:1.0 as latest, then ran docker rmi bookstore-api:latest. What happens?",
+    "options": [
+      "The image is deleted",
+      "Only the latest name goes; 1.0 and the image stay",
+      "Docker refuses: the image is in use",
+      "Both names are removed"
+    ],
+    "answer": 1,
+    "why": "Both names point to one image. Removing a name leaves the image in place until its last name is gone."
+  },
+  "takeaway": "An image is its ID; tags are labels you add or remove.",
+  "chat": { "starters": ["What is the difference between a tag and an image ID?", "Where does `docker pull` get images from?", "How do I delete all unused images?"] }
+}
