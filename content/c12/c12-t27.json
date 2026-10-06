@@ -1,0 +1,121 @@
+{
+  "title": "Routers for registering",
+  "idea": "A router maps a method and path to a controller. `auth.routes.js` maps `POST /register` to `registerUser`; `app.js` mounts the router under `/api/v1/auth`.",
+  "points": [
+    "A `Router` groups related routes; the healthcheck route already used one.",
+    "`router.route('/register').post(registerUser)` maps one method and path to the controller.",
+    "`app.use('/api/v1/auth', authRouter)` mounts it; the router sees only `/register`.",
+    "Mount routers below `express.json()`, or the controller finds `req.body` undefined."
+  ],
+  "hero": {
+    "type": "anatomy",
+    "title": "One request line, two files",
+    "parts": [
+      {
+        "text": "POST ",
+        "label": "Method",
+        "note": "`.post(...)` in the router matches this method only. The same path with `GET` gets `404`."
+      },
+      {
+        "text": "/api/v1",
+        "label": "Version prefix",
+        "note": "Part of the mount path in `app.js`, shared by every route of this API version."
+      },
+      {
+        "text": "/auth",
+        "label": "Router mount",
+        "note": "The rest of the mount path in `app.js`. Every route in the auth router starts here."
+      },
+      {
+        "text": "/register",
+        "label": "Route",
+        "note": "Declared in `auth.routes.js`. The router sees only this part of the path."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "auth.routes.js",
+      "lang": "js",
+      "title": "src/routes/auth.routes.js",
+      "run": "static",
+      "caption": "The router file. Later lessons put validators and the auth middleware before the controller in this same chain."
+    },
+    {
+      "file": "routes.mjs",
+      "lang": "js",
+      "title": "Mount and call",
+      "run": "captured",
+      "caption": "Router, mount and three calls in one file. A stand-in controller replies, so the focus stays on the paths.",
+      "walk": [
+        {
+          "lines": [
+            3,
+            4,
+            5,
+            6
+          ],
+          "text": "A stand-in for the controller from the last lesson."
+        },
+        {
+          "lines": [
+            9,
+            10
+          ],
+          "text": "`Router()` makes a group of routes. `route('/register').post(...)` maps one method and path."
+        },
+        {
+          "lines": [
+            14,
+            15
+          ],
+          "text": "Mount below the body parser. Every route in the router now starts with `/api/v1/auth`."
+        },
+        {
+          "lines": [
+            27
+          ],
+          "text": "Full path and right method: the controller runs."
+        },
+        {
+          "lines": [
+            28
+          ],
+          "text": "Same path, other method: no route matches, so Express answers `404`."
+        },
+        {
+          "lines": [
+            29
+          ],
+          "text": "Without the `/auth` mount segment nothing matches either."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Write `/register` in the router, not `/auth/register`: the mount adds the prefix.",
+    "Pass `registerUser`, not `registerUser()`: calling it runs the controller at startup, not per request.",
+    "A router mounted before `express.json()` sees `req.body` as `undefined`."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "router.route('/register').post((req, res) => res.sendStatus(201));\napp.use('/api/v1/auth', router);\n\nfor (const path of ['/api/v1/auth/register', '/register']) {\n  const res = await fetch(base + path, { method: 'POST' });\n  console.log(res.status);\n}",
+    "lang": "js",
+    "options": [
+      "201 then 201",
+      "404 then 404",
+      "201 then 404",
+      "201 then 405"
+    ],
+    "answer": 2,
+    "why": "The first URL has the mount prefix and matches. The second lacks it, so no route matches and Express sends `404`."
+  },
+  "takeaway": "The router names the route; `app.use` supplies the prefix.",
+  "chat": {
+    "starters": [
+      "Why mount routers under `/api/v1`?",
+      "What does `router.route('/register')` do that `router.post('/register')` does not?",
+      "Where do validators and middleware go in a route?"
+    ]
+  }
+}

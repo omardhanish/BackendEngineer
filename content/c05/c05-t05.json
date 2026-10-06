@@ -1,0 +1,83 @@
+{
+  "title": "The Book Store schema",
+  "idea": "A schema file declares each table and its columns in JavaScript. Queries and `drizzle-kit` both read it, so every table has one definition.",
+  "analogy": {
+    "text": "A blueprint and a building. The schema file is the plan, the Postgres table is the building, and `drizzle-kit` is the crew that makes them match.",
+    "breaks": "Tables hold data, so changing a built table is riskier than redrawing a plan."
+  },
+  "points": [
+    "`pgTable('books', {…})` declares a table: its SQL name, then one entry per column.",
+    "`serial()` auto-numbers ids, `text()` holds strings, `integer()` holds whole numbers.",
+    "`.primaryKey()` marks the unique id; `.notNull()` makes Postgres reject missing values.",
+    "`text('title')` names the Postgres column; the object key names the JavaScript field."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "One schema, two readers",
+    "nodes": [
+      { "id": "schema", "label": "schema.js", "sub": "pgTable definitions" },
+      { "id": "kit", "label": "drizzle-kit push", "sub": "local development" },
+      { "id": "query", "label": "Your queries", "sub": "import { books }" },
+      { "id": "table", "label": "books table", "sub": "in Postgres" }
+    ],
+    "edges": [
+      { "from": "schema", "to": "kit", "label": "read by", "caption": "`schema.js` declares `books` once. `drizzle-kit push` reads it and compares it with the database." },
+      { "from": "kit", "to": "table", "label": "creates", "caption": "It sends the SQL that makes the real `books` table match the schema." },
+      { "from": "schema", "to": "query", "label": "imported by", "caption": "Your queries import the same `books` object, so `books.title` names a real column." },
+      { "from": "query", "to": "table", "label": "reads rows", "caption": "A query runs against the table and returns rows as plain objects." }
+    ]
+  },
+  "code": [
+    {
+      "file": "schema.js",
+      "lang": "js",
+      "title": "src/db/schema.js",
+      "run": "static",
+      "caption": "The whole Book Store schema: one table, four columns. Step through it.",
+      "walk": [
+        { "lines": [1], "text": "Import the table builder and three column types from Drizzle's Postgres module." },
+        { "lines": [3], "text": "`pgTable` takes the SQL table name, then an object of columns. `export` shares `books`." },
+        { "lines": [4], "text": "`serial` numbers rows automatically; `primaryKey()` makes `id` each row's unique identifier." },
+        { "lines": [5, 6], "text": "`notNull()` makes Postgres reject a book without a title or an author." },
+        { "lines": [7], "text": "No `notNull()`: `year` may hold `null`." }
+      ]
+    },
+    {
+      "file": "seed.mjs",
+      "lang": "js",
+      "title": "Use the schema",
+      "run": "captured",
+      "needs": ["postgres"],
+      "caption": "Imports `books` from `schema.js`, seeds the three Book Store rows and reads them back. Step through it, then press Run.",
+      "walk": [
+        { "lines": [1, 2, 3], "text": "Import `books` from the schema file: the same object every query uses." },
+        { "lines": [5], "text": "`db` as in the last lesson, built from `DATABASE_URL`." },
+        { "lines": [6, 7, 8], "text": "`drizzle-kit` is not run here, so raw SQL creates the table. It matches `schema.js`." },
+        { "lines": [9, 10, 11, 12, 13], "text": "`insert().values()` takes objects keyed by the schema's field names, one per row." },
+        { "lines": [14], "text": "`select().from(books)` returns rows as objects with those keys. `orderBy` fixes the order." },
+        { "lines": [15], "text": "Close the pool so the script can exit." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Editing `schema.js` does not change Postgres: apply it, for example with `drizzle-kit push`.",
+    "If `schema.js` names a column the table lacks, queries fail: the column does not exist.",
+    "Export every table from the schema file, or `drizzle-kit` will not see it."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const books = pgTable('books', {\n  id: serial('id').primaryKey(),\n  title: text('title').notNull(),\n  year: integer('year'),\n});\nawait db.insert(books).values({ title: 'Emma' });\nconst [row] = await db.select().from(books);\nconsole.log(row.year);",
+    "lang": "js",
+    "options": ["undefined", "0", "null", "Error: year is required"],
+    "answer": 2,
+    "why": "`year` has no `.notNull()`, so Postgres stores `null` when the insert leaves it out."
+  },
+  "takeaway": "Define a table once in `schema.js`; the database follows only when you apply it.",
+  "chat": {
+    "starters": [
+      "Why use `serial` for the id column?",
+      "Can I write the schema in TypeScript?",
+      "What happens to existing rows if I change the schema?"
+    ]
+  }
+}

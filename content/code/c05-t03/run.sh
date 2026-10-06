@@ -1,7 +1,7 @@
 docker run --name bookstore-db \
   -e POSTGRES_PASSWORD=demo-password \
   -v bookstore-data:/var/lib/postgresql \
-  -p 5432:5432 \
+  -p 127.0.0.1:5432:5432 \
   -d postgres:18
 docker ps
 export DATABASE_URL=postgres://postgres:demo-password@localhost:5432/postgres

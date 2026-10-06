@@ -1,0 +1,117 @@
+{
+  "title": "A constants file",
+  "idea": "A constants file is one module that holds fixed values, such as role names and the database name, so every file imports the same spelling.",
+  "points": [
+    "`src/constants.js` exports each value once; other files import it by name.",
+    "`UserRolesEnum` is an enum: a fixed set of named values, here role strings.",
+    "`Object.values` builds `AvailableUserRoles` from the enum, so the two cannot drift apart.",
+    "`Object.freeze` makes the enum read-only; a `const` alone would not."
+  ],
+  "hero": {
+    "type": "compare",
+    "title": "Typed strings vs one file",
+    "left": {
+      "title": "The same string in many files",
+      "tone": "bad",
+      "items": [
+        "`role === 'admin'` typed in one file",
+        "`'Admin'` typed in another never matches",
+        "Renaming a role means searching every file"
+      ]
+    },
+    "right": {
+      "title": "One constants file",
+      "tone": "good",
+      "items": [
+        "`UserRolesEnum.ADMIN` used everywhere",
+        "`AvailableUserRoles` is a ready list to check against",
+        "Renaming a role is one edit"
+      ]
+    },
+    "verdict": "One definition, imported everywhere."
+  },
+  "code": [
+    {
+      "file": "constants.mjs",
+      "lang": "js",
+      "title": "src/constants.js",
+      "run": "captured",
+      "caption": "Lines 1-3 are `src/constants.js`. The rest plays another file that imports them.",
+      "walk": [
+        {
+          "lines": [
+            1
+          ],
+          "text": "Keys are readable names, values are the strings you store. `freeze` locks the object."
+        },
+        {
+          "lines": [
+            2
+          ],
+          "text": "`Object.values` lists the role strings, so a new role is added in one place."
+        },
+        {
+          "lines": [
+            3
+          ],
+          "text": "The database name is not a secret, so it can live in code."
+        },
+        {
+          "lines": [
+            5,
+            6
+          ],
+          "text": "A caller checks a value against the list. `includes` needs the exact string, so `'Admin'` fails."
+        },
+        {
+          "lines": [
+            7
+          ],
+          "text": "Print the list and the database name."
+        },
+        {
+          "lines": [
+            8,
+            9,
+            10,
+            11,
+            12
+          ],
+          "text": "Inside a module, assigning to a frozen property throws a `TypeError`."
+        },
+        {
+          "lines": [
+            13
+          ],
+          "text": "A misspelled key is not an error: you get `undefined`."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "`const` blocks reassignment, not edits to properties; freeze enum objects.",
+    "A misspelled key such as `UserRolesEnum.ADMN` is `undefined`, not an error.",
+    "Keep secrets and per-machine values, such as `MONGO_URI`, in `.env`, not here."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const RolesEnum = { ADMIN: 'admin', USER: 'user' };\nconst Available = Object.values(RolesEnum);\nconsole.log(Available.length, Available.includes('ADMIN'));",
+    "lang": "js",
+    "options": [
+      "2 true",
+      "2 false",
+      "4 false",
+      "4 true"
+    ],
+    "answer": 1,
+    "why": "`Object.values` returns the values, `'admin'` and `'user'`. `'ADMIN'` is a key, so `includes` is false."
+  },
+  "takeaway": "Define fixed values once, freeze them, and import them everywhere.",
+  "chat": {
+    "starters": [
+      "Why build `AvailableUserRoles` with `Object.values`?",
+      "When does a value belong in `.env` instead of `constants.js`?",
+      "Can a Mongoose `enum` option use `AvailableUserRoles`?"
+    ]
+  }
+}

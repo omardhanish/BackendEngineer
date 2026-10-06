@@ -1,0 +1,87 @@
+{
+  "title": "PostgreSQL with Docker",
+  "idea": "Docker runs PostgreSQL in a container, an isolated process, on your laptop. A published port lets your app reach it; a volume keeps the data.",
+  "points": [
+    "`docker run -d` starts the `postgres:18` image as a container in the background.",
+    "`POSTGRES_PASSWORD` is required. `POSTGRES_DB` names the database created on first start.",
+    "`-p 127.0.0.1:5432:5432` publishes the container's port on your machine only.",
+    "`-v url-shortener-data:/var/lib/postgresql` keeps the data when the container is removed."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "A database that outlives its container",
+    "scenario": {
+      "tiers": [["app"], ["db"], ["vol"]],
+      "nodes": {
+        "app": { "label": "Express app", "sub": "reads DATABASE_URL", "kind": "server" },
+        "db": { "label": "postgres:18", "sub": "url-shortener-db", "kind": "db" },
+        "vol": { "label": "Volume", "sub": "url-shortener-data", "kind": "box" }
+      },
+      "links": [
+        ["app", "db", { "label": "localhost:5432" }],
+        ["db", "vol", { "label": "data", "dashed": true }]
+      ],
+      "groups": [{ "label": "Docker", "nodes": ["db", "vol"] }],
+      "steps": [
+        { "caption": "Your app has a `DATABASE_URL`, but no database is running yet.", "state": { "db": "down", "vol": "down" }, "badge": { "db": "not running", "vol": "none yet" } },
+        { "caption": "`docker run` starts the container and creates the volume. Postgres sets up an empty database.", "state": { "db": "up", "vol": "new" }, "badge": { "db": "running", "vol": "created" } },
+        { "caption": "The published port forwards `localhost:5432` into the container. The app connects.", "send": [{ "from": "app", "to": "db", "label": "SQL", "tone": "req" }] },
+        { "caption": "Postgres writes its files to the volume, not to the container itself.", "send": [{ "from": "db", "to": "vol", "label": "rows", "tone": "info" }], "state": { "vol": "ok" }, "badge": { "vol": "has data" } },
+        { "caption": "`docker rm -f` removes the container. The named volume stays.", "state": { "db": "down" }, "badge": { "db": "removed" } },
+        { "caption": "A new `docker run` with the same `-v` finds the data and leaves it untouched.", "send": [{ "from": "db", "to": "vol", "label": "reads", "tone": "ok" }], "state": { "db": "up" }, "badge": { "db": "running" } }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "run.sh",
+      "lang": "bash",
+      "title": "Start Postgres",
+      "run": "static",
+      "illustrative": true,
+      "caption": "The same recipe as chapter 5, with this project's names. Not run here: it needs Docker.",
+      "walk": [
+        { "lines": [1], "text": "Name the container, so later commands can refer to it." },
+        { "lines": [2], "text": "Set the superuser password. It is required; `demo-password` is a demo value." },
+        { "lines": [3], "text": "Create a database called `shortener` on first start." },
+        { "lines": [4], "text": "Mount the named volume where Postgres 18 keeps its data." },
+        { "lines": [5], "text": "Publish container port 5432 on host port 5432, reachable from this machine only." },
+        { "lines": [6], "text": "Run in the background (`-d`) from the `postgres:18` image." },
+        { "lines": [7, 8, 9], "text": "`docker ps` lists running containers. `stop` and `start` halt and restart the same one." }
+      ]
+    },
+    {
+      "file": "env.sh",
+      "lang": "bash",
+      "title": ".env file",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Save this as `.env` in the project root. `DATABASE_URL` is the address your app connects to; the next lesson reads it part by part. The password is a demo value."
+    }
+  ],
+  "pitfalls": [
+    "`POSTGRES_PASSWORD` and `POSTGRES_DB` apply only on first start with an empty volume.",
+    "Postgres 18 images mount `/var/lib/postgresql`; older ones used `/var/lib/postgresql/data`.",
+    "If port 5432 is taken, use `-p 127.0.0.1:5433:5432` and change the port in `DATABASE_URL`."
+  ],
+  "quiz": {
+    "q": "After `docker rm -f` and a new `docker run` with the same `-v`, what happens to the rows?",
+    "options": [
+      "They are gone with the container",
+      "Docker restores them from the image",
+      "They are still there",
+      "Postgres asks you to recreate them"
+    ],
+    "answer": 2,
+    "why": "A named volume lives outside the container, and removing the container keeps it. The new container finds the data and leaves it untouched."
+  },
+  "takeaway": "Publish the port to connect; mount a volume to keep the data.",
+  "chat": {
+    "starters": [
+      "Why a volume and not the container's own storage?",
+      "Can I use Docker Compose instead of `docker run`?",
+      "How do I reset the database and start clean?"
+    ]
+  }
+}

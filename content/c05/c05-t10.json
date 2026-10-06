@@ -1,0 +1,30 @@
+{
+  "title": "Choose the right database",
+  "scenario": {
+    "brief": "Mara is launching a marketplace for used bikes and parts. Her brief already names MongoDB, but not why it fits. Decide which database to build on, and be ready to defend the choice.",
+    "role": "Backend engineer advising a founder before the first line of code.",
+    "goal": "Learn what the data and the business need, then recommend a database and explain why in plain words.",
+    "rules": [
+      "Mara is in the chat. She knows her business, not databases.",
+      "Ask how the product works. She answers in plain words.",
+      "When you are ready, press End and debrief."
+    ],
+    "personaLabel": "Mara · Founder",
+    "artifact": 0,
+    "artifactTitle": "Product and data brief: brief.yaml",
+    "artifactNote": "About 50 lines, written by Mara. It names a database but leaves much unsaid. Read it before you ask.",
+    "rubric": [
+      { "criterion": "Transactions and consistency", "levels": ["Not raised", "Asks whether orders or payments must be reliable", "Uncovers the double-sale and payment-plus-order risks, ties them to transactions, and flags exact money"] },
+      { "criterion": "Relationships between records", "levels": ["Not raised", "Asks what links to what", "Finds buyer and seller roles, the order, listing and review links, and that orders outlive sellers"] },
+      { "criterion": "Query patterns", "levels": ["Not raised", "Asks how people find listings", "Gets the filters, sorting, keyword search, listing-page rating and seller dashboard, and sees it is read-heavy"] },
+      { "criterion": "Reporting needs", "levels": ["Not raised", "Asks who else uses the data", "Learns the accountant's monthly reports and ad hoc questions, and links them to SQL"] },
+      { "criterion": "Honest growth numbers", "levels": ["Accepts \"millions of users\"", "Asks how big it will get", "Gets the real 12-month targets and says scale is not the deciding factor"] },
+      { "criterion": "Flexible listing fields", "levels": ["Not raised", "Notes that listings differ by category", "Learns most fields are shared and proposes a `jsonb` column (JSON stored inside one Postgres column) or a few columns"] },
+      { "criterion": "Team and operations", "levels": ["Not raised", "Asks who will build it", "Learns the SQL skills, no production experience, and the need for one hosted database with backups"] },
+      { "criterion": "Recommendation with trade-offs", "levels": ["Picks a database with no reasons, or before asking", "Picks with one or two reasons, or hedges", "Recommends one database, ties each reason to a fact from Mara, and names what it costs"] }
+    ]
+  },
+  "code": [
+    { "file": "brief.yaml", "lang": "yaml", "run": "static", "caption": "Mara's brief, as she wrote it." }
+  ]
+}

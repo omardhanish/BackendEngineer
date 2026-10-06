@@ -5,7 +5,7 @@
     "`from` names the other collection; `localField` and `foreignField` say which values must match.",
     "`as` names the new field. It is always an array, even for one match.",
     "With no match, `as` is an empty array and the order stays.",
-    "`$unwind` on the `as` field gives one object, and drops orders with no match."
+    "`$unwind` on `as` gives one object per match; no match drops the order."
   ],
   "hero": {
     "type": "flow",

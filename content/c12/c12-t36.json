@@ -1,0 +1,351 @@
+{
+  "title": "All auth routes and validators",
+  "idea": "`auth.routes.js` lists every endpoint with its guards in order: `verifyJWT` if secured, then the rules, then `validate`, then the controller.",
+  "analogy": {
+    "text": "A clinic front desk. The receptionist checks your ID, then your forms, and only then sends you to the doctor.",
+    "breaks": "A clinic checks once per visit; every request here repeats every check."
+  },
+  "points": [
+    "One router holds every endpoint; `app.js` mounts it at `/api/v1/auth`.",
+    "Each route lists its guards in run order: `verifyJWT`, rules, `validate`, controller.",
+    "Public routes skip `verifyJWT`. Email links and the refresh cookie carry their own tokens.",
+    "Five validators share small helper rules; login checks presence, never strength."
+  ],
+  "hero": {
+    "type": "anatomy",
+    "title": "One route, four guards",
+    "parts": [
+      {
+        "text": "router.route('/change-password')",
+        "label": "Path",
+        "note": "The path inside `/api/v1/auth`. `app.use` in `app.js` adds the prefix.",
+        "tone": "a"
+      },
+      {
+        "text": ".post(",
+        "label": "Method",
+        "note": "Only `POST` matches. The same path with `GET` gets `404`.",
+        "tone": "b"
+      },
+      {
+        "text": "verifyJWT, ",
+        "label": "1st: who",
+        "note": "Runs first. Without a valid access token the answer is `401`, and nothing below runs.",
+        "tone": "c"
+      },
+      {
+        "text": "userChangeCurrentPasswordValidator(), ",
+        "label": "2nd: rules",
+        "note": "Rules for `oldPassword` and `newPassword`. They record errors and reject nothing.",
+        "tone": "d"
+      },
+      {
+        "text": "validate, ",
+        "label": "3rd: verdict",
+        "note": "Throws `ApiError(422)` when any rule recorded an error.",
+        "tone": "e"
+      },
+      {
+        "text": "changeCurrentPassword",
+        "label": "4th: controller",
+        "note": "Runs only if every guard passed.",
+        "tone": "a"
+      },
+      {
+        "text": ");",
+        "label": "Close",
+        "note": "Public routes drop the first guard: `post(rules(), validate, controller)`.",
+        "tone": "b"
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "auth-routes.mjs",
+      "lang": "js",
+      "title": "validators and routes",
+      "run": "captured",
+      "caption": "The two project files of this lesson, with stub controllers. Press Run: every route with an empty body, then the order of guards.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32
+          ],
+          "text": "Condensed from earlier lessons: `ApiError`, `validate`, a `verifyJWT` stand-in and ten stub controllers."
+        },
+        {
+          "lines": [
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45
+          ],
+          "text": "Three helper rules: `email()`, `text()` for presence and type, and `strong()` for length."
+        },
+        {
+          "lines": [
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63,
+            64,
+            65,
+            66,
+            67,
+            68,
+            69,
+            70
+          ],
+          "text": "Five validators from them, plus a custom rule on register. Login uses `text`, so older passwords still work."
+        },
+        {
+          "lines": [
+            75,
+            76,
+            77,
+            78
+          ],
+          "text": "Register and login get rules. `verify-email` and `refresh-token` have none: they read a URL token or a cookie."
+        },
+        {
+          "lines": [
+            79,
+            80,
+            81,
+            82,
+            83,
+            84,
+            85,
+            86,
+            87,
+            88
+          ],
+          "text": "Forgot and reset get rules too: the email, or the new password, comes in the body."
+        },
+        {
+          "lines": [
+            90,
+            91,
+            92,
+            93,
+            94,
+            95,
+            96,
+            97,
+            98,
+            99,
+            100,
+            101,
+            102,
+            103
+          ],
+          "text": "Secured routes put `verifyJWT` first. `/refresh-token` is not one: its access token has expired."
+        },
+        {
+          "lines": [
+            130,
+            131,
+            132,
+            133,
+            134,
+            135,
+            136,
+            137,
+            138,
+            139,
+            140,
+            141,
+            142,
+            143,
+            144,
+            145,
+            146
+          ],
+          "text": "Ten routes with no cookie, then `change-password` with one: guards run in order."
+        }
+      ]
+    },
+    {
+      "file": "verify-email.mjs",
+      "lang": "js",
+      "title": "verifyEmail, getCurrentUser",
+      "run": "captured",
+      "needs": [
+        "mongo"
+      ],
+      "caption": "The last two controllers, which no earlier lesson wrote. Press Run: a wrong link, the right one, a replay.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21
+          ],
+          "text": "Condensed: utils, a `sha256` helper and a trimmed `User`."
+        },
+        {
+          "lines": [
+            31,
+            32,
+            33,
+            34,
+            35
+          ],
+          "text": "Hash the URL token and look for an unexpired match, as the reset does. No match is `400`."
+        },
+        {
+          "lines": [
+            37,
+            38,
+            39,
+            40,
+            41,
+            42
+          ],
+          "text": "Mark the email verified and clear the token fields, so the link works once."
+        },
+        {
+          "lines": [
+            45,
+            46,
+            47
+          ],
+          "text": "`getCurrentUser` returns `req.user`, which `verifyJWT` loaded without secrets."
+        },
+        {
+          "lines": [
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59
+          ],
+          "text": "Both routes join the router; a stand-in sets `req.user`."
+        },
+        {
+          "lines": [
+            67,
+            68,
+            69,
+            70,
+            71,
+            72,
+            73,
+            74,
+            75,
+            76,
+            77,
+            78,
+            79,
+            80,
+            81,
+            82,
+            83,
+            84,
+            85,
+            86,
+            87,
+            88,
+            89,
+            90,
+            91,
+            92
+          ],
+          "text": "Seed a pending user, then try a wrong link, the right link and a replay."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not guard `/refresh-token` with `verifyJWT`: it is called when the access token has expired.",
+    "Put `verifyJWT` before the rules: strangers should see `401`, not field-level `422` errors.",
+    "Test each guard separately: one request for `401`, one for `422`, one for success."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const url = `${base}/change-password`;\nconst bad = { oldPassword: 'x' }; // newPassword missing\nconst a = await post(url, bad);\nconst b = await post(url, bad, { cookie: true });\nconsole.log(a.status, b.status);",
+    "lang": "js",
+    "options": [
+      "422 422",
+      "401 401",
+      "422 401",
+      "401 422"
+    ],
+    "answer": 3,
+    "why": "`verifyJWT` runs before the rules. Without a cookie the request stops at `401`; with one, the missing `newPassword` gives `422`."
+  },
+  "takeaway": "Order the guards: who you are, then what you sent, then the work.",
+  "chat": {
+    "starters": [
+      "Why does `refresh-token` have no `verifyJWT`?",
+      "Can one validator serve several routes?",
+      "How do I split a growing router into several files?"
+    ]
+  }
+}

@@ -1,0 +1,8 @@
+POST {{baseUrl}}/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "username": "ada",
+  "email": "ada@example.com",
+  "password": "demo-password"
+}

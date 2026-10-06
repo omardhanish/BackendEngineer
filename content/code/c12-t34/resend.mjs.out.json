@@ -1,0 +1,9 @@
+{
+  "stdout": "resend: 200 Mail sent\nmailed to: ada@example.com | Verify your email\nstored is sha256 of link token: true\nstored is the link token: false\nsecond resend replaced it: true\nverified user: 409 Email is already verified",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "MongoDB 8.2.6",
+  "hash": "b95c0d495457ecbb",
+  "at": "2026-10-06T15:36:11.724Z"
+}

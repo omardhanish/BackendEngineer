@@ -1,0 +1,9 @@
+{
+  "stdout": "both pass\nERR_ASSERTION number string",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": null,
+  "hash": "13c3e53e62ec4bfe",
+  "at": "2026-10-06T15:18:40.804Z"
+}

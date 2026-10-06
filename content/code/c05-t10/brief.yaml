@@ -1,0 +1,52 @@
+# Used-bike marketplace: product and data brief (v2, Mara)
+
+product: >
+  A marketplace where riders sell used bikes, parts and clothing to
+  other riders. We take the buyer's payment, keep a 10% fee, and pay
+  the seller after the item arrives.
+
+entities:
+  - user: a buyer, a seller, or both
+  - listing: a bike, helmet, part or jersey for sale
+  - order: a purchase from one seller
+  - payout: money we send to a seller
+  - review: a buyer rates a seller
+  - message: a buyer and a seller talk about a listing
+  # how these link together: to decide with the developers
+
+listing_fields:
+  all: [title, price, photos, city]
+  bike: [frame_size, wheel_size, groupset]
+  helmet: [size, certification]
+  part: [fits_models, condition]
+  # price is a number, for example 129.99
+
+access_patterns:
+  - buyers browse and search listings
+  - sellers check their sales
+  - the team looks at reports
+
+consistency:
+  - orders must be reliable
+  - pages must feel fast
+
+growth: >
+  This has to scale to millions of users.
+
+team:
+  - Arun: contract full-stack developer, strong in SQL
+  - Jo: junior developer, built a course project with MongoDB
+  - Mara: founder, not technical
+  # nobody here has run a production database before
+
+proposed_stack:
+  backend: Node.js with Express
+  database: MongoDB    # flexible, and our listings differ by category
+  hosting: cheapest managed option
+  backups: not decided
+
+launch: about three months from now
+
+open_questions:
+  - Do we need a separate search tool?
+  - Which payment provider fits us best?

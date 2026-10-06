@@ -1,0 +1,83 @@
+{
+  "title": "ECS clusters",
+  "idea": "An Amazon ECS cluster is a named group where your tasks and services run. It supplies the compute capacity they run on.",
+  "points": [
+    "A task is one running copy of your containers, started from a task definition.",
+    "A service keeps a set of tasks running in a cluster.",
+    "Capacity is compute that runs tasks, such as Fargate, EC2, or ECS Managed Instances.",
+    "Clusters are separate per Region, and one cluster can mix capacity types."
+  ],
+  "hero": {
+    "type": "compare",
+    "title": "Fargate or EC2 capacity",
+    "left": {
+      "title": "Fargate: AWS runs the servers",
+      "items": [
+        "You set CPU and memory for each task.",
+        "No instance types to choose and no servers to scale.",
+        "Each task runs isolated from other tasks.",
+        "Suits getting started and variable workloads."
+      ]
+    },
+    "right": {
+      "title": "EC2: you run the servers",
+      "items": [
+        "You choose the instance types (virtual server sizes) and how many.",
+        "You maintain the instances and manage their capacity.",
+        "Tasks run on instances registered to the cluster.",
+        "Fits specific instance types or custom machine images."
+      ]
+    },
+    "verdict": "A cluster can mix both kinds of capacity; pick per workload."
+  },
+  "code": [
+    {
+      "file": "cluster.sh",
+      "lang": "bash",
+      "title": "Create a cluster",
+      "run": "static",
+      "illustrative": true,
+      "caption": "The smallest cluster is a name in one Region. Replace `<cluster>` and `<region>`.",
+      "walk": [
+        { "lines": [1], "text": "Create a cluster. Without `--cluster-name`, ECS creates one named `default`." },
+        { "lines": [2], "text": "Describe it. `status` reads `ACTIVE` once ready; `runningTasksCount` and `activeServicesCount` start at 0." }
+      ]
+    },
+    {
+      "file": "capacity.sh",
+      "lang": "bash",
+      "title": "Add Fargate capacity",
+      "run": "static",
+      "illustrative": true,
+      "caption": "A cluster created with Fargate attached as its capacity and as the default.",
+      "walk": [
+        { "lines": [3], "text": "Attach the `FARGATE` capacity provider, the named source of Fargate capacity." },
+        { "lines": [4], "text": "Make it the default for tasks and services that name no other capacity." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Check the Region before you create or look for a cluster; clusters never cross Regions.",
+    "Pick EC2 capacity only if you will maintain the instances and their capacity.",
+    "Fargate Spot is cheaper, but AWS can interrupt tasks; use it only for restart-tolerant work."
+  ],
+  "quiz": {
+    "q": "With plain EC2 capacity, who chooses the instance types and maintains the instances?",
+    "options": [
+      "AWS, automatically",
+      "The task definition",
+      "The load balancer",
+      "You do"
+    ],
+    "answer": 3,
+    "why": "EC2 capacity is the full-control option: you choose and maintain the instances. With Fargate, AWS runs the servers."
+  },
+  "takeaway": "A cluster is where tasks run; its capacity decides who runs the servers.",
+  "chat": {
+    "starters": [
+      "What is the difference between a task and a service?",
+      "What is ECS Managed Instances?",
+      "How many clusters should I create?"
+    ]
+  }
+}

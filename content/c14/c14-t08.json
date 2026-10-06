@@ -3,13 +3,13 @@
   "idea": "A remote is another copy of your repository, usually on a server such as GitHub. `git push` uploads your new commits to it.",
   "analogy": {
     "text": "Pushing is like adding pages to a shared binder. The binder refuses new pages until you have read the ones added since your last visit.",
-    "breaks": "Everyone holds a full copy, not just a page in the binder."
+    "breaks": "Everyone also keeps a full copy of the binder."
   },
   "points": [
     "Git stores each remote as a name and URL; `origin` is the usual name.",
     "`git push -u origin main` uploads `main` to `origin` and remembers that link.",
     "`origin/main` records where the remote's `main` was when you last connected.",
-    "Rejected? The remote has commits you lack. `git pull` fetches, then merges them."
+    "Rejected? The remote has commits you lack. Fetch them, merge, then push again."
   ],
   "hero": {
     "type": "anim",
@@ -81,7 +81,7 @@
     "answer": 1,
     "why": "`-u` linked `main` to `origin/main`. The new commit exists only locally, so `main` is one commit ahead."
   },
-  "takeaway": "A push succeeds only when it moves the remote branch forward.",
+  "takeaway": "A normal push is accepted only if it moves the remote branch forward.",
   "chat": {
     "starters": [
       "What does the `-u` flag in `git push -u` do?",

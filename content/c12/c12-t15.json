@@ -1,0 +1,111 @@
+{
+  "title": "Connecting to Atlas",
+  "idea": "MongoDB Atlas is MongoDB's hosted service. Your code connects to it with the same `connectDB`; only the `MONGO_URI` value changes.",
+  "points": [
+    "Atlas needs a database user, which is separate from your Atlas login.",
+    "Atlas accepts connections only from addresses on the project's IP access list.",
+    "Atlas gives you a `mongodb+srv://` string; store it in `.env` as `MONGO_URI`.",
+    "`dbName` still picks the database; the Atlas string names none."
+  ],
+  "hero": {
+    "type": "anatomy",
+    "title": "Anatomy of an Atlas string",
+    "parts": [
+      {
+        "text": "mongodb+srv://",
+        "label": "Scheme",
+        "note": "`+srv` looks the cluster's hosts up in DNS and turns on TLS, encryption in transit, by default."
+      },
+      {
+        "text": "demo-user",
+        "label": "Database user",
+        "note": "Created in Atlas for your app. It is separate from your Atlas login."
+      },
+      {
+        "text": ":demo-password",
+        "label": "Password",
+        "note": "Percent-encode reserved characters such as `@`, `/` and `:` before pasting it here."
+      },
+      {
+        "text": "@cluster0.example.mongodb.net",
+        "label": "Cluster host",
+        "note": "The `@` ends the credentials. Atlas assigns the host name; yours will differ."
+      },
+      {
+        "text": "/",
+        "label": "Database path",
+        "note": "Atlas leaves it empty. `dbName` in `connectDB` picks the database."
+      },
+      {
+        "text": "?retryWrites=true&w=majority",
+        "label": "Options",
+        "note": "`retryWrites=true` retries certain failed writes once. `w=majority` waits until most replica set members confirm a write."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "uri.mjs",
+      "lang": "js",
+      "title": "Encode the password",
+      "run": "captured",
+      "caption": "`URL` shows how reserved characters split a string. The driver needs them percent-encoded too.",
+      "walk": [
+        {
+          "lines": [
+            1,
+            2
+          ],
+          "text": "Demo values. A real password containing `@`, `/` or `:` breaks a raw URI."
+        },
+        {
+          "lines": [
+            4,
+            5
+          ],
+          "text": "Unencoded, the `/` ends the host part early, so the host reads as `ss`."
+        },
+        {
+          "lines": [
+            7
+          ],
+          "text": "`encodeURIComponent` turns each reserved character into `%` and two hex digits."
+        },
+        {
+          "lines": [
+            8,
+            9,
+            10
+          ],
+          "text": "Encoded, the host is right, and decoding returns the original password."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Keep `MONGO_URI` in `.env` and out of Git: it contains a live password.",
+    "Percent-encode reserved characters, such as `@` and `/`, in the password before building the URI.",
+    "When a connection times out, check that your current IP address is on the access list."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "console.log(encodeURIComponent('a@b:c'));",
+    "lang": "js",
+    "options": [
+      "a@b:c",
+      "a%40b:c",
+      "a%2540b%253Ac",
+      "a%40b%3Ac"
+    ],
+    "answer": 3,
+    "why": "`encodeURIComponent` turns `@` into `%40` and `:` into `%3A`. Atlas passwords need the same treatment."
+  },
+  "takeaway": "Atlas changes the `MONGO_URI` value, not your connection code.",
+  "chat": {
+    "starters": [
+      "What does `+srv` change compared with a plain `mongodb://` string?",
+      "Why is a database user different from my Atlas login?",
+      "Can I use a local MongoDB in development and Atlas in production?"
+    ]
+  }
+}

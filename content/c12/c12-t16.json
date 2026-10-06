@@ -1,0 +1,176 @@
+{
+  "title": "Healthcheck route",
+  "idea": "A healthcheck route is an endpoint that answers 200 when the server is running, so people and tools can check it without logging in.",
+  "points": [
+    "A load balancer, which spreads traffic across servers, polls it; so do uptime monitors.",
+    "The controller is a function `(req, res)` that sends `new ApiResponse(200, data, message)`.",
+    "The router maps `GET /` to that controller; `route('/')` lets you chain more methods.",
+    "`app.use('/api/v1/healthcheck', router)` mounts it; the router sees only the rest of the path."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "One request, one route",
+    "actors": [
+      {
+        "id": "c",
+        "label": "Client"
+      },
+      {
+        "id": "a",
+        "label": "app.js"
+      },
+      {
+        "id": "r",
+        "label": "Router"
+      },
+      {
+        "id": "h",
+        "label": "Controller"
+      }
+    ],
+    "messages": [
+      {
+        "from": "c",
+        "to": "a",
+        "label": "GET /api/v1/healthcheck",
+        "note": "`app.use` matches the path prefix and hands the request to the healthcheck router."
+      },
+      {
+        "from": "a",
+        "to": "r",
+        "label": "path is now /",
+        "note": "Express strips the mount prefix, so the router sees only `/`."
+      },
+      {
+        "from": "r",
+        "to": "h",
+        "label": "healthCheck(req, res)",
+        "note": "`route('/').get` matches the method and path, then calls the controller."
+      },
+      {
+        "from": "h",
+        "to": "h",
+        "label": "new ApiResponse(200, …)",
+        "note": "The controller builds the standard response object."
+      },
+      {
+        "from": "h",
+        "to": "c",
+        "label": "200 + JSON",
+        "note": "`res.json` sends it. The client gets `statusCode`, `data`, `message` and `success`.",
+        "dashed": true
+      },
+      {
+        "from": "c",
+        "to": "a",
+        "label": "POST /api/v1/healthcheck",
+        "note": "A different method on the same path."
+      },
+      {
+        "from": "a",
+        "to": "c",
+        "label": "404",
+        "note": "The router has no `POST` route, so Express falls through to its built-in 404.",
+        "dashed": true
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "healthcheck.mjs",
+      "lang": "js",
+      "title": "Three files in one run",
+      "run": "captured",
+      "caption": "Each commented block is one project file. This copy calls itself, then closes.",
+      "walk": [
+        {
+          "lines": [
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11
+          ],
+          "text": "`ApiResponse` from earlier: every success reply gets the same shape."
+        },
+        {
+          "lines": [
+            13,
+            14,
+            15,
+            16,
+            17
+          ],
+          "text": "The controller sends `200` and an `ApiResponse` as JSON. It does no async work."
+        },
+        {
+          "lines": [
+            19,
+            20,
+            21
+          ],
+          "text": "A router holds the routes. `route('/')` is the path inside the mount point."
+        },
+        {
+          "lines": [
+            23,
+            24,
+            25
+          ],
+          "text": "`app.use` mounts the router. The full URL is the prefix plus `/`."
+        },
+        {
+          "lines": [
+            27,
+            28
+          ],
+          "text": "Listen on a free port and build the test URL."
+        },
+        {
+          "lines": [
+            29,
+            30
+          ],
+          "text": "`GET` reaches the controller: status 200 and the JSON body."
+        },
+        {
+          "lines": [
+            31,
+            32
+          ],
+          "text": "`POST` has no route, so Express answers with its built-in 404."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not treat `200` as proof the database works; this route never queries it.",
+    "Return no secrets or internal details: the route is public.",
+    "Remember the mount prefix: a router's `/` is `/api/v1/healthcheck`, not the site root."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "router.route('/').get((req, res) => res.send('up'));\napp.use('/api/v1/healthcheck', router);\n\nconst url = 'http://localhost:3000/api/v1/healthcheck';\nconst get = await fetch(url);\nconst post = await fetch(url, { method: 'POST' });\nconsole.log(get.status, post.status);",
+    "lang": "js",
+    "options": [
+      "200 404",
+      "200 200",
+      "404 404",
+      "200 405"
+    ],
+    "answer": 0,
+    "why": "Only `GET` is registered. A `POST` matches no route, so Express answers 404, not 405."
+  },
+  "takeaway": "The controller replies, the router maps the path, `app.use` mounts it.",
+  "chat": {
+    "starters": [
+      "Why does the path start with `/api/v1`?",
+      "How would a healthcheck that tests the database look?",
+      "What is the difference between `router.route('/').get` and `router.get('/')`?"
+    ]
+  }
+}

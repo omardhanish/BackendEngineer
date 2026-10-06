@@ -1,0 +1,9 @@
+{
+  "stdout": "right password: true\nwrong password: false\non the model: undefined",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "MongoDB 8.2.6",
+  "hash": "6044aca341c97c7d",
+  "at": "2026-10-06T15:19:11.658Z"
+}

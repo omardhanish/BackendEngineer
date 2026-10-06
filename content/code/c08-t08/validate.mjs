@@ -1,12 +1,13 @@
 import express from 'express';
 import { z } from 'zod';
 
-// src/controllers/auth.controller.js
+// src/validation/auth.validation.js
 const signupSchema = z.object({
   email: z.email(),
   password: z.string().min(8, 'Password must be at least 8 characters'),
 });
 
+// src/controllers/auth.controller.js
 const badRequest = (res, { issues }) => res.status(400).json({
   error: 'Validation failed',
   issues: issues.map((i) => ({ path: i.path.join('.'), message: i.message })),

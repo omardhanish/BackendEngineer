@@ -1,0 +1,111 @@
+{
+  "title": "Testing register in Postman",
+  "idea": "Testing register in Postman means sending a valid body, a repeat and a broken body, then checking the status and body of each reply.",
+  "points": [
+    "Send `POST {{baseUrl}}/api/v1/auth/register` with Body raw JSON, as set up earlier.",
+    "A valid body returns `201`; the user in `data` has no password field.",
+    "Send the same body again: the duplicate check should answer `409`.",
+    "Check the mailbox your `MAIL_*` settings point to; the reply cannot prove delivery."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "Register requests and expected replies",
+    "head": [
+      "Send",
+      "Expect",
+      "Why"
+    ],
+    "rows": [
+      [
+        "A full JSON body",
+        "`201`",
+        "The user is saved and the link is mailed. `data.user` has no `password`."
+      ],
+      [
+        "The same body again",
+        "`409`",
+        "`findOne` finds the saved user, so nothing is saved or emailed."
+      ],
+      [
+        "A JSON body missing fields",
+        "`500` for now",
+        "Mongoose rejects the user. The validators lesson turns this into `422`."
+      ],
+      [
+        "Body type Text",
+        "`500` for now",
+        "`req.body` is `undefined`, so reading it throws."
+      ]
+    ],
+    "highlight": {
+      "col": 1
+    },
+    "caption": "The statuses for the project as built so far."
+  },
+  "code": [
+    {
+      "file": "postman-tests.js",
+      "lang": "js",
+      "title": "Postman test script",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Postman runs this after each response and shows pass or fail. It cannot run here, so it is not recorded.",
+      "walk": [
+        {
+          "lines": [
+            1
+          ],
+          "text": "A script belongs to one request. Postman runs it after the response arrives."
+        },
+        {
+          "lines": [
+            2,
+            3
+          ],
+          "text": "`pm.test` names a check. `pm.response.to.have.status` asserts the status."
+        },
+        {
+          "lines": [
+            4,
+            5,
+            6,
+            7
+          ],
+          "text": "`pm.response.json()` parses the body; `pm.expect` checks fields, including that `password` is absent."
+        },
+        {
+          "lines": [
+            10,
+            11,
+            12,
+            13
+          ],
+          "text": "The repeat is a second request with its own script: expect `409` and `success: false`."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Send the first request twice and the second gets `409`: change the username and email.",
+    "Keep real passwords out of saved requests; collections get shared and exported."
+  ],
+  "quiz": {
+    "q": "You send the same valid register body twice. What does the second reply return?",
+    "options": [
+      "`200`",
+      "`201`",
+      "`422`",
+      "`409`"
+    ],
+    "answer": 3,
+    "why": "The duplicate check finds the saved user and throws `ApiError` with 409. Nothing is saved or emailed."
+  },
+  "takeaway": "Send the failures too: each status is a choice your code made.",
+  "chat": {
+    "starters": [
+      "How do I see the verification email while testing?",
+      "Can Postman run these requests in order automatically?",
+      "Should I start each test run with an empty users collection?"
+    ]
+  }
+}

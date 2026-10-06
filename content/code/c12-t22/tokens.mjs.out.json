@@ -1,0 +1,9 @@
+{
+  "stdout": "lifetimes: 900 604800\nrefresh as access: invalid signature\nrefresh as refresh: u-101",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": null,
+  "hash": "7a93d4be6334b3b7",
+  "at": "2026-10-06T15:20:14.099Z"
+}

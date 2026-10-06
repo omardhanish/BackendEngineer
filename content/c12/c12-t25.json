@@ -1,0 +1,332 @@
+{
+  "title": "Sending email with Nodemailer",
+  "idea": "Nodemailer sends email from Node. You create a transporter for one SMTP server, then call `sendMail` with a message object.",
+  "points": [
+    "SMTP is the protocol programs use to hand an email to a mail server.",
+    "A transporter stores the host, port and login for one SMTP server.",
+    "`sendMail` takes `from`, `to`, `subject`, `text` and `html`, and returns a promise.",
+    "With `jsonTransport: true`, nothing is sent: the result holds the message as JSON."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "One email, from your code to an inbox",
+    "scenario": {
+      "tiers": [
+        [
+          "app"
+        ],
+        [
+          "tx"
+        ],
+        [
+          "smtp",
+          "json"
+        ],
+        [
+          "inbox"
+        ]
+      ],
+      "nodes": {
+        "app": {
+          "label": "Express app",
+          "kind": "server",
+          "sub": "sendEmail"
+        },
+        "tx": {
+          "label": "Transporter",
+          "kind": "proxy",
+          "sub": "host, port, login"
+        },
+        "smtp": {
+          "label": "SMTP server",
+          "kind": "server",
+          "sub": "MAIL_HOST"
+        },
+        "json": {
+          "label": "JSON string",
+          "kind": "box",
+          "sub": "no network"
+        },
+        "inbox": {
+          "label": "Inbox",
+          "kind": "user",
+          "sub": "the recipient"
+        }
+      },
+      "links": [
+        [
+          "app",
+          "tx"
+        ],
+        [
+          "tx",
+          "smtp"
+        ],
+        [
+          "tx",
+          "json",
+          {
+            "dashed": true
+          }
+        ],
+        [
+          "smtp",
+          "inbox",
+          {
+            "dashed": true
+          }
+        ]
+      ],
+      "steps": [
+        {
+          "caption": "`sendEmail` calls `transporter.sendMail` with the message: `from`, `to`, `subject`, `text` and `html`.",
+          "send": [
+            {
+              "from": "app",
+              "to": "tx",
+              "label": "message",
+              "tone": "req"
+            }
+          ],
+          "focus": [
+            "tx"
+          ]
+        },
+        {
+          "caption": "The transporter connects to `MAIL_HOST` on `MAIL_PORT` and logs in with `MAIL_USER` and `MAIL_PASS`.",
+          "send": [
+            {
+              "from": "tx",
+              "to": "smtp",
+              "label": "log in",
+              "tone": "info"
+            }
+          ],
+          "focus": [
+            "smtp"
+          ]
+        },
+        {
+          "caption": "It sends the message over that connection.",
+          "send": [
+            {
+              "from": "tx",
+              "to": "smtp",
+              "label": "message",
+              "tone": "req"
+            }
+          ]
+        },
+        {
+          "caption": "The server accepts the message and replies. Only now does the `await` in your code finish.",
+          "send": [
+            {
+              "from": "smtp",
+              "to": "tx",
+              "label": "accepted",
+              "tone": "ok"
+            }
+          ],
+          "badge": {
+            "smtp": "accepted"
+          }
+        },
+        {
+          "caption": "Delivery to the inbox happens after that. Your code never sees it.",
+          "send": [
+            {
+              "from": "smtp",
+              "to": "inbox",
+              "label": "deliver",
+              "tone": "info"
+            }
+          ],
+          "badge": {
+            "inbox": "later"
+          }
+        },
+        {
+          "caption": "With `jsonTransport: true` there is no server. The transporter returns the message as JSON and sends nothing.",
+          "send": [
+            {
+              "from": "tx",
+              "to": "json",
+              "label": "message",
+              "tone": "ok"
+            }
+          ],
+          "badge": {
+            "smtp": null,
+            "inbox": null,
+            "json": "returned"
+          },
+          "focus": [
+            "json"
+          ]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "mail.js",
+      "lang": "js",
+      "title": "src/utils/mail.js",
+      "run": "static",
+      "illustrative": true,
+      "caption": "The project's `sendEmail`. It needs a real SMTP server, so it does not run here; the next snippet does.",
+      "walk": [
+        {
+          "lines": [
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12
+          ],
+          "text": "Mailgen builds the HTML and plain-text bodies. This setup came with the email templates."
+        },
+        {
+          "lines": [
+            14
+          ],
+          "text": "Callers pass the recipient, the subject and a Mailgen content object."
+        },
+        {
+          "lines": [
+            15,
+            16,
+            17,
+            18,
+            19
+          ],
+          "text": "The transporter reads the four `MAIL_*` values. Environment values are strings, so convert the port."
+        },
+        {
+          "lines": [
+            21,
+            22,
+            23
+          ],
+          "text": "`from`, `to` and `subject` address the message."
+        },
+        {
+          "lines": [
+            24,
+            25
+          ],
+          "text": "Send both bodies. Plain text serves clients that do not show HTML."
+        },
+        {
+          "lines": [
+            20
+          ],
+          "text": "`await` resolves once the server accepts the message. A failure rejects and reaches the caller."
+        }
+      ]
+    },
+    {
+      "file": "send.mjs",
+      "lang": "js",
+      "title": "Send without a server",
+      "run": "captured",
+      "caption": "The same message, sent through `jsonTransport`. Nothing leaves your machine, and you can inspect what would have been sent.",
+      "walk": [
+        {
+          "lines": [
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11
+          ],
+          "text": "The same Mailgen setup as `mail.js`."
+        },
+        {
+          "lines": [
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22
+          ],
+          "text": "A content object like the ones the previous lesson builds."
+        },
+        {
+          "lines": [
+            24,
+            25
+          ],
+          "text": "`jsonTransport` builds the message but sends nothing."
+        },
+        {
+          "lines": [
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32
+          ],
+          "text": "The same `sendMail` call as in `mail.js`."
+        },
+        {
+          "lines": [
+            34
+          ],
+          "text": "`info.message` is a JSON string. Parse it to inspect the message."
+        },
+        {
+          "lines": [
+            35,
+            36,
+            37,
+            38
+          ],
+          "text": "Check both addresses, the subject, and that both bodies carry the link."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Use `secure: true` on port 465. Elsewhere TLS happens only if the server offers STARTTLS.",
+    "Keep `MAIL_USER` and `MAIL_PASS` in `.env`. Never commit them or log the transporter.",
+    "Do not catch and hide errors in `sendEmail`: callers must learn when mail fails."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const mail = nodemailer.createTransport({ jsonTransport: true });\nconst info = await mail.sendMail({\n  from: 'a@x.test',\n  to: 'b@x.test',\n  subject: 'Hi',\n  text: 'Hello',\n});\nconsole.log(typeof info.message, JSON.parse(info.message).subject);",
+    "lang": "js",
+    "options": [
+      "string Hi",
+      "object Hi",
+      "undefined Hi",
+      "string undefined"
+    ],
+    "answer": 0,
+    "why": "`jsonTransport` returns the message as a JSON string in `info.message`. Parse it to read fields such as `subject`."
+  },
+  "takeaway": "`sendMail` resolves when the server accepts the message, not when it is delivered.",
+  "chat": {
+    "starters": [
+      "Which SMTP server should I use while developing?",
+      "Why send both `text` and `html`?",
+      "Should `sendEmail` wait for the server before replying to the user?"
+    ]
+  }
+}

@@ -178,7 +178,7 @@
       "It throws `CastError`"
     ],
     "answer": 2,
-    "why": "`'abc'` is not a 24-character hex string, so it is invalid. A valid id with no match resolves to `null`."
+    "why": "`'abc'` cannot be cast to an ObjectId, so the check is `false`. A valid id with no match resolves to `null`."
   },
   "takeaway": "Await each Mongoose call; `null` from `findById` means 404.",
   "chat": {

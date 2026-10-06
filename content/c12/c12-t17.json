@@ -1,0 +1,257 @@
+{
+  "title": "The async handler",
+  "idea": "`asyncHandler` wraps an async route handler so a rejected promise reaches `next(err)` and then the error middleware, with no `try/catch` in each controller.",
+  "points": [
+    "An `async` function returns a promise; a `throw` inside it rejects that promise.",
+    "`asyncHandler(fn)` returns a handler that adds `.catch(next)` to the promise `fn` returns.",
+    "`next(err)` skips normal routes and runs the error middleware, which sends the JSON error.",
+    "Express 5 already forwards rejections itself; the wrapper also suits Express 4 projects."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Where a rejection goes",
+    "nodes": [
+      {
+        "id": "req",
+        "label": "Request",
+        "sub": "GET /users/:id"
+      },
+      {
+        "id": "wrap",
+        "label": "asyncHandler wrapper",
+        "sub": "adds .catch(next)"
+      },
+      {
+        "id": "fn",
+        "label": "Your async handler",
+        "sub": "await findUser()"
+      },
+      {
+        "id": "ok",
+        "label": "200 reply",
+        "sub": "res.json(user)",
+        "tone": "good"
+      },
+      {
+        "id": "next",
+        "label": "next(err)",
+        "sub": "promise rejected"
+      },
+      {
+        "id": "mw",
+        "label": "Error middleware",
+        "sub": "four parameters"
+      },
+      {
+        "id": "bad",
+        "label": "Error JSON reply",
+        "sub": "success: false",
+        "tone": "bad"
+      }
+    ],
+    "edges": [
+      {
+        "from": "req",
+        "to": "wrap"
+      },
+      {
+        "from": "wrap",
+        "to": "fn",
+        "label": "calls"
+      },
+      {
+        "from": "fn",
+        "to": "ok",
+        "label": "resolves"
+      },
+      {
+        "from": "fn",
+        "to": "next",
+        "label": "rejects"
+      },
+      {
+        "from": "next",
+        "to": "mw"
+      },
+      {
+        "from": "mw",
+        "to": "bad"
+      }
+    ],
+    "steps": [
+      {
+        "caption": "A request reaches a route registered as `asyncHandler(fn)`. The wrapper runs first.",
+        "active": [
+          "req",
+          "wrap"
+        ],
+        "edges": [
+          0
+        ]
+      },
+      {
+        "caption": "The wrapper calls your handler and keeps the promise it returns.",
+        "active": [
+          "wrap",
+          "fn"
+        ],
+        "edges": [
+          1
+        ]
+      },
+      {
+        "caption": "Happy path: the promise resolves after `res.json`. The wrapper has nothing more to do.",
+        "active": [
+          "fn",
+          "ok"
+        ],
+        "edges": [
+          2
+        ]
+      },
+      {
+        "caption": "Failure path: `findUser` throws an `ApiError`, so the promise rejects and `.catch` calls `next(err)`.",
+        "active": [
+          "fn",
+          "next"
+        ],
+        "edges": [
+          3
+        ]
+      },
+      {
+        "caption": "`next(err)` skips the remaining routes and lands in the error middleware.",
+        "active": [
+          "next",
+          "mw"
+        ],
+        "edges": [
+          4
+        ]
+      },
+      {
+        "caption": "The error middleware replies with the standard error JSON and the error's status.",
+        "active": [
+          "mw",
+          "bad"
+        ],
+        "edges": [
+          5
+        ]
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "wrapper.mjs",
+      "lang": "js",
+      "title": "src/utils/async-handler.js",
+      "run": "browser",
+      "caption": "Lines 1-3 are `src/utils/async-handler.js`, which exports `asyncHandler`. The rest feeds it a fake `next`. Edit and run again."
+    },
+    {
+      "file": "app.mjs",
+      "lang": "js",
+      "title": "Express 5 end to end",
+      "run": "captured",
+      "caption": "A full run: one found user, a 404 from an `ApiError`, and a hidden 500.",
+      "walk": [
+        {
+          "lines": [
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "text": "A short `ApiError` that carries a `statusCode`, shortened from the full class built earlier."
+        },
+        {
+          "lines": [
+            10,
+            11,
+            12
+          ],
+          "text": "The wrapper runs your handler and attaches `.catch(next)` to its promise."
+        },
+        {
+          "lines": [
+            14,
+            15,
+            16,
+            17,
+            18
+          ],
+          "text": "Three outcomes: a user, an `ApiError` for id 2, and a plain `Error` for id 3."
+        },
+        {
+          "lines": [
+            21,
+            22,
+            23,
+            24,
+            25,
+            26
+          ],
+          "text": "The route is wrapped. The handler has no `try/catch`: `findUser` simply throws."
+        },
+        {
+          "lines": [
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34
+          ],
+          "text": "Four parameters mark the error middleware. It hides the message of 5xx errors."
+        },
+        {
+          "lines": [
+            36,
+            37,
+            38,
+            39,
+            40,
+            41
+          ],
+          "text": "Request the three ids and print each status and JSON body."
+        },
+        {
+          "lines": [
+            42
+          ],
+          "text": "Close the server so the script can exit."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Always `await` or return promises inside a handler; a floating rejection escapes the wrapper.",
+    "Do not wrap the error middleware: the wrapper has three parameters, so Express skips it.",
+    "Never put `err.stack` or database error text in the JSON reply."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const wrap = (fn) => (next) => Promise.resolve(fn()).catch(next);\n\nwrap(async () => {\n  throw new Error('oops');\n})((error) => console.log('A', error.message));\nconsole.log('B');",
+    "lang": "js",
+    "options": [
+      "A oops, then B",
+      "B, then A oops",
+      "Only B",
+      "Only A oops"
+    ],
+    "answer": 1,
+    "why": "The rejection is handled in a microtask, after the synchronous `console.log('B')`."
+  },
+  "takeaway": "`asyncHandler` turns a rejected promise into `next(err)`: one catch, every controller.",
+  "chat": {
+    "starters": [
+      "Do I still need `asyncHandler` on Express 5?",
+      "Why does the wrapper call `Promise.resolve` on the result?",
+      "How does the error middleware know which status code to send?"
+    ]
+  }
+}

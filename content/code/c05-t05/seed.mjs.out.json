@@ -1,0 +1,9 @@
+{
+  "stdout": "[\n  { id: 1, title: 'Dune', author: 'Frank Herbert', year: 1965 },\n  { id: 2, title: 'Neuromancer', author: 'William Gibson', year: 1984 },\n  {\n    id: 3,\n    title: 'The Dispossessed',\n    author: 'Ursula K. Le Guin',\n    year: 1974\n  }\n]",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "PostgreSQL 18.4",
+  "hash": "d34b610cbe70207f",
+  "at": "2026-10-06T15:15:43.482Z"
+}

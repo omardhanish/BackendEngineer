@@ -26,6 +26,7 @@ npm start                   # → http://localhost:4000
 | `npm run e2e:challenges` | Drive the in-page coding challenges: failing starter, passing solution, hints, reveal, saved progress |
 | `npm run smoke:chat` | One real round-trip to DeepSeek with the key in `.env` |
 | `npm run scan` | Pre-commit scan of exactly the files git would commit: secrets, tokens, personal data, gitleaks |
+| `npm run publish:github` | Create (if needed) a PRIVATE GitHub repo and push, using a token you type at a hidden prompt or pass as `GITHUB_TOKEN`. It checks the token's owner, scans for the token, and never stores it |
 | `npm run contrast` | WCAG contrast + sRGB gamut lint for every chapter colour, light and dark |
 | `npm run build:vendor` | Rebuild the vendored libraries, fonts and code-runner shims |
 

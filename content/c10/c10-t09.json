@@ -1,0 +1,38 @@
+{
+  "title": "Diagnose a failing service",
+  "scenario": {
+    "brief": "Sam is on call. Release 1.5.0 of bookstore-api will not finish deploying, and its tasks keep stopping. Sam has pasted notes and can run about six more lookups. Find the cause and what to do first.",
+    "role": "Engineer helping the on-call teammate during an incident.",
+    "goal": "Find why the new tasks fail, say what to do first, and say how to fix it for good.",
+    "rules": [
+      "Sam can read from the notes and run about six more lookups.",
+      "Ask for evidence, not opinions. Sam reports only what a lookup shows.",
+      "Say your hypothesis before you ask, then test it.",
+      "When you have a diagnosis and a plan, press End and debrief."
+    ],
+    "personaLabel": "Sam · on-call engineer",
+    "artifact": 0,
+    "artifactTitle": "On-call notes: bookstore-api service",
+    "artifactNote": "A snapshot at 10:48 UTC. Events, logs and metrics as Sam pasted them. Read it before you ask.",
+    "rubric": [
+      { "criterion": "Reads the failure signals", "levels": ["Not raised", "Notes that tasks are stopped for failing load balancer health checks", "Also reads the target-health reason and notices that no `GET /health` ever reaches the new tasks"] },
+      { "criterion": "Weighs user impact", "levels": ["Not raised", "Asks whether users are affected", "Sees that the old tasks still serve all traffic: a stuck deployment, not an outage"] },
+      { "criterion": "Rules out network, startup and resources", "levels": ["Not raised", "Checks one area, such as ports or memory", "Rules out ports, security group, slow start and resources with evidence"] },
+      { "criterion": "Asks focused questions within the budget", "levels": ["Vague or repeated questions; lookups wasted", "Some lookups test a clear hypothesis", "Every lookup tests a stated hypothesis and narrows the search"] },
+      { "criterion": "Finds the root cause", "levels": ["Not found", "Suspects the app is unreachable from outside the task", "Finds that release 1.5.0 binds to 127.0.0.1 and no `HOST` is set"] },
+      { "criterion": "Resists the quick fix", "levels": ["Agrees to raise the grace period, or never addresses it", "Doubts it but cannot say why", "Explains that a longer grace period only delays the stop and refused connections never recover"] },
+      { "criterion": "Stops the failing deployment", "levels": ["Not raised", "Mentions rolling back", "Rolls back to `bookstore-api:11` first and explains that it ends the churn safely"] },
+      { "criterion": "Fixes the cause and proves it", "levels": ["Not raised", "Proposes binding to all interfaces or setting `HOST`", "Also verifies healthy targets and `/health` log lines, and adds a circuit breaker"] }
+    ]
+  },
+  "code": [
+    {
+      "file": "oncall-notes.log",
+      "lang": "bash",
+      "title": "On-call notes",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Service events, stopped tasks, target health, logs and metrics from the failing deployment."
+    }
+  ]
+}

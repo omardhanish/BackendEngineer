@@ -1,0 +1,26 @@
+url-shortener/
+  package.json
+  drizzle.config.js
+  .env
+  src/
+    server.js
+    app.js
+    db/
+      index.js
+      schema.js
+    routes/
+      auth.routes.js
+      urls.routes.js
+    controllers/
+      auth.controller.js
+      urls.controller.js
+    services/
+      user.service.js
+      url.service.js
+    middleware/
+      auth.middleware.js
+    utils/
+      jwt.js
+    validation/
+      auth.validation.js
+      url.validation.js

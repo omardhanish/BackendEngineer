@@ -23,7 +23,7 @@
       {
         "from": "you",
         "to": "orm",
-        "label": "select().from(books).where(…)",
+        "label": "select().from().where()",
         "note": "You describe the query with function calls. Nothing is sent until you `await` it."
       },
       {
@@ -58,7 +58,7 @@
       "caption": "The same question asked twice: with a SQL string, then with Drizzle. Step through it, then press Run.",
       "walk": [
         { "lines": [1, 2, 3, 4], "text": "`pg` is the driver that talks to Postgres. Drizzle builds queries on top of it." },
-        { "lines": [6, 7, 8, 9, 10, 11], "text": "The table, described as a JavaScript object. Lesson 5 explains it." },
+        { "lines": [6, 7, 8, 9, 10, 11], "text": "The table, described as a JavaScript object. Three lessons on, you write this for the Book Store." },
         { "lines": [12, 13, 14, 15, 16, 17], "text": "Raw SQL creates and fills the table. This is setup, not the lesson." },
         { "lines": [19, 20, 21], "text": "Without an ORM: you write the SQL and pass the value as `$1`." },
         { "lines": [23, 24, 25], "text": "With Drizzle: the same query as function calls. Nothing is sent yet." },

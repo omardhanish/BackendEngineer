@@ -1,0 +1,329 @@
+{
+  "title": "Login validation",
+  "idea": "`userLoginValidator` is the short rule list in front of the login controller. It checks only that a real-looking email and a text password arrived.",
+  "points": [
+    "Login rules ask for less than register rules: an email and a text password.",
+    "Strength rules stay in registration, so passwords set under older rules still work.",
+    "Bad shape gets `422` from `validate`; wrong credentials get `401` from the controller.",
+    "Test every branch: empty body, bad types, unknown email, wrong password, success."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "Three login attempts, three endings",
+    "scenario": {
+      "token": {
+        "label": "POST /login",
+        "tone": "req"
+      },
+      "stages": [
+        {
+          "id": "client",
+          "label": "Client",
+          "kind": "end"
+        },
+        {
+          "id": "rules",
+          "label": "Rules",
+          "sub": "userLoginValidator()"
+        },
+        {
+          "id": "validate",
+          "label": "validate",
+          "sub": "422 if errors"
+        },
+        {
+          "id": "login",
+          "label": "login",
+          "sub": "controller",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "A client posts an empty body `{}` to `/login`. The rules run first.",
+          "at": "client",
+          "slot": "top",
+          "state": {
+            "client": "active"
+          },
+          "out": []
+        },
+        {
+          "caption": "Both fields fail. The rules record two errors and call `next()`; they reject nothing themselves.",
+          "at": "rules",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "rules": "active"
+          },
+          "out": [
+            "rules: email required",
+            "rules: password required"
+          ]
+        },
+        {
+          "caption": "`validate` finds recorded errors and throws `ApiError(422)`. The controller and the database are never reached.",
+          "at": "validate",
+          "slot": "bottom",
+          "token": {
+            "label": "422",
+            "tone": "err"
+          },
+          "state": {
+            "client": "done",
+            "rules": "done",
+            "validate": "blocked"
+          },
+          "out": [
+            "rules: email required",
+            "rules: password required",
+            "validate: 422"
+          ]
+        },
+        {
+          "caption": "The client gets `422` and one message per field. Nothing was queried.",
+          "at": "client",
+          "slot": "top",
+          "token": {
+            "label": "422",
+            "tone": "err"
+          },
+          "state": {
+            "client": "active",
+            "rules": "done",
+            "validate": "blocked"
+          },
+          "out": [
+            "rules: email required",
+            "rules: password required",
+            "validate: 422"
+          ]
+        },
+        {
+          "caption": "A second body is well formed, with an email and a password. The rules record nothing.",
+          "at": "rules",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "rules": "active"
+          },
+          "out": [
+            "rules: ok"
+          ]
+        },
+        {
+          "caption": "`validate` finds no errors and calls `next()`. Now the database gets involved.",
+          "at": "validate",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "rules": "done",
+            "validate": "active"
+          },
+          "out": [
+            "rules: ok",
+            "validate: next()"
+          ]
+        },
+        {
+          "caption": "The controller looks up the user and compares the password with the stored hash. They differ.",
+          "at": "login",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "rules": "done",
+            "validate": "done",
+            "login": "active"
+          },
+          "out": [
+            "rules: ok",
+            "validate: next()",
+            "login: password differs"
+          ]
+        },
+        {
+          "caption": "It throws `ApiError(401)`. An unknown email gets the same answer, so the reply never says which emails exist.",
+          "at": "login",
+          "slot": "bottom",
+          "token": {
+            "label": "401",
+            "tone": "err"
+          },
+          "state": {
+            "client": "done",
+            "rules": "done",
+            "validate": "done",
+            "login": "error"
+          },
+          "out": [
+            "rules: ok",
+            "validate: next()",
+            "login: password differs",
+            "login: 401"
+          ]
+        },
+        {
+          "caption": "A third body has the right password. It passes the rules and `validate`, and the controller accepts it.",
+          "at": "login",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "rules": "done",
+            "validate": "done",
+            "login": "active"
+          },
+          "out": [
+            "rules: ok",
+            "validate: next()",
+            "login: password matches"
+          ]
+        },
+        {
+          "caption": "The controller answers `200`. Setting the token cookies happens here, as in the last lesson.",
+          "at": "client",
+          "slot": "top",
+          "token": {
+            "label": "200 OK",
+            "tone": "ok"
+          },
+          "state": {
+            "client": "active",
+            "rules": "done",
+            "validate": "done",
+            "login": "done"
+          },
+          "out": [
+            "rules: ok",
+            "validate: next()",
+            "login: password matches",
+            "login: 200"
+          ]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "login.mjs",
+      "lang": "js",
+      "title": "Login rules, tested",
+      "run": "captured",
+      "needs": [
+        "mongo"
+      ],
+      "caption": "The new validator sits among condensed earlier files. Press Run: six requests, three kinds of answer.",
+      "walk": [
+        {
+          "lines": [
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22
+          ],
+          "text": "Condensed from earlier lessons: `ApiError`, a two-field `User` and `validate`."
+        },
+        {
+          "lines": [
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32
+          ],
+          "text": "Two rules per field. `bail()` stops a field at its first failure."
+        },
+        {
+          "lines": [
+            29,
+            30,
+            31
+          ],
+          "text": "`isString` rejects objects and numbers, which `bcrypt.compare` cannot handle."
+        },
+        {
+          "lines": [
+            35,
+            36,
+            37,
+            38,
+            39,
+            40
+          ],
+          "text": "The controller runs only for valid input. Both failures share one `401` message."
+        },
+        {
+          "lines": [
+            43,
+            44,
+            45,
+            46,
+            47
+          ],
+          "text": "Rules, then `validate`, then the controller: route order is run order."
+        },
+        {
+          "lines": [
+            55,
+            56,
+            57
+          ],
+          "text": "Connect and seed one user; only a bcrypt hash is stored."
+        },
+        {
+          "lines": [
+            71,
+            72,
+            73,
+            74,
+            75,
+            76,
+            77
+          ],
+          "text": "Six requests: three fail validation, two fail credentials, one succeeds."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not copy register's strength rules into login: older passwords would stop working.",
+    "Require a text password: `bcrypt.compare` throws on a number, which becomes a `500`.",
+    "Never `trim()` or change the password: it must match what was hashed."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const res = await fetch(url, {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/json' },\n  body: JSON.stringify({ email: 'ada@example.com', password: 12345 }),\n});\nconsole.log(res.status);",
+    "lang": "js",
+    "options": [
+      "200",
+      "401",
+      "500",
+      "422"
+    ],
+    "answer": 3,
+    "why": "`isString` fails for a number, so `validate` throws `422`. The controller and `bcrypt.compare` never run."
+  },
+  "takeaway": "Validate the shape at the door; check the credentials in the controller.",
+  "chat": {
+    "starters": [
+      "What is the difference between a 422 and a 401 on login?",
+      "Why should login not check password strength?",
+      "How do I send these same bodies from Postman?"
+    ]
+  }
+}

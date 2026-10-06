@@ -1,0 +1,9 @@
+{
+  "stdout": "[\n  { title: 'Dune', author: 'Frank Herbert' },\n  { title: 'Neuromancer', author: 'William Gibson' },\n  { title: 'The Dispossessed', author: 'Ursula K. Le Guin' }\n]\nunknown author: failed with 23503\ndelete author 1: failed with 23503",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "PostgreSQL 18.4",
+  "hash": "57d7f416198734ea",
+  "at": "2026-10-06T15:21:35.361Z"
+}

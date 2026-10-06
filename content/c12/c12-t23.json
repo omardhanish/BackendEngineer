@@ -1,0 +1,78 @@
+{
+  "title": "Token methods with crypto",
+  "idea": "Three schema methods mint the project's tokens: two JWTs signed with `jsonwebtoken`, and one short-lived random token made with `node:crypto`.",
+  "analogy": {
+    "text": "A bank posts you a code but files only a scrambled copy. When you return the code, it scrambles it again and compares.",
+    "breaks": "Only the temporary token works this way. JWTs are signed with a secret instead."
+  },
+  "points": [
+    "`generateAccessToken` signs `_id` and `username` with `ACCESS_TOKEN_SECRET` and its expiry.",
+    "`generateRefreshToken` signs only `_id`, with its own secret and a longer expiry.",
+    "`generateTemporaryToken` is no JWT: it uses `crypto.randomBytes(20)` and a `sha256` hash.",
+    "Email the `unHashedToken`; save only `hashedToken` and the 20-minute `tokenExpiry`."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Life of a temporary token",
+    "nodes": [
+      { "id": "rand", "label": "randomBytes(20)", "sub": "20 random bytes" },
+      { "id": "raw", "label": "unHashedToken", "sub": "40 hex characters" },
+      { "id": "sha", "label": "sha256", "sub": "one-way scramble" },
+      { "id": "hashed", "label": "hashedToken", "sub": "saved on the user" },
+      { "id": "mail", "label": "Email link", "sub": "carries the raw token" }
+    ],
+    "edges": [
+      { "from": "rand", "to": "raw", "label": "hex" },
+      { "from": "raw", "to": "sha", "label": "hash" },
+      { "from": "sha", "to": "hashed", "label": "save" },
+      { "from": "raw", "to": "mail", "label": "email", "dashed": true }
+    ],
+    "steps": [
+      { "caption": "`crypto.randomBytes(20)` returns strong random bytes that an attacker cannot predict.", "active": ["rand"], "edges": [] },
+      { "caption": "`toString('hex')` turns them into a hex string: `unHashedToken`, the value that goes into the email link.", "active": ["rand", "raw"], "edges": [0] },
+      { "caption": "The email link carries `unHashedToken`. The server never saves it.", "active": ["raw", "mail"], "edges": [3] },
+      { "caption": "`sha256` turns it into `hashedToken`. This one-way scramble goes on the user, with `tokenExpiry`.", "active": ["raw", "sha", "hashed"], "edges": [1, 2] },
+      { "caption": "When the link comes back, hash the token from the URL again and look for a user holding that `hashedToken`.", "active": ["raw", "sha", "hashed"], "edges": [1, 2] },
+      { "caption": "A leaked database shows only hashes. Reversing one into a working link is not feasible.", "active": ["hashed"], "edges": [] }
+    ]
+  },
+  "code": [
+    {
+      "file": "user.models.mjs",
+      "lang": "js",
+      "title": "src/models/user.models.js",
+      "run": "captured",
+      "caption": "The three methods, plus lines that call them. Methods need no database connection, so nothing is saved. Step through, then press Run.",
+      "walk": [
+        { "lines": [5, 6, 7, 8, 9, 10, 11], "text": "Demo values for four env settings. The project reads real ones from `.env`." },
+        { "lines": [13, 14], "text": "A small `sha256` helper: hash a string, return 64 hex characters." },
+        { "lines": [18, 19, 20, 21, 22, 23, 24], "text": "`generateAccessToken` signs `_id` and `username` with the access secret and expiry." },
+        { "lines": [26, 27, 28, 29, 30], "text": "`generateRefreshToken` signs only `_id`, with the refresh secret and a longer expiry." },
+        { "lines": [32, 33, 34, 35, 36, 37], "text": "`generateTemporaryToken` returns the raw token, its hash and an expiry 20 minutes ahead." },
+        { "lines": [39, 40], "text": "Build a user in memory and call its methods." },
+        { "lines": [43, 44, 45, 46, 48, 49, 50, 51], "text": "Verify both JWTs, then check the temporary token's lengths, its hash and its expiry." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Email `unHashedToken`; save only `hashedToken`. Swapping them breaks the link or the secrecy.",
+    "Use `crypto.randomBytes`, never `Math.random`: its output can be predicted.",
+    "Compare `tokenExpiry` with the time when the link returns; the token has no expiry itself."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const { unHashedToken, hashedToken } = user.generateTemporaryToken();\nconst matches = (token) => sha256(token) === hashedToken;\nconsole.log(matches(unHashedToken), matches(hashedToken));",
+    "lang": "js",
+    "options": ["true true", "false true", "true false", "false false"],
+    "answer": 2,
+    "why": "Hashing the raw token reproduces the saved hash. Hashing the hash gives a different value, so a leaked hash cannot open the link."
+  },
+  "takeaway": "JWTs are signed; email tokens are random, mailed raw and stored hashed.",
+  "chat": {
+    "starters": [
+      "Why is sha256 enough for the temporary token but not for passwords?",
+      "Why does the refresh token carry only the user id?",
+      "Why are there two separate secrets?"
+    ]
+  }
+}

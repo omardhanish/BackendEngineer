@@ -1,0 +1,61 @@
+# Plantly backend: architecture and traffic snapshot
+# Prepared for the Q3 planning review. Figures are from last month.
+
+product: plant-care reminders, a public plant catalogue, photo journals
+
+users:
+  registered: 650000          # about 15% more each month
+  daily_active: 90000
+  region: one country, two adjacent time zones
+
+traffic:
+  requests_per_day: 3.5 million
+  average_per_second: 40
+  peak_per_second: 400        # 07:30-09:00 local, when reminders arrive
+  reads_vs_writes: about 90% reads, 10% writes
+  load_test_last_quarter:     # catalogue and plant-list routes only
+    p95_under_300ms_up_to: 520 requests/second
+    api_cpu_at_that_point: 85%
+
+routes:                       # share of requests, p95 latency
+  - GET  /catalogue/:slug      46%   140 ms   # public, same for everyone
+  - GET  /me/plants            28%    90 ms
+  - GET  /me/stats              6%  2800 ms   # totals a user's whole history
+  - POST /me/plants/:id/care    6%    60 ms
+  - POST /me/plants/:id/photo   2%  2400 ms   # resizes the image in-process
+  - everything else            12%
+
+api:
+  machines: 1                 # no load balancer
+  size: 8 vCPU, 32 GB
+  processes: 8                # one Node.js process per core
+  db_pool_per_process: 20
+  cpu_at_peak: 75%
+  deploy: restart the processes (users see errors for about a minute)
+  cron_on_this_machine:
+    reminders: 07:30 daily, loops over due users, sends one push at a time
+    weekly_digest: Monday 07:00, builds and sends the digest emails
+  inside_the_request:
+    signup: calls the mail provider to send the welcome email
+    photo_upload: saves the file and resizes it before replying
+
+database:
+  engine: PostgreSQL, one primary, no replica
+  size: 8 vCPU, 32 GB, 140 GB of data
+  max_connections: 200
+  cpu_at_peak: 70%
+  biggest_table: care_events, 85 million rows, 300 thousand more each day
+  backups: nightly dump to object storage, never test-restored
+  slow_query_log: off
+
+state:
+  sessions: rows in a database table, read on every request
+  photos: files on the api machine's local disk (38 GB)
+  cache: none
+  queue: none
+  cdn: none
+
+monitoring:
+  dashboards: host CPU and memory
+  alerts: server down
+  latency_figures: one-off analysis of access logs

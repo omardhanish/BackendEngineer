@@ -1,0 +1,9 @@
+{
+  "stdout": "ada false undefined\ntrue\nValidationError Password is required\nMongoServerError 11000",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "MongoDB 8.2.6",
+  "hash": "980a6652fa485168",
+  "at": "2026-10-06T15:20:47.738Z"
+}

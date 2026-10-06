@@ -1,0 +1,197 @@
+{
+  "title": "Express configuration and CORS",
+  "idea": "CORS is a browser rule: a page may read a reply from another origin (scheme, host, port) only if that server's headers allow the page's origin.",
+  "points": [
+    "`express.json()` and `express.urlencoded()` fill `req.body` from JSON and form bodies.",
+    "`cookieParser()` fills `req.cookies` from the `Cookie` header.",
+    "`cors()` adds headers that tell the browser which origins may read replies.",
+    "Cookies need `credentials: true`, and browsers reject `*` as the allowed origin."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "A cross-origin request, step by step",
+    "actors": [
+      {
+        "id": "page",
+        "label": "Page script"
+      },
+      {
+        "id": "browser",
+        "label": "Browser"
+      },
+      {
+        "id": "api",
+        "label": "Express API"
+      }
+    ],
+    "messages": [
+      {
+        "from": "page",
+        "to": "browser",
+        "label": "fetch POST, credentials",
+        "note": "A script served from `https://app.example` calls the API. Its host differs from the API's, so the origin differs."
+      },
+      {
+        "from": "browser",
+        "to": "api",
+        "label": "OPTIONS (preflight)",
+        "note": "A JSON `POST` is not a simple request. The browser first asks permission, naming its origin."
+      },
+      {
+        "from": "api",
+        "to": "browser",
+        "label": "204 + Allow headers",
+        "dashed": true,
+        "note": "`cors` answers 204 with `Access-Control-Allow-Origin`, `Access-Control-Allow-Methods` and `Access-Control-Allow-Credentials`. The browser checks them."
+      },
+      {
+        "from": "browser",
+        "to": "api",
+        "label": "POST + cookies",
+        "note": "If the origin is allowed, the browser sends the real request, with cookies because credentials were asked for."
+      },
+      {
+        "from": "api",
+        "to": "browser",
+        "label": "200 + Allow-Origin",
+        "dashed": true,
+        "note": "The real reply repeats `Access-Control-Allow-Origin` and `-Credentials`."
+      },
+      {
+        "from": "browser",
+        "to": "page",
+        "label": "response",
+        "dashed": true,
+        "note": "Only now can the script read the body. If the origin was refused, it gets a network error instead."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "app.mjs",
+      "lang": "js",
+      "title": "The config in app.js",
+      "run": "captured",
+      "caption": "The middleware block of `src/app.js`, called once. `CORS_ORIGIN` is unset here, so `origin` is `undefined`.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7
+          ],
+          "text": "`CORS_ORIGIN` is a comma-separated list from `.env`. Unset gives `undefined`; `cors` then adds no headers."
+        },
+        {
+          "lines": [
+            8
+          ],
+          "text": "`limit` caps the body size; a larger body is refused with 413."
+        },
+        {
+          "lines": [
+            9
+          ],
+          "text": "The same for form bodies. `extended: true` also parses names like `user[name]`."
+        },
+        {
+          "lines": [
+            10
+          ],
+          "text": "`cookieParser()` turns the `Cookie` header into `req.cookies`."
+        },
+        {
+          "lines": [
+            11,
+            12,
+            13
+          ],
+          "text": "A test route that echoes what the parsers produced."
+        },
+        {
+          "lines": [
+            15,
+            16,
+            17,
+            18,
+            19,
+            20
+          ],
+          "text": "Send JSON plus a cookie to it, as a client would."
+        },
+        {
+          "lines": [
+            21
+          ],
+          "text": "Both parsers ran before the route, so it sees `body` and `cookies`."
+        }
+      ]
+    },
+    {
+      "file": "preflight.mjs",
+      "lang": "js",
+      "title": "Asking as a browser would",
+      "run": "captured",
+      "caption": "Node's `fetch` has no CORS rules, so this sends the browser's preflight by hand for two origins.",
+      "walk": [
+        {
+          "lines": [
+            4
+          ],
+          "text": "A demo value standing in for `.env`. List several origins with commas."
+        },
+        {
+          "lines": [
+            8
+          ],
+          "text": "With `credentials: true`, `cors` also sends `Access-Control-Allow-Credentials`."
+        },
+        {
+          "lines": [
+            14,
+            15
+          ],
+          "text": "A preflight is an `OPTIONS` request that names its origin and the method it wants."
+        },
+        {
+          "lines": [
+            16,
+            17
+          ],
+          "text": "Both get 204, but only the allowed origin gets `Access-Control-Allow-Origin`."
+        },
+        {
+          "lines": [
+            19
+          ],
+          "text": "Close the server so the script can exit."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Clients must opt in: `fetch` needs `credentials: 'include'`, or cookies are neither sent nor stored.",
+    "Browsers enforce CORS; curl and Postman ignore it. It never replaces authentication.",
+    "Set `CORS_ORIGIN`. Unset, `cors` adds no headers, so browsers block cross-origin pages."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "app.post('/early', (req, res) => res.json({ ok: true }));\napp.use(cors({ origin: ['https://app.example'] }));\n\n// A page at https://app.example posts to /early\nconst res = await fetch(url, {\n  method: 'POST',\n  headers: { origin: 'https://app.example' },\n});\nconsole.log(res.headers.get('access-control-allow-origin'));",
+    "lang": "js",
+    "options": [
+      "`https://app.example`",
+      "`*`",
+      "`null`",
+      "`undefined`"
+    ],
+    "answer": 2,
+    "why": "The route replied before `cors` ran, so no CORS header was set. `headers.get` returns `null` for a missing header."
+  },
+  "takeaway": "The browser enforces CORS; your server only declares which origins it allows.",
+  "chat": {
+    "starters": [
+      "Why does my browser block a request that works in Postman?",
+      "What is a preflight request?",
+      "Should I list several origins in `CORS_ORIGIN`?"
+    ]
+  }
+}

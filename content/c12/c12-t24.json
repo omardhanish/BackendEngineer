@@ -1,0 +1,62 @@
+{
+  "title": "Email templates with Mailgen",
+  "idea": "Mailgen turns a plain JavaScript object into a styled HTML email and a plain-text version, so you never hand-write email HTML.",
+  "points": [
+    "`new Mailgen({ theme, product })` sets the look and the sender's name and link.",
+    "A `body` holds `name`, `intro`, an optional `action` button and `outro`.",
+    "`generate` returns the HTML; `generatePlaintext` returns the text version.",
+    "Wrap each email in a function of the username and a link."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "One body, two emails",
+    "head": ["body field", "HTML email", "Plain text"],
+    "rows": [
+      ["name", "Greeting: 'Hi Ada,'", "Same words"],
+      ["intro", "Opening paragraph", "Same words"],
+      ["action.instructions", "Sentence above the button", "Same words"],
+      ["action.button", "Colored button with text and link", "Only the link, on its own line"],
+      ["outro", "Closing paragraph", "Same words"]
+    ],
+    "highlight": { "row": 3 },
+    "caption": "`generate(email)` builds the HTML. `generatePlaintext(email)` builds the text. Both read the same `body`."
+  },
+  "code": [
+    {
+      "file": "mail.mjs",
+      "lang": "js",
+      "title": "src/utils/mail.js",
+      "run": "captured",
+      "caption": "Both templates, then a demo. Setting `copyright` keeps the footer fixed; the default footer shows the current year. Step through, then press Run.",
+      "walk": [
+        { "lines": [3, 4, 5, 6, 7, 8, 9, 10], "text": "One `Mailgen` instance sets the look and the product's name, link and footer text." },
+        { "lines": [12, 13, 14, 15, 24], "text": "A template is a function of the username and a link. `name` greets, `intro` opens, `outro` closes." },
+        { "lines": [16, 17, 18, 19, 20, 21, 22, 23], "text": "`action` adds a button: `instructions` above it, then `text`, `link` and `color`." },
+        { "lines": [28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42], "text": "The password-reset template has the same shape; only the words, color and link change." },
+        { "lines": [44, 45, 46, 47], "text": "Build both emails for `ada`, with fixed demo links." },
+        { "lines": [49, 50, 51], "text": "`generatePlaintext` prints the text. `generate` returns HTML, checked here for each link." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Mailgen does not escape HTML in `name` or `intro`; escape user input first.",
+    "Send both versions: `generate` for HTML and `generatePlaintext` for clients that show only text.",
+    "Use a full `https://` URL in `button.link`; an email has no base address for relative paths."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const email = { body: { name: 'Ada', intro: 'Welcome.' } };\nconst text = mailGenerator.generatePlaintext(email);\nconst html = mailGenerator.generate(email);\nconsole.log(text.includes('<p'), html.includes('<p'));",
+    "lang": "js",
+    "options": ["false true", "true true", "false false", "true false"],
+    "answer": 0,
+    "why": "The text version is plain words with no tags. The HTML version wraps each paragraph in `<p>` tags."
+  },
+  "takeaway": "Describe the email as data; Mailgen renders the HTML and the text.",
+  "chat": {
+    "starters": [
+      "How do I add a logo or change the theme?",
+      "Can I write my own HTML template instead of Mailgen's?",
+      "Why does the plain-text email show only the link and not the button text?"
+    ]
+  }
+}

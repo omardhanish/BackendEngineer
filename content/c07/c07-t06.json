@@ -1,0 +1,247 @@
+{
+  "title": "The aggregation pipeline",
+  "idea": "An aggregation pipeline is an ordered list of stages. Each stage takes the documents from the one before, changes them, and passes the result on.",
+  "points": [
+    "`Book.aggregate(stages)` takes an array; each element is one stage.",
+    "`$match` keeps the documents that fit a condition, as `find` does.",
+    "`$group` builds one output document per `_id` value, with totals such as `$sum`.",
+    "`$sort` orders what it receives. Chapter 11 covers `$group` and the rest in depth."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "Documents flowing through three stages",
+    "scenario": {
+      "token": {
+        "label": "7 books",
+        "tone": "req"
+      },
+      "stages": [
+        {
+          "id": "books",
+          "label": "books",
+          "sub": "collection",
+          "kind": "end"
+        },
+        {
+          "id": "match",
+          "label": "$match",
+          "sub": "year ≥ 1900"
+        },
+        {
+          "id": "group",
+          "label": "$group",
+          "sub": "by author"
+        },
+        {
+          "id": "sort",
+          "label": "$sort",
+          "sub": "most books first"
+        },
+        {
+          "id": "result",
+          "label": "Result",
+          "sub": "array",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "at": "books",
+          "slot": "top",
+          "token": {
+            "label": "7 books",
+            "tone": "req"
+          },
+          "state": {
+            "books": "active"
+          },
+          "out": [
+            "books: 7 documents"
+          ],
+          "caption": "The pipeline starts from the `books` collection: books by several authors."
+        },
+        {
+          "at": "match",
+          "slot": "top",
+          "token": {
+            "label": "6 books",
+            "tone": "req"
+          },
+          "state": {
+            "books": "done",
+            "match": "active"
+          },
+          "out": [
+            "books: 7 documents",
+            "$match: 6 documents"
+          ],
+          "caption": "`$match` keeps books from 1900 on. Emma, from 1815, is dropped."
+        },
+        {
+          "at": "group",
+          "slot": "top",
+          "token": {
+            "label": "3 groups",
+            "tone": "req"
+          },
+          "state": {
+            "books": "done",
+            "match": "done",
+            "group": "active"
+          },
+          "out": [
+            "books: 7 documents",
+            "$match: 6 documents",
+            "$group: 3 documents"
+          ],
+          "caption": "`$group` makes one document per author. `books` counts that author's books with `$sum: 1`."
+        },
+        {
+          "at": "sort",
+          "slot": "top",
+          "token": {
+            "label": "3 groups, sorted",
+            "tone": "req"
+          },
+          "state": {
+            "books": "done",
+            "match": "done",
+            "group": "done",
+            "sort": "active"
+          },
+          "out": [
+            "books: 7 documents",
+            "$match: 6 documents",
+            "$group: 3 documents",
+            "$sort: Herbert 3, Gibson 2, Le Guin 1"
+          ],
+          "caption": "`$sort` with `-1` puts the author with the most books first."
+        },
+        {
+          "at": "result",
+          "slot": "top",
+          "token": {
+            "label": "array of 3",
+            "tone": "ok"
+          },
+          "state": {
+            "books": "done",
+            "match": "done",
+            "group": "done",
+            "sort": "done",
+            "result": "active"
+          },
+          "out": [
+            "books: 7 documents",
+            "$match: 6 documents",
+            "$group: 3 documents",
+            "$sort: Herbert 3, Gibson 2, Le Guin 1",
+            "result: 3 plain objects"
+          ],
+          "caption": "`aggregate` resolves to an array of plain objects, not Mongoose documents."
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "app.mjs",
+      "lang": "js",
+      "title": "Count books per author",
+      "run": "captured",
+      "needs": [
+        "mongo"
+      ],
+      "caption": "The same three stages, run for real. The loop shows how many documents each stage leaves.",
+      "walk": [
+        {
+          "lines": [
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "text": "A bare schema, a connection and seven books by four authors."
+        },
+        {
+          "lines": [
+            17,
+            21
+          ],
+          "text": "A pipeline is an array. Each stage is an object with one `$` operator as its key."
+        },
+        {
+          "lines": [
+            18
+          ],
+          "text": "`$match` keeps books from 1900 on, so Emma (1815) is dropped."
+        },
+        {
+          "lines": [
+            19
+          ],
+          "text": "`$group` makes one document per author: `_id` is the author, `books` counts with `$sum: 1`."
+        },
+        {
+          "lines": [
+            20
+          ],
+          "text": "`$sort` puts the author with the most books first."
+        },
+        {
+          "lines": [
+            22,
+            23,
+            24,
+            25,
+            26
+          ],
+          "text": "Run the first stage, then the first two, then all three; print each count."
+        },
+        {
+          "lines": [
+            27,
+            28
+          ],
+          "text": "The full pipeline returns plain objects, one per author. Then disconnect."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "`aggregate` does not cast: match an `_id` with `new mongoose.Types.ObjectId(id)`, not a string.",
+    "Results are plain objects, not Mongoose documents: they have no `save()`.",
+    "Put `$match` early: later stages then read fewer documents."
+  ],
+  "quiz": {
+    "q": "With the seven books from the example, what does this print?",
+    "code": "console.log(await Book.aggregate([\n  { $match: { books: { $gte: 2 } } },\n  { $group: { _id: '$author', books: { $sum: 1 } } },\n]));",
+    "lang": "js",
+    "options": [
+      "[]",
+      "Two groups: Herbert 3, Gibson 2",
+      "Four groups, one per author",
+      "An error: no field `books`"
+    ],
+    "answer": 0,
+    "why": "`$match` runs first, before any document has a `books` field. Nothing matches, so `$group` gets no input."
+  },
+  "takeaway": "Stages run in order; each one sees only the previous stage's output.",
+  "chat": {
+    "starters": [
+      "How is `$group` different from `find`?",
+      "What does `$sum: 1` do?",
+      "When should I use `aggregate` instead of `find`?"
+    ]
+  }
+}

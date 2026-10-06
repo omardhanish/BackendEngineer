@@ -1,0 +1,226 @@
+{
+  "title": "Auth middleware with MongoDB",
+  "idea": "`authenticate` is middleware that verifies the token, loads that user from MongoDB and sets `req.user`. Any failure ends the request with `401`.",
+  "points": [
+    "`/login` finds the user by email, compares passwords with `bcrypt.compare`, then signs a token.",
+    "The token's `sub` claim holds the user's id.",
+    "`authenticate` verifies the token, then loads that user with `User.findById(sub)`.",
+    "A valid token for a deleted user still gets `401`: the lookup finds `null`."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "Login, a protected route, a deleted user",
+    "actors": [
+      {
+        "id": "c",
+        "label": "Client"
+      },
+      {
+        "id": "s",
+        "label": "Express"
+      },
+      {
+        "id": "m",
+        "label": "MongoDB"
+      }
+    ],
+    "messages": [
+      {
+        "from": "c",
+        "to": "s",
+        "label": "POST /login",
+        "note": "The client sends an email and a password as JSON."
+      },
+      {
+        "from": "s",
+        "to": "m",
+        "label": "findOne({ email })",
+        "note": "Express checks that both values are strings, then looks the user up by email."
+      },
+      {
+        "from": "s",
+        "to": "c",
+        "label": "200 { token }",
+        "note": "The password matches the stored hash, so `jwt.sign` puts the user's id in `sub`."
+      },
+      {
+        "from": "c",
+        "to": "s",
+        "label": "GET /me + token",
+        "note": "Every later request sends the token in the `Authorization` header."
+      },
+      {
+        "from": "s",
+        "to": "m",
+        "label": "findById(sub)",
+        "note": "`authenticate` verifies the token, then loads the user that `sub` names."
+      },
+      {
+        "from": "s",
+        "to": "c",
+        "label": "200 { email }",
+        "note": "The query selects only `email`. `req.user` is set, `next()` runs and the route answers."
+      },
+      {
+        "from": "c",
+        "to": "s",
+        "label": "GET /me, same token",
+        "note": "Later the account is deleted. The old token still verifies: signature and expiry are fine."
+      },
+      {
+        "from": "s",
+        "to": "m",
+        "label": "findById(sub)",
+        "note": "`authenticate` looks the user up again, as it does on every request."
+      },
+      {
+        "from": "m",
+        "to": "s",
+        "label": "null",
+        "dashed": true,
+        "note": "No document matches, so `findById` resolves to `null`."
+      },
+      {
+        "from": "s",
+        "to": "c",
+        "label": "401",
+        "note": "`authenticate` ends the request. A valid token is not enough: the user must exist."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "app.mjs",
+      "lang": "js",
+      "title": "Login and a guarded route",
+      "run": "captured",
+      "needs": [
+        "mongo"
+      ],
+      "caption": "Express, Mongoose, `bcryptjs` and `jsonwebtoken` together. Step through it, then press Run.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7,
+            8,
+            9,
+            10,
+            11
+          ],
+          "text": "A demo secret and a `User` model. `unique` asks MongoDB for a unique index on `email`."
+        },
+        {
+          "lines": [
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20
+          ],
+          "text": "`authenticate` reads the bearer token and verifies it, accepting only HS256. A bad token gets `401`."
+        },
+        {
+          "lines": [
+            21,
+            22,
+            23,
+            24
+          ],
+          "text": "Next, load the user from MongoDB, selecting only `email`. No user means `401`; otherwise `next()` runs."
+        },
+        {
+          "lines": [
+            29,
+            30,
+            31,
+            32
+          ],
+          "text": "Before any query, both fields must be strings: an object could act as a query operator."
+        },
+        {
+          "lines": [
+            33,
+            34,
+            35,
+            36,
+            37,
+            38
+          ],
+          "text": "Look up the email, compare the hash, then sign a token whose `sub` is the id."
+        },
+        {
+          "lines": [
+            39
+          ],
+          "text": "`/me` runs `authenticate` first, then answers from `req.user`."
+        },
+        {
+          "lines": [
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63,
+            64,
+            65,
+            66,
+            67,
+            68,
+            69,
+            70,
+            71
+          ],
+          "text": "Seed one user and call the routes. The last call reuses the token after deleting the user."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Check types before querying: an object in place of a string becomes a query operator.",
+    "Use one message for unknown email and wrong password; two messages reveal which emails exist.",
+    "Keep `passwordHash` off `req.user`: select only the fields your routes need."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const { id } = await User.create({ email: 'a@b.co', passwordHash: 'x' });\nconst token = jwt.sign({ sub: id }, 'demo-secret');\nawait User.deleteOne({ _id: id });\nconst { sub } = jwt.verify(token, 'demo-secret');\nconsole.log(sub === id, await User.findById(sub));",
+    "lang": "js",
+    "options": [
+      "true undefined",
+      "false null",
+      "JsonWebTokenError",
+      "true null"
+    ],
+    "answer": 3,
+    "why": "The token still verifies, so `sub` matches the id. But the user is gone: `findById` resolves to `null`."
+  },
+  "takeaway": "A valid token proves who signed it; the database says whether the user exists.",
+  "chat": {
+    "starters": [
+      "Why query MongoDB on every request if the token is signed?",
+      "What is NoSQL injection?",
+      "How do I hash the password when a user signs up?"
+    ]
+  }
+}

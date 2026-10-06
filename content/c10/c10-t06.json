@@ -1,0 +1,140 @@
+{
+  "title": "ECS services and load balancers",
+  "idea": "An ECS service keeps a set number of tasks running and registers each in a target group: the tasks a load balancer may send requests to.",
+  "points": [
+    "`desiredCount` is how many tasks to keep running; ECS replaces any that stop.",
+    "A listener, the load balancer's open port, forwards requests to a target group.",
+    "The service's `loadBalancers` entry names the target group, container and container port.",
+    "The target group's health check decides which tasks get requests."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "Registered, checked, then served",
+    "scenario": {
+      "tiers": [["client"], ["alb"], ["t1", "t2"], ["svc"]],
+      "nodes": {
+        "client": { "label": "Client", "kind": "user" },
+        "alb": { "label": "Load balancer", "kind": "lb", "sub": "has a listener" },
+        "t1": { "label": "Task 1", "kind": "box" },
+        "t2": { "label": "Task 2", "kind": "box" },
+        "svc": { "label": "ECS service", "kind": "service", "sub": "desired: 2" }
+      },
+      "links": [
+        ["client", "alb"],
+        ["alb", "t1"],
+        ["alb", "t2"],
+        ["svc", "t1", { "dashed": true }],
+        ["svc", "t2", { "dashed": true }]
+      ],
+      "groups": [{ "label": "Target group", "nodes": ["t1", "t2"] }],
+      "steps": [
+        {
+          "caption": "The service starts two tasks, its `desiredCount`, from one task definition.",
+          "send": [
+            { "from": "svc", "to": "t1", "label": "start", "tone": "info" },
+            { "from": "svc", "to": "t2", "label": "start", "tone": "info" }
+          ],
+          "state": { "t1": "new", "t2": "new" },
+          "badge": { "t1": "starting", "t2": "starting" }
+        },
+        {
+          "caption": "Each new task is registered in the target group. The balancer health-checks it before sending requests.",
+          "send": [
+            { "from": "alb", "to": "t1", "label": "GET /health" },
+            { "from": "alb", "to": "t2", "label": "GET /health" }
+          ],
+          "badge": { "t1": "checking", "t2": "checking" }
+        },
+        {
+          "caption": "Both tasks answer 200, so both are healthy. Client requests now spread across them.",
+          "send": [
+            { "from": "client", "to": "alb", "label": "GET /books" },
+            { "from": "alb", "to": "t1", "label": "GET /books" },
+            { "from": "alb", "to": "t2", "label": "GET /books" }
+          ],
+          "state": { "t1": "ok", "t2": "ok" },
+          "badge": { "t1": "healthy", "t2": "healthy" }
+        },
+        {
+          "caption": "Task 2 starts failing its health checks. The balancer stops sending it requests.",
+          "send": [
+            { "from": "client", "to": "alb", "label": "GET /books" },
+            { "from": "alb", "to": "t1", "label": "GET /books" }
+          ],
+          "state": { "t2": "down" },
+          "badge": { "t2": "unhealthy" },
+          "focus": ["t2"]
+        },
+        {
+          "caption": "ECS stops the unhealthy task. The service is below its desired count, so it starts a replacement.",
+          "send": [{ "from": "svc", "to": "t2", "label": "start", "tone": "info" }],
+          "label": { "t2": "Task 3" },
+          "state": { "t2": "new" },
+          "badge": { "t2": "starting" }
+        },
+        {
+          "caption": "The replacement passes its health check and joins the rotation. The count is 2 again.",
+          "send": [{ "from": "t2", "to": "alb", "label": "200", "tone": "ok" }],
+          "state": { "t2": "ok" },
+          "badge": { "t2": "healthy" }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "service.json",
+      "lang": "json",
+      "title": "Service",
+      "run": "static",
+      "illustrative": true,
+      "caption": "A service for `bookstore-api` behind a load balancer. Angle brackets mark placeholders.",
+      "walk": [
+        { "lines": [2, 3, 4], "text": "Which cluster, what to call the service, and which task definition revision to run." },
+        { "lines": [5, 6], "text": "Keep two Fargate tasks running. If one stops, ECS starts another." },
+        { "lines": [7, 8, 9, 10], "text": "Each task gets a network interface in these subnets, protected by the security group." },
+        { "lines": [11], "text": "`ENABLED` gives each task a public IP. In a public subnet, that lets it pull from ECR." },
+        { "lines": [14, 15, 16, 17, 18, 19, 20], "text": "Register tasks in this target group. The container name and port must exist in the task definition." },
+        { "lines": [21], "text": "Ignore failed health checks for a task's first 30 seconds. The default is 0." }
+      ]
+    },
+    {
+      "file": "commands.sh",
+      "lang": "bash",
+      "title": "Commands",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Create the target group. A listener must forward to it before you create the service.",
+      "walk": [
+        { "lines": [1, 2, 3], "text": "Fargate needs target type `ip`. The health check asks each task for `/health`." },
+        { "lines": [4], "text": "Create the service from the JSON file." },
+        { "lines": [5, 6], "text": "Compare running and desired counts. Both should reach 2." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Create the target group with type `ip`; `instance`, the default, is wrong for `awsvpc` tasks.",
+    "Match `containerName` and `containerPort` to the task definition; they must exist there.",
+    "Set `healthCheckGracePeriodSeconds` for slow-starting apps; the default is 0."
+  ],
+  "quiz": {
+    "q": "A task fails its target group health check. What happens?",
+    "options": [
+      "Nothing changes until you restart the service",
+      "The whole service stops until you fix it",
+      "The load balancer restarts the container itself",
+      "The balancer routes around it and ECS replaces it"
+    ],
+    "answer": 3,
+    "why": "A target group routes only to healthy targets. ECS stops tasks that fail load balancer health checks and starts new ones to match `desiredCount`."
+  },
+  "takeaway": "Desired count keeps tasks alive; health checks decide which ones get traffic.",
+  "chat": {
+    "starters": [
+      "How many tasks should my service run?",
+      "Why must the target group use `ip` targets on Fargate?",
+      "Can one load balancer serve several services?"
+    ]
+  }
+}

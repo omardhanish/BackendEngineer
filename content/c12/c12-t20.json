@@ -1,0 +1,73 @@
+{
+  "title": "Mongoose schema methods",
+  "idea": "A schema method is a function you attach to `userSchema.methods`. Every document of that model can call it, and `this` inside it is that document.",
+  "points": [
+    "Assign a function to `userSchema.methods.name`, then build the model.",
+    "A method reads the document's own fields, such as `this.password`.",
+    "`isPasswordCorrect` hands a plain attempt and the stored hash to `bcrypt.compare`.",
+    "Later pages add the token methods the same way."
+  ],
+  "hero": {
+    "type": "compare",
+    "title": "Where a function lives",
+    "left": {
+      "title": "Method: lives on documents",
+      "items": [
+        "`userSchema.methods.isPasswordCorrect = function …`",
+        "Called on one document: `user.isPasswordCorrect(pw)`",
+        "`this` is that one document",
+        "Reads its own fields, like `this.password`"
+      ]
+    },
+    "right": {
+      "title": "Static: lives on the model",
+      "items": [
+        "`userSchema.statics.findByUsername = function …`",
+        "Called on the model: `User.findByUsername(name)`",
+        "`this` is the model",
+        "Works with no document in hand"
+      ]
+    },
+    "verdict": "Needs one document's fields? Write a method. This project only needs methods."
+  },
+  "code": [
+    {
+      "file": "user.models.mjs",
+      "lang": "js",
+      "title": "src/models/user.models.js",
+      "run": "captured",
+      "needs": ["mongo"],
+      "caption": "The pre-save hook is left out, so the snippet hashes by hand. Step through, then press Run.",
+      "walk": [
+        { "lines": [9], "text": "Assign a regular `function` to `userSchema.methods`, before the model is built." },
+        { "lines": [10], "text": "`this.password` is the stored hash. `compare` checks a plain attempt against it." },
+        { "lines": [13], "text": "`mongoose.model` builds the model from the schema, methods included." },
+        { "lines": [15, 16, 17, 18], "text": "Create a user with a hashed password." },
+        { "lines": [20], "text": "`findOne` returns a document, and every document carries the method." },
+        { "lines": [21, 22], "text": "Call it on the document. It answers `true` or `false`." },
+        { "lines": [23], "text": "The model has no such function, so the type is `undefined`." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Write methods with `function`, not an arrow: arrows do not bind `this`.",
+    "Add methods before `mongoose.model()`; methods added to the schema later are ignored.",
+    "`.lean()` returns plain objects with no methods; `select('-password')` leaves `this.password` empty."
+  ],
+  "quiz": {
+    "q": "A document `user` came from `User.findOne`. What does this print?",
+    "code": "console.log(\n  typeof user.isPasswordCorrect,\n  typeof User.isPasswordCorrect,\n);",
+    "lang": "js",
+    "options": ["function function", "undefined function", "function undefined", "undefined undefined"],
+    "answer": 2,
+    "why": "A method lives on documents, not on the model. The model has no `isPasswordCorrect`, so its type is `undefined`."
+  },
+  "takeaway": "Methods give every document its own behavior, with `this` as the document.",
+  "chat": {
+    "starters": [
+      "When would I use a static instead of a method?",
+      "Can a method be async?",
+      "Why do methods need a regular function and not an arrow?"
+    ]
+  }
+}

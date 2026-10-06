@@ -1,0 +1,9 @@
+{
+  "stdout": "[\n  { title: 'Dune', name: 'Frank Herbert' },\n  { title: 'Neuromancer', name: 'William Gibson' },\n  { title: 'The Dispossessed', name: 'Ursula K. Le Guin' },\n  { title: 'Dune Messiah', name: 'Frank Herbert' }\n]",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "PostgreSQL 18.4",
+  "hash": "c44b393e574ef1f7",
+  "at": "2026-10-06T15:21:34.977Z"
+}

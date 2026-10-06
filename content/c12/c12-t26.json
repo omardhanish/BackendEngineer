@@ -1,0 +1,336 @@
+{
+  "title": "Registering a user",
+  "idea": "`registerUser` is the controller that creates an account: it rejects duplicates, saves the user with a hashed password, and emails a verification link.",
+  "analogy": {
+    "text": "A club's front desk: it checks the name is free, issues a membership card, and posts a confirmation letter. The member gets a receipt without the PIN.",
+    "breaks": "A desk can undo steps; a failed email leaves the user saved."
+  },
+  "points": [
+    "`findOne` with `$or` finds a user who already has this username or email.",
+    "The email link holds the raw token; the database holds its hash and expiry.",
+    "One `save` writes the user, and the pre-save hook hashes the password.",
+    "The reply selects fields: password, refresh token and verification fields stay out."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "Two registrations, two outcomes",
+    "scenario": {
+      "token": {
+        "label": "POST register",
+        "tone": "req"
+      },
+      "stages": [
+        {
+          "id": "client",
+          "label": "Client",
+          "kind": "end"
+        },
+        {
+          "id": "check",
+          "label": "findOne",
+          "sub": "name taken?"
+        },
+        {
+          "id": "save",
+          "label": "save",
+          "sub": "hash, token"
+        },
+        {
+          "id": "mail",
+          "label": "sendEmail",
+          "sub": "verify link"
+        },
+        {
+          "id": "reply",
+          "label": "Reply",
+          "sub": "no secrets",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "Ada posts a username, email and password to `POST /api/v1/auth/register`.",
+          "at": "client",
+          "slot": "top",
+          "state": {
+            "client": "active"
+          },
+          "out": []
+        },
+        {
+          "caption": "`findOne` looks for a user with that username or email. None exists, so the request goes on.",
+          "at": "check",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "check": "active"
+          },
+          "out": [
+            "findOne: free"
+          ]
+        },
+        {
+          "caption": "A new user gets a token: its hash and expiry go on the document. `save` also hashes the password.",
+          "at": "save",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "check": "done",
+            "save": "active"
+          },
+          "out": [
+            "findOne: free",
+            "save: user stored"
+          ]
+        },
+        {
+          "caption": "`sendEmail` mails a link that carries the raw token. The database never holds the raw token.",
+          "at": "mail",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "check": "done",
+            "save": "done",
+            "mail": "active"
+          },
+          "out": [
+            "findOne: free",
+            "save: user stored",
+            "mail: link sent"
+          ]
+        },
+        {
+          "caption": "The reply is `201` with the user, minus the password and token fields.",
+          "at": "reply",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "check": "done",
+            "save": "done",
+            "mail": "done",
+            "reply": "active"
+          },
+          "out": [
+            "findOne: free",
+            "save: user stored",
+            "mail: link sent",
+            "reply: 201"
+          ],
+          "token": {
+            "label": "201",
+            "tone": "ok"
+          }
+        },
+        {
+          "caption": "A second request arrives with the same email.",
+          "at": "check",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "check": "active"
+          },
+          "out": [],
+          "token": {
+            "label": "POST register",
+            "tone": "req"
+          }
+        },
+        {
+          "caption": "`findOne` finds Ada's row. The controller throws `ApiError` 409: nothing is saved and no email goes out.",
+          "at": "check",
+          "slot": "bottom",
+          "state": {
+            "client": "done",
+            "check": "blocked"
+          },
+          "out": [
+            "findOne: found, throw 409"
+          ],
+          "token": {
+            "label": "409",
+            "tone": "err"
+          }
+        },
+        {
+          "caption": "The error handler sends the 409 as JSON with `success: false`.",
+          "at": "client",
+          "slot": "top",
+          "state": {
+            "client": "active",
+            "check": "blocked"
+          },
+          "out": [
+            "findOne: found, throw 409",
+            "handler: 409 JSON"
+          ],
+          "token": {
+            "label": "409",
+            "tone": "err"
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "register.mjs",
+      "lang": "js",
+      "title": "registerUser",
+      "run": "captured",
+      "needs": [
+        "mongo"
+      ],
+      "caption": "The last block is `src/controllers/auth.controllers.js`; the rest is earlier lessons, condensed. Press Run for real MongoDB output.",
+      "walk": [
+        {
+          "lines": [
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52
+          ],
+          "text": "Earlier lessons, condensed: error and reply classes, a mail stand-in, and the `User` model."
+        },
+        {
+          "lines": [
+            56,
+            57,
+            58
+          ],
+          "text": "Read the fields. A username or email already in use ends with `409`."
+        },
+        {
+          "lines": [
+            60,
+            61,
+            62,
+            63,
+            64,
+            65
+          ],
+          "text": "Make a token. Store its hash and expiry. One `save` also hashes the password."
+        },
+        {
+          "lines": [
+            67,
+            68,
+            69,
+            70,
+            71,
+            72,
+            73,
+            74,
+            75
+          ],
+          "text": "The link carries the raw token. If `sendEmail` rejects, the error leaves the controller."
+        },
+        {
+          "lines": [
+            77,
+            78,
+            79,
+            80,
+            81
+          ],
+          "text": "Read the user back without secret fields, then reply `201` through `ApiResponse`."
+        },
+        {
+          "lines": [
+            111,
+            112,
+            113,
+            114,
+            115,
+            116,
+            117,
+            118,
+            119,
+            120,
+            121,
+            122,
+            123
+          ],
+          "text": "A real request, then checks on the reply, the email and the database."
+        },
+        {
+          "lines": [
+            125,
+            126,
+            127,
+            128
+          ],
+          "text": "Repeat the request, then send nothing. Duplicates get `409`; missing fields get `500` for now."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Pick fields from `req.body`; passing it whole lets a client set `isEmailVerified: true`.",
+    "A failed email leaves a saved, unverified user; a later resend route covers it.",
+    "In production, build the link from fixed configuration: `req.get('host')` comes from the client."
+  ],
+  "quiz": {
+    "q": "With the register `User` model, what does this print?",
+    "code": "const user = new User({ username: 'A' });\nconst { unHashedToken, hashedToken } = user.generateTemporaryToken();\nuser.emailVerificationToken = hashedToken;\nconsole.log(\n  user.emailVerificationToken === unHashedToken,\n  user.username,\n  user.isEmailVerified,\n);",
+    "lang": "js",
+    "options": [
+      "true a false",
+      "false a false",
+      "false A false",
+      "false a true"
+    ],
+    "answer": 1,
+    "why": "The model stores the hash, not the raw token. `lowercase` runs when the value is set, and `isEmailVerified` defaults to `false`."
+  },
+  "takeaway": "Check, save with hashes, email the raw token, reply without secrets.",
+  "chat": {
+    "starters": [
+      "Why store a hash of the token instead of the token itself?",
+      "What should happen if `sendEmail` fails after the user is saved?",
+      "Why does the controller read the user back before replying?"
+    ]
+  }
+}

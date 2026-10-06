@@ -1,0 +1,9 @@
+{
+  "stdout": "wrong token:       400 Token is invalid or expired\nright token:       200 Email verified\nverified in db: true\ntoken cleared: true\nsame link again:   400 Token is invalid or expired\ncurrent user: ada",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "MongoDB 8.2.6",
+  "hash": "463b031bb1310881",
+  "at": "2026-10-06T15:41:52.969Z"
+}

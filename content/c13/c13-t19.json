@@ -1,0 +1,31 @@
+{
+  "title": "Scale a growing backend",
+  "scenario": {
+    "brief": "Plantly, a plant-care reminder app, has outgrown its first setup. Marta, the CTO, wants a scaling plan her four engineers can follow in order, with the trade-offs explained.",
+    "role": "Senior engineer advising the CTO.",
+    "goal": "Propose the next scaling steps in a sensible order, and say what each one costs.",
+    "rules": [
+      "Marta answers questions about Plantly: traffic, data, deadlines, budget and team.",
+      "Ask before you propose. She knows the snapshot and her own experience, nothing more.",
+      "Defend your plan when she pushes back, with evidence from the snapshot.",
+      "When you are ready, press End and debrief."
+    ],
+    "personaLabel": "Marta · CTO of Plantly",
+    "artifact": 0,
+    "artifactTitle": "Plantly backend: architecture and traffic snapshot",
+    "artifactNote": "Last month's figures, 61 lines. Read it like an architecture review, then ask what it leaves out.",
+    "rubric": [
+      { "criterion": "Measure before changing anything", "levels": ["Not raised", "Mentions monitoring or a load test", "Asks for latency, errors and slow queries, sets a target, and notes the load test missed the heavy routes"] },
+      { "criterion": "Cheap wins first", "levels": ["Not raised", "Suggests a bigger machine or an index", "Orders a bigger machine, a fix for the slow stats route and a look at connection limits before new parts"] },
+      { "criterion": "Stateless servers and load balancing", "levels": ["Not raised", "Adds a load balancer and more servers", "Moves photos off local disk and handles sessions first, then adds servers with health checks"] },
+      { "criterion": "Caching the right data", "levels": ["Not raised", "Suggests a cache or a CDN", "Caches the public catalogue, picks a TTL from the staleness allowed, and plans to purge on edits"] },
+      { "criterion": "Queues for slow work", "levels": ["Not raised", "Suggests a queue for email or photos", "Moves email, resizing, reminders and digests to workers, with idempotent handlers and no duplicate reminders"] },
+      { "criterion": "Replicas before sharding", "levels": ["Not raised", "Suggests replicas or sharding without limits", "Uses replicas for stale-tolerant reads, reads own writes from the primary, and leaves sharding last with reasons"] },
+      { "criterion": "Order, cost and team fit", "levels": ["Not raised", "Lists steps with no clear order", "Orders steps by measured bottleneck, names each step's cost, and fits a four-person team with managed services"] },
+      { "criterion": "Failure and the launch spike", "levels": ["Not raised", "Mentions availability or the traffic spike", "Removes single points of failure, tests a backup restore, and load-tests above the expected spike before launch"] }
+    ]
+  },
+  "code": [
+    { "file": "plantly-architecture.yaml", "lang": "yaml", "run": "static", "illustrative": true, "caption": "The snapshot Marta prepared for the planning review." }
+  ]
+}

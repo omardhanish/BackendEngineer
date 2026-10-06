@@ -84,6 +84,10 @@
       {
         "from": "ctrl",
         "to": "utils"
+      },
+      {
+        "from": "mw",
+        "to": "utils"
       }
     ],
     "steps": [
@@ -122,7 +126,7 @@
         ]
       },
       {
-        "caption": "Middleware and controllers reach data through `models/`. Controllers also use helpers from `utils/`.",
+        "caption": "Middleware and controllers reach data through `models/` and share helpers from `utils/`.",
         "active": [
           "mw",
           "ctrl",
@@ -132,7 +136,8 @@
         "edges": [
           5,
           6,
-          7
+          7,
+          8
         ]
       },
       {
@@ -170,7 +175,7 @@
           "lines": [
             3
           ],
-          "text": "`mkdir -p` creates every folder at once; `{a,b}` expands to each name."
+          "text": "`mkdir -p` creates every folder at once; in bash, `{a,b}` expands to each name."
         },
         {
           "lines": [
@@ -194,7 +199,7 @@
   ],
   "pitfalls": [
     "Never import upward. A model that imports a controller creates a circular import.",
-    "Match the lecture's file names exactly, such as `user.models.js`; later imports depend on them.",
+    "Match this chapter's file names exactly, such as `user.models.js`; later imports depend on them.",
     "Keep `utils/` for shared helpers. Request handling belongs in controllers."
   ],
   "quiz": {

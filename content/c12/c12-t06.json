@@ -1,0 +1,78 @@
+{
+  "title": "Dotenv files",
+  "idea": "An environment variable is a named setting your program reads from outside its code. dotenv loads them from a `.env` file into `process.env`.",
+  "points": [
+    "`process.env` holds the environment variables of the running process.",
+    "`dotenv.config()` copies the `KEY=value` lines of `.env` into `process.env`.",
+    "Every value is a string, and a variable already set keeps its value.",
+    "Import `dotenv/config` first: it loads `.env` before your other files run."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "From .env file to your code",
+    "nodes": [
+      { "id": "file", "label": ".env file", "sub": "KEY=value lines" },
+      { "id": "dotenv", "label": "dotenv.config()", "sub": "parses the text" },
+      { "id": "host", "label": "Shell or host", "sub": "sets variables first" },
+      { "id": "env", "label": "process.env", "sub": "strings only" },
+      { "id": "code", "label": "Your code", "sub": "process.env.PORT" }
+    ],
+    "edges": [
+      { "from": "file", "to": "dotenv", "label": "text", "caption": "dotenv reads the file as text, one `KEY=value` pair per line." },
+      { "from": "dotenv", "to": "env", "label": "copies", "caption": "It copies each pair into `process.env`. Every value becomes a string." },
+      { "from": "host", "to": "env", "label": "set first", "dashed": true, "caption": "A variable the shell or host already set stays as it is. `.env` never overwrites it." },
+      { "from": "env", "to": "code", "label": "reads", "caption": "Any file can read `process.env.PORT`, but only after dotenv has run." }
+    ]
+  },
+  "code": [
+    {
+      "file": "env.example",
+      "lang": "bash",
+      "title": ".env.example",
+      "run": "static",
+      "caption": "The settings this project uses. Commit this template; copy it to `.env` and put real values only there.",
+      "walk": [
+        { "lines": [1], "text": "`#` starts a comment. This file is committed, so it holds demo values only." },
+        { "lines": [2, 3], "text": "Where the server listens and where MongoDB runs." },
+        { "lines": [4, 5, 6, 7], "text": "Token secrets and lifetimes. Real secrets belong only in your untracked `.env`." },
+        { "lines": [8], "text": "The front-end address that may call the API." },
+        { "lines": [9, 10, 11, 12], "text": "Mail server settings for the emails the app sends." },
+        { "lines": [13], "text": "The address used to build the password-reset link." }
+      ]
+    },
+    {
+      "file": "load.mjs",
+      "lang": "js",
+      "title": "Loading the file",
+      "run": "captured",
+      "caption": "The demo loads the template by `path`; with no options dotenv reads `.env` in the working directory.",
+      "walk": [
+        { "lines": [3], "text": "A host such as a cloud platform may set `PORT` before your app starts." },
+        { "lines": [4], "text": "Load the file. `quiet` hides dotenv's startup message." },
+        { "lines": [6], "text": "The existing `9000` wins over `8000` from the file." },
+        { "lines": [7, 8], "text": "File values arrive as strings. Convert them yourself when you need numbers." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Never commit `.env`. Commit `.env.example` with demo values, so teammates know the keys.",
+    "Restart the server after editing `.env`; dotenv reads the file once, at startup.",
+    "Never log `process.env`: it prints every secret."
+  ],
+  "quiz": {
+    "q": "`.env` holds `PORT=8000`. What does this print?",
+    "code": "// reader.js: export const port = process.env.PORT;\nimport dotenv from 'dotenv';\nimport { port } from './reader.js';\n\ndotenv.config({ quiet: true });\nconsole.log(port, process.env.PORT);",
+    "lang": "js",
+    "options": ["8000 8000", "8000 undefined", "undefined undefined", "undefined 8000"],
+    "answer": 3,
+    "why": "`import` lines run before the code under them. `reader.js` read `process.env.PORT` before `config()` filled it, so `port` is `undefined`."
+  },
+  "takeaway": "Settings live in `.env`, load first, arrive as strings, and never get committed.",
+  "chat": {
+    "starters": [
+      "Why use `.env` files instead of hard-coding settings?",
+      "How do I set environment variables in production without a `.env` file?",
+      "Can Node load `.env` without the dotenv package?"
+    ]
+  }
+}

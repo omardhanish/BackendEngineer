@@ -1,0 +1,57 @@
+{
+  "title": "What JWTs are",
+  "idea": "A JSON Web Token (JWT) is a signed string of claims, facts such as the user's `_id`. Anyone can read it; only the secret's holder can sign it.",
+  "points": [
+    "A JWT is three base64url strings joined by dots: header, payload and signature.",
+    "The payload holds claims. `iat` (issued at) and `exp` (expiry) are standard names.",
+    "Base64url is an encoding, not encryption, so never put secrets in the payload.",
+    "`jwt.verify` recomputes the signature and rejects edited or expired tokens."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "scrubber",
+    "title": "A token for user u-101",
+    "scenario": {
+      "kind": "jwt",
+      "secret": "demo-secret",
+      "payload": { "_id": "u-101", "username": "ada", "iat": 1893455100, "exp": 1893456000 },
+      "steps": [
+        { "caption": "A token is three base64url parts joined by dots: header, payload and signature.", "view": "parts" },
+        { "caption": "Decoding needs no key. The header names the algorithm; the payload shows `_id`, `username`, `iat` and `exp`.", "view": "decode" },
+        { "caption": "The signature is a fingerprint of the first two parts, made with the server's secret.", "view": "sign" },
+        { "caption": "Change `_id` to another user's id and the old signature no longer fits, so `jwt.verify` throws.", "view": "tamper", "tamper": { "_id": "u-1" } },
+        { "caption": "Signing the edited payload needs the secret. Without it, nobody can forge a token the server accepts.", "view": "resign", "tamper": { "_id": "u-1" } }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "jwt.mjs",
+      "lang": "js",
+      "title": "Sign, read, verify",
+      "run": "captured",
+      "caption": "Anyone can decode the header and payload with `Buffer`; no secret needed. `exp - iat` is the lifetime in seconds."
+    }
+  ],
+  "pitfalls": [
+    "Never put passwords or private data in a payload; base64url is encoding, not encryption.",
+    "`jwt.decode` reads claims without checking the signature. Use `jwt.verify` before you trust a token.",
+    "Use a long, random secret from `.env`; a short one can be guessed offline."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const token = jwt.sign({ _id: 'u-101' }, 'demo-secret');\nconst payload = token.split('.')[1];\nconst text = Buffer.from(payload, 'base64url').toString();\nconsole.log(text.includes('u-101'), token.includes('demo-secret'));",
+    "lang": "js",
+    "options": ["true false", "false false", "true true", "false true"],
+    "answer": 0,
+    "why": "The payload is only encoded, so anyone can read `u-101`. The secret is used to sign and never appears in the token."
+  },
+  "takeaway": "Anyone can read a JWT; only the secret's holder can change it.",
+  "chat": {
+    "starters": [
+      "What does base64url mean, and why not plain base64?",
+      "Can a JWT be encrypted so nobody can read it?",
+      "What are `iat` and `exp` for?"
+    ]
+  }
+}

@@ -12,23 +12,166 @@
     "engine": "topology",
     "title": "Following a short link",
     "scenario": {
-      "tiers": [["browser"], ["app", "site"], ["db"]],
+      "tiers": [
+        [
+          "browser"
+        ],
+        [
+          "app",
+          "site"
+        ],
+        [
+          "db"
+        ]
+      ],
       "nodes": {
-        "browser": { "label": "Browser", "kind": "client" },
-        "app": { "label": "Shortener", "sub": "GET /:shortCode", "kind": "server" },
-        "site": { "label": "example.com", "sub": "the target", "kind": "cloud" },
-        "db": { "label": "Postgres", "sub": "urls table", "kind": "db" }
+        "browser": {
+          "label": "Browser",
+          "kind": "client"
+        },
+        "app": {
+          "label": "Shortener",
+          "sub": "GET /:shortCode",
+          "kind": "server"
+        },
+        "site": {
+          "label": "example.com",
+          "sub": "the target",
+          "kind": "cloud"
+        },
+        "db": {
+          "label": "Postgres",
+          "sub": "urls table",
+          "kind": "db"
+        }
       },
-      "links": [["browser", "app"], ["browser", "site"], ["app", "db"]],
+      "links": [
+        [
+          "browser",
+          "app"
+        ],
+        [
+          "browser",
+          "site"
+        ],
+        [
+          "app",
+          "db"
+        ]
+      ],
       "steps": [
-        { "caption": "The browser asks the shortener for a short link. It sends no token.", "send": [{ "from": "browser", "to": "app", "label": "GET /abc1234", "tone": "req" }], "focus": ["app"] },
-        { "caption": "The shortener looks the code up in Postgres.", "send": [{ "from": "app", "to": "db", "label": "find code", "tone": "req" }], "focus": ["db"] },
-        { "caption": "Postgres returns the stored target URL.", "send": [{ "from": "db", "to": "app", "label": "target_url", "tone": "ok" }], "focus": ["app"] },
-        { "caption": "The shortener answers `302` with a `Location` header. It does not fetch the page itself.", "send": [{ "from": "app", "to": "browser", "label": "302 + Location", "tone": "info" }], "focus": ["browser"] },
-        { "caption": "The browser follows `Location` on its own. The shortener is out of the loop.", "send": [{ "from": "browser", "to": "site", "label": "GET target", "tone": "req" }], "focus": ["site"] },
-        { "caption": "Now a request with an unknown code arrives.", "send": [{ "from": "browser", "to": "app", "label": "GET /zzz9999", "tone": "req" }], "focus": ["app"] },
-        { "caption": "Postgres has no row for it, so the lookup comes back empty.", "send": [{ "from": "app", "to": "db", "label": "find code", "tone": "req" }], "focus": ["db"] },
-        { "caption": "The shortener answers `404` with a JSON error and no `Location`. The browser has nowhere to go.", "send": [{ "from": "app", "to": "browser", "label": "404", "tone": "err" }], "focus": ["browser"] }
+        {
+          "caption": "The browser asks the shortener for a short link. It sends no token.",
+          "send": [
+            {
+              "from": "browser",
+              "to": "app",
+              "label": "GET /abc1234",
+              "tone": "req"
+            }
+          ],
+          "focus": [
+            "app"
+          ]
+        },
+        {
+          "caption": "The shortener looks the code up in Postgres.",
+          "send": [
+            {
+              "from": "app",
+              "to": "db",
+              "label": "find code",
+              "tone": "req"
+            }
+          ],
+          "focus": [
+            "db"
+          ]
+        },
+        {
+          "caption": "Postgres returns the stored target URL.",
+          "send": [
+            {
+              "from": "db",
+              "to": "app",
+              "label": "target_url",
+              "tone": "ok"
+            }
+          ],
+          "focus": [
+            "app"
+          ]
+        },
+        {
+          "caption": "The shortener answers `302` with a `Location` header. It does not fetch the page itself.",
+          "send": [
+            {
+              "from": "app",
+              "to": "browser",
+              "label": "302 + Location",
+              "tone": "info"
+            }
+          ],
+          "focus": [
+            "browser"
+          ]
+        },
+        {
+          "caption": "The browser follows `Location` on its own. The shortener is out of the loop.",
+          "send": [
+            {
+              "from": "browser",
+              "to": "site",
+              "label": "GET target",
+              "tone": "req"
+            }
+          ],
+          "focus": [
+            "site"
+          ]
+        },
+        {
+          "caption": "Now a request with an unknown code arrives.",
+          "send": [
+            {
+              "from": "browser",
+              "to": "app",
+              "label": "GET /zzz9999",
+              "tone": "req"
+            }
+          ],
+          "focus": [
+            "app"
+          ]
+        },
+        {
+          "caption": "Postgres has no row for it, so the lookup comes back empty.",
+          "send": [
+            {
+              "from": "app",
+              "to": "db",
+              "label": "find code",
+              "tone": "req"
+            }
+          ],
+          "focus": [
+            "db"
+          ]
+        },
+        {
+          "caption": "The shortener answers `404` with a JSON error and no `Location`. The browser has nowhere to go.",
+          "send": [
+            {
+              "from": "app",
+              "to": "browser",
+              "label": "404",
+              "tone": "err"
+            }
+          ],
+          "focus": [
+            "browser"
+          ]
+        }
       ]
     }
   },
@@ -38,15 +181,58 @@
       "lang": "js",
       "title": "GET /:shortCode",
       "run": "captured",
-      "needs": ["postgres"],
+      "needs": [
+        "postgres"
+      ],
       "caption": "The service, controller and route are new. `redirect: 'manual'` makes `fetch` show the `302` instead of following it.",
       "walk": [
-        { "lines": [9, 10, 11, 12, 13, 14, 15], "text": "`short_code` is unique, so at most one row matches. No row gives `null`." },
-        { "lines": [20], "text": "No target means `404` with a JSON error. Nothing is redirected." },
-        { "lines": [21], "text": "`res.redirect` sets `Location` and sends `302`." },
-        { "lines": [56, 57, 58, 59], "text": "`/health` comes first, then the router, so `/health` is never read as a short code." },
-        { "lines": [67, 68], "text": "A known code gives `302` and the stored URL in `Location`." },
-        { "lines": [69, 70], "text": "An unknown code gives `404` and the JSON error." }
+        {
+          "lines": [
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "text": "`short_code` is unique, so at most one row matches. No row gives `null`."
+        },
+        {
+          "lines": [
+            20
+          ],
+          "text": "No target means `404` with a JSON error. Nothing is redirected."
+        },
+        {
+          "lines": [
+            21
+          ],
+          "text": "`res.redirect` sets `Location` and sends `302`."
+        },
+        {
+          "lines": [
+            56,
+            57,
+            58,
+            59
+          ],
+          "text": "`/health` comes first, then the router, so `/health` is never read as a short code."
+        },
+        {
+          "lines": [
+            67,
+            68
+          ],
+          "text": "A known code gives `302` and the stored URL in `Location`."
+        },
+        {
+          "lines": [
+            69,
+            70
+          ],
+          "text": "An unknown code gives `404` and the JSON error."
+        }
       ]
     }
   ],
@@ -58,8 +244,13 @@
     "q": "No stored code is named `health`. What does this print?",
     "code": "app.get('/:shortCode', redirect);\napp.get('/health', (req, res) => res.json({ status: 'ok' }));\nconst res = await fetch(`${base}/health`);\nconsole.log(res.status);",
     "lang": "js",
-    "options": ["200", "404", "302", "500"],
-    "answer": 1,
+    "options": [
+      "404",
+      "200",
+      "302",
+      "500"
+    ],
+    "answer": 0,
     "why": "Express tries routes in order. `/:shortCode` matches `/health` first, finds no such code and sends 404. The health route never runs."
   },
   "takeaway": "Look up the code, answer `302`, and keep this catch-all route last.",

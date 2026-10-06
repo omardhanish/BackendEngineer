@@ -1,0 +1,22 @@
+{
+  "cluster": "<cluster>",
+  "serviceName": "<service>",
+  "taskDefinition": "bookstore-api:1",
+  "desiredCount": 2,
+  "launchType": "FARGATE",
+  "networkConfiguration": {
+    "awsvpcConfiguration": {
+      "subnets": ["<subnet-a>", "<subnet-b>"],
+      "securityGroups": ["<security-group-id>"],
+      "assignPublicIp": "ENABLED"
+    }
+  },
+  "loadBalancers": [
+    {
+      "targetGroupArn": "<target-group-arn>",
+      "containerName": "api",
+      "containerPort": 3000
+    }
+  ],
+  "healthCheckGracePeriodSeconds": 30
+}

@@ -1,0 +1,86 @@
+{
+  "title": "Pushing images to ECR",
+  "idea": "Amazon ECR is AWS's private registry for container images. ECS pulls your image from it when it starts your containers.",
+  "points": [
+    "The registry address names your account and AWS Region, a geographic location.",
+    "Create the repository first; a push does not create one by default.",
+    "`aws ecr get-login-password` returns a token that lasts 12 hours.",
+    "The token has the same permissions as the IAM identity that requested it."
+  ],
+  "hero": {
+    "type": "anatomy",
+    "title": "An ECR image name, part by part",
+    "parts": [
+      {
+        "text": "<account-id>",
+        "label": "Account ID",
+        "note": "Your AWS account ID, without hyphens. Every account has its own private registry."
+      },
+      {
+        "text": ".dkr.ecr.",
+        "label": "Fixed text",
+        "note": "Fixed text in standard private registry addresses."
+      },
+      {
+        "text": "<region>",
+        "label": "Region",
+        "note": "The Region where the repository lives, such as `us-east-2`. Login and push must use the same one."
+      },
+      {
+        "text": ".amazonaws.com/",
+        "label": "Domain",
+        "note": "Fixed text in most Regions. The slash ends the registry address and starts the repository name."
+      },
+      {
+        "text": "bookstore-api",
+        "label": "Repository",
+        "note": "One repository per app. It holds every version of that app's image."
+      },
+      {
+        "text": ":1.0",
+        "label": "Tag",
+        "note": "Names one version. Omit it and Docker assumes `latest`."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "push.sh",
+      "lang": "bash",
+      "title": "Create, log in, push",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Replace `<account-id>` and `<region>`. `bookstore-api:1.0` is the local image from chapter 9.",
+      "walk": [
+        { "lines": [1, 2, 3, 4], "text": "Create the repository once. `IMMUTABLE` means a pushed tag such as `1.0` cannot be overwritten." },
+        { "lines": [5, 6, 7], "text": "Log in: a pipe sends the token to `docker login`. The user name is `AWS`." },
+        { "lines": [8, 9], "text": "Tag the local image with the registry address. This only adds a name." },
+        { "lines": [10, 11], "text": "Push. Docker uploads only the layers ECR does not already have." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Keep the Region identical in `create-repository`, `docker login` and the image name.",
+    "Push a new tag for every change; an immutable repository rejects a second `1.0`.",
+    "ECS Fargate (next page) defaults to x86-64; build with `--platform linux/amd64` on Apple Silicon."
+  ],
+  "quiz": {
+    "q": "Which image name can `docker push` send to your ECR repository?",
+    "options": [
+      "<account-id>.dkr.ecr.<region>.amazonaws.com/bookstore-api:1.0",
+      "ecr.amazonaws.com/<account-id>/bookstore-api:1.0",
+      "bookstore-api:1.0",
+      "aws/bookstore-api:1.0"
+    ],
+    "answer": 0,
+    "why": "The name must start with the registry address, then the repository and tag. Without it, Docker aims at Docker Hub."
+  },
+  "takeaway": "Name the image with the registry address, log in, then push.",
+  "chat": {
+    "starters": [
+      "What permissions does my IAM user need to push to ECR?",
+      "How does ECS pull an image from a private repository?",
+      "Can ECR create the repository when I push?"
+    ]
+  }
+}

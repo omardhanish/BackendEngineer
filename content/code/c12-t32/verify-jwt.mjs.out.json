@@ -1,0 +1,9 @@
+{
+  "stdout": "no token      401 Unauthorized request\ngarbage       401 Invalid access token\nexpired       401 Invalid access token\ncookie        200 ada\nsecrets sent: false\nbearer header 200 ada\ndeleted user  401 Invalid access token",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "MongoDB 8.2.6",
+  "hash": "e47727ece2269f54",
+  "at": "2026-10-06T15:43:03.779Z"
+}

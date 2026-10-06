@@ -1,0 +1,9 @@
+{
+  "stdout": "known email: 200\nunknown email: 200\nmails sent: 1\nstored is sha256 of token: true\nexpired token: 400\nfresh token: 200\nnew password works: true\nold password works: false\ntoken cleared: true\nsessions ended: true\nsame link again: 400",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "MongoDB 8.2.6",
+  "hash": "f6bddf500e7cac50",
+  "at": "2026-10-06T15:38:42.541Z"
+}

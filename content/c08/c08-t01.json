@@ -1,0 +1,72 @@
+{
+  "title": "The URL shortener project",
+  "idea": "The project is a REST API, a server called over HTTP. Users sign up, log in and save long URLs under short codes. Visitors follow short links.",
+  "points": [
+    "Six routes do the product's work: signup, login, shorten, redirect, list and delete.",
+    "Login returns a JWT, a signed token. Routes that need a user check it.",
+    "Each code has one owner, and only the owner can list or delete it.",
+    "You build it layer by layer: server, database, accounts, then URLs."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "One owner and one visitor",
+    "actors": [
+      { "id": "owner", "label": "Owner" },
+      { "id": "api", "label": "The API" },
+      { "id": "visitor", "label": "Visitor" }
+    ],
+    "messages": [
+      { "from": "owner", "to": "api", "label": "POST /auth/signup", "note": "An owner signs up with an email and a password." },
+      { "from": "api", "to": "owner", "label": "201 { user }", "dashed": true, "note": "The API stores a password hash and returns the new user's id and email." },
+      { "from": "owner", "to": "api", "label": "POST /auth/login", "note": "Later the owner logs in with the same email and password." },
+      { "from": "api", "to": "owner", "label": "200 { token }", "dashed": true, "note": "A JWT comes back. The owner sends it with every request that needs a user." },
+      { "from": "owner", "to": "api", "label": "POST /shorten", "note": "The owner sends a long URL, with `Authorization: Bearer <token>`." },
+      { "from": "api", "to": "owner", "label": "201 { shortCode }", "dashed": true, "note": "The API saves the URL under a random seven-character code and returns the code." },
+      { "from": "visitor", "to": "api", "label": "GET /:shortCode", "note": "A visitor opens the short link. No token is needed." },
+      { "from": "api", "to": "visitor", "label": "302 to the long URL", "dashed": true, "note": "The API looks the code up and redirects the browser to the saved URL." },
+      { "from": "owner", "to": "api", "label": "DELETE /codes/:id", "note": "The owner deletes the link. The token tells the API who is asking." },
+      { "from": "api", "to": "owner", "label": "204 No Content", "dashed": true, "note": "The owner owns that link, so it is deleted. Another user's token would get 403." }
+    ]
+  },
+  "code": [
+    {
+      "file": "layout.txt",
+      "lang": "bash",
+      "title": "Final project layout",
+      "run": "static",
+      "caption": "The finished layout. Each file arrives in its own lesson, so nothing here runs yet.",
+      "walk": [
+        { "lines": [2, 3, 4], "text": "Root files: dependencies, Drizzle's command-line settings, and your settings and secrets in `.env`." },
+        { "lines": [6, 7], "text": "`server.js` listens on a port. `app.js` builds the Express app and mounts the routers." },
+        { "lines": [8, 9, 10], "text": "`db/` holds the Drizzle client and the table definitions." },
+        { "lines": [11, 12, 13], "text": "`routes/` map each method and URL to a controller function." },
+        { "lines": [14, 15, 16], "text": "`controllers/` read the request, call a service and choose the status code." },
+        { "lines": [17, 18, 19], "text": "`services/` hold the rules and the queries. They know nothing about HTTP." },
+        { "lines": [20, 21, 22, 23, 24, 25, 26], "text": "`middleware/`, `utils/` and `validation/` hold the auth check, JWT helpers and Zod schemas." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Follow the lessons in order. Later snippets assume the files earlier ones created.",
+    "Run each snippet before moving on. A broken step is easiest to fix right away."
+  ],
+  "quiz": {
+    "q": "Which request works without a token?",
+    "options": [
+      "`POST /shorten`",
+      "`GET /codes`",
+      "`DELETE /codes/:id`",
+      "`GET /:shortCode`"
+    ],
+    "answer": 3,
+    "why": "A visitor follows a short link without an account, so the redirect route is public. The other three need a logged-in user."
+  },
+  "takeaway": "Anyone can follow a short link; only the owner can list or delete it.",
+  "chat": {
+    "starters": [
+      "Why does opening a short link need no login?",
+      "Why build this with Postgres and not MongoDB?",
+      "What stops one user from deleting another user's link?"
+    ]
+  }
+}

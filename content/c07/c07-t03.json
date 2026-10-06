@@ -87,7 +87,7 @@
           ]
         },
         {
-          "caption": "Only now does Mongoose send the insert. The stored document also gets `_id` and `__v`.",
+          "caption": "Only now does Mongoose send the insert. The stored document also gets `_id` and `__v`, a version counter.",
           "at": "db",
           "slot": "top",
           "state": {
@@ -218,19 +218,20 @@
             15,
             16,
             17,
-            18
+            18,
+            19
           ],
           "text": "`err.errors` has one entry per bad field: a `CastError` for `year`, a `ValidatorError` for `author`."
         },
         {
           "lines": [
-            19
+            20
           ],
           "text": "Only the first book was stored. `select` hides `_id` and `__v`; `lean()` returns plain objects."
         },
         {
           "lines": [
-            20
+            21
           ],
           "text": "Disconnect so the script can exit."
         }
@@ -239,7 +240,7 @@
   ],
   "pitfalls": [
     "Fields missing from the schema are dropped silently: a typo such as `Year` is never saved.",
-    "Update methods skip validators unless you pass `runValidators: true`.",
+    "Query updates such as `findByIdAndUpdate` skip validators unless you pass `runValidators: true`.",
     "A schema guards only your app; other clients can still write any shape."
   ],
   "quiz": {

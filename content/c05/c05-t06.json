@@ -2,7 +2,7 @@
   "title": "Book Store CRUD with Drizzle",
   "idea": "Each Book Store route becomes one Drizzle query: `select`, `insert`, `update` or `delete`. The controller waits for it with `await`.",
   "points": [
-    "`select().from(books)` reads; `.where(eq(books.id, id))` narrows it to one book.",
+    "`select().from(books)` reads rows; `where(eq(books.id, id))` keeps rows whose id equals `id`.",
     "`insert().values()`, `update().set()` and `delete()` write; `.returning()` hands back the row.",
     "`select` and `returning()` give an array: `[book]` takes the first row, or `undefined`.",
     "A failed query rejects; Express 5 sends that error to your error handler."
@@ -10,15 +10,41 @@
   "hero": {
     "type": "table",
     "title": "Array code becomes queries",
-    "head": ["Route", "Chapter 4 (array)", "Chapter 5 (Drizzle)"],
-    "rows": [
-      ["`GET /books`", "`res.json(books)`", "`select().from(books)`"],
-      ["`GET /books/:id`", "`books[i]` after `bookIndex`", "`select().from(books).where(eq(books.id, id))`"],
-      ["`POST /books`", "`books.push(book)`", "`insert(books).values({…}).returning()`"],
-      ["`PUT /books/:id`", "`books[i] = {…}`", "`update(books).set({…}).where(…).returning()`"],
-      ["`DELETE /books/:id`", "`books.splice(i, 1)`", "`delete(books).where(…).returning()`"]
+    "head": [
+      "Route",
+      "Chapter 4 (array)",
+      "Chapter 5 (Drizzle)"
     ],
-    "highlight": { "col": 2 },
+    "rows": [
+      [
+        "`GET /books`",
+        "`res.json(books)`",
+        "`select().from(books)`"
+      ],
+      [
+        "`GET /books/:id`",
+        "`books[i]` after `bookIndex`",
+        "`select().from(books).where(eq(books.id, id))`"
+      ],
+      [
+        "`POST /books`",
+        "`books.push(book)`",
+        "`insert(books).values({…}).returning()`"
+      ],
+      [
+        "`PUT /books/:id`",
+        "`books[i] = {…}`",
+        "`update(books).set({…}).where(…).returning()`"
+      ],
+      [
+        "`DELETE /books/:id`",
+        "`books.splice(i, 1)`",
+        "`delete(books).where(…).returning()`"
+      ]
+    ],
+    "highlight": {
+      "col": 2
+    },
     "caption": "`where` replaces `findIndex`: the database finds the row. An empty `returning()` replaces the `-1` check."
   },
   "code": [
@@ -27,16 +53,100 @@
       "lang": "js",
       "title": "The five routes on Postgres",
       "run": "captured",
-      "needs": ["postgres"],
+      "needs": [
+        "postgres"
+      ],
       "caption": "The Book Store on Postgres. A client replays the chapter 4 requests. Step through it, then press Run.",
       "walk": [
-        { "lines": [6, 7, 8, 9, 10, 11, 12], "text": "Schema and `db` from the last lessons, inlined so this file runs alone." },
-        { "lines": [13, 14, 15, 16, 17, 18, 19], "text": "`drizzle-kit` is not run here, so raw SQL creates the table and `insert` seeds three books." },
-        { "lines": [25, 26, 27, 28], "text": "`idOf` turns a bad id into 0, which matches no row. `NaN` would make Postgres throw." },
-        { "lines": [30, 31, 33, 34, 35, 36, 37], "text": "Reads: `orderBy` fixes the order, and `[book]` is `undefined` when no row matches." },
-        { "lines": [39, 40, 41, 42, 43, 44, 45], "text": "`insert` plus `returning()` gives back the stored row, with its new `id`." },
-        { "lines": [47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61], "text": "`update` and `delete` find the row inside the statement. An empty `returning()` means 404." },
-        { "lines": [63, 64, 65, 66, 67, 68, 69], "text": "The routes now point at async controllers; nothing else in Express changes." }
+        {
+          "lines": [
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12
+          ],
+          "text": "Schema and `db` from the last lessons, inlined so this file runs alone."
+        },
+        {
+          "lines": [
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19
+          ],
+          "text": "`drizzle-kit` is not run here, so raw SQL creates the table and `insert` seeds three books."
+        },
+        {
+          "lines": [
+            25,
+            26,
+            27,
+            28
+          ],
+          "text": "`idOf` turns a bad id into 0, which matches no row. `NaN` would make Postgres throw."
+        },
+        {
+          "lines": [
+            30,
+            31,
+            33,
+            34,
+            35,
+            36,
+            37
+          ],
+          "text": "Reads: `orderBy` fixes the order, and `[book]` is `undefined` when no row matches."
+        },
+        {
+          "lines": [
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45
+          ],
+          "text": "`insert` plus `returning()` gives back the stored row, with its new `id`."
+        },
+        {
+          "lines": [
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59,
+            60,
+            61
+          ],
+          "text": "`update` and `delete` find the row inside the statement. An empty `returning()` means 404."
+        },
+        {
+          "lines": [
+            63,
+            64,
+            65,
+            66,
+            67,
+            68,
+            69
+          ],
+          "text": "The routes now point at async controllers; nothing else in Express changes."
+        }
       ]
     },
     {
@@ -44,13 +154,42 @@
       "lang": "js",
       "title": "The SQL Drizzle sends",
       "run": "captured",
-      "needs": ["postgres"],
+      "needs": [
+        "postgres"
+      ],
       "caption": "`toSQL()` shows the SQL and parameters without sending them. Values travel apart, as `$1` and `$2`.",
       "walk": [
-        { "lines": [5, 6, 7, 8, 9, 10, 11], "text": "The same schema and `db` as the first snippet." },
-        { "lines": [12, 14], "text": "`toSQL()` returns the SQL text and its parameters. Nothing is sent." },
-        { "lines": [15], "text": "`update` with `where`: two parameters, the new year and the id." },
-        { "lines": [16], "text": "No `where`: the same `update` would change every row. Drizzle allows it." }
+        {
+          "lines": [
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11
+          ],
+          "text": "The same schema and `db` as the first snippet."
+        },
+        {
+          "lines": [
+            12,
+            14
+          ],
+          "text": "`toSQL()` returns the SQL text and its parameters. Nothing is sent."
+        },
+        {
+          "lines": [
+            15
+          ],
+          "text": "`update` with `where`: two parameters, the new year and the id."
+        },
+        {
+          "lines": [
+            16
+          ],
+          "text": "No `where`: the same `update` would change every row. Drizzle allows it."
+        }
       ]
     }
   ],

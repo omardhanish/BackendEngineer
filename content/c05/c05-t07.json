@@ -4,28 +4,86 @@
   "points": [
     "A collection is an ordered set of requests; the Collection Runner sends them all.",
     "`{{base_url}}` is a variable: Postman fills it in before it sends the request.",
-    "Tests live in the post-response script; results show in the Test Results tab.",
+    "A post-response script runs after each response; its `pm.test` checks show in Test Results.",
     "A script can save a value, such as a new `id`, for later requests."
   ],
   "hero": {
     "type": "seq",
     "title": "A collection run, request by request",
     "actors": [
-      { "id": "pm", "label": "Postman" },
-      { "id": "api", "label": "Book Store API" }
+      {
+        "id": "pm",
+        "label": "Postman"
+      },
+      {
+        "id": "api",
+        "label": "Book Store API"
+      }
     ],
     "messages": [
-      { "from": "pm", "to": "api", "label": "POST {{base_url}}/books", "note": "Request 1 sends a JSON body. Postman fills in `{{base_url}}` before sending." },
-      { "from": "api", "to": "pm", "label": "201 + book", "dashed": true, "note": "Test `status is 201` passes. The same script saves the new `id` as `book_id`." },
-      { "from": "pm", "to": "api", "label": "GET /books/{{book_id}}", "note": "Request 2 reuses the saved id, so its path holds the new book's id." },
-      { "from": "api", "to": "pm", "label": "200 + book", "dashed": true, "note": "Test: the `title` in the body is `Hyperion`." },
-      { "from": "pm", "to": "api", "label": "DELETE /books/{{book_id}}", "note": "Request 3 removes the book, so the collection cleans up after itself." },
-      { "from": "api", "to": "pm", "label": "204", "dashed": true, "note": "Test: status is 204. No body comes back." },
-      { "from": "pm", "to": "api", "label": "GET /books/{{book_id}}", "note": "Request 4 asks for the deleted book again." },
-      { "from": "api", "to": "pm", "label": "404", "dashed": true, "note": "Test: status is 404. The Collection Runner lists each request's test results." }
+      {
+        "from": "pm",
+        "to": "api",
+        "label": "POST {{base_url}}/books",
+        "note": "Request 1 sends a JSON body. Postman fills in `{{base_url}}` before sending."
+      },
+      {
+        "from": "api",
+        "to": "pm",
+        "label": "201 + book",
+        "dashed": true,
+        "note": "Tests `status is 201` and `the title is stored` pass. The script also saves the new `id` as `book_id`."
+      },
+      {
+        "from": "pm",
+        "to": "api",
+        "label": "GET /books/{{book_id}}",
+        "note": "Request 2 reuses the saved id, so its path holds the new book's id."
+      },
+      {
+        "from": "api",
+        "to": "pm",
+        "label": "200 + book",
+        "dashed": true,
+        "note": "Test: status is 200, and the `title` matches what was sent."
+      },
+      {
+        "from": "pm",
+        "to": "api",
+        "label": "DELETE /books/{{book_id}}",
+        "note": "Request 3 removes the book, so the collection cleans up after itself."
+      },
+      {
+        "from": "api",
+        "to": "pm",
+        "label": "204",
+        "dashed": true,
+        "note": "Test: status is 204. No body comes back."
+      },
+      {
+        "from": "pm",
+        "to": "api",
+        "label": "GET /books/{{book_id}}",
+        "note": "Request 4 asks for the deleted book again."
+      },
+      {
+        "from": "api",
+        "to": "pm",
+        "label": "404",
+        "dashed": true,
+        "note": "Test: status is 404. The Collection Runner lists each request's test results."
+      }
     ]
   },
   "code": [
+    {
+      "file": "requests.http",
+      "lang": "http",
+      "title": "The requests as plain HTTP",
+      "run": "static",
+      "illustrative": true,
+      "caption": "What Postman sends for requests 1 and 2. The `{{…}}` parts are Postman variables, filled in before sending."
+    },
     {
       "file": "tests.js",
       "lang": "js",
@@ -39,16 +97,110 @@
       "lang": "js",
       "title": "The same checks with fetch",
       "run": "captured",
-      "needs": ["postgres"],
+      "needs": [
+        "postgres"
+      ],
       "caption": "The four requests and checks in code, against the Book Store on Postgres. To the server, both are plain HTTP requests.",
       "walk": [
-        { "lines": [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19], "text": "The `books` table, seeded as before. The server under test is the Express app below." },
-        { "lines": [21, 22, 23, 24, 25, 26, 27, 28], "text": "`POST` stores a book and answers 201 with the stored row." },
-        { "lines": [29, 30, 31, 32, 33, 34], "text": "`GET` answers with the book, or 404 when no row matches." },
-        { "lines": [35, 36, 37, 38, 39, 40], "text": "`DELETE` answers 204, or 404 when it deleted nothing." },
-        { "lines": [42, 43, 70, 71], "text": "Listen on port 0, then close the server and the pool so the script exits." },
-        { "lines": [44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56], "text": "`check` prints PASS or FAIL. `send` wraps one `fetch` call and returns status and JSON." },
-        { "lines": [58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68], "text": "Four requests in order. The new `id` stands in for `book_id`; each `check` mirrors a Postman test." }
+        {
+          "lines": [
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19
+          ],
+          "text": "The `books` table, seeded as before. The server under test is the Express app below."
+        },
+        {
+          "lines": [
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28
+          ],
+          "text": "`POST` stores a book and answers 201 with the stored row."
+        },
+        {
+          "lines": [
+            29,
+            30,
+            31,
+            32,
+            33,
+            34
+          ],
+          "text": "`GET` answers with the book, or 404 when no row matches."
+        },
+        {
+          "lines": [
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42
+          ],
+          "text": "`DELETE` answers 204, or 404 when it deleted nothing."
+        },
+        {
+          "lines": [
+            44,
+            45,
+            72,
+            73
+          ],
+          "text": "Listen on port 0, then close the server and the pool so the script exits."
+        },
+        {
+          "lines": [
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58
+          ],
+          "text": "`check` prints PASS or FAIL. `send` wraps one `fetch` call and returns status and JSON."
+        },
+        {
+          "lines": [
+            60,
+            61,
+            62,
+            63,
+            64,
+            65,
+            66,
+            67,
+            68,
+            69,
+            70
+          ],
+          "text": "Four requests in order. The new `id` stands in for `book_id`; each `check` mimics a Postman test."
+        }
       ]
     }
   ],

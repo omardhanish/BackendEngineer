@@ -14,11 +14,11 @@ const CHROME = process.env.CHROME_PATH || '/Applications/Google Chrome.app/Conte
 // By default QA runs against its OWN throwaway server (separate port and data folder), so visiting every page never
 // marks pages as read in your real progress. Set BASE=http://localhost:4000 to look at your running book instead.
 import { spawn } from 'node:child_process';
-const OWN_PORT = 4012;
+const OWN_PORT = Number(process.env.QA_PORT) || 4012; // set QA_PORT to run several sweeps side by side
 const BASE = process.env.BASE || `http://localhost:${OWN_PORT}`;
 let ownServer = null;
 if (!process.env.BASE) {
-  ownServer = spawn(process.execPath, ['server/index.js'], { cwd: root, env: { ...process.env, PORT: String(OWN_PORT), DATA_DIR: '.tmp/qa-data', LOG: 'silent' }, stdio: 'ignore' });
+  ownServer = spawn(process.execPath, ['server/index.js'], { cwd: root, env: { ...process.env, PORT: String(OWN_PORT), DATA_DIR: `.tmp/qa-data-${OWN_PORT}`, LOG: 'silent' }, stdio: 'ignore' });
   for (let i = 0; i < 40; i++) { try { if ((await fetch(`${BASE}/api/health`)).ok) break; } catch { /* still starting */ } await new Promise((r) => setTimeout(r, 250)); }
   process.on('exit', () => ownServer.kill());
 }
@@ -28,6 +28,8 @@ const themes = arg('themes', 'light').split(',');
 const sizes = arg('sizes', '1440x900').split(',').map((s) => s.split('x').map(Number));
 const only = arg('only', '');
 const auto = process.argv.includes('--auto');
+const fromId = arg('from', ''); // resume an --auto sweep at this page id (e.g. --from c06-t08)
+const checkOnly = process.argv.includes('--check-only'); // run every check but skip the screenshots (fast sweep of all pages)
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const press = (n, key = 'ArrowRight') => ['press', key, n];
@@ -71,20 +73,24 @@ let failed = 0;
 
 for (const theme of themes) {
   for (const [w, h] of sizes) {
-    const page = await browser.newPage();
+    let page = await browser.newPage();
+    let recreate = false; // a lost tab (sleep, crash) must not poison every later frame
+    const problems = [];
+    const wire = (pg) => {
+      pg.on('console', (m) => { if (m.type() === 'error') problems.push(`console: ${m.text()}`); });
+      pg.on('pageerror', (e) => problems.push(`pageerror: ${e.message}`));
+      pg.on('requestfailed', (r) => { if (!r.url().includes('/api/chat')) problems.push(`request failed: ${r.url()}`); });
+    };
     await page.setViewport({ width: w, height: h, deviceScaleFactor: 1 });
     await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: theme }]);
-    const problems = [];
-    page.on('console', (m) => { if (m.type() === 'error') problems.push(`console: ${m.text()}`); });
-    page.on('pageerror', (e) => problems.push(`pageerror: ${e.message}`));
-    page.on('requestfailed', (r) => { if (!r.url().includes('/api/chat')) problems.push(`request failed: ${r.url()}`); });
+    wire(page);
 
     let shots = SHOTS;
     if (auto) {
       // every frame of every written page, plus the middle step of any animation
       const book = await (await fetch(`${BASE}/api/book`)).json();
       shots = [];
-      for (const t of book.topics.filter((x) => x.authored)) {
+      for (const t of book.topics.filter((x) => x.authored && (!fromId || x.id >= fromId))) {
         await page.goto(`${BASE}/read/${t.id}`, { waitUntil: 'networkidle0' });
         await page.waitForSelector('.stage-body .frame', { timeout: 8000 }).catch(() => {});
         const frames = await page.$$eval('.deck-dot', (d) => d.length);
@@ -95,34 +101,39 @@ for (const theme of themes) {
     }
     for (const shot of shots) {
       if (only && !shot.name.includes(only)) continue;
+      if (page.isClosed() || recreate) { recreate = false; await page.close().catch(() => {}); page = await browser.newPage(); await page.setViewport({ width: w, height: h, deviceScaleFactor: 1 }); await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: theme }]); wire(page); }
       problems.length = 0;
-      await page.goto(`${BASE}${shot.path}`, { waitUntil: 'networkidle0' });
-      await page.waitForSelector('.stage-body .frame, .home, .cover, .history, .empty-state', { timeout: 8000 }).catch(() => problems.push('page did not render'));
-      await page.evaluate(() => document.activeElement?.blur?.());
-      await sleep(350);
-      if (shot.mid) {
-        const total = await page.$eval('.fig-step', (e) => Number(e.textContent.split('/')[1])).catch(() => 0);
-        if (total > 2) shot.actions = [press(Math.floor(total / 2)), ['wait', 700]];
-      }
-      for (const [kind, a, b] of shot.actions || []) {
-        if (kind === 'press') { for (let i = 0; i < b; i++) { await page.keyboard.press(a); await sleep(120); } }
-        else if (kind === 'click') await page.click(a).catch(() => problems.push(`could not click ${a}`));
-        else if (kind === 'wait') await sleep(a);
-      }
-      await sleep(250);
-      const stats = await page.evaluate(() => {
-        const body = document.querySelector('.stage-body');
-        return {
-          overflow: body ? body.scrollHeight - body.clientHeight : 0,
-          fonts: document.fonts.check('16px Newsreader') && document.fonts.check('14px Inter'),
-          htmlOverflowX: document.documentElement.scrollWidth > window.innerWidth + 1,
-        };
-      });
-      if (stats.overflow > 1 && w >= 1280) problems.push(`frame scrolls by ${stats.overflow}px`);
-      if (!stats.fonts) problems.push('fonts not loaded');
-      if (stats.htmlOverflowX) problems.push('page overflows horizontally');
+      try { await page.goto(`${BASE}${shot.path}`, { waitUntil: 'networkidle0', timeout: 30000 }); } catch (e) { recreate = true; problems.push(`navigation failed: ${e.message.split('\n')[0]}`); report.push({ file: `${shot.name}__${theme}__${w}x${h}`, ok: false, problems: [...problems] }); failed++; console.log(`✖ ${shot.name} ${theme} ${w}x${h}\n    ${problems.join('\n    ')}`); continue; }
+      let stats = { overflow: 0 };
+      try {
+        await page.waitForSelector('.stage-body .frame, .home, .cover, .history, .empty-state', { timeout: 8000 }).catch(() => problems.push('page did not render'));
+        await page.evaluate(() => document.activeElement?.blur?.());
+        await sleep(350);
+        if (shot.mid) {
+          const total = await page.$eval('.fig-step', (e) => Number(e.textContent.split('/')[1])).catch(() => 0);
+          if (total > 2) shot.actions = [press(Math.floor(total / 2)), ['wait', 700]];
+        }
+        for (const [kind, a, b] of shot.actions || []) {
+          if (kind === 'press') { for (let i = 0; i < b; i++) { await page.keyboard.press(a); await sleep(120); } }
+          else if (kind === 'click') await page.click(a).catch(() => problems.push(`could not click ${a}`));
+          else if (kind === 'wait') await sleep(a);
+        }
+        await sleep(250);
+        stats = await page.evaluate(() => {
+          const body = document.querySelector('.stage-body');
+          return {
+            overflow: body ? body.scrollHeight - body.clientHeight : 0,
+            fonts: document.fonts.check('16px Newsreader') && document.fonts.check('14px Inter'),
+            htmlOverflowX: document.documentElement.scrollWidth > window.innerWidth + 1,
+            workspace: !!document.querySelector('.frame-challenges'),
+          };
+        });
+        if (stats.overflow > 1 && w >= 1280 && !stats.workspace) problems.push(`frame scrolls by ${stats.overflow}px`);
+        if (!stats.fonts) problems.push('fonts not loaded');
+        if (stats.htmlOverflowX) problems.push('page overflows horizontally');
+      } catch (e) { recreate = true; problems.push(`browser error: ${e.message.split('\n')[0]}`); }
       const file = `${shot.name}__${theme}__${w}x${h}.png`;
-      await page.screenshot({ path: join(OUT, file) });
+      if (!checkOnly) await page.screenshot({ path: join(OUT, file) }).catch(() => problems.push('screenshot failed'));
       const ok = problems.length === 0;
       if (!ok) failed++;
       report.push({ file, ok, problems: [...problems], overflow: stats.overflow });

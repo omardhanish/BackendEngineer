@@ -105,6 +105,7 @@ export function mount(host, { props: sc }) {
   const W = PADX * 2 + Math.max(4, maxCommits) * SP;
   const H = laneOrder.length * LH + 22;
   const svg = s('svg', { class: 'git', viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': sc.title || 'Commit graph' });
+  svg.style.maxWidth = `${Math.round(W * 1.3)}px`;
   host.append(h('div', { class: 'flow-wrap' }, svg));
   let prevIds = new Set();
 

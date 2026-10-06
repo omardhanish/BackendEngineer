@@ -1,0 +1,72 @@
+{
+  "title": "Testing with Postman",
+  "idea": "Postman is a graphical API client: you build a request, send it to your running server, and read the status, headers and body of the reply.",
+  "points": [
+    "Pick a method, enter a URL, send, then read the response pane.",
+    "The response pane shows status, time, size, body, headers and cookies.",
+    "Postman sets some headers itself, such as `Content-Type` for a raw JSON body.",
+    "Save requests in a collection; keep the server address in an environment variable."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "Postman fields, one HTTP request",
+    "head": ["In Postman", "You enter", "The server receives"],
+    "rows": [
+      ["Method list", "`POST`", "The method, first word of the request line"],
+      ["URL box", "`{{baseUrl}}/api/v1/auth/register`", "The path; Postman swaps in `baseUrl` first"],
+      ["Headers tab", "`Content-Type: application/json`", "A header line; Postman adds some itself"],
+      ["Body tab", "raw, JSON, then your JSON text", "The body, after the headers"]
+    ],
+    "highlight": { "col": 1 },
+    "caption": "Each field becomes one plain part of the HTTP message from the HTTP chapter."
+  },
+  "code": [
+    {
+      "file": "request.http",
+      "lang": "http",
+      "title": "What you enter",
+      "run": "static",
+      "illustrative": true,
+      "caption": "The register request you will send in a later lesson. Set `baseUrl` to `http://localhost:` plus your `PORT`."
+    },
+    {
+      "file": "receive.mjs",
+      "lang": "js",
+      "title": "What the server sees",
+      "run": "captured",
+      "caption": "A stand-in server, with `fetch` playing Postman. The Body type decides the header, and the header decides parsing.",
+      "walk": [
+        { "lines": [3, 4], "text": "A stand-in server. `express.json()` parses `application/json` bodies only." },
+        { "lines": [5, 6, 7, 8], "text": "The route logs the header and the body it received." },
+        { "lines": [11, 12, 13, 14, 15, 16], "text": "`send` builds the request. The body type becomes the `Content-Type` header." },
+        { "lines": [17], "text": "Raw JSON in Postman sends this header." },
+        { "lines": [18], "text": "Raw Text sends `text/plain`, which the JSON parser skips." },
+        { "lines": [19], "text": "Close the server so the script can exit." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "A route made with `app.post` answers `GET` with 404; set the method to match.",
+    "A wrong port gives a connection error, not a 404: check `baseUrl` against your `PORT`.",
+    "A request that works in Postman can still fail in a browser: Postman ignores CORS."
+  ],
+  "quiz": {
+    "q": "In the snippet, what does the second `send` log?",
+    "options": [
+      "`text/plain { username: 'ada' }`",
+      "`text/plain undefined`",
+      "`application/json undefined`",
+      "`text/plain {}`"
+    ],
+    "answer": 1,
+    "why": "`express.json()` parses only `application/json`. For `text/plain` it skips the body, so `req.body` stays `undefined`."
+  },
+  "takeaway": "Postman fills in the same HTTP request any client would send.",
+  "chat": {
+    "starters": [
+      "Can I use curl instead of Postman?",
+      "How do I keep one set of requests for local and production?",
+      "Why does my request work in Postman but fail in the browser?"
+    ]
+  }
+}

@@ -1,0 +1,33 @@
+# Fernhill accounts service: PRD v0.3
+# Product: Imani. Engineering: you (backend) and Sam (front end).
+# Target launch: end of week 8.
+
+goal: >
+  Members and studio staff can create an account, log in safely
+  and stay logged in.
+
+users:
+  member: books classes at a studio
+  staff: runs classes and looks after a studio's members
+  owner: runs the studio
+
+stories:
+  - As a new member, I sign up with my email and a password.
+  - As a member, I confirm my email address.
+  - As a member, I log in and stay logged in on my phone.
+  - As a member, I reset my password if I forget it.
+  - As a member, I update my name and email.
+  - As a member, I leave Fernhill and my data goes.
+  - As staff, I manage my studio's members.
+  - As an owner, I manage my studio's staff.
+
+rules:
+  - Links in emails expire after 20 minutes.
+  - Passwords must be strong.
+  - Staff can do everything a member can, and more.
+  - Only the right people can see member details.
+
+pilot: Ridgeway Yoga, three locations.
+out_of_scope: payments, class booking, social login.
+open_questions:
+  - Do staff need their own admin screen?

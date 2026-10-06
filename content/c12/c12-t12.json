@@ -1,0 +1,188 @@
+{
+  "title": "ApiResponse and ApiError",
+  "idea": "ApiResponse and ApiError are two small classes that give every reply one JSON shape, so clients can read successes and failures the same way.",
+  "analogy": {
+    "text": "A standard shipping label. Every parcel, whatever is inside, carries sender, address and status in the same slots, so any scanner can read it.",
+    "breaks": "Contents differ; only the label's layout is fixed."
+  },
+  "points": [
+    "`ApiResponse` wraps every success: `statusCode`, `data`, `message` and `success`.",
+    "`success` is computed as `statusCode < 400`; you never set it by hand.",
+    "`ApiError` extends `Error`, so `throw new ApiError(404, ...)` works inside any handler.",
+    "A handler turns a thrown `ApiError` into JSON; unknown errors become a generic 500."
+  ],
+  "hero": {
+    "type": "compare",
+    "title": "Two shapes, one envelope",
+    "left": {
+      "title": "ApiResponse: success",
+      "tone": "good",
+      "items": [
+        "`statusCode`: 200, 201 and so on",
+        "`data`: the payload, or `null`",
+        "`message`: a short sentence",
+        "`success`: `true` when the status is below 400"
+      ]
+    },
+    "right": {
+      "title": "ApiError: failure",
+      "tone": "bad",
+      "items": [
+        "`statusCode`: 400, 401, 404, 409 and so on",
+        "`message`: what went wrong",
+        "`errors`: details per field; `[]` by default",
+        "`success`: always `false`"
+      ]
+    },
+    "verdict": "Clients check `success` first, then read `data` or `errors`."
+  },
+  "code": [
+    {
+      "file": "api-response.js",
+      "lang": "js",
+      "title": "utils/api-response.js",
+      "run": "static",
+      "caption": "Save as `src/utils/api-response.js`. The status is a plain number; `success` follows from it."
+    },
+    {
+      "file": "api-error.js",
+      "lang": "js",
+      "title": "utils/api-error.js",
+      "run": "static",
+      "caption": "Save as `src/utils/api-error.js`. Pass a `stack` to keep the stack of an error you wrap.",
+      "walk": [
+        {
+          "lines": [
+            1
+          ],
+          "text": "Extending `Error` makes it throwable, with a stack trace."
+        },
+        {
+          "lines": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "text": "`errors` defaults to `[]`, so clients can always loop over it."
+        },
+        {
+          "lines": [
+            8
+          ],
+          "text": "`super(message)` sets `message` and builds the stack."
+        },
+        {
+          "lines": [
+            9,
+            10,
+            11
+          ],
+          "text": "Keep the status, the field details and a `false` success flag."
+        },
+        {
+          "lines": [
+            12,
+            13
+          ],
+          "text": "Use a stack passed in, or capture a clean one."
+        }
+      ]
+    },
+    {
+      "file": "respond.mjs",
+      "lang": "js",
+      "title": "Both in use",
+      "run": "captured",
+      "caption": "Save next to the two classes. Four routes, then one error handler; press Run for the real output.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7,
+            8
+          ],
+          "text": "A success: wrap the data in `ApiResponse` and set the same HTTP status."
+        },
+        {
+          "lines": [
+            9,
+            10,
+            11,
+            12
+          ],
+          "text": "Failures are thrown. `errors` holds per-field details."
+        },
+        {
+          "lines": [
+            13
+          ],
+          "text": "A bug throws a plain error, not an `ApiError`."
+        },
+        {
+          "lines": [
+            15,
+            16,
+            17
+          ],
+          "text": "Four arguments mark an error handler. Anything but an `ApiError` becomes a generic 500."
+        },
+        {
+          "lines": [
+            18,
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "text": "Build the body by hand: sending `err` itself would drop `message`."
+        },
+        {
+          "lines": [
+            26,
+            27,
+            28,
+            29,
+            30
+          ],
+          "text": "Call each route and print the status and JSON body."
+        },
+        {
+          "lines": [
+            32
+          ],
+          "text": "Close the server so the script can exit."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "`ApiResponse` does not set the HTTP status. Call `res.status(code)` with the same number.",
+    "Do not send the error object itself: `JSON.stringify` drops its `message`. Build the body.",
+    "Never put `err.stack` or raw internal messages in a reply; log them on the server."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const err = new ApiError(409, 'Email taken');\nconsole.log(\n  err instanceof Error,\n  err.statusCode,\n  err.errors.length,\n);",
+    "lang": "js",
+    "options": [
+      "false 409 0",
+      "true 409 0",
+      "true 409 undefined",
+      "true 409 1"
+    ],
+    "answer": 1,
+    "why": "`ApiError` extends `Error`, so `instanceof` is true. `errors` defaults to an empty array, so its length is 0."
+  },
+  "takeaway": "One envelope for every reply: `success` first, then `data` or `errors`.",
+  "chat": {
+    "starters": [
+      "Why does `ApiError` extend `Error` instead of being a plain object?",
+      "Which status code should I use for a duplicate email?",
+      "Where does the error handler go in `app.js`?"
+    ]
+  }
+}

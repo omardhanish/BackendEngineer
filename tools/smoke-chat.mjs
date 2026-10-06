@@ -6,7 +6,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const PORT = 4012;
+const PORT = 4015;
 const DATA = join(root, '.tmp', 'smoke-data');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 rmSync(DATA, { recursive: true, force: true });

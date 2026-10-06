@@ -1,0 +1,141 @@
+{
+  "title": "Debugging failing health checks",
+  "idea": "A health check fails when the load balancer gets no good answer from a task. ECS replaces that task, and replacements keep failing until you fix the cause.",
+  "analogy": {
+    "text": "A courier must reach the building, find the right door, and get a reply in time.",
+    "breaks": "Couriers give up; the balancer keeps checking and ECS keeps replacing."
+  },
+  "points": [
+    "An Application Load Balancer sends `GET /` by default and expects status `200`.",
+    "Point the health check path at a simple route you own, such as `/health`.",
+    "A task turns unhealthy after `UnhealthyThresholdCount` failed checks in a row.",
+    "`healthCheckGracePeriodSeconds` tells ECS to ignore failures while a new task starts."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "Where a health check can fail",
+    "scenario": {
+      "token": { "label": "GET /", "tone": "req" },
+      "stages": [
+        { "id": "lb", "label": "Load balancer", "sub": "sends the check", "kind": "end" },
+        { "id": "net", "label": "Network", "sub": "security group", "kind": "end" },
+        { "id": "port", "label": "Port", "sub": "app listens", "kind": "end" },
+        { "id": "route", "label": "Route", "sub": "path and status", "kind": "end" }
+      ],
+      "steps": [
+        {
+          "caption": "Every interval, the load balancer sends `GET /` to each task. Three things can break the trip.",
+          "at": "lb",
+          "slot": "top",
+          "state": { "lb": "active" }
+        },
+        {
+          "caption": "Failure 1: the task's security group does not admit the balancer. No reply comes: `Target.Timeout`.",
+          "at": "net",
+          "slot": "bottom",
+          "token": { "label": "no reply", "tone": "err" },
+          "state": { "lb": "done", "net": "blocked" }
+        },
+        {
+          "caption": "Fix: allow the balancer's security group to reach the container port.",
+          "at": "net",
+          "slot": "top",
+          "state": { "lb": "done", "net": "active" }
+        },
+        {
+          "caption": "Failure 2: nothing listens on that port, or the app listens only on `localhost`. The connection fails; expect `Target.FailedHealthChecks`.",
+          "at": "port",
+          "slot": "bottom",
+          "token": { "label": "refused", "tone": "err" },
+          "state": { "lb": "done", "net": "done", "port": "blocked" }
+        },
+        {
+          "caption": "Fix: listen on the port in `portMappings`, on all interfaces: `0.0.0.0`.",
+          "at": "port",
+          "slot": "top",
+          "state": { "lb": "done", "net": "done", "port": "active" }
+        },
+        {
+          "caption": "Failure 3: the app has no `/` route and answers 404. The reason is `Target.ResponseCodeMismatch`.",
+          "at": "route",
+          "slot": "bottom",
+          "token": { "label": "404", "tone": "err" },
+          "state": { "lb": "done", "net": "done", "port": "done", "route": "error" }
+        },
+        {
+          "caption": "Fix: add `GET /health` that returns 200, above any auth middleware. Then set the health check path to `/health`.",
+          "at": "route",
+          "slot": "top",
+          "state": { "lb": "done", "net": "done", "port": "done", "route": "active" }
+        },
+        {
+          "caption": "The check now reaches the route, which answers 200.",
+          "at": "route",
+          "slot": "bottom",
+          "token": { "label": "200", "tone": "ok" },
+          "state": { "lb": "done", "net": "done", "port": "done", "route": "active" }
+        },
+        {
+          "caption": "The target passes its check and starts receiving requests.",
+          "at": "lb",
+          "slot": "bottom",
+          "token": { "label": "healthy", "tone": "ok" },
+          "state": { "lb": "active", "net": "done", "port": "done", "route": "done" }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "health.mjs",
+      "lang": "js",
+      "title": "Reproduce it",
+      "run": "captured",
+      "caption": "Probe the API the way the balancer does, one path at a time.",
+      "walk": [
+        { "lines": [4], "text": "The API serves `/books`, and nothing at `/`." },
+        { "lines": [5], "text": "`/health` answers 200 with no token and no database call." },
+        { "lines": [7, 8, 9], "text": "Listen on `0.0.0.0`, all interfaces. Port `0` picks a free port for this demo." },
+        { "lines": [10, 11, 12, 13], "text": "Request `/`, the default health check path, then `/health`, and print each status." },
+        { "lines": [14], "text": "Close the server so the script exits." }
+      ]
+    },
+    {
+      "file": "debug.sh",
+      "lang": "bash",
+      "title": "Investigate",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Work back from the balancer's verdict to the container. Angle brackets mark placeholders.",
+      "walk": [
+        { "lines": [1], "text": "Ask the target group why a task is unhealthy. Read `Reason` in the output." },
+        { "lines": [3, 4], "text": "Recent service events say when ECS stopped and replaced tasks." },
+        { "lines": [6, 7], "text": "List the service's stopped tasks. Do this soon; stopped tasks disappear after a while." },
+        { "lines": [9, 10], "text": "Read why one task stopped. A failed check says `Task failed ELB health checks`." },
+        { "lines": [12, 13], "text": "After adding the route, point the health check path at it." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Listen on `0.0.0.0`, not `localhost`; the balancer cannot reach a loopback-only server.",
+    "Choose a simple health route; a slow check, such as a database query, can time out.",
+    "Do not widen the accepted status codes to hide a 404; fix the route."
+  ],
+  "quiz": {
+    "q": "The balancer calls `/health` with no token. What does this print?",
+    "code": "app.use((req, res, next) => {\n  if (req.get('authorization')) return next();\n  res.status(401).send('no token');\n});\napp.get('/health', (req, res) => res.sendStatus(200));\nconst server = app.listen(0, async () => {\n  const url = `http://127.0.0.1:${server.address().port}/health`;\n  console.log((await fetch(url)).status);\n  server.close();\n});",
+    "lang": "js",
+    "options": ["200", "401", "404", "503"],
+    "answer": 1,
+    "why": "Middleware runs in order. The auth check answers 401 before the `/health` route is reached, so the balancer's check fails."
+  },
+  "takeaway": "The reason code names the failing step; fix that step, not the symptom.",
+  "chat": {
+    "starters": [
+      "What does `Target.ResponseCodeMismatch` mean?",
+      "How long should the health check grace period be?",
+      "Why does my service keep starting and stopping tasks?"
+    ]
+  }
+}

@@ -4,7 +4,7 @@
   "points": [
     "`bcrypt.compare` re-hashes the attempt with the salt stored in the hash.",
     "The service returns `null` for an unknown email and for a wrong password.",
-    "`jwt.sign` stores `sub` (the user id as a string) and `email`, with `expiresIn: '1h'`.",
+    "`jwt.sign` stores two claims: `sub` (the user id as a string) and `email`.",
     "The client sends the token back as `Authorization: Bearer <token>`. Lecture 12 checks it."
   ],
   "hero": {
@@ -212,7 +212,7 @@
           ]
         },
         {
-          "caption": "`compare` fails. The client gets the same `401` and the same message, so it cannot tell the cases apart.",
+          "caption": "`compare` fails. The client gets the same `401` and message, so the reply does not show which check failed.",
           "at": "compare",
           "slot": "bottom",
           "token": {

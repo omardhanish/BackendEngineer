@@ -1,0 +1,9 @@
+{
+  "stdout": "handler returned\nnext received: db down",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": null,
+  "hash": "104567f23bb1a69b",
+  "at": "2026-10-06T15:21:42.112Z"
+}

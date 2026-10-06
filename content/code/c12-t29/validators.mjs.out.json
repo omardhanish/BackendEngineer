@@ -1,0 +1,9 @@
+{
+  "stdout": "empty body 422\n  email: Email is required\n  username: Username is required\n  password: Password is required\nbad values 422\n  email: Email is invalid\n  username: Username allows lowercase letters, digits and _\n  password: Password needs 8 or more characters\ncustom rule 422\n  password: Password must not contain the username\nobject email 422\n  email: Email is invalid\nvalid, spaces 201\n  controller got {\"email\":\"ada@example.com\",\"username\":\"ada\"}",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": null,
+  "hash": "ef30d3e5a59705f2",
+  "at": "2026-10-06T15:32:01.282Z"
+}

@@ -1,0 +1,9 @@
+{
+  "stdout": "empty body    422 Received data is not valid\n  email: Email is required\n  password: Password is required\nbad email     422 Received data is not valid\n  email: Email is invalid\nnumber pass   422 Received data is not valid\n  password: Password must be text\nunknown user  401 Invalid credentials\nwrong pass    401 Invalid credentials\ncorrect       200 Logged in",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "MongoDB 8.2.6",
+  "hash": "300551e73e0e2999",
+  "at": "2026-10-06T15:33:32.519Z"
+}

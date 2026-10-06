@@ -5,7 +5,7 @@
     "Each new document copies the original, with `items` replaced by one element.",
     "Name the array with a `$` path: `{ $unwind: '$items' }`.",
     "A `$match` after `$unwind` tests one element at a time.",
-    "`$size` counts an array's elements without splitting; `$push` collects values back into an array."
+    "`$size` counts an array's elements without splitting it, as the last example shows."
   ],
   "hero": {
     "type": "anim",

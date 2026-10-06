@@ -26,26 +26,26 @@
       [
         "Bad email",
         "false",
-        "email",
+        "`email`",
         "Invalid email address"
       ],
       [
         "Short password",
         "false",
-        "password",
+        "`password`",
         "Password must be at least 8 characters"
       ],
       [
-        "Empty object {}",
+        "Empty object `{}`",
         "false",
-        "email, password",
-        "Two issues, each: Invalid input: expected string, received undefined"
+        "`email`, `password`",
+        "Two issues, both: Invalid input: expected string, received undefined"
       ],
       [
-        "Extra field role",
+        "Extra field `role`",
         "true",
         "-",
-        "role is removed from data"
+        "`role` is removed from `data`"
       ],
       [
         "No JSON body",
@@ -77,54 +77,27 @@
           "text": "The schema: a valid email, and a password of at least 8 characters."
         },
         {
-          "lines": [
-            16
-          ],
+          "lines": [17],
           "text": "`safeParse` checks the body. A missing body is `undefined`, which fails cleanly instead of crashing."
         },
         {
-          "lines": [
-            10,
-            11,
-            12,
-            13
-          ],
+          "lines": [11, 12, 13, 14],
           "text": "Turn Zod's issues into the API's 400 shape: a `path` string and a `message`."
         },
         {
-          "lines": [
-            17
-          ],
+          "lines": [18],
           "text": "On failure, answer 400 and stop. Nothing below this line runs."
         },
         {
-          "lines": [
-            18,
-            19
-          ],
+          "lines": [19, 20],
           "text": "Use `parsed.data`, not `req.body`. Only validated fields get through."
         },
         {
-          "lines": [
-            23,
-            24
-          ],
+          "lines": [24, 25],
           "text": "A stand-in for lecture 7's hash and insert. It counts how often it runs."
         },
         {
-          "lines": [
-            36,
-            37,
-            38,
-            39,
-            40,
-            41,
-            42,
-            43,
-            44,
-            45,
-            46
-          ],
+          "lines": [37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47],
           "text": "Send one good body and three bad ones. Only the good one reaches the insert."
         }
       ]
@@ -142,10 +115,10 @@
     "options": [
       "true { n: 'ab' }",
       "false [ 'extra' ]",
-      "false [ 'n' ]",
-      "It throws a ZodError"
+      "It throws a ZodError",
+      "false [ 'n' ]"
     ],
-    "answer": 2,
+    "answer": 3,
     "why": "`safeParse` returns instead of throwing. `n` is too short, so it fails. `extra` is an unknown key, which Zod drops without an issue."
   },
   "takeaway": "Parse input with a schema at the door; use only the parsed result.",

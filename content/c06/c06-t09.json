@@ -1,0 +1,31 @@
+{
+  "title": "Secure authentication and roles",
+  "scenario": {
+    "brief": "Dana leads an orders portal and wrote its login and admin code herself. Launch is in two weeks. She wants your plan for making authentication and access control safe.",
+    "role": "Backend engineer asked to secure the auth module before launch.",
+    "goal": "Find the security flaws, explain each risk, and propose a fix order and a role model.",
+    "rules": [
+      "Dana is in the chat. She answers questions about the app, its users and her choices.",
+      "She will not hand you a list of problems. Ask, then judge.",
+      "Ask about anything: users, roles, the frontend, what is already live.",
+      "When you are ready, press End and debrief."
+    ],
+    "personaLabel": "Dana · Tech lead",
+    "artifact": 0,
+    "artifactTitle": "Orders portal: auth.mjs",
+    "artifactNote": "50 lines, users held in memory. Every email and secret here is a made-up demo value.",
+    "rubric": [
+      { "criterion": "Password storage", "levels": ["Not raised", "Says the password hash is too weak or lacks a salt", "Asks for a slow salted hash such as bcrypt, and a plan for the pilot accounts"] },
+      { "criterion": "Secret and token lifetime", "levels": ["Not raised", "Notes the hard-coded secret or the missing expiry", "Asks for an environment secret and a short expiry, and notes a stolen token cannot be revoked"] },
+      { "criterion": "Where the token lives", "levels": ["Not raised", "Says the cookie should be httpOnly", "Asks for httpOnly, secure and sameSite, and has the frontend call /me instead of reading the token"] },
+      { "criterion": "Admin route protection", "levels": ["Not raised", "Notices /admin/users has no role check", "Asks for a role check that answers 403, and for password hashes to leave the response"] },
+      { "criterion": "Registration and roles", "levels": ["Not raised", "Says the role should not come from the request body", "Says the server sets role user, and admins are promoted through a separate, deliberate path"] },
+      { "criterion": "Login responses and errors", "levels": ["Not raised", "Notes the two error messages differ or that the user record is returned", "Asks for one generic 401 and a login response without the user record"] },
+      { "criterion": "Brute force and input", "levels": ["Not raised", "Mentions rate limiting or input validation", "Asks for per-IP and per-account limits, plus validation that stops a missing-password crash"] },
+      { "criterion": "Role model and fix order", "levels": ["Not raised", "Lists fixes without an order", "Plans deny-by-default roles that can grow a support role, and fixes privilege escalation first"] }
+    ]
+  },
+  "code": [
+    { "file": "auth.mjs", "lang": "js", "run": "static", "caption": "The auth module Dana wrote, as it runs in staging." }
+  ]
+}

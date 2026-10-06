@@ -1,0 +1,80 @@
+{
+  "title": "Setting up Drizzle ORM",
+  "idea": "Drizzle is an ORM, a library that turns JavaScript calls into SQL. `src/db/index.js` creates one `db` from `DATABASE_URL`; every other file imports it.",
+  "points": [
+    "`drizzle-orm` builds the queries; the `pg` driver opens connections and sends the SQL.",
+    "`drizzle(process.env.DATABASE_URL)` returns `db`, backed by a pool of reusable `pg` connections.",
+    "`drizzle-kit` is a dev-only command-line tool; `drizzle.config.js` points it at the schema and database.",
+    "`import 'dotenv/config'` loads `.env` into `process.env` before the client reads it."
+  ],
+  "hero": {
+    "type": "anatomy",
+    "title": "Reading a DATABASE_URL",
+    "parts": [
+      { "text": "postgres://", "label": "Scheme", "note": "Says this is a PostgreSQL connection." },
+      { "text": "postgres", "label": "User", "note": "The image's default superuser, from `POSTGRES_USER`." },
+      { "text": ":demo-password", "label": "Password", "note": "Set by `POSTGRES_PASSWORD`. A demo value; use a strong one anywhere real." },
+      { "text": "@localhost", "label": "Host", "note": "Your own machine. The published port forwards traffic to the container." },
+      { "text": ":5432", "label": "Port", "note": "The host side of `-p 127.0.0.1:5432:5432`." },
+      { "text": "/shortener", "label": "Database", "note": "The database that `POSTGRES_DB` created." }
+    ]
+  },
+  "code": [
+    {
+      "file": "setup.sh",
+      "lang": "bash",
+      "title": "Install",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Run these in the project root. `-D` saves `drizzle-kit` as a development dependency."
+    },
+    {
+      "file": "db.mjs",
+      "lang": "js",
+      "title": "The db client",
+      "run": "captured",
+      "needs": ["postgres"],
+      "caption": "In the project, put `import 'dotenv/config'` first so `.env` loads. Here the book supplies `DATABASE_URL`.",
+      "walk": [
+        { "lines": [5], "text": "One `db` for the whole app. A string argument is a connection string." },
+        { "lines": [8, 9], "text": "`execute` runs raw SQL. Rows come back in `result.rows`." },
+        { "lines": [10], "text": "End the pool, or the process never exits." }
+      ]
+    },
+    {
+      "file": "drizzle.config.js",
+      "lang": "js",
+      "title": "drizzle.config.js",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Settings for `drizzle-kit`, in the project root. It cannot run here.",
+      "walk": [
+        { "lines": [1], "text": "`drizzle-kit` runs outside your app, so it loads `.env` itself." },
+        { "lines": [5, 6], "text": "The database dialect, and the file that defines your tables." },
+        { "lines": [7], "text": "The folder for migration files, saved SQL that changes tables. `generate` writes them there." },
+        { "lines": [8], "text": "The connection string, read from the environment." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "If `DATABASE_URL` is unset, `drizzle()` still returns `db`; the first query fails with 'Failed query'.",
+    "`dotenv` never overrides variables already set in your shell, so an old value wins.",
+    "Keep `.env` out of git. Add it to `.gitignore`."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const result = await db.execute(sql`select 1 as ok`);\nconsole.log(result.rows);",
+    "lang": "js",
+    "options": ["[ 1 ]", "{ ok: 1 }", "1", "[ { ok: 1 } ]"],
+    "answer": 3,
+    "why": "`result.rows` is an array with one object per row. The column alias `ok` becomes the key."
+  },
+  "takeaway": "One `db` from `DATABASE_URL`, created once and imported everywhere.",
+  "chat": {
+    "starters": [
+      "What is the difference between `pg` and Drizzle?",
+      "What is a connection pool?",
+      "Why does `drizzle-kit` need its own config file?"
+    ]
+  }
+}

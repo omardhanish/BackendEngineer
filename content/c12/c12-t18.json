@@ -1,0 +1,151 @@
+{
+  "title": "The user schema",
+  "idea": "A Mongoose schema lists a document's fields, types and rules. The model built from it reads and writes one MongoDB collection.",
+  "analogy": {
+    "text": "A registration form at a front desk. The clerk tidies each answer and refuses blank required boxes; the filing cabinet rejects a second card with the same name.",
+    "breaks": "MongoDB never sees the form; Mongoose enforces it inside your app."
+  },
+  "points": [
+    "Each field takes a `type` and rules such as `required`, `default`, `trim` and `lowercase`.",
+    "`trim` and `lowercase` run when a value is set; `required` is checked on save.",
+    "`unique: true` asks MongoDB for a unique index; MongoDB, not Mongoose, rejects duplicates.",
+    "Unknown fields are dropped; `timestamps: true` adds `createdAt` and `updatedAt`."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "A sign-up meets the schema",
+    "scenario": {
+      "token": { "label": "sign-up", "tone": "req" },
+      "stages": [
+        { "id": "input", "label": "Sign-up data", "kind": "end" },
+        { "id": "set", "label": "Setters", "sub": "trim, lowercase" },
+        { "id": "val", "label": "Validators", "sub": "required" },
+        { "id": "db", "label": "MongoDB", "sub": "unique index" },
+        { "id": "saved", "label": "Saved user", "kind": "end" }
+      ],
+      "steps": [
+        {
+          "caption": "A sign-up arrives with a padded, upper-case username and a `role` field that the schema does not list.",
+          "at": "input",
+          "slot": "top",
+          "token": { "label": "username: \" ADA \"", "tone": "req" },
+          "state": { "input": "active" },
+          "out": []
+        },
+        {
+          "caption": "Setters run as the document is built. `trim` and `lowercase` clean the username; the unknown `role` is dropped.",
+          "at": "set",
+          "slot": "top",
+          "token": { "label": "username: \"ada\"", "tone": "req" },
+          "state": { "input": "done", "set": "active" },
+          "out": ["username: \" ADA \" becomes \"ada\"", "role: dropped, not in the schema"]
+        },
+        {
+          "caption": "`save()` runs the validators. Every `required` field is present, so the document moves on.",
+          "at": "val",
+          "slot": "top",
+          "token": { "label": "valid", "tone": "ok" },
+          "state": { "input": "done", "set": "done", "val": "active" },
+          "out": ["username: \" ADA \" becomes \"ada\"", "role: dropped, not in the schema", "required fields: present"]
+        },
+        {
+          "caption": "Mongoose adds `createdAt` and `updatedAt`. MongoDB inserts the document and records `ada` in the unique index.",
+          "at": "db",
+          "slot": "top",
+          "token": { "label": "ada", "tone": "req" },
+          "state": { "input": "done", "set": "done", "val": "done", "db": "active" },
+          "out": ["username: \" ADA \" becomes \"ada\"", "role: dropped, not in the schema", "required fields: present", "createdAt, updatedAt: set"]
+        },
+        {
+          "caption": "The user is stored. `isEmailVerified` is `false` because of its `default`.",
+          "at": "saved",
+          "slot": "top",
+          "token": { "label": "saved", "tone": "ok" },
+          "state": { "input": "done", "set": "done", "val": "done", "db": "done", "saved": "active" },
+          "out": ["username: \" ADA \" becomes \"ada\"", "role: dropped, not in the schema", "required fields: present", "createdAt, updatedAt: set", "isEmailVerified: false (default)"]
+        },
+        {
+          "caption": "A second user signs up as `ADA`. Setters make it `ada` and validation passes, so MongoDB checks its unique index.",
+          "at": "db",
+          "slot": "top",
+          "token": { "label": "ADA becomes ada", "tone": "req" },
+          "state": { "input": "done", "set": "done", "val": "done", "db": "active" },
+          "out": ["second sign-up: \"ADA\" becomes \"ada\"", "required fields: present"]
+        },
+        {
+          "caption": "The index already holds `ada`. MongoDB rejects the insert with code 11000, which is not a `ValidationError`.",
+          "at": "db",
+          "slot": "bottom",
+          "token": { "label": "E11000", "tone": "err" },
+          "state": { "input": "done", "set": "done", "val": "done", "db": "error" },
+          "out": ["second sign-up: \"ADA\" becomes \"ada\"", "required fields: present", "MongoServerError, code 11000"]
+        },
+        {
+          "caption": "A sign-up with no `username` fails `required`. Mongoose throws a `ValidationError` and never contacts MongoDB.",
+          "at": "val",
+          "slot": "bottom",
+          "token": { "label": "ValidationError", "tone": "err" },
+          "state": { "input": "done", "set": "done", "val": "error" },
+          "out": ["third sign-up: no username", "required: failed", "nothing is sent to MongoDB"]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "user.models.js",
+      "lang": "js",
+      "title": "src/models/user.models.js",
+      "run": "static",
+      "caption": "The whole model. A field is optional unless it says `required`.",
+      "walk": [
+        { "lines": [5, 6, 7, 8, 9, 10, 11], "text": "`username` is required and unique. `lowercase` and `trim` clean it when it is set." },
+        { "lines": [12, 13, 14, 15, 16, 17, 18], "text": "`email` has the same rules, so `Ada@Mail.com` and `ada@mail.com` collide." },
+        { "lines": [19], "text": "`required` can take `[true, message]` to set the error text. The next lesson hashes the password." },
+        { "lines": [20, 21, 22], "text": "Optional `fullname`; a nested `avatar`; `isEmailVerified` defaults to `false`." },
+        { "lines": [23, 24, 25, 26, 27], "text": "Token and expiry fields stay empty until the token flows fill them in." },
+        { "lines": [29], "text": "`timestamps: true` adds `createdAt` and `updatedAt` and keeps them current." },
+        { "lines": [32], "text": "`mongoose.model` returns the model. Its documents live in the `users` collection." }
+      ]
+    },
+    {
+      "file": "rules.mjs",
+      "lang": "js",
+      "title": "The rules in action",
+      "run": "captured",
+      "needs": ["mongo"],
+      "caption": "A smaller schema with the same rules, run on real MongoDB. The password is plain text here; the next lesson hashes it.",
+      "walk": [
+        { "lines": [5, 6, 7, 8, 9, 10, 11], "text": "`username` carries the same four rules as in the model." },
+        { "lines": [12], "text": "`required` can carry the error message as `[true, message]`." },
+        { "lines": [13, 15], "text": "`isEmailVerified` defaults to `false`; `timestamps` adds two dates." },
+        { "lines": [19, 20], "text": "Connect, then `init()` waits until the unique index exists." },
+        { "lines": [22, 23, 24, 25], "text": "The messy input comes back clean: `role` is dropped, and the default and timestamps appear." },
+        { "lines": [27, 28], "text": "An empty user fails `required`: a `ValidationError` with your message, and nothing reaches MongoDB." },
+        { "lines": [30, 31], "text": "`ADA` becomes `ada`, which exists already. MongoDB rejects it with code 11000." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "`unique` builds an index, not a validator: catch error code `11000` on duplicates.",
+    "Never pass `req.body` straight to `User.create`: a client could send `isEmailVerified: true`.",
+    "Do not return a whole user document: it carries `password` and the token fields."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const schema = new Schema({\n  name: { type: String, trim: true, lowercase: true },\n});\nconst Pet = mongoose.model('Pet', schema);\nconst pet = new Pet({ name: '  ADA ', role: 'admin' });\nconsole.log(pet.name, pet.role);",
+    "lang": "js",
+    "options": ["ADA undefined", "ada admin", "ada undefined", "  ADA  admin"],
+    "answer": 2,
+    "why": "Setters run when the document is built: `trim` and `lowercase` give `ada`. `role` is not in the schema, so Mongoose drops it."
+  },
+  "takeaway": "A schema cleans and checks data; only the index stops duplicates.",
+  "chat": {
+    "starters": [
+      "Why does `lowercase` matter for a `unique` username?",
+      "Why is the collection called `users` and not `User`?",
+      "Can I add a field to the schema after users already exist?"
+    ]
+  }
+}

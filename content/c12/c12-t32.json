@@ -1,0 +1,318 @@
+{
+  "title": "Auth middleware",
+  "idea": "`verifyJWT` is middleware that proves who is calling. It reads the access token, verifies it, loads the user and sets `req.user` before the controller runs.",
+  "points": [
+    "The token comes from the `accessToken` cookie, or a `Bearer` header for API clients.",
+    "`jwt.verify` checks signature and expiry with `ACCESS_TOKEN_SECRET`, and throws on failure.",
+    "It then loads the user by the token's `_id`, leaving out hashes and tokens.",
+    "Every failure becomes `ApiError(401)`; `next()` runs only on success."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Inside verifyJWT",
+    "nodes": [
+      {
+        "id": "req",
+        "label": "Request",
+        "sub": "secured route"
+      },
+      {
+        "id": "find",
+        "label": "Find the token",
+        "sub": "cookie, then header"
+      },
+      {
+        "id": "verify",
+        "label": "jwt.verify",
+        "sub": "signature, expiry"
+      },
+      {
+        "id": "load",
+        "label": "User.findById",
+        "sub": "secrets left out"
+      },
+      {
+        "id": "next",
+        "label": "req.user, next()",
+        "tone": "good"
+      },
+      {
+        "id": "ctrl",
+        "label": "Controller",
+        "tone": "good"
+      },
+      {
+        "id": "err",
+        "label": "401 ApiError",
+        "tone": "bad"
+      }
+    ],
+    "edges": [
+      {
+        "from": "req",
+        "to": "find"
+      },
+      {
+        "from": "find",
+        "to": "verify",
+        "label": "token found"
+      },
+      {
+        "from": "find",
+        "to": "err",
+        "label": "none",
+        "dashed": true
+      },
+      {
+        "from": "verify",
+        "to": "load",
+        "label": "valid"
+      },
+      {
+        "from": "verify",
+        "to": "err",
+        "label": "bad or expired",
+        "dashed": true
+      },
+      {
+        "from": "load",
+        "to": "next",
+        "label": "found"
+      },
+      {
+        "from": "load",
+        "to": "err",
+        "label": "no user",
+        "dashed": true
+      },
+      {
+        "from": "next",
+        "to": "ctrl"
+      }
+    ],
+    "steps": [
+      {
+        "caption": "A request reaches a secured route. `verifyJWT` runs before the controller.",
+        "active": [
+          "req"
+        ],
+        "edges": []
+      },
+      {
+        "caption": "It looks for a token: the `accessToken` cookie first, then an `Authorization: Bearer` header.",
+        "active": [
+          "req",
+          "find"
+        ],
+        "edges": [
+          0
+        ]
+      },
+      {
+        "caption": "No token at all ends the request with `401`.",
+        "active": [
+          "find",
+          "err"
+        ],
+        "edges": [
+          2
+        ]
+      },
+      {
+        "caption": "A token is found. `jwt.verify` checks its signature and expiry.",
+        "active": [
+          "find",
+          "verify"
+        ],
+        "edges": [
+          1
+        ]
+      },
+      {
+        "caption": "A forged or expired token makes `jwt.verify` throw. The middleware answers `401`.",
+        "active": [
+          "verify",
+          "err"
+        ],
+        "edges": [
+          4
+        ]
+      },
+      {
+        "caption": "A valid token names a user id. The middleware loads that user, without secret fields.",
+        "active": [
+          "verify",
+          "load"
+        ],
+        "edges": [
+          3
+        ]
+      },
+      {
+        "caption": "The account was deleted: no document, so `401` even though the token verified.",
+        "active": [
+          "load",
+          "err"
+        ],
+        "edges": [
+          6
+        ]
+      },
+      {
+        "caption": "User found: it becomes `req.user` and `next()` runs.",
+        "active": [
+          "load",
+          "next"
+        ],
+        "edges": [
+          5
+        ]
+      },
+      {
+        "caption": "The controller can now trust `req.user`.",
+        "active": [
+          "next",
+          "ctrl"
+        ],
+        "edges": [
+          7
+        ]
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "verify-jwt.mjs",
+      "lang": "js",
+      "title": "auth.middlewares.js",
+      "run": "captured",
+      "needs": [
+        "mongo"
+      ],
+      "caption": "Trimmed to this lesson's file, with stand-ins above it. Press Run: six requests, one of them for a deleted user.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34
+          ],
+          "text": "Demo values and condensed earlier files, so the program runs alone."
+        },
+        {
+          "lines": [
+            37,
+            38,
+            39
+          ],
+          "text": "The fields to leave out: the password hash and every stored token."
+        },
+        {
+          "lines": [
+            42,
+            43,
+            44,
+            45,
+            46
+          ],
+          "text": "Cookie first, else a `Bearer` header. No token means `401`."
+        },
+        {
+          "lines": [
+            48,
+            49,
+            50,
+            51,
+            52,
+            53
+          ],
+          "text": "`jwt.verify` throws on a bad signature or an expired token. Turn that into `401`."
+        },
+        {
+          "lines": [
+            54,
+            55,
+            56,
+            57
+          ],
+          "text": "Load the user without secrets. No user means `401`; otherwise set `req.user`."
+        },
+        {
+          "lines": [
+            61,
+            62,
+            63,
+            64,
+            65
+          ],
+          "text": "`cookieParser` fills `req.cookies`. `verifyJWT` sits before the controller."
+        },
+        {
+          "lines": [
+            95,
+            96,
+            97,
+            98,
+            99,
+            100,
+            101,
+            102
+          ],
+          "text": "Try each case. The last request uses a valid token for a deleted user."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Register `cookieParser()` before your routers, or `req.cookies` is `undefined`.",
+    "Look the user up on every request: a valid token can outlive its account.",
+    "Exclude `password` and token fields with `select`, or `req.user` leaks them."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const token = user.generateAccessToken();\nawait User.deleteOne({ _id: user._id });\nconst res = await fetch(url, {\n  headers: { Cookie: `accessToken=${token}` },\n});\nconsole.log(res.status);",
+    "lang": "js",
+    "options": [
+      "401",
+      "200",
+      "404",
+      "500"
+    ],
+    "answer": 0,
+    "why": "The token still verifies, but `findById` returns `null`, so the middleware throws `ApiError(401)`."
+  },
+  "takeaway": "A signed token proves identity; the database proves the account still exists.",
+  "chat": {
+    "starters": [
+      "Why accept both a cookie and a Bearer header?",
+      "Should the middleware tell an expired token from a forged one?",
+      "Where does `verifyJWT` go in a route's chain?"
+    ]
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "stdout": "200 {\"statusCode\":200,\"data\":{\"id\":1},\"message\":\"User fetched\",\"success\":true}\n404 {\"statusCode\":404,\"message\":\"User not found\",\"success\":false,\"errors\":[]}\n422 {\"statusCode\":422,\"message\":\"Invalid data\",\"success\":false,\"errors\":[{\"field\":\"email\",\"message\":\"Bad\"}]}\n500 {\"statusCode\":500,\"message\":\"Internal Server Error\",\"success\":false,\"errors\":[]}",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": null,
+  "hash": "dae4379392e2c342",
+  "at": "2026-10-06T15:18:03.378Z"
+}

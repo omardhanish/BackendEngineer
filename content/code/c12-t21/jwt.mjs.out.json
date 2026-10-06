@@ -1,0 +1,9 @@
+{
+  "stdout": "{ alg: 'HS256', typ: 'JWT' }\n[ '_id', 'username', 'iat', 'exp' ]\nada 900",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": null,
+  "hash": "71fb12106ec801ab",
+  "at": "2026-10-06T15:19:38.349Z"
+}

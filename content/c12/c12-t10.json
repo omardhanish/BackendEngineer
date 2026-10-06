@@ -1,0 +1,73 @@
+{
+  "title": "Separating app and index",
+  "idea": "`app.js` builds and exports the Express app; `index.js` imports it and calls `listen`. Importing the app never opens a port.",
+  "points": [
+    "`app.js` creates the app, adds middleware and routers, and exports it.",
+    "`index.js` loads the environment, imports the app and calls `listen`.",
+    "Imports run first, so import `dotenv/config` before any file that reads `process.env`.",
+    "Start the project with `node src/index.js`; running `app.js` alone shows nothing."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Two files, two jobs",
+    "nodes": [
+      { "id": "index", "label": "src/index.js", "sub": "starts the server" },
+      { "id": "test", "label": "A test file", "sub": "imports the app only" },
+      { "id": "app", "label": "src/app.js", "sub": "builds the app" },
+      { "id": "port", "label": "A port", "sub": "opened by listen" }
+    ],
+    "edges": [
+      { "from": "index", "to": "app", "label": "imports" },
+      { "from": "index", "to": "port", "label": "listen" },
+      { "from": "test", "to": "app", "label": "imports" }
+    ],
+    "steps": [
+      { "caption": "`index.js` imports the app. Importing builds it, but opens no port.", "active": ["index", "app"], "edges": [0] },
+      { "caption": "Only `index.js` calls `listen`, so only running it opens the real port.", "active": ["index", "port"], "edges": [1] },
+      { "caption": "A test imports the same app and starts it on a free port of its own.", "active": ["test", "app"], "edges": [2] }
+    ]
+  },
+  "code": [
+    {
+      "file": "app.js",
+      "lang": "js",
+      "title": "src/app.js",
+      "run": "static",
+      "caption": "Builds the app and exports it. Later lessons add middleware and routers here."
+    },
+    {
+      "file": "index.js",
+      "lang": "js",
+      "title": "src/index.js",
+      "run": "static",
+      "caption": "The entry point. Later it also connects to MongoDB before it listens."
+    },
+    {
+      "file": "check.mjs",
+      "lang": "js",
+      "title": "Import without a port",
+      "run": "captured",
+      "caption": "Save next to `app.js`. It imports the app and starts it on a free port, as a test would."
+    }
+  ],
+  "pitfalls": [
+    "Do not call `listen` in `app.js`: every import would try to open a port.",
+    "`dotenv.config()` below the imports runs too late for env values `app.js` reads when imported."
+  ],
+  "quiz": {
+    "q": "`index.js` imports `app.js`. What does running `index.js` print?",
+    "code": "// app.js\nconsole.log('built');\nexport default {};\n\n// index.js\nimport app from './app.js';\nconsole.log('listening');",
+    "lang": "js",
+    "options": ["built, then listening", "listening, then built", "Only listening", "Only built"],
+    "answer": 0,
+    "why": "Imports run before the importing file's own code, so `app.js` finishes first."
+  },
+  "takeaway": "`app.js` builds, `index.js` starts: importing the app never listens.",
+  "chat": {
+    "starters": [
+      "Why not call `listen` inside `app.js`?",
+      "How do tests use the exported app?",
+      "Does `import 'dotenv/config'` do the same as `dotenv.config()`?"
+    ]
+  }
+}

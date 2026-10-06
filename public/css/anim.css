@@ -339,3 +339,37 @@
 .jw-ta, .jw-in { width: 100%; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--hair-2); background: var(--code-bg); color: var(--ink); font: 500 12.5px/1.5 var(--font-mono); resize: vertical; }
 .jw-out { display: grid; gap: 8px; }
 @container figbody (max-width: 560px) { .jw-form { grid-template-columns: minmax(0, 1fr); } .jw-form label:first-child { grid-row: auto; } }
+
+/* Diagrams must fit the stage without scrolling: at 1280x720 the stage is ~537px tall and a wide "How it works" frame
+   also holds the points, the figure header and the caption bar (~250px). Cap SVG diagrams by the viewport height. */
+.topo, .git { max-height: clamp(170px, calc(100vh - 440px), 380px); }
+.hr-fig { max-width: min(340px, clamp(170px, calc(100vh - 440px), 340px)); }
+.fig-body { min-height: 150px; }
+@media (max-height: 800px) {
+  .ly-list { gap: 4px; }
+  .ly-row { padding: 5px 10px; }
+  .sx-rows { gap: 2px 8px; }
+  .sx-row { padding: 1px 8px; }
+  .sx-tree { gap: 8px; }
+  .sx-stat { margin-top: 6px; padding: 5px 12px; }
+  .jw-token { padding: 8px 12px; }
+  .jw-card { padding: 8px 10px; }
+  .fig-bar { padding-block: 6px; }
+}
+@media (max-height: 800px) and (min-width: 700px) {
+  .quiz { padding: 14px 18px; }
+  .q-q { margin: 8px 0 10px; }
+  .q-opts { gap: 6px; }
+  .q-opt { padding: 7px 12px; }
+}
+@media (max-height: 800px) and (min-width: 700px) {
+  .q-code { margin-bottom: 10px; padding: 8px 12px; font-size: 13px; line-height: 1.5; }
+  .takeaway { margin-top: 10px; }
+}
+@media (max-height: 800px) and (min-width: 1000px) {
+  .q-opts { grid-template-columns: 1fr 1fr; }
+  .q-opt { grid-template-columns: 26px minmax(0, 1fr); }
+  .q-opt .q-num { display: none; }
+}
+/* wide frames: the figure may grow with its content, but never past the stage (it scrolls inside itself instead) */
+.frame-how.is-wide .fig-body { max-height: clamp(150px, calc(100vh - 424px), 480px); }

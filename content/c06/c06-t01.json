@@ -8,7 +8,7 @@
   "points": [
     "Authentication checks a credential: a password, a session cookie or a token.",
     "Authorization checks the caller's role, such as `user` or `admin`, or record ownership.",
-    "Authorization needs an identity, so it can only run after authentication succeeds.",
+    "Role checks need an identity, so they run after authentication succeeds.",
     "No valid login gets `401`; a known user without permission gets `403`."
   ],
   "hero": {
@@ -33,7 +33,7 @@
         },
         {
           "id": "authz",
-          "label": "authorize",
+          "label": "requireRole",
           "sub": "may you?"
         },
         {
@@ -66,7 +66,7 @@
           ]
         },
         {
-          "caption": "No identity means `401`. The request stops here and `authorize` never runs.",
+          "caption": "No identity means `401`. The request stops here and `requireRole` never runs.",
           "at": "authn",
           "slot": "bottom",
           "token": {
@@ -99,7 +99,7 @@
           ]
         },
         {
-          "caption": "`authorize` asks whether role `user` may delete a book. Only `admin` may.",
+          "caption": "`requireRole` asks whether role `user` may delete a book. Only `admin` may.",
           "at": "authz",
           "slot": "top",
           "state": {
@@ -109,7 +109,7 @@
           },
           "out": [
             "authenticate: Ada, role user",
-            "authorize: delete needs admin"
+            "requireRole: delete needs admin"
           ]
         },
         {
@@ -127,7 +127,7 @@
           },
           "out": [
             "authenticate: Ada, role user",
-            "authorize: delete needs admin",
+            "requireRole: delete needs admin",
             "send 403"
           ]
         },
@@ -146,7 +146,7 @@
           },
           "out": [
             "authenticate: Root, role admin",
-            "authorize: admin may delete"
+            "requireRole: admin may delete"
           ]
         },
         {
@@ -161,7 +161,7 @@
           },
           "out": [
             "authenticate: Root, role admin",
-            "authorize: admin may delete",
+            "requireRole: admin may delete",
             "handler: delete book 1"
           ]
         },
@@ -181,7 +181,7 @@
           },
           "out": [
             "authenticate: Root, role admin",
-            "authorize: admin may delete",
+            "requireRole: admin may delete",
             "handler: delete book 1"
           ]
         }

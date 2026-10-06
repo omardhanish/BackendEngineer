@@ -1,0 +1,31 @@
+{
+  "title": "From PRD to backend plan",
+  "scenario": {
+    "brief": "Imani is the product manager at Fernhill, a class-booking app for yoga studios. She wrote a short PRD for the accounts backend. Launch is in eight weeks. She wants your plan: what you build, and in what order.",
+    "role": "Backend engineer who will build the accounts service.",
+    "goal": "Settle what the PRD leaves open, then propose endpoints, a data model, security choices and a build order.",
+    "rules": [
+      "Imani is in the chat. She answers questions about the product, the users and the launch.",
+      "She will not hand you the missing details. Ask for them.",
+      "Then propose your plan. She will ask what each part means for members and for launch.",
+      "When you are ready, press End and debrief."
+    ],
+    "personaLabel": "Imani · Product manager",
+    "artifact": 0,
+    "artifactTitle": "Fernhill accounts service: PRD v0.3",
+    "artifactNote": "33 lines. Read it for vague lines, missing stories and rules that may clash.",
+    "rubric": [
+      { "criterion": "Questions before designing", "levels": ["Starts designing without asking Imani anything", "Asks about one or two vague lines, such as passwords or staff", "Probes the vague lines and asks who the first users are and which apps call the API"] },
+      { "criterion": "Endpoints from the stories", "levels": ["No routes proposed", "Lists the main routes: register, login, logout, profile", "Gives method, path and caller for each story, and adds routes the PRD omits, such as refresh and change password"] },
+      { "criterion": "Data model", "levels": ["Not raised", "Names a user with email, password hash and role", "Adds status, studio link, a password that may be empty, hashed one-time tokens with expiry and a saved refresh token"] },
+      { "criterion": "Roles and access control", "levels": ["Not raised", "Mentions a role field or admin-only routes", "One role on the user, role and studio checked on every staff route, and sign-up never lets a caller choose a role"] },
+      { "criterion": "Credentials, tokens and abuse limits", "levels": ["Not raised", "Names password hashing or JWTs", "Slow salted hash, short access and longer refresh token in httpOnly cookies, hashed email tokens, rate limits, generic errors"] },
+      { "criterion": "First users and how they get in", "levels": ["Never asks who uses it on day one", "Learns who they are or spots a rule that does not fit them", "Plans how they get accounts and passwords, with link lifetimes that fit"] },
+      { "criterion": "Sessions, lock-out and leaving", "levels": ["Not raised", "Mentions one of logout, deactivating a member, or deleting an account", "Handles all three, and names the trade-offs: how long a deactivated person keeps access, and which records must stay"] },
+      { "criterion": "Build order and assumptions", "levels": ["Lists steps with no order or reasons", "Gives an order with some reasons", "Orders by dependency and deadline, says what waits, and confirms assumptions with Imani"] }
+    ]
+  },
+  "code": [
+    { "file": "fernhill-prd.yaml", "lang": "yaml", "run": "static", "caption": "The PRD Imani wrote. It is short on purpose." }
+  ]
+}

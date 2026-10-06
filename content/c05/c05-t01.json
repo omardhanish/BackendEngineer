@@ -1,6 +1,6 @@
 {
   "title": "SQL or NoSQL",
-  "idea": "SQL databases, such as PostgreSQL, store rows in tables whose columns you declare up front. NoSQL databases, such as MongoDB, keep flexible documents instead.",
+  "idea": "SQL databases, such as PostgreSQL, store rows in tables with declared columns and are queried with SQL. NoSQL databases, such as MongoDB, keep flexible documents.",
   "analogy": {
     "text": "A spreadsheet and a drawer of index cards. A spreadsheet gives every row the same columns; each card holds whatever you wrote on it.",
     "breaks": "Postgres can hold loose JSON and MongoDB can enforce rules, so the line blurs."
@@ -20,7 +20,7 @@
         "Rows in tables; columns and types are declared first",
         "The database rejects a row that breaks the schema",
         "Related data lives in other tables, linked by ids",
-        "You query it with SQL"
+        "You query it with SQL, a query language"
       ]
     },
     "right": {

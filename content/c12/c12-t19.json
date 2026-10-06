@@ -1,0 +1,112 @@
+{
+  "title": "Hashing passwords with a pre hook",
+  "idea": "A `pre('save')` hook is a function Mongoose runs before it writes a document. The user model uses one to swap the plain password for a bcrypt hash.",
+  "points": [
+    "`pre('save')` runs right before `save()` writes, after schema validation has passed.",
+    "In a regular `function`, `this` is the document about to be saved.",
+    "`this.isModified('password')` is true only when this save changes the password.",
+    "Write `pre` hooks as `async` functions; Mongoose 9 passes no `next` callback."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "Two saves through the hook",
+    "scenario": {
+      "token": { "label": "plain password", "tone": "req" },
+      "stages": [
+        { "id": "call", "label": "user.save()", "kind": "end" },
+        { "id": "validate", "label": "Validation", "sub": "schema rules" },
+        { "id": "hook", "label": "pre('save')", "sub": "your hook" },
+        { "id": "db", "label": "MongoDB", "kind": "end" }
+      ],
+      "steps": [
+        {
+          "caption": "A new user is saved with the plain password the client sent.",
+          "at": "call",
+          "slot": "top",
+          "state": { "call": "active" },
+          "out": []
+        },
+        {
+          "caption": "Validation runs first, on the plain password. A failure stops the save before the hook runs.",
+          "at": "validate",
+          "slot": "top",
+          "state": { "call": "done", "validate": "active" },
+          "out": ["validate: password present"]
+        },
+        {
+          "caption": "The password is new, so `isModified('password')` is true. The hook replaces it with a hash.",
+          "at": "hook",
+          "slot": "top",
+          "token": { "label": "bcrypt hash", "tone": "ok" },
+          "state": { "call": "done", "validate": "done", "hook": "active" },
+          "out": ["validate: password present", "hook: password changed, hash it"]
+        },
+        {
+          "caption": "MongoDB stores the hash. The plain password is never written.",
+          "at": "db",
+          "slot": "top",
+          "token": { "label": "bcrypt hash", "tone": "ok" },
+          "state": { "call": "done", "validate": "done", "hook": "done", "db": "active" },
+          "out": ["validate: password present", "hook: password changed, hash it", "db: hash saved"]
+        },
+        {
+          "caption": "Later you change only `fullname` and call `save()` again.",
+          "at": "call",
+          "slot": "top",
+          "token": { "label": "fullname changed", "tone": "req" },
+          "state": { "call": "active" },
+          "out": []
+        },
+        {
+          "caption": "`isModified('password')` is false, so the hook returns at once. The stored hash is safe.",
+          "at": "hook",
+          "slot": "top",
+          "token": { "label": "same hash", "tone": "ok" },
+          "state": { "call": "done", "validate": "done", "hook": "active" },
+          "out": ["validate: ok", "hook: password unchanged, skip"]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "user.models.mjs",
+      "lang": "js",
+      "title": "src/models/user.models.js",
+      "run": "captured",
+      "needs": ["mongo"],
+      "caption": "A trimmed schema plus the hook. `bcryptjs` is pure JavaScript with the same API as the native `bcrypt` package. Step through, then press Run.",
+      "walk": [
+        { "lines": [4, 5, 6, 7, 8], "text": "A trimmed schema: only the fields this step needs." },
+        { "lines": [10], "text": "Register the hook on `save` as an `async function`. Mongoose waits for it; there is no `next`." },
+        { "lines": [11], "text": "`this` is the document. If the password did not change, return and leave the hash alone." },
+        { "lines": [12], "text": "Replace the plain password with its hash. `10` is the cost: higher is slower to compute." },
+        { "lines": [18, 19, 20], "text": "`create` calls `save`, so the hook runs. What reached the document is a hash." },
+        { "lines": [22, 23, 24, 25], "text": "Change another field and save again. The password is untouched, so the hash stays." },
+        { "lines": [27], "text": "Disconnect so the process can exit." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Skip `isModified` and every `save()` hashes the hash, locking the user out.",
+    "Write `function`, not an arrow: arrows do not bind `this` to the document.",
+    "`updateOne`, `findOneAndUpdate` and `insertMany` skip the hook; set passwords with `save()`."
+  ],
+  "quiz": {
+    "q": "The model has the `pre('save')` hook. What does this print?",
+    "code": "await User.updateOne(\n  { username: 'ada' },\n  { password: 'new-pass' },\n);\nconst user = await User.findOne({ username: 'ada' });\nconsole.log(user.password);",
+    "lang": "js",
+    "options": ["a bcrypt hash", "new-pass", "undefined", "ValidationError"],
+    "answer": 1,
+    "why": "`updateOne` is a query, not `save()`, so `pre('save')` never runs. The plain text goes straight to MongoDB."
+  },
+  "takeaway": "Hash in a `pre('save')` hook, and only when the password changed.",
+  "chat": {
+    "starters": [
+      "Why hash in the model instead of in the controller?",
+      "What happens to old hashes if I raise the bcrypt cost?",
+      "How do I change a password without skipping the hook?"
+    ]
+  }
+}

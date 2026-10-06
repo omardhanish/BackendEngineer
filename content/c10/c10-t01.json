@@ -5,7 +5,7 @@
     "By hand, you start, check and replace every container on every machine yourself.",
     "A Docker restart policy revives a crashed container, but only on its own machine.",
     "An orchestrator keeps comparing desired state, what you asked for, with what actually runs.",
-    "Amazon ECS is AWS's orchestrator. This chapter runs `bookstore-api` on it."
+    "Amazon ECS is an AWS orchestrator. This chapter runs `bookstore-api` on it."
   ],
   "hero": {
     "type": "anim",
@@ -45,7 +45,7 @@
           "badge": { "orch": "have 2 of 2", "m1": "api: up", "m2": "api: up" }
         },
         {
-          "caption": "The load balancer spreads requests across both copies.",
+          "caption": "A load balancer, the single front door for clients, spreads requests across both copies.",
           "send": [
             { "from": "client", "to": "lb", "label": "GET /books" },
             { "from": "lb", "to": "m1", "label": "GET /books" },
@@ -73,7 +73,7 @@
           "badge": { "orch": "have 2 of 2", "m1": "api x2" }
         },
         {
-          "caption": "You deploy v2 by changing the declared image. The orchestrator replaces copies gradually, keeping the API up.",
+          "caption": "You deploy v2 by changing the declared image. The orchestrator replaces copies gradually, so the API can stay up.",
           "send": [{ "from": "you", "to": "orch", "label": "image v2", "tone": "info" }],
           "state": { "m1": "ok" },
           "badge": { "orch": "v2: 2 of 2", "m1": "api v2 x2" }

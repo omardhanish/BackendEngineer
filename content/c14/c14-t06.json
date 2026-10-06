@@ -101,15 +101,15 @@
         { "lines": [7], "text": "`git diff` prints the edit: working tree against staging area." },
         { "lines": [8, 9], "text": "After `git add`, the same edit shows under `--staged`: staging area against last commit." },
         { "lines": [10, 11], "text": "`git stash` leaves a clean tree, so `git status --short` prints nothing." },
-        { "lines": [12], "text": "The stash holds one entry, labelled with the commit it was made on." },
+        { "lines": [12], "text": "The stash holds one entry, labelled with the branch and commit it was made on." },
         { "lines": [13, 14], "text": "`git stash pop` restores the edit. Status shows it unstaged: a space, then `M`." }
       ]
     }
   ],
   "pitfalls": [
-    "A bare `git diff` prints nothing after `git add`; use `git diff --staged` instead.",
+    "A bare `git diff` ignores staged changes; use `git diff --staged` to see them.",
     "`git stash` skips files Git has never tracked; add `-u` to include them.",
-    "`git stash pop` restores changes unstaged; add `--index` to keep them staged."
+    "`git stash pop` restores edits unstaged; add `--index` to keep them staged."
   ],
   "quiz": {
     "q": "What does the last command print?",

@@ -1,0 +1,9 @@
+{
+  "stdout": "auth-backend 1\nMongooseServerSelectionError",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "MongoDB 8.2.6",
+  "hash": "6ed9a7d0eeda01a2",
+  "at": "2026-10-06T15:17:32.644Z"
+}

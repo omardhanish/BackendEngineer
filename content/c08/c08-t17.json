@@ -33,8 +33,8 @@
         { "lines": [19], "text": "`orderBy` makes the order certain: newest first." },
         { "lines": [24, 25], "text": "The id comes from `req.user`, never from the URL or the body." },
         { "lines": [28, 29, 30], "text": "Guard the route with `requireAuth`. Register it before `/:shortCode`." },
-        { "lines": [34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44], "text": "Lecture 12's middleware, condensed: verify the token, then set `req.user`." },
-        { "lines": [94, 95, 96, 97], "text": "No token gives `401`. Each user sees only their own list. Alan has none: `200` with `[]`." }
+        { "lines": [33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48], "text": "Lectures 11 and 12, condensed: verify the token, then set `req.user`." },
+        { "lines": [98, 99, 100, 101], "text": "No token gives `401`. Each user sees only their own list. Alan has none: `200` with `[]`." }
       ]
     }
   ],

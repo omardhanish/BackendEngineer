@@ -1,0 +1,161 @@
+{
+  "title": "Secure logout",
+  "idea": "A secure logout ends the session in two places: it deletes the stored refresh token on the server and clears both cookies in the browser.",
+  "points": [
+    "Logout is a `POST` route behind `verifyJWT`, so `req.user` already identifies the caller.",
+    "`$unset` deletes the stored `refreshToken`, so a copied refresh token stops matching.",
+    "`clearCookie` needs the options used to set the cookie, minus `maxAge` and `expires`.",
+    "The access token is stateless, so it stays valid until its short expiry."
+  ],
+  "hero": {
+    "type": "compare",
+    "title": "What logout has to undo",
+    "left": {
+      "title": "Clear the cookies only",
+      "tone": "bad",
+      "items": [
+        "The browser forgets both tokens.",
+        "The database still holds the refresh token.",
+        "A copied refresh token keeps working until it expires."
+      ]
+    },
+    "right": {
+      "title": "Clear the cookies and the stored token",
+      "tone": "good",
+      "items": [
+        "`clearCookie` expires both cookies in the browser.",
+        "`$unset` removes `refreshToken` from the user document.",
+        "A copied refresh token no longer matches the stored one.",
+        "The access token lives on until its short expiry."
+      ]
+    },
+    "verdict": "Logout ends the refresh path at once; the access token expires on its own."
+  },
+  "code": [
+    {
+      "file": "logout.mjs",
+      "lang": "js",
+      "title": "logoutUser",
+      "run": "captured",
+      "needs": [
+        "mongo"
+      ],
+      "caption": "Stand-ins sit above the lesson's controller and route. Press Run: log out, then look at what changed.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7
+          ],
+          "text": "A demo secret; real ones live in `.env`."
+        },
+        {
+          "lines": [
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38
+          ],
+          "text": "Stand-ins for earlier files: utils, a trimmed `User` and `verifyJWT`."
+        },
+        {
+          "lines": [
+            42
+          ],
+          "text": "The server half: `$unset` deletes `refreshToken` from the user document."
+        },
+        {
+          "lines": [
+            43,
+            44,
+            45,
+            46
+          ],
+          "text": "Use the same options as login: `httpOnly`, and `secure` in production."
+        },
+        {
+          "lines": [
+            47,
+            48,
+            49,
+            50,
+            51
+          ],
+          "text": "Clear both cookies, then reply. The browser receives two already-expired cookies."
+        },
+        {
+          "lines": [
+            55,
+            56,
+            57,
+            58,
+            59
+          ],
+          "text": "A secured `POST` route: `verifyJWT` runs first, so `req.user` is set."
+        },
+        {
+          "lines": [
+            77,
+            78,
+            79,
+            80,
+            81,
+            82
+          ],
+          "text": "Log out, then inspect: two clearing headers, no stored token, access token still accepted."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Clearing only the cookies leaves a copied refresh token working until it expires.",
+    "Give `clearCookie` the same options as `res.cookie`, or browsers keep the cookie.",
+    "Expect `401` from `/logout` once the access token has expired: refresh first."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const headers = { Cookie: `accessToken=${access}` };\nawait fetch(url, { method: 'POST', headers });\nconst again = await fetch(url, { method: 'POST', headers });\nconsole.log(again.status);",
+    "lang": "js",
+    "options": [
+      "401",
+      "200",
+      "403",
+      "404"
+    ],
+    "answer": 1,
+    "why": "Logout changed only the database and the browser's cookies. The access token still verifies until it expires."
+  },
+  "takeaway": "Revoke the refresh token on the server; let the short access token expire.",
+  "chat": {
+    "starters": [
+      "Can I revoke an access token before it expires?",
+      "Why is logout a POST and not a GET?",
+      "What happens if the same user is logged in on two devices?"
+    ]
+  }
+}

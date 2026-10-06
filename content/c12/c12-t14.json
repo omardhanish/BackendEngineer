@@ -1,0 +1,284 @@
+{
+  "title": "Connect to MongoDB",
+  "idea": "Mongoose opens a default connection to MongoDB, and every model uses it. `connectDB` wraps that call so the server starts listening only afterwards.",
+  "points": [
+    "`mongoose.connect(uri, options)` returns a promise that resolves when the connection is open.",
+    "`connectDB` reads `MONGO_URI` and sets `dbName` from `DB_NAME`, overriding the URI's database.",
+    "`src/index.js` calls `app.listen` only after that promise resolves.",
+    "If it rejects, log the error and exit with code 1."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "Connect first, then listen",
+    "scenario": {
+      "tiers": [
+        [
+          "client"
+        ],
+        [
+          "app"
+        ],
+        [
+          "db"
+        ]
+      ],
+      "nodes": {
+        "client": {
+          "label": "Client",
+          "kind": "user"
+        },
+        "app": {
+          "label": "Express app",
+          "kind": "server",
+          "sub": "src/index.js"
+        },
+        "db": {
+          "label": "MongoDB",
+          "kind": "db"
+        }
+      },
+      "links": [
+        [
+          "client",
+          "app"
+        ],
+        [
+          "app",
+          "db"
+        ]
+      ],
+      "steps": [
+        {
+          "caption": "`node src/index.js` starts. The app has not called `listen` yet, so no client can reach it.",
+          "state": {
+            "app": "busy"
+          },
+          "badge": {
+            "app": "starting"
+          },
+          "focus": [
+            "app"
+          ]
+        },
+        {
+          "caption": "`connectDB()` asks Mongoose to connect. The app waits for the promise.",
+          "send": [
+            {
+              "from": "app",
+              "to": "db",
+              "label": "connect",
+              "tone": "req"
+            }
+          ],
+          "badge": {
+            "app": "connecting"
+          }
+        },
+        {
+          "caption": "MongoDB accepts. The promise resolves and `connectDB` returns.",
+          "send": [
+            {
+              "from": "db",
+              "to": "app",
+              "label": "ready",
+              "tone": "ok"
+            }
+          ],
+          "state": {
+            "db": "ok"
+          },
+          "badge": {
+            "app": "connected"
+          }
+        },
+        {
+          "caption": "Only now does `app.listen` run. Clients reach the app, and its models reach the database.",
+          "send": [
+            {
+              "from": "client",
+              "to": "app",
+              "label": "GET /",
+              "tone": "req"
+            }
+          ],
+          "state": {
+            "app": "up"
+          },
+          "badge": {
+            "app": "listening"
+          }
+        },
+        {
+          "caption": "Second start, but MongoDB is unreachable. The app begins the same way.",
+          "state": {
+            "app": "busy",
+            "db": "down"
+          },
+          "badge": {
+            "app": "starting",
+            "db": "down"
+          },
+          "focus": [
+            "db"
+          ]
+        },
+        {
+          "caption": "The attempt fails. After the timeout you set, the promise rejects.",
+          "send": [
+            {
+              "from": "app",
+              "to": "db",
+              "label": "connect",
+              "tone": "err"
+            }
+          ],
+          "badge": {
+            "app": "rejected"
+          }
+        },
+        {
+          "caption": "`.catch` logs the error and calls `process.exit(1)`. `listen` never ran, so no client reaches a half-working app.",
+          "send": [
+            {
+              "from": "client",
+              "to": "app",
+              "label": "refused",
+              "tone": "err"
+            }
+          ],
+          "state": {
+            "app": "down"
+          },
+          "badge": {
+            "app": "exit 1"
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "connect.mjs",
+      "lang": "js",
+      "title": "src/db/index.js",
+      "run": "captured",
+      "needs": [
+        "mongo"
+      ],
+      "caption": "Lines 5-10 are `connectDB`, saved with `export default connectDB`. The rest connects, then fails on purpose.",
+      "walk": [
+        {
+          "lines": [
+            3
+          ],
+          "text": "The database name comes from `constants.js`; here it is inlined so the file runs alone."
+        },
+        {
+          "lines": [
+            5,
+            6
+          ],
+          "text": "`connectDB` reads `MONGO_URI` when called, then awaits the connection."
+        },
+        {
+          "lines": [
+            7
+          ],
+          "text": "`dbName` picks the database and overrides any name in the URI."
+        },
+        {
+          "lines": [
+            8
+          ],
+          "text": "`serverSelectionTimeoutMS` gives up after 5 seconds. The default is 30, which feels like a hang."
+        },
+        {
+          "lines": [
+            12,
+            13
+          ],
+          "text": "The connection is open: its `name` is `DB_NAME`, and `readyState` 1 means connected."
+        },
+        {
+          "lines": [
+            14
+          ],
+          "text": "Disconnect so the script can exit. A running server keeps the connection open."
+        },
+        {
+          "lines": [
+            16,
+            17
+          ],
+          "text": "Nothing listens on that URI, so the promise rejects with `MongooseServerSelectionError`."
+        }
+      ]
+    },
+    {
+      "file": "index.js",
+      "lang": "js",
+      "title": "src/index.js",
+      "run": "static",
+      "caption": "The entry point from earlier lessons, now connecting before it listens.",
+      "walk": [
+        {
+          "lines": [
+            3
+          ],
+          "text": "`connectDB` is the default export of `src/db/index.js`."
+        },
+        {
+          "lines": [
+            7,
+            8,
+            9,
+            10,
+            11,
+            12
+          ],
+          "text": "`listen` sits inside `.then`, so it runs only after the connection is open."
+        },
+        {
+          "lines": [
+            13,
+            14
+          ],
+          "text": "A rejected connection lands here. The message says why it failed."
+        },
+        {
+          "lines": [
+            15
+          ],
+          "text": "Exit with code 1, so scripts and process managers see a failed start."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Set `serverSelectionTimeoutMS`: the 30 second default makes a dead database look like a hang.",
+    "Call `listen` only after `connectDB()` resolves: Mongoose queues early queries, then errors after 10 seconds.",
+    "Read `MONGO_URI` from the environment; a hard-coded URI ends up in Git."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const uri = 'mongodb://127.0.0.1:27017/test';\nawait mongoose.connect(uri, { dbName: 'auth-backend' });\nconsole.log(mongoose.connection.name);",
+    "lang": "js",
+    "options": [
+      "test",
+      "127.0.0.1",
+      "auth-backend",
+      "undefined"
+    ],
+    "answer": 2,
+    "why": "`dbName` overrides the database named in the URI, so the connection's `name` is `auth-backend`."
+  },
+  "takeaway": "Connect first, then listen: a server should not start without its database.",
+  "chat": {
+    "starters": [
+      "What happens to Mongoose queries that run before the connection opens?",
+      "Why exit with code 1 instead of letting the server run anyway?",
+      "Do I need to close the connection in a running server?"
+    ]
+  }
+}

@@ -56,7 +56,7 @@
           "focus": ["api"]
         },
         {
-          "caption": "The API checks the password and replies with two cookies: an access token and a refresh token.",
+          "caption": "The API checks the password and replies with two cookies: an access token and a refresh token. Later lessons explain both.",
           "send": [{ "from": "api", "to": "client", "label": "2 cookies", "tone": "ok" }],
           "focus": ["client"]
         },

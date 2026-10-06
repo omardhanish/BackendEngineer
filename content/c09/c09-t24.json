@@ -28,7 +28,7 @@
       "illustrative": true,
       "caption": "Two named volumes and one bind mount. Assume the API saves covers and reads settings.",
       "walk": [
-        { "lines": [5], "text": "`covers:/app/covers` mounts the named volume `covers` at `/app/covers`." },
+        { "lines": [5], "text": "`covers:/app/covers` mounts the named volume `covers` at that path in the container." },
         { "lines": [6], "text": "`./config` is a bind mount, resolved from the folder holding `compose.yaml`. `:ro` is read-only." },
         { "lines": [12], "text": "Database files go in `pgdata`. Postgres 18 and later keep data under `/var/lib/postgresql`." },
         { "lines": [13, 14, 15], "text": "Declare each named volume once at the top level. An empty entry uses default settings." }

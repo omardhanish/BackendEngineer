@@ -1,0 +1,538 @@
+{
+  "title": "Refresh and resend",
+  "idea": "Two controllers reissue credentials: `refreshAccessToken` trades a valid refresh token for a new pair, and `resendEmailVerification` replaces an old verification link.",
+  "analogy": {
+    "text": "A hotel key card that stops working each day. At the desk you show your booking slip and get a new card and slip; the old slip is voided.",
+    "breaks": "The desk sees your face; the server sees only the token."
+  },
+  "points": [
+    "`refreshAccessToken` verifies the refresh token, then checks it equals the stored one.",
+    "On a match it signs a new pair and stores the new refresh token.",
+    "That is rotation: a used or revoked refresh token fails the comparison with `401`.",
+    "`resendEmailVerification` stores a new hash and expiry, and mails the new raw token."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "Refresh, replay and resend",
+    "scenario": {
+      "tiers": [
+        [
+          "client"
+        ],
+        [
+          "app"
+        ],
+        [
+          "db",
+          "mail"
+        ]
+      ],
+      "nodes": {
+        "client": {
+          "label": "Browser",
+          "kind": "user"
+        },
+        "app": {
+          "label": "Express API",
+          "kind": "server",
+          "sub": "auth routes"
+        },
+        "db": {
+          "label": "MongoDB",
+          "kind": "db"
+        },
+        "mail": {
+          "label": "Mail service",
+          "kind": "cloud"
+        }
+      },
+      "links": [
+        [
+          "client",
+          "app"
+        ],
+        [
+          "app",
+          "db"
+        ],
+        [
+          "app",
+          "mail"
+        ]
+      ],
+      "steps": [
+        {
+          "caption": "The browser holds access token A1 and refresh token R1. MongoDB stores R1 for this user.",
+          "items": {
+            "client": [
+              "A1",
+              "R1"
+            ],
+            "db": [
+              "R1"
+            ]
+          },
+          "focus": [
+            "client",
+            "db"
+          ]
+        },
+        {
+          "caption": "A1 expires. The browser calls a secured route and the API answers `401`.",
+          "send": [
+            {
+              "from": "client",
+              "to": "app",
+              "label": "GET + A1",
+              "tone": "req"
+            },
+            {
+              "from": "app",
+              "to": "client",
+              "label": "401",
+              "tone": "err"
+            }
+          ],
+          "badge": {
+            "client": "A1 expired"
+          }
+        },
+        {
+          "caption": "The browser posts to `/refresh-token`. R1 travels in its cookie.",
+          "send": [
+            {
+              "from": "client",
+              "to": "app",
+              "label": "R1",
+              "tone": "req"
+            }
+          ],
+          "badge": {
+            "client": null
+          }
+        },
+        {
+          "caption": "The API verifies R1's signature, loads the user and compares R1 with the stored token.",
+          "send": [
+            {
+              "from": "app",
+              "to": "db",
+              "label": "find user",
+              "tone": "req"
+            },
+            {
+              "from": "db",
+              "to": "app",
+              "label": "R1",
+              "tone": "info"
+            }
+          ],
+          "badge": {
+            "app": "R1 matches"
+          }
+        },
+        {
+          "caption": "A match: the API signs A2 and R2, and stores R2 in place of R1.",
+          "send": [
+            {
+              "from": "app",
+              "to": "db",
+              "label": "save R2",
+              "tone": "req"
+            }
+          ],
+          "items": {
+            "db": [
+              "R2"
+            ]
+          },
+          "badge": {
+            "app": "rotated"
+          }
+        },
+        {
+          "caption": "A2 and R2 come back as cookies. Only R2 works for refreshing now.",
+          "send": [
+            {
+              "from": "app",
+              "to": "client",
+              "label": "A2 + R2",
+              "tone": "ok"
+            }
+          ],
+          "items": {
+            "client": [
+              "A2",
+              "R2"
+            ]
+          },
+          "badge": {
+            "app": null
+          }
+        },
+        {
+          "caption": "Someone replays the old R1.",
+          "send": [
+            {
+              "from": "client",
+              "to": "app",
+              "label": "old R1",
+              "tone": "warn"
+            }
+          ]
+        },
+        {
+          "caption": "R1 no longer equals the stored R2, so the API answers `401`.",
+          "send": [
+            {
+              "from": "app",
+              "to": "client",
+              "label": "401",
+              "tone": "err"
+            }
+          ],
+          "badge": {
+            "app": "mismatch"
+          }
+        },
+        {
+          "caption": "A different case: a user who has not verified their email asks for a new link.",
+          "send": [
+            {
+              "from": "client",
+              "to": "app",
+              "label": "resend",
+              "tone": "req"
+            }
+          ],
+          "badge": {
+            "app": "resend"
+          }
+        },
+        {
+          "caption": "The API stores a fresh hash and expiry, replacing any older pair.",
+          "send": [
+            {
+              "from": "app",
+              "to": "db",
+              "label": "hash + expiry",
+              "tone": "req"
+            }
+          ],
+          "items": {
+            "db": [
+              "R2",
+              "V hash"
+            ]
+          }
+        },
+        {
+          "caption": "The mail carries the raw token in a link. Only its hash is stored.",
+          "send": [
+            {
+              "from": "app",
+              "to": "mail",
+              "label": "link + raw",
+              "tone": "ok"
+            }
+          ],
+          "state": {
+            "mail": "ok"
+          },
+          "badge": {
+            "app": null
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "refresh.mjs",
+      "lang": "js",
+      "title": "refreshAccessToken",
+      "run": "captured",
+      "needs": [
+        "mongo"
+      ],
+      "caption": "Condensed earlier files, then this lesson's controller. Press Run: forged, valid and replayed tokens.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46
+          ],
+          "text": "Demo values and condensed earlier files: utils and a trimmed `User` with its token methods."
+        },
+        {
+          "lines": [
+            50,
+            51
+          ],
+          "text": "Take the refresh token from the cookie, or the body for non-browser clients."
+        },
+        {
+          "lines": [
+            53,
+            54,
+            55,
+            56,
+            57,
+            58
+          ],
+          "text": "Verify with `REFRESH_TOKEN_SECRET`. A forged or expired token becomes `401`."
+        },
+        {
+          "lines": [
+            59,
+            60,
+            61,
+            62
+          ],
+          "text": "Load the user and compare. A used or revoked token differs from the stored one."
+        },
+        {
+          "lines": [
+            64,
+            65,
+            66
+          ],
+          "text": "Rotate: sign a new pair and store the new refresh token over the old one."
+        },
+        {
+          "lines": [
+            68,
+            69,
+            70,
+            71,
+            72,
+            73,
+            74,
+            75,
+            76
+          ],
+          "text": "Send both tokens back as `httpOnly` cookies."
+        },
+        {
+          "lines": [
+            92,
+            93,
+            94,
+            95,
+            96,
+            97,
+            98,
+            99,
+            100,
+            101,
+            102,
+            103,
+            104,
+            105,
+            106,
+            107,
+            108,
+            109,
+            110,
+            111,
+            112,
+            113,
+            114,
+            115,
+            116,
+            117,
+            118,
+            119,
+            120
+          ],
+          "text": "Seed a refresh token issued a minute ago, so the new one differs. Then five calls."
+        }
+      ]
+    },
+    {
+      "file": "resend.mjs",
+      "lang": "js",
+      "title": "resendEmailVerification",
+      "run": "captured",
+      "needs": [
+        "mongo"
+      ],
+      "caption": "Same layout. The mail helper only records messages. Press Run: two resends, then a verified user.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34
+          ],
+          "text": "Condensed from earlier lessons: utils, a mail helper that records, and a trimmed `User`."
+        },
+        {
+          "lines": [
+            35,
+            36,
+            37,
+            38,
+            39
+          ],
+          "text": "From the token lesson: a random raw token, its SHA-256 hash and a 20-minute expiry."
+        },
+        {
+          "lines": [
+            44,
+            45,
+            46,
+            47,
+            48
+          ],
+          "text": "Load the user. Missing is `404`; an already verified email is `409`, and no mail is sent."
+        },
+        {
+          "lines": [
+            50,
+            51,
+            52,
+            53,
+            54
+          ],
+          "text": "Store the new hash and expiry. They overwrite the old pair, so older links stop working."
+        },
+        {
+          "lines": [
+            56,
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63,
+            64
+          ],
+          "text": "Mail the raw token in a link. In production, build it from fixed configuration, not `host`."
+        },
+        {
+          "lines": [
+            70,
+            71,
+            72,
+            73,
+            74,
+            75,
+            76,
+            77
+          ],
+          "text": "A secured `POST` route. A stand-in for `verifyJWT` sets `req.user`."
+        },
+        {
+          "lines": [
+            99,
+            100,
+            101,
+            102,
+            103,
+            104,
+            105,
+            106,
+            107,
+            108,
+            109
+          ],
+          "text": "Resend twice, then resend for a verified user: stored hash, replaced token, `409`."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Compare the refresh token with the stored one; a valid signature alone cannot revoke it.",
+    "Refresh once at a time in the client; parallel refreshes can invalidate each other.",
+    "Overwrite the stored verification hash on every resend, so only the newest link works."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const call = () =>\n  fetch(url, { method: 'POST', headers: { Cookie: `refreshToken=${old}` } });\nconst first = await call();\nconst second = await call();\nconsole.log(first.status, second.status);",
+    "lang": "js",
+    "options": [
+      "200 401",
+      "401 401",
+      "200 200",
+      "200 403"
+    ],
+    "answer": 0,
+    "why": "The first call stores a new refresh token. `old` no longer matches it, so the second call gets `401`."
+  },
+  "takeaway": "Refresh rotates the stored token; resend replaces the stored hash.",
+  "chat": {
+    "starters": [
+      "Why check the refresh token against the database at all?",
+      "Why rotate the refresh token instead of reusing it?",
+      "What if the verification email never arrives?"
+    ]
+  }
+}

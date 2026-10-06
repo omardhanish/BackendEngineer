@@ -107,7 +107,9 @@ try {
   await press(']');
   await page.waitForFunction(() => location.pathname.startsWith('/read/c02-t10'), { timeout: 4000 }).catch(() => {});
   check('] goes to the next page', page.url().includes('/read/c02-t10'), page.url());
-  check('A not-yet-written page shows the friendly "soon" frame', !!(await page.$('.frame-soon')));
+  await page.waitForSelector('.frame-idea, .frame-soon', { timeout: 4000 }).catch(() => {});
+  // every page is written now; the "soon" frame remains only as a safety net for a page that is missing
+  check('The next page renders its first frame (not the "soon" fallback)', !!(await page.$('.frame-idea')) && !(await page.$('.frame-soon')));
 
   // ------------------------------------------------------------------ palette, notes, progress
   section('Palette, notes, progress');

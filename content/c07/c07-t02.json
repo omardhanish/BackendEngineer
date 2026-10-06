@@ -54,7 +54,7 @@
       "needs": [
         "mongo"
       ],
-      "caption": "Run here against a local MongoDB; the code is the same for Atlas. A refused or blocked connection rejects, so catch it."
+      "caption": "Mongoose, the library of the next page, connects here. This runs on a local MongoDB; Atlas changes only the string. A refused or blocked connection rejects, so catch it."
     }
   ],
   "pitfalls": [

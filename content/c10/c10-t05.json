@@ -1,11 +1,11 @@
 {
   "title": "Task definitions",
-  "idea": "A task definition is a JSON blueprint for a task, a running group of containers. It names the image, ports, size and roles.",
+  "idea": "A task definition is the JSON blueprint ECS uses to start a task, one running copy of your containers. It names the image, ports, size and roles.",
   "points": [
     "`family` names the blueprint; each registration adds a revision, such as `bookstore-api:2`.",
     "Each entry in `containerDefinitions` sets one container's `image`, `portMappings` and environment.",
     "On Fargate, set `networkMode` to `awsvpc` and pick a supported `cpu` and `memory` pair.",
-    "`executionRoleArn` lets ECS pull the image and send logs; `taskRoleArn` serves your code."
+    "`executionRoleArn` lets ECS pull images and send logs. `taskRoleArn` is for your code."
   ],
   "hero": {
     "type": "table",
@@ -37,7 +37,7 @@
         { "lines": [7], "text": "The role's ARN, its full AWS identifier. ECS uses it to pull the image and write logs." },
         { "lines": [10, 11], "text": "The container: a name, and the ECR image address with a version tag." },
         { "lines": [12, 13], "text": "`containerPort` is where the app listens. `PORT` tells the app which port to use." },
-        { "lines": [14, 21], "text": "`awslogs` sends the container's output to a CloudWatch Logs group. Create the group first." }
+        { "lines": [14, 15, 16, 17, 18, 19, 20, 21], "text": "`awslogs` sends the container's output to a CloudWatch Logs group. Create the group first." }
       ]
     },
     {
@@ -56,7 +56,7 @@
   "pitfalls": [
     "Create the log group named in `awslogs-group` first; ECS does not create it by default.",
     "Keep secrets out of `environment`; reference them with `secrets` instead.",
-    "Make `containerPort` equal the port your app listens on; here, `PORT`."
+    "Make `containerPort` equal the port your app listens on, the `PORT` value."
   ],
   "quiz": {
     "q": "You register `bookstore-api` again with a new image tag. What happens to running tasks?",

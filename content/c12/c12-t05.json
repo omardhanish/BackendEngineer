@@ -1,0 +1,62 @@
+{
+  "title": "Restart on save with nodemon",
+  "idea": "nodemon runs your script with `node`, then watches your files and restarts the process every time you save a change.",
+  "points": [
+    "Install it as a dev dependency, since only developers need it.",
+    "`nodemon src/index.js` replaces `node src/index.js` and watches the folder.",
+    "It watches `.js`, `.mjs`, `.cjs` and `.json` files by default, and skips `node_modules`.",
+    "A crashed app does not stop nodemon; it waits for your next save."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "Save, restart, crash, fix",
+    "actors": [
+      { "id": "you", "label": "You" },
+      { "id": "nodemon", "label": "nodemon" },
+      { "id": "app", "label": "Your server" }
+    ],
+    "messages": [
+      { "from": "nodemon", "to": "app", "label": "node src/index.js", "note": "`npm run dev` starts nodemon. It launches your entry file with Node and keeps watching." },
+      { "from": "you", "to": "nodemon", "label": "save a file", "note": "You edit a route and save. nodemon sees a changed `.js` file." },
+      { "from": "nodemon", "to": "app", "label": "stop", "note": "nodemon stops the old process." },
+      { "from": "nodemon", "to": "app", "label": "start again", "note": "It starts a new process, so every module loads again." },
+      { "from": "app", "to": "nodemon", "label": "crash", "dashed": true, "note": "A typo crashes the app. nodemon stays alive and waits for a change." },
+      { "from": "you", "to": "nodemon", "label": "fix and save", "note": "You fix the typo and save." },
+      { "from": "nodemon", "to": "app", "label": "start again", "note": "The save triggers a restart. You never type `node` again." }
+    ]
+  },
+  "code": [
+    {
+      "file": "session.sh",
+      "lang": "bash",
+      "title": "Install and run",
+      "run": "static",
+      "illustrative": true,
+      "caption": "`--save-dev` adds nodemon under `devDependencies`. Then you run the `dev` script."
+    },
+    {
+      "file": "package.json",
+      "lang": "json",
+      "title": "Two scripts",
+      "run": "static",
+      "caption": "Keep both: `dev` for you, `start` for the server in production.",
+      "walk": [
+        { "lines": [3], "text": "`npm start` runs plain `node`: no watching, no restarts." },
+        { "lines": [4], "text": "`npm run dev` runs nodemon. Custom script names need `npm run`." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Use `npm start`, which runs plain `node`, in production; nodemon is for development.",
+    "A restart starts a fresh process, so anything held in memory is lost.",
+    "nodemon ignores `.env` edits by default; type `rs` to restart by hand."
+  ],
+  "takeaway": "Use nodemon while you develop; run plain `node` in production.",
+  "chat": {
+    "starters": [
+      "What is the difference between nodemon and `node --watch`?",
+      "Why does nothing restart when I edit `.env`?",
+      "Can I make nodemon watch only the `src` folder?"
+    ]
+  }
+}

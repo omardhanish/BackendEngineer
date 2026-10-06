@@ -1,0 +1,9 @@
+{
+  "stdout": "garbage      401 Invalid refresh token []\naccess token 401 Invalid refresh token []\nvalid        200 Access token refreshed [ 'accessToken', 'refreshToken' ]\nrotated: true\nold again    401 Refresh token is expired or used []\nnew token    200 Access token refreshed [ 'accessToken', 'refreshToken' ]",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "MongoDB 8.2.6",
+  "hash": "0c767d2184099659",
+  "at": "2026-10-06T15:39:39.876Z"
+}

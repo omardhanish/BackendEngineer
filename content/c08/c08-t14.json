@@ -3,7 +3,7 @@
   "idea": "The `urls` table stores each short code, target and owner. `user_id` is a foreign key: its value must match a row in `users`.",
   "points": [
     "The database checks every rule on every insert, even from code that skips Zod.",
-    "`unique` makes Postgres refuse a repeated `short_code` and index it for fast lookups.",
+    "`unique` refuses a repeated `short_code` and adds an index for fast lookups.",
     "`varchar(10)` caps the code length. `nanoid(7)` fits with room to spare.",
     "Drizzle maps `shortCode` in JavaScript to `short_code` in SQL."
   ],
@@ -11,11 +11,31 @@
     "type": "anatomy",
     "title": "Reading the owner column",
     "parts": [
-      { "text": "userId", "label": "JS property", "note": "The name you use in queries: `urls.userId`." },
-      { "text": ": integer('user_id')", "label": "Column", "note": "An integer column called `user_id` in Postgres, the same type as `users.id`." },
-      { "text": ".notNull()", "label": "Required", "note": "Every URL needs an owner. An insert without `user_id` is refused." },
-      { "text": ".references(() => users.id", "label": "Foreign key", "note": "The value must match an existing `users.id`. An unknown user is refused." },
-      { "text": ", { onDelete: 'cascade' })", "label": "On delete", "note": "Deleting a user also deletes their URLs, so none is left without an owner." }
+      {
+        "text": "userId",
+        "label": "JS property",
+        "note": "The name you use in queries: `urls.userId`."
+      },
+      {
+        "text": ": integer('user_id')",
+        "label": "Column",
+        "note": "An integer column called `user_id` in Postgres, the same type as `users.id`."
+      },
+      {
+        "text": ".notNull()",
+        "label": "Required",
+        "note": "Every URL needs an owner. An insert without `user_id` is refused."
+      },
+      {
+        "text": ".references(() => users.id",
+        "label": "Foreign key",
+        "note": "The value must match an existing `users.id`. An unknown user is refused."
+      },
+      {
+        "text": ", { onDelete: 'cascade' })",
+        "label": "On delete",
+        "note": "Deleting a user also deletes their URLs, so none is left without an owner."
+      }
     ]
   },
   "code": [
@@ -24,30 +44,84 @@
       "lang": "js",
       "title": "src/db/schema.js",
       "run": "captured",
-      "needs": ["postgres"],
+      "needs": [
+        "postgres"
+      ],
       "caption": "The `urls` table is the new part. Postgres refuses two bad inserts, then a delete cascades.",
       "walk": [
-        { "lines": [17], "text": "A repeated `short_code` is refused. Ten characters is the longest code the column accepts." },
-        { "lines": [18], "text": "The target is required text. Lecture 13 already limits it to `http` and `https`." },
-        { "lines": [19, 20, 21], "text": "The foreign key: required, must match a `users.id`, and removed together with its user." },
-        { "lines": [27, 28, 29, 30, 31, 32], "text": "Setup: the same tables as SQL. In the project, a migration creates them." },
-        { "lines": [44, 45], "text": "The same code for another user is refused. `23505` is Postgres's unique-violation code." },
-        { "lines": [46, 47], "text": "An owner that does not exist is refused. `23503` is the foreign-key code." },
-        { "lines": [48, 49], "text": "Delete Ada. `cascade` removes her two URLs, so one link is left." }
+        {
+          "lines": [
+            17
+          ],
+          "text": "A repeated `short_code` is refused. Ten characters is the longest code the column accepts."
+        },
+        {
+          "lines": [
+            18
+          ],
+          "text": "The target is required text. Lecture 13 already limits it to `http` and `https`."
+        },
+        {
+          "lines": [
+            19,
+            20,
+            21
+          ],
+          "text": "The foreign key: required, must match a `users.id`, and removed together with its user."
+        },
+        {
+          "lines": [
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33
+          ],
+          "text": "Setup: the same tables as SQL. In the project, a migration creates them."
+        },
+        {
+          "lines": [
+            45,
+            46
+          ],
+          "text": "The same code for another user is refused. `23505` is Postgres's unique-violation code."
+        },
+        {
+          "lines": [
+            47,
+            48
+          ],
+          "text": "An owner that does not exist is refused. `23503` is the foreign-key code."
+        },
+        {
+          "lines": [
+            49,
+            50
+          ],
+          "text": "Delete Ada. `cascade` removes her two URLs, so one link is left."
+        }
       ]
     }
   ],
   "pitfalls": [
-    "Do not check for an existing code in JavaScript first; two requests can race.",
+    "Do not check for an existing code in JavaScript first; two requests can both pass.",
     "Editing `schema.js` does not change the database. Apply the change with a migration.",
     "Use `cascade` only when a URL is meaningless without its user."
   ],
   "quiz": {
-    "q": "Ada is user 1 and owns exactly one URL. What does this print?",
+    "q": "Ada is user 1 and owns the only row in `urls`. What does this print?",
     "code": "await db.delete(users).where(eq(users.id, 1));\nconst left = await db.select().from(urls);\nconsole.log(left.length);",
     "lang": "js",
-    "options": ["1", "0", "It throws a foreign key error", "undefined"],
-    "answer": 1,
+    "options": [
+      "1",
+      "undefined",
+      "It throws a foreign key error",
+      "0"
+    ],
+    "answer": 3,
     "why": "`onDelete: 'cascade'` deletes the user's URLs with the user. Without it, Postgres would refuse the delete while URLs still point at that user."
   },
   "takeaway": "Put uniqueness and ownership rules in the schema, so the database enforces them.",

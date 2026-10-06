@@ -3,7 +3,7 @@
   "idea": "A `$match` filter is built from query operators: comparisons, lists, logic, existence checks, regex patterns and `$expr` for computed tests.",
   "analogy": {
     "text": "A shop's filter panel: price above 100, colour in red or blue, in stock. Only products passing every filter stay on screen.",
-    "breaks": "The panel offers fixed filters; `$match` accepts any condition, including `$or` and `$expr`."
+    "breaks": "The panel offers fixed filters; `$match` accepts richer ones, like `$or` and `$expr`."
   },
   "points": [
     "Several conditions in one filter object are combined with AND.",

@@ -1,6 +1,6 @@
 {
   "title": "Preparing a Node project",
-  "idea": "`package.json` is the file that makes a folder a Node project. It names the project, picks the module format and defines commands such as `npm start`.",
+  "idea": "`package.json` is the manifest of a Node project. It names the project, picks the module format and defines commands such as `npm start`.",
   "points": [
     "`npm init -y` writes a starter `package.json` using default answers.",
     "`\"type\": \"module\"` makes `.js` files ES modules, so `import` and `export` work.",
@@ -10,7 +10,7 @@
   "hero": {
     "type": "anim",
     "engine": "pipeline",
-    "title": "What `npm start` does",
+    "title": "What npm start does",
     "scenario": {
       "token": { "label": "npm start", "tone": "req" },
       "stages": [
@@ -66,7 +66,7 @@
       "lang": "json",
       "title": "The manifest",
       "run": "static",
-      "caption": "The project's `package.json` after `npm init -y` and two edits. `npm pkg set type=module` changes a key without opening the file.",
+      "caption": "A trimmed `package.json` for this project. `npm init -y` writes a starter; `npm pkg set type=module` sets a key without opening the file.",
       "walk": [
         { "lines": [2, 3], "text": "Name and version identify the project." },
         { "lines": [4], "text": "`type` decides how Node reads every `.js` file in this project." },

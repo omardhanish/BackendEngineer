@@ -1,0 +1,9 @@
+{
+  "stdout": "[ { ok: 1 } ]",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "PostgreSQL 18.4",
+  "hash": "9456c10a4e59b0ab",
+  "at": "2026-10-06T15:14:51.049Z"
+}

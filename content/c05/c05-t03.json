@@ -4,8 +4,8 @@
   "points": [
     "An image is a packaged copy of the software; chapter 9 covers them.",
     "The image requires `POSTGRES_PASSWORD`. The user and database default to `postgres`.",
-    "`-p 5432:5432` publishes the container's port on your machine, host side first.",
-    "A named volume keeps the data when the container stops or is removed."
+    "`-p 127.0.0.1:5432:5432` means IP, host port, container port; the IP keeps it local.",
+    "A named volume is Docker-managed storage; it keeps data when the container is removed."
   ],
   "hero": {
     "type": "anim",
@@ -36,7 +36,7 @@
           "focus": ["vol"]
         },
         {
-          "caption": "`-p 5432:5432` forwards port 5432 on your machine to the container. Your app connects to `localhost:5432`.",
+          "caption": "`-p 127.0.0.1:5432:5432` forwards port 5432 on your machine to the container. Your app connects to `localhost:5432`.",
           "send": [{ "from": "app", "to": "pg", "label": ":5432", "tone": "req" }]
         },
         {
@@ -80,9 +80,9 @@
         { "lines": [1], "text": "`docker run` starts a new container. `--name` gives it a name you can reuse." },
         { "lines": [2], "text": "`-e` sets an environment variable. `demo-password` is a demo value; choose your own." },
         { "lines": [3], "text": "`-v name:path` mounts a named volume, created if missing. This path is the one for Postgres 18." },
-        { "lines": [4, 5], "text": "`-p host:container` publishes a port, host first. `-d` runs in the background; the image comes last." },
-        { "lines": [6], "text": "`docker ps` lists running containers. `bookstore-db` should appear." },
-        { "lines": [7, 8], "text": "`DATABASE_URL` holds one connection string; lesson 4 takes it apart. `check.mjs` connects with it." },
+        { "lines": [4], "text": "`-p ip:host:container` publishes a port. `127.0.0.1` keeps it reachable from your machine only." },
+        { "lines": [5], "text": "`-d` runs it in the background. The image, `postgres:18`, comes last." },
+        { "lines": [6, 7, 8], "text": "`docker ps` lists running containers. Run `check.mjs` once Postgres is ready; `DATABASE_URL` is explained next lesson." },
         { "lines": [9, 10], "text": "Stop and restart the container. The volume keeps your data." }
       ]
     },
@@ -98,13 +98,13 @@
   "pitfalls": [
     "`POSTGRES_PASSWORD` only applies to an empty data directory; an old volume keeps its password.",
     "Postgres 18 images recommend the mount `/var/lib/postgresql`; older guides use `/var/lib/postgresql/data`.",
-    "Port 5432 busy? Publish another host port, like `-p 5433:5432`, and change the URL."
+    "Without `127.0.0.1`, `-p` publishes the port to all addresses, not just your machine."
   ],
   "quiz": {
-    "q": "Your container uses `-p 5433:5432`. Which port goes in `DATABASE_URL`?",
+    "q": "Your container uses `-p 127.0.0.1:5433:5432`. Which port goes in `DATABASE_URL`?",
     "options": ["5432", "5433", "Both work", "Neither; Docker chooses"],
     "answer": 1,
-    "why": "In `-p host:container` the host side comes first. Your app, outside Docker, connects to the host port."
+    "why": "After the IP, the host port comes first. Your app, outside Docker, connects to the host port."
   },
   "takeaway": "One `docker run` gives you Postgres; a named volume keeps its data.",
   "chat": {

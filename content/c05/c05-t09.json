@@ -1,0 +1,459 @@
+{
+  "title": "Foreign keys and joins",
+  "idea": "A foreign key is a column whose values must match the key of a row in another table. Postgres rejects any non-null value that points nowhere.",
+  "points": [
+    "`authors` stores each name once; each book keeps only that author's `id` in `author_id`.",
+    "`references authors(id)` makes the link a rule Postgres enforces.",
+    "A join pairs rows whose columns match; Drizzle writes it as `innerJoin`.",
+    "By default, deleting an author who still has books fails; `onDelete` changes that."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "The foreign key checks each new value",
+    "scenario": {
+      "token": {
+        "label": "author_id 99",
+        "tone": "req"
+      },
+      "stages": [
+        {
+          "id": "app",
+          "label": "Your app",
+          "sub": "insert a book",
+          "kind": "end"
+        },
+        {
+          "id": "books",
+          "label": "books",
+          "sub": "author_id"
+        },
+        {
+          "id": "fk",
+          "label": "Foreign key",
+          "sub": "references authors(id)"
+        },
+        {
+          "id": "authors",
+          "label": "authors",
+          "sub": "id",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "Your app inserts a book whose `author_id` is 99.",
+          "at": "app",
+          "slot": "top",
+          "state": {
+            "app": "active"
+          },
+          "out": []
+        },
+        {
+          "caption": "Postgres writes the new row into `books`.",
+          "at": "books",
+          "slot": "top",
+          "state": {
+            "app": "done",
+            "books": "active"
+          },
+          "out": [
+            "insert author_id 99"
+          ]
+        },
+        {
+          "caption": "At the end of the statement, the foreign key checks the new value against `authors`.",
+          "at": "fk",
+          "slot": "top",
+          "state": {
+            "app": "done",
+            "books": "done",
+            "fk": "active"
+          },
+          "out": [
+            "insert author_id 99"
+          ]
+        },
+        {
+          "caption": "Does `authors` have a row with `id` 99? It does not.",
+          "at": "authors",
+          "slot": "top",
+          "state": {
+            "app": "done",
+            "books": "done",
+            "fk": "active",
+            "authors": "active"
+          },
+          "out": [
+            "insert author_id 99",
+            "authors: no id 99"
+          ]
+        },
+        {
+          "caption": "No match, so the statement fails with error code `23503`. The new row is undone.",
+          "at": "fk",
+          "slot": "bottom",
+          "token": {
+            "label": "23503",
+            "tone": "err"
+          },
+          "state": {
+            "app": "done",
+            "books": "blocked",
+            "fk": "error",
+            "authors": "done"
+          },
+          "out": [
+            "insert author_id 99",
+            "authors: no id 99",
+            "error 23503"
+          ]
+        },
+        {
+          "caption": "Your app receives the error. `books` is unchanged.",
+          "at": "app",
+          "slot": "bottom",
+          "token": {
+            "label": "23503",
+            "tone": "err"
+          },
+          "state": {
+            "app": "error",
+            "books": "blocked",
+            "fk": "error",
+            "authors": "done"
+          },
+          "out": [
+            "insert author_id 99",
+            "authors: no id 99",
+            "error 23503"
+          ]
+        },
+        {
+          "caption": "A second insert uses `author_id` 1, Frank Herbert's id.",
+          "at": "app",
+          "slot": "top",
+          "token": {
+            "label": "author_id 1",
+            "tone": "req"
+          },
+          "state": {
+            "app": "active"
+          },
+          "out": [
+            "insert author_id 99",
+            "authors: no id 99",
+            "error 23503",
+            "insert author_id 1"
+          ]
+        },
+        {
+          "caption": "Postgres writes the new row into `books` again, this time with a valid id.",
+          "at": "books",
+          "slot": "top",
+          "token": {
+            "label": "author_id 1",
+            "tone": "req"
+          },
+          "state": {
+            "app": "done",
+            "books": "active"
+          },
+          "out": [
+            "insert author_id 99",
+            "authors: no id 99",
+            "error 23503",
+            "insert author_id 1"
+          ]
+        },
+        {
+          "caption": "At the end of the statement, the foreign key runs the same check.",
+          "at": "fk",
+          "slot": "top",
+          "token": {
+            "label": "author_id 1",
+            "tone": "req"
+          },
+          "state": {
+            "app": "done",
+            "books": "done",
+            "fk": "active"
+          },
+          "out": [
+            "insert author_id 99",
+            "authors: no id 99",
+            "error 23503",
+            "insert author_id 1"
+          ]
+        },
+        {
+          "caption": "`authors` has a row with `id` 1: a match.",
+          "at": "authors",
+          "slot": "top",
+          "token": {
+            "label": "author_id 1",
+            "tone": "req"
+          },
+          "state": {
+            "app": "done",
+            "books": "done",
+            "fk": "active",
+            "authors": "active"
+          },
+          "out": [
+            "insert author_id 99",
+            "authors: no id 99",
+            "error 23503",
+            "insert author_id 1",
+            "authors: id 1 found"
+          ]
+        },
+        {
+          "caption": "The check passes.",
+          "at": "fk",
+          "slot": "bottom",
+          "token": {
+            "label": "match",
+            "tone": "ok"
+          },
+          "state": {
+            "app": "done",
+            "books": "done",
+            "fk": "done",
+            "authors": "done"
+          },
+          "out": [
+            "insert author_id 99",
+            "authors: no id 99",
+            "error 23503",
+            "insert author_id 1",
+            "authors: id 1 found"
+          ]
+        },
+        {
+          "caption": "The row stays in `books`.",
+          "at": "books",
+          "slot": "bottom",
+          "token": {
+            "label": "stored",
+            "tone": "ok"
+          },
+          "state": {
+            "app": "done",
+            "books": "active",
+            "fk": "done",
+            "authors": "done"
+          },
+          "out": [
+            "insert author_id 99",
+            "authors: no id 99",
+            "error 23503",
+            "insert author_id 1",
+            "authors: id 1 found",
+            "row stored"
+          ]
+        },
+        {
+          "caption": "Your app receives the stored book.",
+          "at": "app",
+          "slot": "bottom",
+          "token": {
+            "label": "stored",
+            "tone": "ok"
+          },
+          "state": {
+            "app": "active",
+            "books": "done",
+            "fk": "done",
+            "authors": "done"
+          },
+          "out": [
+            "insert author_id 99",
+            "authors: no id 99",
+            "error 23503",
+            "insert author_id 1",
+            "authors: id 1 found",
+            "row stored"
+          ]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "split.mjs",
+      "lang": "js",
+      "title": "Split author into a table",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "The migration in raw SQL: move `author` into an `authors` table, link it, drop the old column. A generated migration changes structure only; the copy step is SQL you write.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7,
+            8,
+            9,
+            10
+          ],
+          "text": "The old single table: the author is plain text, repeated on each book row."
+        },
+        {
+          "lines": [
+            12,
+            13,
+            14,
+            15
+          ],
+          "text": "Create `authors` and fill it with each distinct name once. `unique` blocks duplicates."
+        },
+        {
+          "lines": [
+            16,
+            17
+          ],
+          "text": "Add `author_id` with `references`. Existing rows get `null` for now."
+        },
+        {
+          "lines": [
+            18,
+            19
+          ],
+          "text": "Copy each book's author id by matching the old name."
+        },
+        {
+          "lines": [
+            20
+          ],
+          "text": "Drop `author` only after the copy. Dropping first would lose the names."
+        },
+        {
+          "lines": [
+            22,
+            23
+          ],
+          "text": "Frank Herbert got id 1 (names were inserted alphabetically). A new book stores only that id."
+        },
+        {
+          "lines": [
+            24,
+            25,
+            26
+          ],
+          "text": "A join pairs each book with its author's name: Frank Herbert appears twice, stored once."
+        }
+      ]
+    },
+    {
+      "file": "join.mjs",
+      "lang": "js",
+      "title": "Foreign key in Drizzle",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "The Drizzle side: a foreign key in the schema, a join, and two writes Postgres refuses. In the project, both tables live in `src/db/schema.js`.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14
+          ],
+          "text": "The schema. `references(() => authors.id)` declares the foreign key on `authorId`."
+        },
+        {
+          "lines": [
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25
+          ],
+          "text": "`drizzle-kit` is not run here, so raw SQL creates and seeds the tables."
+        },
+        {
+          "lines": [
+            27,
+            28,
+            29
+          ],
+          "text": "`innerJoin` pairs `books.authorId` with `authors.id`. Books with a `null` author drop out."
+        },
+        {
+          "lines": [
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38
+          ],
+          "text": "`attempt` awaits a query inside `try`. Drizzle wraps driver errors; `cause.code` is Postgres's code."
+        },
+        {
+          "lines": [
+            39,
+            40
+          ],
+          "text": "A book pointing at author 99 is rejected: no such row in `authors`."
+        },
+        {
+          "lines": [
+            41
+          ],
+          "text": "Deleting an author who still has books is rejected too, by default."
+        },
+        {
+          "lines": [
+            42
+          ],
+          "text": "Close the pool so the script exits."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Copy the names into `authors` before you drop `books.author`, or the data is gone.",
+    "Add `notNull()` when every book needs an author: a null skips the foreign key check.",
+    "Foreign keys get no automatic index: index `author_id` if you filter by it."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "// attempt() as above; authors 1 to 3 exist\nawait attempt('no author:', db.insert(books)\n  .values({ title: 'Anonymous', authorId: null }));\nawait attempt('author 4:', db.insert(books)\n  .values({ title: 'Anonymous', authorId: 4 }));",
+    "lang": "js",
+    "options": [
+      "no author: ok, then author 4: failed with 23503",
+      "Both print ok",
+      "Both fail with 23503",
+      "no author: failed with 23503, then author 4: ok"
+    ],
+    "answer": 0,
+    "why": "A `null` skips the foreign key check, so that insert works. Author 4 does not exist, so Postgres rejects it."
+  },
+  "takeaway": "Store each author once; let a foreign key guard every link.",
+  "chat": {
+    "starters": [
+      "What does `onDelete: 'cascade'` do, and when is it safe?",
+      "Can Drizzle load a book with its author without a manual join?",
+      "How would I store a book with two authors?"
+    ]
+  }
+}

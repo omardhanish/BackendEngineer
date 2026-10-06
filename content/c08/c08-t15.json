@@ -1,6 +1,6 @@
 {
   "title": "The URL service",
-  "idea": "`createUrl` moves code generation and saving into `url.service.js`. It retries when Postgres reports a repeated code, so the controller stays short.",
+  "idea": "`createUrl` moves code generation and saving into `url.service.js`. It retries when a code is already taken, so the controller stays short.",
   "points": [
     "The controller validates, calls `createUrl` and replies `201`. It never sees `nanoid` or SQL.",
     "`onConflictDoNothing()` returns no row when the code already exists.",

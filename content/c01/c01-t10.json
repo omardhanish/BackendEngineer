@@ -75,7 +75,7 @@
         "hints": [
           "`for (const letter of text)` walks a string one character at a time.",
           "Compare in one case: `text.toLowerCase()` returns the text in lower case, so you only check five letters.",
-          "Inside the loop, `if ('aeiou'.includes(letter)) { count++; }`. Return `count` after the loop."
+          "Loop with `for (const letter of text.toLowerCase())`. Inside, `if ('aeiou'.includes(letter)) { count++; }`. Return `count` after."
         ]
       },
       {

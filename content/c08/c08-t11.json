@@ -17,7 +17,7 @@
         "Login calls `jwt.sign` with its own options",
         "The middleware would call `jwt.verify` the same way",
         "Each file reads `JWT_SECRET` for itself",
-        "One call can forget to pin `algorithms`"
+        "One call can forget to restrict `algorithms`"
       ]
     },
     "right": {
@@ -25,7 +25,7 @@
       "tone": "good",
       "items": [
         "Only `jwt.js` imports `jsonwebtoken`",
-        "Both helpers read `JWT_SECRET` and pin HS256",
+        "Both helpers read `JWT_SECRET` and allow only HS256",
         "Callers import two names and nothing else",
         "A new rule is a one-file edit"
       ]
@@ -41,7 +41,7 @@
       "caption": "The two helpers are the new file. The lines under the setup comment try them out.",
       "walk": [
         { "lines": [6, 8], "text": "`signToken` sets the claims and the options. `sub` is a string; the lifetime is one hour." },
-        { "lines": [13, 14], "text": "`verifyToken` accepts only HS256, so a token signed another way is refused." },
+        { "lines": [13, 14], "text": "`verifyToken` accepts only HS256, the signing method, so any other kind is refused." },
         { "lines": [7, 13], "text": "Both read `JWT_SECRET` when called. No other file needs to know it." },
         { "lines": [19, 20, 21, 22], "text": "Sign a token for Ada, verify it, and print the claims and the lifetime in seconds." },
         { "lines": [24, 25, 26, 27, 28, 29, 30, 31], "text": "Three bad tokens: wrong secret, expired, junk. Each one throws; the caller decides what that means." }
@@ -58,7 +58,7 @@
   "pitfalls": [
     "Import `jsonwebtoken` only in `jwt.js`. A stray `jwt.verify` elsewhere can skip the checks.",
     "Let `verifyToken` throw. Catching inside it hides failures from the middleware.",
-    "Keep `JWT_SECRET` in the environment, not in `jwt.js`."
+    "Keep `JWT_SECRET` in the environment, not in `jwt.js`. If it is unset, both helpers throw."
   ],
   "quiz": {
     "q": "What does this print?",
@@ -71,7 +71,7 @@
   "takeaway": "One file owns every `jsonwebtoken` call; everything else uses two functions.",
   "chat": {
     "starters": [
-      "Why pin `algorithms: ['HS256']` when verifying?",
+      "Why allow only `algorithms: ['HS256']` when verifying?",
       "Should the secret be read once at startup or on every call?",
       "How would I test `signToken` and `verifyToken` on their own?"
     ]

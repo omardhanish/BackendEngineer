@@ -1,12 +1,12 @@
 {
   "title": "Pull requests",
-  "idea": "A pull request asks a project's maintainers to merge your branch into their repository. Without write access, you work from a fork: your own copy.",
+  "idea": "On GitHub, a pull request asks a project's maintainers to merge your branch into their repository. Without write access, you work from a fork: your own copy.",
   "analogy": {
     "text": "Suggesting a change to a cookbook someone else owns: you photocopy it, mark your edits on the copy, then hand the owner a note asking them to adopt it.",
     "breaks": "The note starts a discussion, and you can keep adding edits to it."
   },
   "points": [
-    "Clone your fork; Git names that remote `origin`. Add the original as `upstream`.",
+    "Clone your fork; Git names that remote `origin`. Add the original, say as `upstream`.",
     "Work on a new branch, commit, and push that branch to `origin`.",
     "On GitHub, open a pull request from your branch into the original's `main`.",
     "Reviewers comment. Push more commits to the same branch, and the request updates."
@@ -111,7 +111,7 @@
   ],
   "quiz": {
     "q": "What does the last command print?",
-    "code": "# on main; origin is your fork;\n# upstream has gained one new commit\ngit fetch upstream\ngit status -sb",
+    "code": "# on main, in sync with origin (your fork);\n# upstream has gained one new commit\ngit fetch upstream\ngit status -sb",
     "lang": "bash",
     "options": [
       "## main",

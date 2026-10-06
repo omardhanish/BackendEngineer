@@ -15,8 +15,8 @@
       ["table", "collection", "Documents in one collection can differ in shape."],
       ["row", "document", "A document can nest objects and arrays."],
       ["column", "field", "Fields are not declared up front."],
-      ["primary key", "`_id`", "Always present; usually an `ObjectId`."],
-      ["`JOIN`", "embed, or `$lookup`", "Related data often sits inside the document."],
+      ["primary key", "`_id`", "Always present; usually an `ObjectId`, a 12-byte unique value."],
+      ["`JOIN`", "embed, or `$lookup`", "Related data often sits inside the document; `$lookup` joins."],
       ["`CREATE TABLE`", "not needed", "A collection appears on the first insert."]
     ],
     "highlight": { "col": 1 },
@@ -29,7 +29,7 @@
       "title": "Three shapes, one collection",
       "run": "captured",
       "needs": ["mongo"],
-      "caption": "The official `mongodb` driver. No table is declared first; three differently shaped documents go in, and each gets an `_id`."
+      "caption": "The official `mongodb` driver, a library that talks to the server. No table is declared first; three differently shaped documents go in, and each gets an `_id`."
     }
   ],
   "pitfalls": [

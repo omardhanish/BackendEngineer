@@ -29,7 +29,7 @@
       },
       {
         "label": "Log out",
-        "text": "The proof stops working, and the next request is a stranger's."
+        "text": "The proof is discarded or revoked, so the next request is a stranger's."
       }
     ]
   },

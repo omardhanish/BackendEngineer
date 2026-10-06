@@ -1,0 +1,78 @@
+{
+  "title": "Bootstrapping the Express server",
+  "idea": "`app.js` builds the Express app and exports it. `server.js` imports it, reads `PORT` and calls `listen`. In the project, only `server.js` opens a port.",
+  "points": [
+    "`express.json()` runs first, so later handlers can read `req.body`.",
+    "`GET /health` returns a small JSON object, a quick check that the server answers.",
+    "`PORT` comes from the environment, a setting outside your code. 3000 is the fallback.",
+    "`app.listen` returns the HTTP server. Call `server.close()` to stop it."
+  ],
+  "hero": {
+    "type": "compare",
+    "title": "Two files, two jobs",
+    "left": {
+      "title": "src/app.js builds",
+      "items": [
+        "Creates the app with `express()`",
+        "Adds `express.json()` and `GET /health`",
+        "Later lessons mount the routers here",
+        "Exports the app and never calls `listen`"
+      ]
+    },
+    "right": {
+      "title": "src/server.js starts",
+      "items": [
+        "Imports the app from `app.js`",
+        "Reads `PORT`; the default is 3000",
+        "Calls `listen` and does nothing else",
+        "Is the file `npm start` runs"
+      ]
+    },
+    "verdict": "Importing `app.js` opens no port, so a test can start the app on port 0."
+  },
+  "code": [
+    {
+      "file": "bootstrap.mjs",
+      "lang": "js",
+      "title": "app.js and server.js",
+      "run": "captured",
+      "caption": "Each `// src/...` block is its own file in the project. Add `export default app` to `app.js` and `import app from './app.js'` to `server.js`.",
+      "walk": [
+        { "lines": [3, 4], "text": "Setup for this book: `PORT=0` makes the system pick a free port." },
+        { "lines": [7], "text": "Create the app. Nothing listens yet." },
+        { "lines": [8], "text": "Parse JSON bodies first, so every later handler can read `req.body`." },
+        { "lines": [9], "text": "Reply with a small JSON object. It only proves that the process answers." },
+        { "lines": [12], "text": "Read `PORT` as a number. An unset or empty `PORT` falls back to 3000." },
+        { "lines": [13], "text": "`listen` opens the port and returns the HTTP server, which you can close later." },
+        { "lines": [16, 17, 18, 19, 20, 21], "text": "Setup: call the app once, print the reply, then close the server." }
+      ]
+    },
+    {
+      "file": "package.json",
+      "lang": "json",
+      "title": "package.json",
+      "run": "static",
+      "caption": "The starting `package.json`. `npm install express` adds the dependency; `npm start` runs `node src/server.js`."
+    }
+  ],
+  "pitfalls": [
+    "Never call `listen` in `app.js`: every import would try to open a port.",
+    "Do not hard-code the port. Read `PORT` so the environment can choose it."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "process.env.PORT = '';\nconsole.log(Number(process.env.PORT || 3000));",
+    "lang": "js",
+    "options": ["3000", "0", "NaN", "undefined"],
+    "answer": 0,
+    "why": "An empty string is falsy, so `||` falls back to 3000. With `??` the empty string would stay, and `Number('')` is `0`."
+  },
+  "takeaway": "`app.js` builds the app; `server.js` only starts it.",
+  "chat": {
+    "starters": [
+      "Why split `app.js` and `server.js` at all?",
+      "What does port 0 mean when listening?",
+      "What should `GET /health` check besides returning ok?"
+    ]
+  }
+}

@@ -3,8 +3,8 @@
   "idea": "A signup route creates an account. It hashes the password, stores only the hash, and replies with the new user's id and email.",
   "points": [
     "`express.json()` fills `req.body`; without it, `req.body` is `undefined`.",
-    "`bcrypt.hash(password, 10)` makes a salted, one-way hash. A higher cost is slower.",
-    "`onConflictDoNothing()` lets the unique index decide, even for two simultaneous requests.",
+    "`bcrypt.hash(password, 10)` makes a one-way hash with a random salt mixed in.",
+    "`onConflictDoNothing()` lets the `unique` rule on `email` decide, even for simultaneous requests.",
     "`returning` picks the columns to send back, so the hash never leaves."
   ],
   "hero": {
@@ -20,10 +20,10 @@
       { "from": "client", "to": "handler", "label": "POST /auth/signup", "note": "The client sends an email and a password as JSON." },
       { "from": "handler", "to": "bcrypt", "label": "hash(password, 10)", "note": "The handler hashes the password first. The plain text goes no further." },
       { "from": "bcrypt", "to": "handler", "label": "salted hash", "dashed": true, "note": "bcrypt returns the hash. The same password gives a different hash each time." },
-      { "from": "handler", "to": "db", "label": "INSERT email, hash", "note": "The handler inserts the email and the hash. A unique index on `email` guards duplicates." },
+      { "from": "handler", "to": "db", "label": "INSERT email, hash", "note": "The handler inserts the email and the hash. The `unique` rule on `email` guards duplicates." },
       { "from": "db", "to": "handler", "label": "id, email", "dashed": true, "note": "Postgres returns only the columns `returning` asked for. The hash is not among them." },
       { "from": "handler", "to": "client", "label": "201 { user }", "dashed": true, "note": "The client gets the new id and email. The hash never leaves the server." },
-      { "from": "handler", "to": "db", "label": "INSERT same email", "note": "Now the same email signs up again. The unique index refuses the row." },
+      { "from": "handler", "to": "db", "label": "INSERT same email", "note": "Now the same email signs up again. The `unique` rule refuses the row." },
       { "from": "db", "to": "handler", "label": "no row", "dashed": true, "note": "`onConflictDoNothing()` turns the refusal into an empty result, not an exception." },
       { "from": "handler", "to": "client", "label": "409 Conflict", "dashed": true, "note": "No row came back, so the handler answers 409 with a clear message." }
     ]
@@ -38,7 +38,7 @@
       "caption": "The controller comes first. Everything after it is setup, so this file runs alone.",
       "walk": [
         { "lines": [9], "text": "Read the credentials from the JSON body. `express.json()` on line 32 fills it." },
-        { "lines": [10], "text": "Hash the password. Cost 10 makes each guess slow; the salt is stored inside the hash." },
+        { "lines": [10], "text": "Hash the password. The salt is random and stored inside the hash. Cost 10 slows each guess." },
         { "lines": [11, 12, 13], "text": "Insert the email and the hash. The plain password is never stored." },
         { "lines": [14], "text": "On a duplicate email, do nothing instead of throwing." },
         { "lines": [15], "text": "Send back only `id` and `email`. `passwordHash` is not listed." },
@@ -54,9 +54,9 @@
   ],
   "quiz": {
     "q": "The snippet posts the same signup twice. Which statuses print?",
-    "options": ["201, then 201", "201, then 400", "201, then 409", "409, then 201"],
-    "answer": 2,
-    "why": "The first insert succeeds (201). The second hits the unique index on `email`, returns no row, and the handler sends 409."
+    "options": ["201, then 201", "201, then 409", "201, then 400", "409, then 201"],
+    "answer": 1,
+    "why": "The first insert succeeds (201). The second breaks the `unique` rule on `email`, returns no row, and the handler sends 409."
   },
   "takeaway": "Hash the password, store only the hash, return only safe fields.",
   "chat": {

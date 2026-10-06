@@ -1,0 +1,72 @@
+{
+  "title": "Access and refresh tokens",
+  "idea": "An access token is short-lived and travels with each request. A refresh token lives longer and is used to get a new access token.",
+  "analogy": {
+    "text": "A day pass and a membership card. The day pass opens every door but expires tonight; the membership card buys a new day pass at the desk.",
+    "breaks": "Unlike a card, the server keeps a copy of the refresh token."
+  },
+  "points": [
+    "The access token goes with every request, in the `accessToken` cookie.",
+    "It expires quickly, so a stolen copy stops working soon.",
+    "The refresh token lasts longer, and the server saves a copy on the user.",
+    "The refresh route matches it to the saved copy, issuing a new access token."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "From login to refresh to logout",
+    "actors": [
+      { "id": "client", "label": "Client" },
+      { "id": "api", "label": "API" },
+      { "id": "db", "label": "MongoDB" }
+    ],
+    "messages": [
+      { "from": "client", "to": "api", "label": "POST /auth/login", "note": "At login the password travels once. The API checks it against the stored hash." },
+      { "from": "api", "to": "db", "label": "save refreshToken", "note": "The API signs an access token and a refresh token, and saves the refresh token on the user." },
+      { "from": "api", "to": "client", "label": "set both cookies", "dashed": true, "note": "Both tokens return in `httpOnly` cookies. The browser stores them; page JavaScript cannot read them." },
+      { "from": "client", "to": "api", "label": "GET /auth/current-user", "note": "Each request carries the access token. The API verifies its signature and expiry." },
+      { "from": "api", "to": "client", "label": "401 Unauthorized", "dashed": true, "note": "Later the access token has expired and verification fails. The user does not have to log in again." },
+      { "from": "client", "to": "api", "label": "POST /auth/refresh-token", "note": "The client calls the refresh route. The refresh token travels in its cookie." },
+      { "from": "api", "to": "db", "label": "check saved copy", "note": "The API verifies the refresh token and checks it against the copy saved on the user." },
+      { "from": "api", "to": "client", "label": "new access token", "dashed": true, "note": "A match earns a new access token. The user never typed the password again." },
+      { "from": "api", "to": "db", "label": "logout: clear copy", "note": "On logout the API clears the saved copy. That refresh token can no longer be exchanged." }
+    ]
+  },
+  "code": [
+    {
+      "file": "tokens.mjs",
+      "lang": "js",
+      "title": "Two tokens, two lifetimes",
+      "run": "captured",
+      "caption": "Both are JWTs with different secrets and lifetimes. The project reads them from `.env`; the next page builds them as model methods.",
+      "walk": [
+        { "lines": [4, 5], "text": "Two different secrets. A token signed with one fails verification with the other." },
+        { "lines": [8], "text": "The access token gets a short life." },
+        { "lines": [9], "text": "The refresh token gets a long one: seven days." },
+        { "lines": [11, 12], "text": "`exp - iat` is the lifetime in seconds. Compare the two." },
+        { "lines": [14, 15, 16, 17, 18], "text": "A refresh token offered as an access token fails: wrong secret." },
+        { "lines": [19], "text": "Verified with its own secret, the refresh token yields its `_id`." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Sign refresh tokens with a different secret, so one cannot pass as the other.",
+    "Logout must clear the saved refresh token; clearing cookies alone leaves a stolen copy usable.",
+    "Prefer `httpOnly` cookies to `localStorage`: any script on the page can read `localStorage`."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const access = jwt.sign({ _id: 'u-101' }, 'demo-access-secret',\n  { expiresIn: -1 });\ntry {\n  jwt.verify(access, 'demo-access-secret');\n} catch (err) {\n  console.log(err.message);\n}",
+    "lang": "js",
+    "options": ["invalid signature", "jwt malformed", "Nothing", "jwt expired"],
+    "answer": 3,
+    "why": "The secret is right but `expiresIn: -1` puts the expiry in the past. `jwt.verify` throws `jwt expired`; the client would now call the refresh route."
+  },
+  "takeaway": "Short-lived access tokens do the work; a long-lived refresh token renews them.",
+  "chat": {
+    "starters": [
+      "Why not use one token with a long expiry?",
+      "What can an attacker do with a stolen refresh token?",
+      "Why are the tokens stored in cookies and not in localStorage?"
+    ]
+  }
+}

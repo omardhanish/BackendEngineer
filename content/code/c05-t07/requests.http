@@ -1,0 +1,8 @@
+POST {{base_url}}/books
+Content-Type: application/json
+
+{ "title": "Hyperion", "author": "Dan Simmons", "year": 1989 }
+
+###
+
+GET {{base_url}}/books/{{book_id}}

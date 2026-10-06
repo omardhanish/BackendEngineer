@@ -1,0 +1,91 @@
+{
+  "title": "Challenge: a task API",
+  "idea": "A task API is a server that keeps tasks in memory and lets clients list, add and remove them over HTTP. You build one with `node:http` alone.",
+  "analogy": {
+    "text": "A whiteboard by the door. Visitors read it, ask you to add a line, or ask you to wipe one off. Only you hold the pen.",
+    "breaks": "A whiteboard stays on the wall; server memory is lost when the process stops."
+  },
+  "points": [
+    "Start with a `404` for everything, then add one route per test run.",
+    "Match method and path together; split `/tasks/7` on `/` to get the id.",
+    "Ids come from a counter, because list length repeats an id after a delete.",
+    "Export `server` without calling `listen`; the tests listen on port `0` themselves."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "A task's life through the API",
+    "actors": [
+      { "id": "c", "label": "Client" },
+      { "id": "s", "label": "Task server" }
+    ],
+    "messages": [
+      { "from": "c", "to": "s", "label": "POST /tasks {\"title\":\"Buy tea\"}", "note": "The client sends JSON. The handler reads the body, checks `title`, stores a task and gives it the next id." },
+      { "from": "s", "to": "c", "label": "201 {id, title, done:false}", "note": "`201` means created. The reply is the new task, and `done` starts as `false`.", "dashed": true },
+      { "from": "c", "to": "s", "label": "POST /tasks {}", "note": "A second request arrives with no `title` at all." },
+      { "from": "s", "to": "c", "label": "400 + error message", "note": "`400`: the request is wrong. The handler stops before it stores anything.", "dashed": true },
+      { "from": "c", "to": "s", "label": "GET /tasks", "note": "A read changes nothing. The handler replies with the whole list." },
+      { "from": "s", "to": "c", "label": "200 [one task]", "note": "`200` and a JSON array. Only task 1 exists; the refused request left no trace.", "dashed": true },
+      { "from": "c", "to": "s", "label": "DELETE /tasks/1", "note": "The id arrives in the path as the string `'1'`. Convert it before comparing." },
+      { "from": "s", "to": "c", "label": "204, no body", "note": "`204` means success with nothing to send back. Task 1 is gone.", "dashed": true },
+      { "from": "c", "to": "s", "label": "DELETE /tasks/1", "note": "The client repeats the same call." },
+      { "from": "s", "to": "c", "label": "404 + error message", "note": "Task 1 no longer exists, so the answer is `404`. Nothing changes.", "dashed": true }
+    ]
+  },
+  "code": [
+    {
+      "file": "assertions.mjs",
+      "lang": "js",
+      "title": "Reading the tests",
+      "run": "captured",
+      "caption": "The tests judge each reply with these calls: `equal` for values, `deepEqual` for objects. Strict mode never converts types."
+    },
+    {
+      "file": "ids.mjs",
+      "lang": "js",
+      "title": "Choosing an id",
+      "run": "browser",
+      "caption": "Run it, then change `shift()` to `pop()`. Which way of choosing an id stays safe?"
+    }
+  ],
+  "challenges": {
+    "intro": "Use only `node:http`. Each test prints one line, so you can watch `FAIL` turn into `ok` as you add routes.",
+    "items": [
+      {
+        "id": "task-server",
+        "title": "Native task server",
+        "mode": "local",
+        "file": "task-server.mjs",
+        "prompt": "`GET /tasks` returns all tasks. `POST /tasks` creates `{id, title, done: false}` (201); bad JSON or a missing or empty `title` gives 400. `DELETE /tasks/:id` gives 204, or 404 if unknown. Anything else: 404 JSON.",
+        "starter": "task-server.starter.mjs",
+        "tests": "task-server.tests.mjs",
+        "solution": "task-server.solution.mjs",
+        "hints": [
+          "Make `GET /tasks` pass first. Read the path with `new URL(req.url, 'http://localhost').pathname`, check the method, then send the list.",
+          "For `POST`, join the body chunks and parse them in `try/catch`. Reject anything but a non-empty string `title`; take ids from a counter.",
+          "For `DELETE`, convert the text after `/tasks/` with `Number` and remove that task. Reply 204 if it existed; otherwise let the final 404 answer."
+        ]
+      }
+    ]
+  },
+  "pitfalls": [
+    "Do not call `server.listen` in your file; the tests listen, and a second call throws.",
+    "Answer `404`, not `405`, for other methods here: every unmatched request gets the same reply.",
+    "Check the id exists before `splice`; an index of `-1` removes the last task."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const id = '/tasks/2'.split('/')[2];\nconst tasks = [{ id: 1 }, { id: 2 }];\nconst a = tasks.findIndex((t) => t.id === id);\nconst b = tasks.findIndex((t) => String(t.id) === id);\nconsole.log(a, b);",
+    "lang": "js",
+    "options": ["1 1", "-1 1", "-1 -1", "1 -1"],
+    "answer": 1,
+    "why": "`split` returns strings, so `id` is `'2'`. Strict equality never converts, so `2 === '2'` is false and `findIndex` gives `-1`; `String(t.id)` matches at index 1."
+  },
+  "takeaway": "Pin down each route's method, path and status, then let the tests judge.",
+  "chat": {
+    "starters": [
+      "Why must my file export `server` instead of calling `listen`?",
+      "Should deleting a task that does not exist be 404 or 204?",
+      "How would I add `PATCH /tasks/:id` to mark a task done?"
+    ]
+  }
+}

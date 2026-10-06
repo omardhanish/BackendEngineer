@@ -1,0 +1,79 @@
+{
+  "title": "Install and configure Drizzle",
+  "idea": "Drizzle ORM wraps the `pg` driver. You install both, keep the connection string in `DATABASE_URL`, and export one `db` object that every query uses.",
+  "analogy": {
+    "text": "A switchboard. `DATABASE_URL` is the number to dial, the pool is a bank of open lines, and `db` is the one desk every call goes through.",
+    "breaks": "A real pool has a limit: extra queries wait for a free connection."
+  },
+  "points": [
+    "Install `drizzle-orm`, `pg` and `dotenv`, which loads `.env` into `process.env`.",
+    "`DATABASE_URL` in `.env` holds one connection string: user, password, host, port, database.",
+    "`drizzle(url)` creates a `pg` pool, a set of reusable connections, and returns `db`.",
+    "`drizzle-kit`, a command-line tool, reads `drizzle.config.js` for the schema path and database."
+  ],
+  "hero": {
+    "type": "anatomy",
+    "title": "Reading DATABASE_URL",
+    "parts": [
+      { "text": "postgres://", "label": "Scheme", "note": "Names the kind of database. PostgreSQL accepts `postgres://` or `postgresql://`." },
+      { "text": "postgres", "label": "User", "note": "The database role to log in as. The Docker image creates `postgres` by default." },
+      { "text": ":demo-password", "label": "Password", "note": "Set by `POSTGRES_PASSWORD`. A demo value: never commit a real one." },
+      { "text": "@localhost", "label": "Host", "note": "Where the database runs. `localhost` is your own machine." },
+      { "text": ":5432", "label": "Port", "note": "Postgres listens on 5432 by default. With `-p 127.0.0.1:5433:5432`, use 5433." },
+      { "text": "/postgres", "label": "Database", "note": "Which database on the server. The image names it after the user." }
+    ]
+  },
+  "code": [
+    {
+      "file": "setup.sh",
+      "lang": "bash",
+      "title": "Install and add .env",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Run in the project folder. `-D` saves `drizzle-kit` as a dev dependency. The password is a demo value."
+    },
+    {
+      "file": "db.mjs",
+      "lang": "js",
+      "title": "src/db/index.js",
+      "run": "captured",
+      "needs": ["postgres"],
+      "caption": "The core of `src/db/index.js`, plus a connection check. The recorded run uses a PostgreSQL started for this book."
+    },
+    {
+      "file": "drizzle.config.js",
+      "lang": "js",
+      "title": "drizzle.config.js",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Read by the `drizzle-kit` command line, never by your app. Shown here, not run.",
+      "walk": [
+        { "lines": [1], "text": "Load `.env`, so `process.env.DATABASE_URL` exists when `drizzle-kit` reads this file." },
+        { "lines": [4, 5], "text": "`dialect` names the database; `schema` points at the file with your tables." },
+        { "lines": [6], "text": "`out` is the folder for migration files." },
+        { "lines": [7], "text": "`dbCredentials.url` is the connection string `drizzle-kit` connects with." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Add `.env` to `.gitignore`: it holds your password and must never be committed.",
+    "Check `DATABASE_URL` at startup: `drizzle(undefined)` fails only at the first query.",
+    "In scripts, call `db.$client.end()`; otherwise the process waits for idle connections to time out."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const url = new URL('postgres://app:demo@localhost:5433/books');\nconsole.log(url.port, url.pathname.slice(1));",
+    "lang": "js",
+    "options": ["books 5433", "5433 /books", "5433 books", "localhost books"],
+    "answer": 2,
+    "why": "The port follows the host. The path after the slash is the database name; `slice(1)` drops the leading `/`."
+  },
+  "takeaway": "Read `DATABASE_URL` once, build `db` once, import it everywhere.",
+  "chat": {
+    "starters": [
+      "Why does Drizzle need the `pg` package too?",
+      "What is a connection pool?",
+      "Should I commit my `.env` file?"
+    ]
+  }
+}

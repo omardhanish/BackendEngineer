@@ -1,0 +1,395 @@
+{
+  "title": "Password reset and change",
+  "idea": "A reset token is a one-time secret: the email carries it raw, the database keeps only its hash, and `resetForgottenPassword` matches that hash before expiry.",
+  "analogy": {
+    "text": "A one-time door code sent to your phone. The building stores only a scrambled copy, so staff cannot read it. The code expires and works once.",
+    "breaks": "The code travels by email, so anyone with inbox access can use it."
+  },
+  "points": [
+    "`forgotPasswordRequest` saves a hash and expiry, then emails the raw token.",
+    "It replies the same whether or not the email exists.",
+    "`resetForgottenPassword` hashes the URL token, then finds an unexpired match.",
+    "`changeCurrentPassword` is secured: it reloads the user and checks the old password first."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "A reset link, start to finish",
+    "actors": [
+      {
+        "id": "b",
+        "label": "Browser"
+      },
+      {
+        "id": "a",
+        "label": "API"
+      },
+      {
+        "id": "d",
+        "label": "MongoDB"
+      },
+      {
+        "id": "m",
+        "label": "Mail"
+      }
+    ],
+    "messages": [
+      {
+        "from": "b",
+        "to": "a",
+        "label": "POST /forgot-password",
+        "note": "The browser sends only an email address."
+      },
+      {
+        "from": "a",
+        "to": "d",
+        "label": "save hash + expiry",
+        "note": "`generateTemporaryToken` makes the token. Only its hash and the expiry are stored."
+      },
+      {
+        "from": "a",
+        "to": "m",
+        "label": "link with raw token",
+        "note": "The mail's link ends in the raw token. The API never stores that."
+      },
+      {
+        "from": "a",
+        "to": "b",
+        "label": "200, same reply",
+        "dashed": true,
+        "note": "The reply is identical whether or not the email has an account."
+      },
+      {
+        "from": "b",
+        "to": "a",
+        "label": "POST /reset-password/:token",
+        "note": "The user opens the link and the page posts the new password. The token is in the URL."
+      },
+      {
+        "from": "a",
+        "to": "d",
+        "label": "find sha256(token), unexpired",
+        "note": "The API hashes the URL token and looks for that hash with an expiry still ahead."
+      },
+      {
+        "from": "d",
+        "to": "a",
+        "label": "user",
+        "dashed": true,
+        "note": "A match proves the caller holds the mailed token."
+      },
+      {
+        "from": "a",
+        "to": "d",
+        "label": "new password, clear token",
+        "note": "`save` hashes the new password. The token fields and the refresh token are cleared."
+      },
+      {
+        "from": "a",
+        "to": "b",
+        "label": "200",
+        "dashed": true,
+        "note": "Opening the same link again finds no user and gets `400`."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "forgot-reset.mjs",
+      "lang": "js",
+      "title": "forgot and reset",
+      "run": "captured",
+      "needs": [
+        "mongo"
+      ],
+      "caption": "Two controllers on one router, with condensed earlier files. Press Run: link, expiry, new password, replay.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50
+          ],
+          "text": "A demo front-end URL and condensed earlier files: utils, a recording mail helper, a trimmed `User`."
+        },
+        {
+          "lines": [
+            54,
+            55,
+            56,
+            57,
+            58,
+            59,
+            60
+          ],
+          "text": "Find the user. Only if one exists, store the token's hash and expiry."
+        },
+        {
+          "lines": [
+            62,
+            63,
+            64,
+            65,
+            66,
+            67,
+            68,
+            69,
+            70
+          ],
+          "text": "Build the link from the configured front-end URL, not `host`, and mail the raw token."
+        },
+        {
+          "lines": [
+            72,
+            73
+          ],
+          "text": "The reply is the same for any email, known or not."
+        },
+        {
+          "lines": [
+            77,
+            78,
+            79,
+            80,
+            81
+          ],
+          "text": "Hash the URL token and look for an unexpired match. No match is `400`."
+        },
+        {
+          "lines": [
+            83,
+            84,
+            85,
+            86,
+            87,
+            88
+          ],
+          "text": "Set the new password; the hook hashes it. Clear the token fields and end old sessions."
+        },
+        {
+          "lines": [
+            106,
+            107,
+            108,
+            109,
+            110,
+            111,
+            112,
+            113,
+            114,
+            115,
+            116,
+            117,
+            118,
+            119,
+            120,
+            121,
+            122,
+            123,
+            124,
+            125,
+            126,
+            127,
+            128,
+            129,
+            130,
+            131,
+            132,
+            133,
+            134,
+            135,
+            136,
+            137,
+            138,
+            139,
+            140,
+            141,
+            142,
+            143,
+            144,
+            145,
+            146
+          ],
+          "text": "Request a link twice, expire it, then use a fresh one and replay it."
+        }
+      ]
+    },
+    {
+      "file": "change-password.mjs",
+      "lang": "js",
+      "title": "changeCurrentPassword",
+      "run": "captured",
+      "needs": [
+        "mongo"
+      ],
+      "caption": "A secured route, so a stand-in sets `req.user`. Press Run: a wrong old password, then the right one.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33
+          ],
+          "text": "Condensed: utils and a `User` with the pre-save hook and `isPasswordCorrect`."
+        },
+        {
+          "lines": [
+            37,
+            38
+          ],
+          "text": "Reload the user: `req.user` has no `password` field, so it cannot check one."
+        },
+        {
+          "lines": [
+            39,
+            40,
+            41
+          ],
+          "text": "A wrong old password is `400`, not `401`: the session itself is fine."
+        },
+        {
+          "lines": [
+            42,
+            43,
+            44
+          ],
+          "text": "Assign the new password and `save()`; the hook hashes it."
+        },
+        {
+          "lines": [
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57
+          ],
+          "text": "In the project `verifyJWT` guards this route. Here a stand-in loads `req.user` without the password."
+        },
+        {
+          "lines": [
+            65,
+            66,
+            67,
+            68,
+            69,
+            70,
+            71,
+            72,
+            73,
+            74,
+            75,
+            76,
+            77,
+            78,
+            79,
+            80,
+            81,
+            82,
+            83,
+            84,
+            85
+          ],
+          "text": "Try a wrong old password, then the right one. Only the second changes the hash."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Reply identically for known and unknown emails, or the route reveals which accounts exist.",
+    "Query the hash and an unexpired expiry together, or expired links still work.",
+    "Reload the user in `changeCurrentPassword`: `req.user` has no password field."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const url = `${base}/reset-password/${token}`;\nconst options = {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/json' },\n  body: JSON.stringify({ newPassword: 'new-pass' }),\n};\nconst first = await fetch(url, options);\nconst again = await fetch(url, options);\nconsole.log(first.status, again.status);",
+    "lang": "js",
+    "options": [
+      "200 200",
+      "400 400",
+      "200 400",
+      "200 401"
+    ],
+    "answer": 2,
+    "why": "The first reset clears the stored hash and expiry. The second finds no matching user and answers `400`."
+  },
+  "takeaway": "Reset links are credentials: random, hashed at rest, expiring and single-use.",
+  "chat": {
+    "starters": [
+      "Why hash the reset token if it is already random?",
+      "Why does `forgot-password` always answer 200?",
+      "Should changing a password log out my other devices?"
+    ]
+  }
+}

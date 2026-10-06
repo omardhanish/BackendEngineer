@@ -20,6 +20,7 @@
     "e2e": "node tools/e2e.mjs",
     "e2e:challenges": "node tools/e2e-challenges.mjs",
     "scan": "bash tools/scan-secrets.sh",
+    "publish:github": "bash tools/publish.sh",
     "contrast": "node tools/check-contrast.mjs"
   },
   "dependencies": {

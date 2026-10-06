@@ -1,0 +1,78 @@
+{
+  "title": "Cleaning up AWS resources",
+  "idea": "Cleanup means deleting every resource you created, in dependency order, so nothing keeps running or billing after the course.",
+  "points": [
+    "Running Fargate tasks and load balancers bill by time; ECR bills by data stored.",
+    "The cluster, load balancer, target group, repository and log group are separate resources.",
+    "Order matters: a cluster must hold no services, a target group no listener rule.",
+    "`--force` deletes a repository's images, and deletes a service without scaling it down."
+  ],
+  "hero": {
+    "type": "timeline",
+    "title": "Delete in this order",
+    "items": [
+      { "label": "Service", "text": "Delete first. It keeps replacing tasks, and a cluster refuses while it exists." },
+      { "label": "Cluster", "text": "Needs no services and no active tasks, so it comes second." },
+      { "label": "Load balancer", "text": "Delete it; its listeners go with it. It bills for each hour it runs." },
+      { "label": "Target group", "text": "Deletable only once no listener rule refers to it." },
+      { "label": "ECR repository", "text": "Stored images bill by size. `--force` removes the images too." },
+      { "label": "Log group", "text": "Deleting it permanently deletes the logs inside." }
+    ]
+  },
+  "code": [
+    {
+      "file": "cleanup.sh",
+      "lang": "bash",
+      "title": "Cleanup",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Every resource from this chapter, deleted in order. Angle brackets mark placeholders.",
+      "walk": [
+        { "lines": [1], "text": "Delete the service; `--force` skips scaling to zero first. Its tasks stop." },
+        { "lines": [2], "text": "Wait until the service is `INACTIVE`. If the next command reports active tasks, retry shortly." },
+        { "lines": [3], "text": "Delete the cluster. It must hold no services and no active tasks." },
+        { "lines": [4], "text": "Delete the load balancer. Its listeners are deleted with it." },
+        { "lines": [5], "text": "Delete the target group. No listener rule may use it." },
+        { "lines": [6], "text": "Delete the repository; `--force` also deletes every image inside it." },
+        { "lines": [7], "text": "Delete the log group. This permanently deletes the stored logs." }
+      ]
+    },
+    {
+      "file": "check.sh",
+      "lang": "bash",
+      "title": "Check",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Afterwards, list what is left. Each command reports only the current Region.",
+      "walk": [
+        { "lines": [1], "text": "A deleted cluster may linger for a while as `INACTIVE`." },
+        { "lines": [2], "text": "An empty list means no load balancer remains in this Region." },
+        { "lines": [3], "text": "An empty list means no repository remains in this Region." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Use the same Region you built in; each Region lists only its own resources.",
+    "Delete the load balancer before its target group, which a listener may still use.",
+    "Check each name and ARN before you run a delete command."
+  ],
+  "quiz": {
+    "q": "You deleted the cluster. Which resource can still be billing?",
+    "options": [
+      "Nothing; the cluster owned everything",
+      "The Docker image on your laptop",
+      "The load balancer, if you left it",
+      "The Fargate tasks it ran"
+    ],
+    "answer": 2,
+    "why": "The load balancer is its own resource and bills for each hour it runs. Deleting the cluster does not remove it."
+  },
+  "takeaway": "Delete in dependency order, then list what is left to confirm nothing remains.",
+  "chat": {
+    "starters": [
+      "Does deleting the cluster stop all charges?",
+      "How do I check what is still running in my account?",
+      "Do IAM roles and task definitions cost anything?"
+    ]
+  }
+}

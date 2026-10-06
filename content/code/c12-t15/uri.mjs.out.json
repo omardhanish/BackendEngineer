@@ -1,0 +1,9 @@
+{
+  "stdout": "raw host: ss\nencoded: p%40ss%2Fw%3Ard\ncluster0.example.mongodb.net true",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": null,
+  "hash": "9d10b7749d66c419",
+  "at": "2026-10-06T15:18:15.140Z"
+}

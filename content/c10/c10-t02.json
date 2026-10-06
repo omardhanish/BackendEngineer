@@ -3,7 +3,7 @@
   "idea": "A new AWS account starts with a root user that has full access, billing included. Secure it, work as an administrative user, and set a budget alert.",
   "points": [
     "The root user is the email and password you signed up with.",
-    "Multi-factor authentication (MFA) adds a second proof at sign-in, like a code.",
+    "Multi-factor authentication (MFA) adds a second login proof, such as an app code.",
     "IAM is AWS's users-and-permissions service. Create your administrative user there.",
     "A cost budget alerts you when actual or forecast spend crosses your threshold."
   ],
@@ -14,7 +14,7 @@
       { "label": "Secure root", "text": "Sign up, then turn on MFA for the root user." },
       { "label": "Create an admin user", "text": "Make an administrative user in IAM for everyday work." },
       { "label": "Open Billing", "text": "Root activates IAM access to Billing. Your admin user also needs billing permissions." },
-      { "label": "Put root away", "text": "Sign in as the admin user from now on. Create no root access keys." },
+      { "label": "Put root away", "text": "Log in as the admin user from now on. Create no root access keys." },
       { "label": "Set a budget", "text": "Create a cost budget with an email alert before you create any resources." },
       { "label": "Check your identity", "text": "Run `aws sts get-caller-identity` to see who the AWS CLI acts as." }
     ]
@@ -36,9 +36,9 @@
       "illustrative": true,
       "caption": "Who is told, and when. This rule emails you once spend passes the threshold.",
       "walk": [
-        { "lines": [4], "text": "`ACTUAL` alerts on money already spent. A `FORECASTED` alert needs weeks of usage history first." },
+        { "lines": [4], "text": "`ACTUAL` alerts on money already spent. A `FORECASTED` alert waits for about five weeks of usage history." },
         { "lines": [5, 6, 7], "text": "Alert when spend is greater than 80 percent of the budget amount." },
-        { "lines": [10], "text": "Send the alert by email. An Amazon SNS topic is the other option." }
+        { "lines": [10], "text": "Send the alert by email. An Amazon SNS topic, a notification channel, is the other option." }
       ]
     },
     {
@@ -49,7 +49,7 @@
       "illustrative": true,
       "caption": "The AWS CLI is AWS's command-line tool. Run these as your admin user, never as root.",
       "walk": [
-        { "lines": [1], "text": "Ask AWS who the CLI is acting as. The `Arn` must not end in `:root`." },
+        { "lines": [1], "text": "Show who the CLI acts as. The `Arn`, your identity's full name, must not end in `:root`." },
         { "lines": [2, 3, 4, 5], "text": "Create the budget from two JSON files: the limit, and who is alerted." }
       ]
     }

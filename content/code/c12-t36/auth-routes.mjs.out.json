@@ -1,0 +1,9 @@
+{
+  "stdout": "POST /register                     422 email, username, password\nPOST /login                        422 email, password\nGET /verify-email/abc              200 verifyEmail\nPOST /refresh-token                200 refreshAccessToken\nPOST /forgot-password              422 email\nPOST /reset-password/abc           422 newPassword\nPOST /logout                       401 Unauthorized request\nGET /current-user                  401 Unauthorized request\nPOST /change-password              401 Unauthorized request\nPOST /resend-email-verification    401 Unauthorized request\n--- change-password with a cookie\nPOST /change-password              422 oldPassword, newPassword\nPOST /change-password              200 changeCurrentPassword",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": null,
+  "hash": "74287abee2284f41",
+  "at": "2026-10-06T15:46:59.937Z"
+}

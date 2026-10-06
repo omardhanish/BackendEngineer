@@ -29,17 +29,21 @@ export async function listMyUrls(req, res) {
 const router = express.Router();
 router.get('/codes', requireAuth, listMyUrls);
 
-// Setup so this file runs alone: lecture 12's middleware, condensed.
-const secret = 'demo-secret'; // a demo value; the project reads JWT_SECRET
+// Setup so this file runs alone: lectures 11 and 12, condensed.
+process.env.JWT_SECRET = 'demo-secret'; // a demo value, never a real secret
+const verifyToken = (token) => jwt.verify(token, process.env.JWT_SECRET, {
+  algorithms: ['HS256'],
+});
 function requireAuth(req, res, next) {
-  const token = req.get('authorization')?.split(' ')[1];
-  let payload;
+  const [scheme, token] = (req.get('authorization') ?? '').split(' ');
+  let claims;
   try {
-    payload = jwt.verify(token, secret, { algorithms: ['HS256'] });
+    if (scheme !== 'Bearer') throw new Error('not a bearer token');
+    claims = verifyToken(token);
   } catch {
     return res.status(401).json({ error: 'Unauthorized' });
   }
-  req.user = { id: Number(payload.sub), email: payload.email };
+  req.user = { id: Number(claims.sub), email: claims.email };
   next();
 }
 const db = drizzle(process.env.DATABASE_URL);
@@ -81,7 +85,7 @@ const server = app.listen(0, async () => {
   const base = `http://localhost:${server.address().port}`;
   const sign = (id) => jwt.sign(
     { sub: String(id), email: emails[id - 1] },
-    secret,
+    process.env.JWT_SECRET,
   );
   const call = async (name, token) => {
     const res = await fetch(`${base}/codes`, {

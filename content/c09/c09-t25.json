@@ -54,7 +54,7 @@
       "walk": [
         { "lines": [1, 2], "text": "An `ARG` above the first `FROM` sets the Node version. `--build-arg NODE_VERSION=…` can change it." },
         { "lines": [3, 4], "text": "Shared setup lives in `base`: the working folder and the package files." },
-        { "lines": [6, 7, 8], "text": "`dev` builds on `base` and installs every dependency. Build it with `--target dev`." },
+        { "lines": [6, 7, 8, 9], "text": "`dev` builds on `base` and installs every dependency. Build it with `--target dev`." },
         { "lines": [11, 12], "text": "`prod` declares `APP_VERSION` with a default. `--build-arg APP_VERSION=…` overrides it." },
         { "lines": [13], "text": "`ENV` keeps the value in the image, so the app can read `process.env.APP_VERSION`." },
         { "lines": [14, 15], "text": "`prod` installs production dependencies only, then copies the source." }
@@ -68,14 +68,14 @@
       "illustrative": true,
       "caption": "Compose's long `build` form. Run `docker compose build` or `docker compose up --build`.",
       "walk": [
-        { "lines": [4, 5], "text": "`context` is the build folder. `dockerfile` is resolved from it, like `-f`." },
+        { "lines": [4, 5], "text": "`context` is the build folder. A relative `dockerfile` path is resolved from `context`." },
         { "lines": [6], "text": "`target` picks the stage, like `--target`." },
         { "lines": [7, 8], "text": "`args` sets `ARG` values for this build, like `--build-arg`." }
       ]
     }
   ],
   "pitfalls": [
-    "Never pass secrets with `--build-arg`; `docker history` shows build arguments.",
+    "Never pass secrets with `--build-arg`; they can appear in `docker history`. Use `--secret`.",
     "An `ARG` above the first `FROM` is not visible in stages; redeclare it inside.",
     "In Compose, a relative `dockerfile:` path starts from `context`, not from `compose.yaml`."
   ],

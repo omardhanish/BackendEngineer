@@ -17,7 +17,7 @@
     "parts": [
       { "text": "As a member", "label": "Who", "note": "Says who may call. A member is logged in, so the route is secured.", "tone": "a" },
       { "text": ", I want to change my password", "label": "What", "note": "Names the action: one route, plus the data it receives.", "tone": "b" },
-      { "text": ", so that my account stays safe", "label": "Why", "note": "States the goal. It hints at rules to check, such as hashing the new password.", "tone": "c" }
+      { "text": ", so that my account stays safe", "label": "Why", "note": "States the goal. It hints at rules to check, such as hashing the new password (a one-way scramble, taught later).", "tone": "c" }
     ]
   },
   "code": [

@@ -1,0 +1,9 @@
+{
+  "stdout": "200 Logged in [ 'user' ]\n[\n  'accessToken=<jwt>; Path=/; HttpOnly',\n  'refreshToken=<jwt>; Path=/; HttpOnly'\n]\ndb holds the refresh token: true\n401 Invalid credentials 0\n401 Invalid credentials 0\naccessToken=<jwt>; Path=/; HttpOnly; Secure",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "MongoDB 8.2.6",
+  "hash": "affc140f3f190708",
+  "at": "2026-10-06T15:33:18.777Z"
+}

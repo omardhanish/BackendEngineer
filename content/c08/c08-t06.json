@@ -1,0 +1,68 @@
+{
+  "title": "The users schema",
+  "idea": "A Drizzle schema describes a table in JavaScript. Each key becomes a column, with a type and rules such as `notNull` and `unique`.",
+  "points": [
+    "`pgTable('users', { ... })` names the table and declares its columns.",
+    "Rows come back with the JavaScript keys, so your code reads `passwordHash`.",
+    "`notNull()` and `unique()` are rules the database enforces, even if your code forgets.",
+    "`npx drizzle-kit push` creates the table from this file; queries then import `users`."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "The users table, column by column",
+    "head": ["Key", "Column", "Type", "Rules"],
+    "rows": [
+      ["`id`", "`id`", "`serial`", "Primary key: the row's unique id. Postgres picks the next number."],
+      ["`email`", "`email`", "`text`", "Required and unique."],
+      ["`passwordHash`", "`password_hash`", "`text`", "Required. Holds a hash, never the password."],
+      ["`createdAt`", "`created_at`", "`timestamp`", "Required. Defaults to `now()`."]
+    ],
+    "highlight": { "col": 1 },
+    "caption": "Two keys differ from their columns: JavaScript uses camelCase, SQL uses snake_case."
+  },
+  "code": [
+    {
+      "file": "schema.mjs",
+      "lang": "js",
+      "title": "The users table",
+      "run": "captured",
+      "needs": ["postgres"],
+      "caption": "Save the schema block as `src/db/schema.js`. Everything below it is setup, so this file runs alone.",
+      "walk": [
+        { "lines": [6, 7], "text": "The table `users`. A `serial` primary key: Postgres supplies each `id`." },
+        { "lines": [8], "text": "`notNull().unique()`: Postgres refuses a missing or repeated email." },
+        { "lines": [9], "text": "The key `passwordHash` maps to the column `password_hash`." },
+        { "lines": [10], "text": "`defaultNow()`: Postgres fills `created_at` when a row is inserted." },
+        { "lines": [13, 14, 15, 16, 17], "text": "`drizzle-kit push` is not run here, so raw SQL creates the same table." },
+        { "lines": [19, 20, 21, 22, 23], "text": "Insert without `id` or `createdAt`. The row comes back with camelCase keys and both filled in." },
+        { "lines": [25, 26, 27, 28], "text": "Break each rule. `err.cause.code` is the Postgres code: `23505` unique, `23502` not null." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Editing `schema.js` does not change an existing table. Run `drizzle-kit push` again.",
+    "Do not check for a duplicate email in JavaScript first. Two requests can pass at once.",
+    "Never store a plain password in `passwordHash`. Store the bcrypt hash."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const [row] = await db.select().from(users);\nconsole.log(Object.keys(row));",
+    "lang": "js",
+    "options": [
+      "[ 'id', 'email', 'password_hash', 'created_at' ]",
+      "[ 'email', 'passwordHash' ]",
+      "[ 'id', 'email', 'passwordHash', 'createdAt' ]",
+      "[ 'users' ]"
+    ],
+    "answer": 2,
+    "why": "`select()` returns every column under the keys declared in the schema. The snake_case names stay inside SQL."
+  },
+  "takeaway": "The schema is the table's contract; the database enforces its rules.",
+  "chat": {
+    "starters": [
+      "Why `serial` and not a UUID for ids?",
+      "Does `timestamp` store local time or UTC?",
+      "How do I change a column later without losing data?"
+    ]
+  }
+}

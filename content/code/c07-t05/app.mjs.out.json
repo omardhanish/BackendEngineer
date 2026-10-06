@@ -1,0 +1,9 @@
+{
+  "stdout": "no token 401 {\"error\":\"Invalid or missing token\"}\noperator 400 {\"error\":\"Send email and password as text\"}\nlogin 200 (token)\nwith token 200 {\"email\":\"ada@example.com\"}\ndeleted user 401 {\"error\":\"Unknown user\"}",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "MongoDB 8.2.6",
+  "hash": "03a2a7b8999e250b",
+  "at": "2026-10-06T15:14:06.414Z"
+}

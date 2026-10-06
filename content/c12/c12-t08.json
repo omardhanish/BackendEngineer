@@ -94,7 +94,7 @@
   "pitfalls": [
     "Forget `listen` and the script ends silently: nothing serves requests.",
     "A busy port gives `EADDRINUSE` in the `listen` callback; throw `err` to see it.",
-    "Do not hard-code the port: read `process.env.PORT`, so each machine can choose its own."
+    "Keep `process.env.PORT` out of arithmetic until you wrap it in `Number()`."
   ],
   "quiz": {
     "q": "What does this print?",

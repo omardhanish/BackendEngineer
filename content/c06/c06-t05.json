@@ -5,7 +5,7 @@
     "`authenticate` reads the `sid` cookie and looks the session up in Postgres.",
     "A valid session sets `req.user`, a property later handlers read, then calls `next()`.",
     "Routes registered before `app.use(authenticate)` stay public; routes after it need a login.",
-    "Each login creates a new session id, so a planted id never gains access."
+    "Login issues a fresh id and never adopts one the client sent."
   ],
   "hero": {
     "type": "anim",
@@ -184,7 +184,7 @@
             26,
             27
           ],
-          "text": "Both tables, as before, and Ada with a demo password. Cost `4` keeps the demo fast."
+          "text": "Both tables, and Ada with a demo password. Cost `4` is demo-only; use a higher cost for real."
         },
         {
           "lines": [
@@ -238,7 +238,7 @@
             66,
             67
           ],
-          "text": "Every login creates a new session id, so an id an attacker planted never becomes valid."
+          "text": "Every login makes a fresh id and ignores old cookies, so a planted id never becomes valid."
         },
         {
           "lines": [

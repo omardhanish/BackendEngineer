@@ -1,0 +1,80 @@
+{
+  "title": "The project tech stack",
+  "idea": "Each tool has one job. Express routes requests, Zod checks input, Drizzle talks to PostgreSQL, and a JWT proves who is calling.",
+  "points": [
+    "Express routes each request through middleware to a handler.",
+    "`jsonwebtoken` signs and verifies tokens; `bcryptjs` hashes passwords one way; `nanoid` makes short codes.",
+    "Zod checks input against a schema, so bad requests get a clear 400.",
+    "Drizzle builds SQL from JavaScript; the `pg` driver sends it to PostgreSQL."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "One request through the stack",
+    "scenario": {
+      "token": { "label": "POST /shorten", "tone": "req" },
+      "stages": [
+        { "id": "client", "label": "Client", "kind": "end" },
+        { "id": "express", "label": "Express", "sub": "routes" },
+        { "id": "jwt", "label": "jsonwebtoken", "sub": "who is it?" },
+        { "id": "zod", "label": "Zod", "sub": "valid input?" },
+        { "id": "drizzle", "label": "Drizzle + pg", "sub": "SQL" },
+        { "id": "pg", "label": "PostgreSQL", "sub": "stores rows", "kind": "end" }
+      ],
+      "steps": [
+        { "caption": "A logged-in client sends `POST /shorten` with a token and a long URL.", "at": "client", "slot": "top", "state": { "client": "active" }, "out": [] },
+        { "caption": "Express matches the route and runs its handlers in order.", "at": "express", "slot": "top", "state": { "client": "done", "express": "active" }, "out": ["Express: route matched"] },
+        { "caption": "The auth middleware asks `jsonwebtoken` to verify the token.", "at": "jwt", "slot": "top", "state": { "client": "done", "express": "done", "jwt": "active" }, "out": ["Express: route matched", "jsonwebtoken: token ok"] },
+        { "caption": "The handler asks Zod whether the body holds a valid URL.", "at": "zod", "slot": "top", "state": { "client": "done", "express": "done", "jwt": "done", "zod": "active" }, "out": ["Express: route matched", "jsonwebtoken: token ok", "Zod: body valid"] },
+        { "caption": "Drizzle turns the insert into SQL. The `pg` driver sends it.", "at": "drizzle", "slot": "top", "state": { "client": "done", "express": "done", "jwt": "done", "zod": "done", "drizzle": "active" }, "out": ["Express: route matched", "jsonwebtoken: token ok", "Zod: body valid", "Drizzle: INSERT sent"] },
+        { "caption": "PostgreSQL stores the new row.", "at": "pg", "slot": "top", "state": { "client": "done", "express": "done", "jwt": "done", "zod": "done", "drizzle": "done", "pg": "active" }, "out": ["Express: route matched", "jsonwebtoken: token ok", "Zod: body valid", "Drizzle: INSERT sent", "PostgreSQL: row stored"] },
+        { "caption": "PostgreSQL sends the stored row back.", "at": "pg", "slot": "bottom", "token": { "label": "row", "tone": "ok" }, "state": { "client": "done", "express": "done", "jwt": "done", "zod": "done", "drizzle": "done", "pg": "active" }, "out": ["Express: route matched", "jsonwebtoken: token ok", "Zod: body valid", "Drizzle: INSERT sent", "PostgreSQL: row stored"] },
+        { "caption": "Drizzle hands the row to the handler as a plain JavaScript object.", "at": "drizzle", "slot": "bottom", "token": { "label": "row", "tone": "ok" }, "state": { "client": "done", "express": "done", "jwt": "done", "zod": "done", "drizzle": "active", "pg": "done" }, "out": ["Express: route matched", "jsonwebtoken: token ok", "Zod: body valid", "Drizzle: INSERT sent", "PostgreSQL: row stored", "Drizzle: row returned"] },
+        { "caption": "Express sends the response. `jsonwebtoken` and Zod have no work on the way back.", "at": "express", "slot": "bottom", "token": { "label": "201", "tone": "ok" }, "state": { "client": "done", "express": "active", "jwt": "done", "zod": "done", "drizzle": "done", "pg": "done" }, "out": ["Express: route matched", "jsonwebtoken: token ok", "Zod: body valid", "Drizzle: INSERT sent", "PostgreSQL: row stored", "Drizzle: row returned", "Express: 201"] },
+        { "caption": "The client receives the `201` response.", "at": "client", "slot": "top", "token": { "label": "201", "tone": "ok" }, "state": { "client": "active", "express": "done", "jwt": "done", "zod": "done", "drizzle": "done", "pg": "done" }, "out": ["Express: route matched", "jsonwebtoken: token ok", "Zod: body valid", "Drizzle: INSERT sent", "PostgreSQL: row stored", "Drizzle: row returned", "Express: 201"] }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "stack.mjs",
+      "lang": "js",
+      "title": "Four libraries, one line each",
+      "run": "captured",
+      "caption": "A first look at the small libraries. Express, Drizzle and `pg` get their own lessons next.",
+      "walk": [
+        { "lines": [1, 2, 3, 4], "text": "Four imports, one per library. Each is a normal npm package." },
+        { "lines": [7], "text": "`safeParse` checks a value and reports `success`. Lesson 8 uses it on request bodies." },
+        { "lines": [10, 11], "text": "`hash` is slow on purpose. `compare` checks a password against a stored hash." },
+        { "lines": [14], "text": "`sign` packs claims into a token. `sub` holds the user id, and the token expires in one hour." },
+        { "lines": [15], "text": "`verify` checks the signature and expiry, then returns the claims." },
+        { "lines": [18], "text": "`nanoid(7)` makes seven random characters. They differ every run, so only the length prints." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Older tutorials target Express 4 or Zod 3. Check the version before copying code.",
+    "Never hard-code real secrets. `demo-secret` and `demo-password` are demo values only."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const hash = await bcrypt.hash('demo-password', 10);\nconsole.log(await bcrypt.compare('demo-password', hash));\nconsole.log(await bcrypt.compare('wrong-password', hash));",
+    "lang": "js",
+    "options": [
+      "true, then true",
+      "true, then false",
+      "false, then false",
+      "The hash, printed twice"
+    ],
+    "answer": 1,
+    "why": "`compare` hashes the guess with the salt stored inside `hash` and checks for a match. Only the right password matches."
+  },
+  "takeaway": "Each tool owns one step of a request; know which tool owns which.",
+  "chat": {
+    "starters": [
+      "Why Drizzle and not writing SQL by hand?",
+      "What is the difference between `bcrypt` and `bcryptjs`?",
+      "Why does the stack need both `pg` and Drizzle?"
+    ]
+  }
+}

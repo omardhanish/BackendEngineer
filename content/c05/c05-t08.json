@@ -5,7 +5,7 @@
     "Without an index, Postgres does a sequential scan: it reads every row.",
     "The default index type is a B-tree: sorted keys that point at table rows.",
     "`create index` builds one; `primary key` and `unique` constraints build theirs for you.",
-    "Each index uses disk space and slows writes: index columns you search by."
+    "Each index takes disk space and slows writes: index only columns you search by."
   ],
   "hero": {
     "type": "anim",
@@ -15,15 +15,56 @@
       "kind": "scan",
       "table": "books",
       "column": "title",
-      "rows": ["Ubik", "Kim", "Walden", "Matilda", "Dune", "Rebecca", "Emma", "Hyperion", "Solaris", "Beloved", "Gilead", "Ulysses", "Lolita", "Dracula", "Ivanhoe", "Persuasion"],
+      "rows": [
+        "Ubik",
+        "Kim",
+        "Walden",
+        "Matilda",
+        "Dune",
+        "Rebecca",
+        "Emma",
+        "Hyperion",
+        "Solaris",
+        "Beloved",
+        "Gilead",
+        "Ulysses",
+        "Lolita",
+        "Dracula",
+        "Ivanhoe",
+        "Persuasion"
+      ],
       "target": "Dune",
       "steps": [
-        { "caption": "No index: Postgres reads rows in table order. It reaches Dune at row 5.", "mode": "seq", "n": 5 },
-        { "caption": "It still reads to the end: another Dune could follow, so it checks every row.", "mode": "seq", "n": 16 },
-        { "caption": "With an index on `title`, the lookup starts at the root. Dune sorts before Gilead, so it takes the first leaf.", "mode": "index", "n": 1 },
-        { "caption": "The leaf page holds the key Dune and a pointer to its table row.", "mode": "index", "n": 2 },
-        { "caption": "One more jump reaches the row: three page reads here instead of sixteen row reads.", "mode": "index", "n": 3 },
-        { "caption": "Real pages hold many more keys, so the tree stays only a few levels deep.", "mode": "index", "n": 3 }
+        {
+          "caption": "No index: Postgres reads rows in table order, starting at the first.",
+          "mode": "seq",
+          "n": 5
+        },
+        {
+          "caption": "It keeps reading to the end, because another Dune could follow.",
+          "mode": "seq",
+          "n": 16
+        },
+        {
+          "caption": "With an index on `title`, the lookup starts at the root. Dune sorts before Gilead, so it takes the first leaf.",
+          "mode": "index",
+          "n": 1
+        },
+        {
+          "caption": "The leaf page holds the key Dune and a pointer to its table row.",
+          "mode": "index",
+          "n": 2
+        },
+        {
+          "caption": "One more jump reaches the table row. Compare the reads with the full scan.",
+          "mode": "index",
+          "n": 3
+        },
+        {
+          "caption": "Real pages hold many more keys, so the tree stays only a few levels deep.",
+          "mode": "index",
+          "n": 3
+        }
       ]
     }
   },
@@ -33,16 +74,67 @@
       "lang": "js",
       "title": "Ask Postgres for its plan",
       "run": "captured",
-      "needs": ["postgres"],
+      "needs": [
+        "postgres"
+      ],
       "caption": "A lookup by title on 20,003 books, planned three ways. It prints plan types, not timings, which change on every run.",
       "walk": [
-        { "lines": [5, 6, 7, 8, 9], "text": "`explain (format json)` returns the plan as data. We keep its node type and index name." },
-        { "lines": [11, 12, 13, 14, 15], "text": "The Book Store table with its three seed books." },
-        { "lines": [16, 17, 18], "text": "20,000 filler rows give the index work to save. Their titles look like `Book 1`." },
-        { "lines": [19], "text": "`analyze` refreshes the statistics the planner reads. Postgres also does this itself, in the background." },
-        { "lines": [21, 23], "text": "With no index on `title`, Postgres must read the whole table." },
-        { "lines": [24, 25, 26], "text": "Build the index, refresh the statistics, ask again. The planner now chooses differently." },
-        { "lines": [22, 27], "text": "The index holds `title`, not `lower(title)`, so this query cannot use it." }
+        {
+          "lines": [
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "text": "`explain` returns Postgres's chosen plan as JSON. We keep the node type and index name."
+        },
+        {
+          "lines": [
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "text": "The Book Store table with its three seed books."
+        },
+        {
+          "lines": [
+            16,
+            17,
+            18
+          ],
+          "text": "20,000 filler rows give the index work to save. Their titles look like `Book 1`."
+        },
+        {
+          "lines": [
+            19
+          ],
+          "text": "`analyze` refreshes the statistics Postgres uses to pick a plan. It also runs by itself, in the background."
+        },
+        {
+          "lines": [
+            21,
+            23
+          ],
+          "text": "With no index on `title`, Postgres must read the whole table."
+        },
+        {
+          "lines": [
+            24,
+            25,
+            26
+          ],
+          "text": "Build the index, refresh the statistics, ask again: the plan changes."
+        },
+        {
+          "lines": [
+            22,
+            27
+          ],
+          "text": "The index holds `title`, not `lower(title)`, so this query cannot use it."
+        }
       ]
     },
     {
@@ -50,7 +142,7 @@
       "lang": "js",
       "title": "The index in a Drizzle schema",
       "run": "captured",
-      "caption": "The third argument of `pgTable` lists indexes. `npx drizzle-kit generate` writes the migration and `npx drizzle-kit migrate` applies it."
+      "caption": "The third argument of `pgTable` lists indexes; the last lines read them back. `npx drizzle-kit generate` writes the migration and `npx drizzle-kit migrate` applies it."
     }
   ],
   "pitfalls": [
@@ -64,11 +156,11 @@
     "lang": "js",
     "options": [
       "Index Scan books_title_idx, twice",
-      "Seq Scan, then Index Scan books_title_idx",
+      "Index Scan books_title_idx, then Seq Scan",
       "Seq Scan, twice",
-      "Index Scan books_title_idx, then Seq Scan"
+      "Seq Scan, then Index Scan books_title_idx"
     ],
-    "answer": 1,
+    "answer": 3,
     "why": "The index is sorted by `title`, not `lower(title)`, so the first query scans every row. The second matches the index."
   },
   "takeaway": "Index the columns you search by; check the plan with `explain`.",

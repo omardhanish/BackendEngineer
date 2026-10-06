@@ -1,0 +1,195 @@
+{
+  "title": "Logging in with cookies",
+  "idea": "Login trades a correct email and password for two tokens. The server sets them as `httpOnly` cookies and saves the refresh token on the user.",
+  "points": [
+    "Find the user by email, then compare the password with the stored hash.",
+    "Unknown email and wrong password both get `401` with one message.",
+    "The refresh token is saved on the user; the access token is not.",
+    "`httpOnly` hides a cookie from page scripts; `secure` limits it to HTTPS."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "A login, then a failed one",
+    "actors": [
+      {
+        "id": "c",
+        "label": "Client"
+      },
+      {
+        "id": "s",
+        "label": "Express"
+      },
+      {
+        "id": "m",
+        "label": "MongoDB"
+      }
+    ],
+    "messages": [
+      {
+        "from": "c",
+        "to": "s",
+        "label": "POST /login",
+        "note": "The client sends an email and a password as JSON."
+      },
+      {
+        "from": "s",
+        "to": "m",
+        "label": "findOne({ email })",
+        "note": "Express looks the user up by email."
+      },
+      {
+        "from": "m",
+        "to": "s",
+        "label": "user",
+        "dashed": true,
+        "note": "MongoDB returns the document, including the password hash."
+      },
+      {
+        "from": "s",
+        "to": "m",
+        "label": "save refreshToken",
+        "note": "`isPasswordCorrect` matches. Express signs both tokens and saves the refresh token."
+      },
+      {
+        "from": "s",
+        "to": "c",
+        "label": "200 + 2 cookies",
+        "note": "Both tokens leave in `Set-Cookie` headers. The body holds only the user."
+      },
+      {
+        "from": "c",
+        "to": "s",
+        "label": "later request + cookies",
+        "note": "The client sends the cookies back. The auth middleware lesson reads them."
+      },
+      {
+        "from": "c",
+        "to": "s",
+        "label": "POST /login, wrong password",
+        "note": "A second attempt arrives with a wrong password."
+      },
+      {
+        "from": "s",
+        "to": "c",
+        "label": "401",
+        "dashed": true,
+        "note": "No cookies are set. An unknown email gets the same message."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "login.mjs",
+      "lang": "js",
+      "title": "loginUser",
+      "run": "captured",
+      "needs": [
+        "mongo"
+      ],
+      "caption": "The `loginUser` block is `src/controllers/auth.controllers.js`; the rest is earlier lessons, condensed. The next lesson validates the body. Press Run.",
+      "walk": [
+        {
+          "lines": [
+            60,
+            61,
+            62,
+            63,
+            64
+          ],
+          "text": "Find the user by email. A missing user and a wrong password throw the same `401`."
+        },
+        {
+          "lines": [
+            66,
+            67,
+            68,
+            69
+          ],
+          "text": "Make both tokens. Only the refresh token is saved on the user."
+        },
+        {
+          "lines": [
+            71,
+            72,
+            73
+          ],
+          "text": "Read the user back without the secret fields."
+        },
+        {
+          "lines": [
+            74,
+            75,
+            76,
+            77
+          ],
+          "text": "One options object, shared by both cookies. `secure` turns on in production."
+        },
+        {
+          "lines": [
+            78,
+            79,
+            80,
+            81,
+            82
+          ],
+          "text": "Set both cookies with the same options. The body carries the user, no tokens."
+        },
+        {
+          "lines": [
+            110,
+            111,
+            112,
+            113,
+            114,
+            115,
+            116
+          ],
+          "text": "A real login: body keys, `Set-Cookie` headers with token values hidden, and the saved refresh token."
+        },
+        {
+          "lines": [
+            118,
+            119,
+            120,
+            121,
+            122,
+            123,
+            124,
+            125,
+            126,
+            127,
+            128,
+            129
+          ],
+          "text": "A wrong password, an unknown email, then production mode, which adds `Secure`."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Pass the same options to both `.cookie()` calls; options apply to one cookie only.",
+    "Do not repeat the tokens in the JSON body: page scripts could read them.",
+    "Validate the body (next lesson): an object-valued `email` can act as a query operator."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "app.get('/', (req, res) => {\n  res.cookie('a', '1', { httpOnly: true }).cookie('b', '2').send('ok');\n});\nconst server = app.listen(0, async () => {\n  const res = await fetch(`http://localhost:${server.address().port}/`);\n  console.log(res.headers.getSetCookie());\n  server.close();\n});",
+    "lang": "js",
+    "options": [
+      "[ 'a=1; Path=/; HttpOnly', 'b=2; Path=/; HttpOnly' ]",
+      "[ 'a=1; Path=/', 'b=2; Path=/; HttpOnly' ]",
+      "[ 'a=1; Path=/; HttpOnly', 'b=2; Path=/' ]",
+      "[ 'a=1; Path=/; HttpOnly, b=2; Path=/' ]"
+    ],
+    "answer": 2,
+    "why": "Options belong to one `.cookie()` call. Only `a` got `httpOnly`, so `b` has no `HttpOnly` flag. Each cookie is its own header."
+  },
+  "takeaway": "Check the password once; afterwards the cookies speak for the user.",
+  "chat": {
+    "starters": [
+      "Why save the refresh token in the database?",
+      "Why is the access token not stored?",
+      "Can a non-browser client use these cookies?"
+    ]
+  }
+}

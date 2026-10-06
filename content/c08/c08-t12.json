@@ -40,10 +40,10 @@
         { "lines": [4, 5, 6, 7, 8, 9, 10, 11, 12], "text": "A short copy of lecture 11's helpers, so this file runs alone." },
         { "lines": [15, 18, 19], "text": "Split the header at the space. Anything but `Bearer <token>` gets the one shared `401` reply." },
         { "lines": [20, 21, 22, 23, 24, 25], "text": "`verifyToken` throws on a bad or expired token. Catch it and send `401`." },
-        { "lines": [26, 27], "text": "Store the caller on `req.user`, then call `next()`. Only now does the route run." },
-        { "lines": [32, 33, 34, 35, 36, 37], "text": "A stand-in route that returns `req.user` and counts how often it runs." },
-        { "lines": [43, 44, 45, 46, 47, 48], "text": "Four requests: no header, a valid token, the wrong scheme and an expired token." },
-        { "lines": [49, 50, 51, 52, 53], "text": "Only the valid request reaches the handler. The counter shows it ran once." }
+        { "lines": [26, 27, 28, 29], "text": "Reject a non-numeric `sub`. Store the caller on `req.user`, then call `next()`." },
+        { "lines": [34, 35, 36, 37, 38, 39], "text": "A stand-in route that returns `req.user` and counts how often it runs." },
+        { "lines": [45, 46, 47, 48, 49, 50], "text": "Four requests: no header, a valid token, the wrong scheme and an expired token." },
+        { "lines": [51, 52, 53, 54, 55], "text": "Only the valid request reaches the handler. The counter shows it ran once." }
       ]
     }
   ],
@@ -54,7 +54,7 @@
   ],
   "quiz": {
     "q": "What does this print?",
-    "code": "const run = (authorization) => {\n  const req = { get: () => authorization };\n  const res = { status: (c) => ({ json: () => console.log(c) }) };\n  requireAuth(req, res, () => console.log('next'));\n};\nrun('Bearer ' + signToken({ id: 1, email: 'a@x.co' }));\nrun('Bearer garbage');\nrun(undefined);",
+    "code": "process.env.JWT_SECRET = 'demo-secret';\nconst run = (authorization) => {\n  const req = { get: () => authorization };\n  const res = { status: (c) => ({ json: () => console.log(c) }) };\n  requireAuth(req, res, () => console.log('next'));\n};\nrun('Bearer ' + signToken({ id: 1, email: 'a@x.co' }));\nrun('Bearer garbage');\nrun(undefined);",
     "lang": "js",
     "options": ["next, 401, 401", "next, next, 401", "401, 401, 401", "next, 401, then it throws"],
     "answer": 0,

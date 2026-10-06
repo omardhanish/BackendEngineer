@@ -4,7 +4,7 @@
   "points": [
     "The controller reads `req`, picks the status code and calls `res.json`.",
     "`createUser` hashes and inserts, then returns a user or `null`. It never sees `req`.",
-    "`auth.validation.js` holds only Zod schemas that routes and tests can share.",
+    "`auth.validation.js` holds only Zod schemas that controllers and tests can share.",
     "The refactor moves code. The requests and responses stay exactly the same."
   ],
   "hero": {
@@ -34,7 +34,7 @@
       "needs": ["postgres"],
       "caption": "Each `// src/...` block is its own file in the project, with `import` lines added. One file here, so it runs alone.",
       "walk": [
-        { "lines": [7, 8, 9, 10, 11], "text": "Validation module: only Zod schemas, reusable by routes and tests." },
+        { "lines": [7, 8, 9, 10, 11], "text": "Validation module: only Zod schemas, reusable by controllers and tests." },
         { "lines": [14, 15, 16, 17, 18, 19, 20], "text": "Service: hash, then insert. Plain values in, a row out. No `req`, no `res`." },
         { "lines": [19, 21], "text": "A duplicate gives no row, so the service returns `null`. It does not pick a status code." },
         { "lines": [25, 26, 27, 28], "text": "Controller: shape the 400 body. This is HTTP work, so it stays here." },

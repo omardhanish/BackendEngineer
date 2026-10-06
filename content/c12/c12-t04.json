@@ -1,0 +1,96 @@
+{
+  "title": "Prettier and Git",
+  "idea": "Prettier rewrites code into one agreed style. Git saves the project as commits you can return to, and `.gitignore` keeps secrets and rebuilt files out.",
+  "points": [
+    "Prettier rewrites code into one style, so reviews show logic, not spacing.",
+    "`.prettierrc` holds the style rules; `npx prettier . --write` applies them.",
+    "A commit saves a snapshot of the files you chose with `git add`.",
+    "`.gitignore` lists paths Git skips, such as `node_modules/` and `.env`."
+  ],
+  "hero": {
+    "type": "compare",
+    "title": "What goes into Git",
+    "left": {
+      "title": "Commit these",
+      "items": [
+        "`src/` and every other source file",
+        "`package.json` and `package-lock.json`",
+        "`.prettierrc` and `.gitignore`"
+      ]
+    },
+    "right": {
+      "title": "Ignore these",
+      "items": [
+        "`node_modules/`: `npm install` rebuilds it",
+        "`.env`: it holds real secrets",
+        "Log files and other generated output"
+      ]
+    },
+    "verdict": "Commit what teammates need; ignore what is rebuilt or secret."
+  },
+  "code": [
+    {
+      "file": "format.sh",
+      "lang": "bash",
+      "title": "Install and run Prettier",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Install once as a dev dependency. `--write` rewrites files; `--check` only reports the ones that differ."
+    },
+    {
+      "file": "prettierrc.json",
+      "lang": "json",
+      "title": ".prettierrc",
+      "run": "static",
+      "caption": "Save this as `.prettierrc` in the project root. In Prettier 3 only `singleQuote` differs from the defaults.",
+      "walk": [
+        { "lines": [2], "text": "`semi`: end statements with semicolons." },
+        { "lines": [3], "text": "`singleQuote`: write `'text'`, not `\"text\"`." },
+        { "lines": [4], "text": "`tabWidth`: spaces per indent level." },
+        { "lines": [5], "text": "`trailingComma`: `all` adds a comma after the last item wherever JavaScript allows it." }
+      ]
+    },
+    {
+      "file": "git.sh",
+      "lang": "bash",
+      "title": "A first commit",
+      "run": "captured",
+      "caption": "Real Git output. Chapter 14 covers Git in depth; this page needs only `init`, `add` and `commit`.",
+      "walk": [
+        { "lines": [1, 2, 3], "text": "Make the project folder and turn it into a repository on `main`." },
+        { "lines": [4, 5], "text": "A stand-in `node_modules`, as `npm install` would create it." },
+        { "lines": [6, 7], "text": "A secret file and a manifest. Git has not seen either yet." },
+        { "lines": [8], "text": "`??` marks untracked files. Without `.gitignore`, `.env` and `node_modules/` are listed." },
+        { "lines": [9, 10, 11, 12], "text": "Create `.gitignore`, one path per line. A trailing slash matches folders only." },
+        { "lines": [13], "text": "`.env` and `node_modules/` are gone from the list." },
+        { "lines": [14, 15], "text": "Stage what is left and commit it. The secret never enters the history." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Pin Prettier with `--save-exact`: different versions can format the same code differently.",
+    "Run `git status` before `git add .`; anything not ignored gets staged, secrets included.",
+    "Format the whole project once, in its own commit, so feature diffs stay readable."
+  ],
+  "quiz": {
+    "q": "`.env` was committed earlier. You then ignore it and edit it. What does the last line print?",
+    "code": "echo \".env\" > .gitignore\necho \"PORT=9000\" >> .env\ngit status --short",
+    "lang": "bash",
+    "options": [
+      "Nothing",
+      "`?? .gitignore` only",
+      "`.env` as modified, then `?? .gitignore`",
+      "`?? .env`, then `?? .gitignore`"
+    ],
+    "answer": 2,
+    "why": "Ignore rules only cover untracked files. `.env` is already tracked, so Git still reports the edit. Replace any secret that was committed."
+  },
+  "takeaway": "Format automatically, commit often, and keep secrets out of Git.",
+  "chat": {
+    "starters": [
+      "What does Prettier do that ESLint does not?",
+      "How do I remove a file I already committed by mistake?",
+      "Should I commit `package-lock.json`?"
+    ]
+  }
+}

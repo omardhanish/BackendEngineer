@@ -3,7 +3,7 @@
   "idea": "By default, Compose puts every service on one private network. Services reach each other by service name, such as `db`, not by IP address.",
   "points": [
     "`up` creates the network `<project>_default`. The project name defaults to your folder's name.",
-    "Docker's built-in DNS turns a service name into the container's IP address.",
+    "Docker's built-in DNS, a name lookup, turns a service name into an IP address.",
     "Services talk on the container port; `ports` only matters for traffic from outside.",
     "Custom `networks` split services: two services can talk only if they share a network."
   ],
@@ -27,7 +27,7 @@
           "focus": ["api", "db"]
         },
         {
-          "caption": "`api` connects to host `db`, port 5432. Docker's DNS turns `db` into the container's IP address.",
+          "caption": "`api` connects to host `db`, port 5432. DNS resolves `db` to the container's IP address.",
           "send": [{ "from": "api", "to": "db", "label": "db:5432", "tone": "req" }],
           "state": { "api": "ok", "db": "ok" }
         },
@@ -72,7 +72,7 @@
       "illustrative": true,
       "caption": "A fragment: only the network keys. Each service lists the networks it joins.",
       "walk": [
-        { "lines": [2, 3, 4], "text": "`proxy` joins only `front`." },
+        { "lines": [2, 3, 4], "text": "`proxy`, a web server in front of the API, joins only `front`." },
         { "lines": [5, 6, 7, 8], "text": "`api` joins both networks, so it reaches `proxy` and `db`." },
         { "lines": [9, 10, 11], "text": "`db` joins only `back`. `proxy` cannot reach it." },
         { "lines": [12, 13, 14], "text": "Top-level `networks` declares them. Compose names them `<project>_front` and `<project>_back`." }

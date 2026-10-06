@@ -77,7 +77,7 @@
           "stack": [{ "name": "Global", "vars": { "seats": "'A1 A2 A3 B1 B2 B3 '", "row": "'B'", "n": "3" } }]
         },
         {
-          "caption": "Both loops are done. The body ran 2 x 3 = 6 times, and `console.log` prints all six seats.",
+          "caption": "Both loops are done. `console.log` prints every seat in order.",
           "line": 6,
           "stack": [{ "name": "Global", "vars": { "seats": "'A1 A2 A3 B1 B2 B3 '" } }]
         }
@@ -94,7 +94,7 @@
     }
   ],
   "challenges": {
-    "intro": "Each prompt names the loop to use. Run the tests, and open a hint only when you are stuck.",
+    "intro": "Each prompt names the loop or keyword to use. Run the tests, and open a hint only when you are stuck.",
     "items": [
       {
         "id": "digits", "title": "Count the digits",
@@ -148,7 +148,7 @@
       },
       {
         "id": "break-early", "title": "Stop at a negative",
-        "prompt": "Write `sumBeforeNegative(numbers)`. Add the numbers in order and use `break` to stop at the first negative number. `0` is not negative.",
+        "prompt": "Write `sumBeforeNegative(numbers)`. Return the sum of the numbers before the first negative one. Use `break` to stop at that number. `0` is not negative.",
         "starter": "break-early.starter.js", "tests": "break-early.tests.js", "solution": "break-early.solution.js",
         "hints": [
           "A loop normally runs to the end. `break` leaves it at once.",
@@ -172,7 +172,7 @@
         "starter": "collatz.starter.js", "tests": "collatz.tests.js", "solution": "collatz.solution.js",
         "hints": [
           "You cannot know the number of passes in advance, so `while (n !== 1)` fits better than a counting `for`.",
-          "Inside the loop, test `n % 2 === 0`. Change `n` in the `if` branch or the `else` branch, then add 1 to `steps`.",
+          "Test `n % 2 === 0`. If true, halve `n`. Otherwise set `n` to `3 * n + 1`. Then add 1 to `steps`.",
           "Inside `while (n !== 1)`: halve or triple-plus-one `n` with `if`/`else`, then `steps++`. Return `steps` after the loop."
         ]
       },
@@ -201,12 +201,12 @@
   "pitfalls": [
     "Give nested loops different counters, `i` and `j`; a repeated name hides the outer one.",
     "In a `while` loop, change the counter before `continue`, or the loop never ends.",
-    "To stop two nested loops at once, `return` from the function; `break` leaves only one."
+    "A plain `break` leaves one loop; use `return` or a labeled `break` to leave both."
   ],
   "quiz": {
     "q": "What does this print?",
-    "options": ["6", "5", "3", "Nothing"],
-    "answer": 0,
+    "options": ["5", "6", "3", "Nothing"],
+    "answer": 1,
     "why": "The body runs once before the first test. `n` becomes 6, then `6 < 3` is false and the loop ends.",
     "code": "let n = 5;\ndo {\n  n++;\n} while (n < 3);\nconsole.log(n);",
     "lang": "js"

@@ -143,7 +143,7 @@ export function mount(host, { props: sc, reduced }) {
     cum.push(JSON.parse(JSON.stringify(acc)));
   }
 
-  const NW = 128; const NH = 50; const EXTRA = 26;
+  const NW = 138; const NH = 50; const EXTRA = 26;
   const nodeH = (id) => NH + (hasItems.has(id) ? EXTRA : 0);
 
   function layoutFor(orient) {
@@ -151,7 +151,7 @@ export function mount(host, { props: sc, reduced }) {
     const PAD = 18;
     let W; let H;
     if (orient === 'LR') {
-      const GX = 64; const GY = 24;
+      const GX = 88; const GY = 24;
       const tierH = sc.tiers.map((t) => t.reduce((n, id) => n + nodeH(id), 0) + GY * (t.length - 1));
       H = Math.max(...tierH) + PAD * 2 + 10;
       W = sc.tiers.length * NW + (sc.tiers.length - 1) * GX + PAD * 2;
@@ -212,6 +212,7 @@ export function mount(host, { props: sc, reduced }) {
     const { pos, W, H } = layoutFor(orient);
     const svg = s('svg', { class: 'topo', viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': sc.title || 'Topology diagram' },
       s('defs', null, s('marker', { id: mid, viewBox: '0 0 10 10', refX: '9', refY: '5', markerWidth: '7', markerHeight: '7', orient: 'auto-start-reverse' }, s('path', { d: 'M0 0 L10 5 L0 10 z', class: 'fl-arrow' }))));
+    svg.style.maxWidth = `${Math.round(W * 1.15)}px`; // a small diagram must not blow up until packets cover the node text
     // groups
     for (const g of sc.groups || []) {
       const rs = g.nodes.map((id) => pos.get(id)).filter(Boolean);

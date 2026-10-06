@@ -23,7 +23,9 @@ export function requireAuth(req, res, next) {
   } catch {
     return unauthorized(res);
   }
-  req.user = { id: Number(claims.sub), email: claims.email };
+  const id = Number(claims.sub);
+  if (!Number.isInteger(id)) return unauthorized(res);
+  req.user = { id, email: claims.email };
   next();
 }
 

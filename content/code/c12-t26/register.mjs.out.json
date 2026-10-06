@@ -1,0 +1,9 @@
+{
+  "stdout": "201 ada false\npassword in reply: false\nmail to ada@example.com\ndb holds raw token: false\ndb holds its hash: true\nminutes to expiry: 20\n409 Username or email already in use\n500 Internal Server Error",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "tool": "MongoDB 8.2.6",
+  "hash": "3d43eef6376fffe1",
+  "at": "2026-10-06T15:29:09.688Z"
+}
