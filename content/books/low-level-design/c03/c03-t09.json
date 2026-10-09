@@ -1,0 +1,216 @@
+{
+  "title": "Food delivery system design",
+  "idea": "A food delivery design models the order as a state machine, and lets the customer app, restaurant and dispatcher subscribe to its status changes.",
+  "points": [
+    "Core classes: `Customer`, `Restaurant`, `MenuItem`, `Order`, `DeliveryAgent` and `Dispatcher`.",
+    "`Order` moves through fixed states and only ever one step forward.",
+    "Each status change notifies subscribers: the Observer pattern.",
+    "The dispatcher claims an agent while food cooks, and frees them on delivery."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "One order, three parties",
+    "scenario": {
+      "token": {
+        "label": "Order O7",
+        "tone": "req"
+      },
+      "stages": [
+        {
+          "id": "app",
+          "label": "Customer app",
+          "sub": "PLACED",
+          "kind": "end"
+        },
+        {
+          "id": "rest",
+          "label": "Restaurant",
+          "sub": "ACCEPTED"
+        },
+        {
+          "id": "kitchen",
+          "label": "Kitchen",
+          "sub": "PREPARING"
+        },
+        {
+          "id": "agent",
+          "label": "Agent",
+          "sub": "PICKED_UP"
+        },
+        {
+          "id": "door",
+          "label": "Doorstep",
+          "sub": "DELIVERED",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "The customer places the order. `Order` starts in `PLACED` and holds the item list.",
+          "at": "app",
+          "slot": "top",
+          "state": {
+            "app": "active"
+          }
+        },
+        {
+          "caption": "The restaurant accepts. Every subscriber is told, so the app shows the new status.",
+          "at": "rest",
+          "slot": "top",
+          "state": {
+            "app": "done",
+            "rest": "active"
+          }
+        },
+        {
+          "caption": "Cooking starts. The dispatcher hears `PREPARING` and claims a free agent now, not after cooking.",
+          "at": "kitchen",
+          "slot": "top",
+          "state": {
+            "app": "done",
+            "rest": "done",
+            "kitchen": "active"
+          }
+        },
+        {
+          "caption": "No agent free? The order still cooks; the dispatcher must retry or queue it.",
+          "at": "kitchen",
+          "slot": "top",
+          "token": {
+            "label": "no agent yet",
+            "tone": "err"
+          },
+          "state": {
+            "app": "done",
+            "rest": "done",
+            "kitchen": "blocked"
+          }
+        },
+        {
+          "caption": "The agent picks the food up. Status moves to `PICKED_UP` and the customer can track it.",
+          "at": "agent",
+          "slot": "top",
+          "token": {
+            "label": "Order O7",
+            "tone": "req"
+          },
+          "state": {
+            "app": "done",
+            "rest": "done",
+            "kitchen": "done",
+            "agent": "active"
+          }
+        },
+        {
+          "caption": "Delivered. The dispatcher returns the agent to the pool. Further `advance` calls throw.",
+          "at": "door",
+          "slot": "top",
+          "token": {
+            "label": "Order O7",
+            "tone": "ok"
+          },
+          "state": {
+            "app": "done",
+            "rest": "done",
+            "kitchen": "done",
+            "agent": "done",
+            "door": "active"
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "delivery.mjs",
+      "lang": "js",
+      "title": "Order states and observers",
+      "run": "browser",
+      "caption": "One agent, one order. Subscribe a `restaurant` watcher that logs only `PICKED_UP`, and run it again.",
+      "walk": [
+        {
+          "lines": [
+            1
+          ],
+          "text": "The legal path is one ordered list, so states cannot be skipped or reversed."
+        },
+        {
+          "lines": [
+            7,
+            8,
+            9,
+            10,
+            11
+          ],
+          "text": "`advance` moves one step, then calls every subscriber with the order."
+        },
+        {
+          "lines": [
+            13,
+            14,
+            15,
+            16,
+            17,
+            18
+          ],
+          "text": "The pool hands out free agents and takes them back. Empty means `null`."
+        },
+        {
+          "lines": [
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27
+          ],
+          "text": "The dispatcher is just another observer. `onChange` is an arrow field so `this` survives being passed."
+        },
+        {
+          "lines": [
+            30,
+            31
+          ],
+          "text": "Two subscribers: the customer view and the dispatcher."
+        },
+        {
+          "lines": [
+            35,
+            36
+          ],
+          "text": "A finished order refuses to move, and Kim is back in the pool."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not call SMS or dispatch code inside `Order`; publish a change and let observers act.",
+    "Handle `assign()` returning `null`; peak hours run out of agents.",
+    "Do not let any caller set `status` directly; one method must guard transitions."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const log = [];\nconst watchers = [(s) => log.push('sms:' + s),\n  (s) => log.push('app:' + s)];\nfor (const w of watchers) w('READY');\nconsole.log(log.join(' '));",
+    "lang": "js",
+    "options": [
+      "sms:READY app:READY",
+      "app:READY sms:READY",
+      "sms:READY",
+      "READY READY"
+    ],
+    "answer": 0,
+    "why": "The loop calls each watcher in the order it was added, and both push. Observers run in subscription order."
+  },
+  "takeaway": "The order owns its states; everyone else subscribes and reacts.",
+  "chat": {
+    "starters": [
+      "How would I add order cancellation and refunds to this state machine?",
+      "Which strategy should pick the delivery agent for an order?",
+      "Should observers run synchronously or through a message queue?"
+    ]
+  }
+}

@@ -1,0 +1,387 @@
+{
+  "title": "OOP in modern JavaScript",
+  "idea": "Object-oriented programming groups data with the methods that act on it, using encapsulation, abstraction, inheritance and polymorphism, plus composition for flexibility.",
+  "points": [
+    "Encapsulation: a `#private` field cannot be read from outside the class.",
+    "Inheritance: `extends` reuses a parent; subclass constructors call `super()` before using `this`.",
+    "Polymorphism: one call, `area()`, runs the method of the object's own class.",
+    "Composition: a class holds other objects and delegates work to them."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "memory",
+    "title": "Objects, fields and the prototype",
+    "scenario": {
+      "code": [
+        "class Shape {",
+        "  area() { return 0; }",
+        "}",
+        "class Rect extends Shape {",
+        "  constructor(w, h) { super(); this.w = w; this.h = h; }",
+        "  area() { return this.w * this.h; }",
+        "}",
+        "const r = new Rect(2, 3);",
+        "console.log(r.area());"
+      ],
+      "steps": [
+        {
+          "caption": "Each class is a function whose `prototype` object holds its methods. `Rect.prototype` links to `Shape.prototype`; instances do not copy methods.",
+          "line": 6,
+          "stack": [
+            {
+              "name": "Global",
+              "vars": {
+                "Shape": {
+                  "ref": "sc"
+                },
+                "Rect": {
+                  "ref": "rcc"
+                },
+                "r": "<uninitialized>"
+              }
+            }
+          ],
+          "heap": [
+            {
+              "id": "sc",
+              "label": "class Shape (function)",
+              "props": {
+                "prototype": {
+                  "ref": "s"
+                }
+              }
+            },
+            {
+              "id": "rcc",
+              "label": "class Rect (function)",
+              "props": {
+                "prototype": {
+                  "ref": "rc"
+                }
+              }
+            },
+            {
+              "id": "s",
+              "label": "Shape.prototype",
+              "props": {
+                "area": "ƒ area()"
+              }
+            },
+            {
+              "id": "rc",
+              "label": "Rect.prototype",
+              "props": {
+                "area": "ƒ area()",
+                "[[Prototype]]": {
+                  "ref": "s"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "caption": "`new Rect(2, 3)` runs `Rect`'s constructor. `super()` lets `Shape` create the object, and only then are `w` and `h` set on `this`.",
+          "line": 4,
+          "stack": [
+            {
+              "name": "Global",
+              "vars": {
+                "Shape": {
+                  "ref": "sc"
+                },
+                "Rect": {
+                  "ref": "rcc"
+                },
+                "r": "<uninitialized>"
+              }
+            },
+            {
+              "name": "constructor(2, 3)",
+              "vars": {
+                "w": "2",
+                "h": "3",
+                "this": {
+                  "ref": "o"
+                }
+              }
+            }
+          ],
+          "heap": [
+            {
+              "id": "sc",
+              "label": "class Shape (function)",
+              "props": {
+                "prototype": {
+                  "ref": "s"
+                }
+              }
+            },
+            {
+              "id": "rcc",
+              "label": "class Rect (function)",
+              "props": {
+                "prototype": {
+                  "ref": "rc"
+                }
+              }
+            },
+            {
+              "id": "s",
+              "label": "Shape.prototype",
+              "props": {
+                "area": "ƒ area()"
+              }
+            },
+            {
+              "id": "rc",
+              "label": "Rect.prototype",
+              "props": {
+                "area": "ƒ area()",
+                "[[Prototype]]": {
+                  "ref": "s"
+                }
+              }
+            },
+            {
+              "id": "o",
+              "label": "Rect instance",
+              "props": {
+                "w": "2",
+                "h": "3",
+                "[[Prototype]]": {
+                  "ref": "rc"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "caption": "`r` points at the instance. It holds only its own data: `w` and `h`.",
+          "line": 7,
+          "stack": [
+            {
+              "name": "Global",
+              "vars": {
+                "Shape": {
+                  "ref": "sc"
+                },
+                "Rect": {
+                  "ref": "rcc"
+                },
+                "r": {
+                  "ref": "o"
+                }
+              }
+            }
+          ],
+          "heap": [
+            {
+              "id": "sc",
+              "label": "class Shape (function)",
+              "props": {
+                "prototype": {
+                  "ref": "s"
+                }
+              }
+            },
+            {
+              "id": "rcc",
+              "label": "class Rect (function)",
+              "props": {
+                "prototype": {
+                  "ref": "rc"
+                }
+              }
+            },
+            {
+              "id": "s",
+              "label": "Shape.prototype",
+              "props": {
+                "area": "ƒ area()"
+              }
+            },
+            {
+              "id": "rc",
+              "label": "Rect.prototype",
+              "props": {
+                "area": "ƒ area()",
+                "[[Prototype]]": {
+                  "ref": "s"
+                }
+              }
+            },
+            {
+              "id": "o",
+              "label": "Rect instance",
+              "props": {
+                "w": "2",
+                "h": "3",
+                "[[Prototype]]": {
+                  "ref": "rc"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "caption": "`r.area()` looks up the chain and finds `Rect`'s method first. That lookup is polymorphism.",
+          "line": 8,
+          "stack": [
+            {
+              "name": "Global",
+              "vars": {
+                "Shape": {
+                  "ref": "sc"
+                },
+                "Rect": {
+                  "ref": "rcc"
+                },
+                "r": {
+                  "ref": "o"
+                }
+              }
+            },
+            {
+              "name": "area()",
+              "vars": {
+                "this": {
+                  "ref": "o"
+                },
+                "return": "6"
+              }
+            }
+          ],
+          "heap": [
+            {
+              "id": "sc",
+              "label": "class Shape (function)",
+              "props": {
+                "prototype": {
+                  "ref": "s"
+                }
+              }
+            },
+            {
+              "id": "rcc",
+              "label": "class Rect (function)",
+              "props": {
+                "prototype": {
+                  "ref": "rc"
+                }
+              }
+            },
+            {
+              "id": "s",
+              "label": "Shape.prototype",
+              "props": {
+                "area": "ƒ area()"
+              }
+            },
+            {
+              "id": "rc",
+              "label": "Rect.prototype",
+              "props": {
+                "area": "ƒ area()",
+                "[[Prototype]]": {
+                  "ref": "s"
+                }
+              }
+            },
+            {
+              "id": "o",
+              "label": "Rect instance",
+              "props": {
+                "w": "2",
+                "h": "3",
+                "[[Prototype]]": {
+                  "ref": "rc"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "shapes.mjs",
+      "lang": "js",
+      "title": "Three pillars in code",
+      "run": "browser",
+      "caption": "Private state, inheritance and polymorphism. Add a `Triangle` that extends `Shape` and run it.",
+      "walk": [
+        {
+          "lines": [
+            2,
+            3
+          ],
+          "text": "`#name` is private. Only code inside `Shape` can read it."
+        },
+        {
+          "lines": [
+            5
+          ],
+          "text": "Abstraction: callers use `describe()` without knowing how `area` is computed."
+        },
+        {
+          "lines": [
+            7,
+            8,
+            9,
+            10
+          ],
+          "text": "`Rect` extends `Shape`. `super('rect')` must run before `this` is used."
+        },
+        {
+          "lines": [
+            11,
+            12,
+            13,
+            14
+          ],
+          "text": "`Circle` overrides `area` with its own formula."
+        },
+        {
+          "lines": [
+            15
+          ],
+          "text": "One loop, one call, two behaviours: polymorphism."
+        }
+      ]
+    },
+    {
+      "file": "compose.mjs",
+      "lang": "js",
+      "title": "Composition",
+      "run": "browser",
+      "caption": "`Car` has an `Engine` and hides it. Swap in a different engine class without touching `Car`. `car.engine` prints `undefined`: the engine is kept in the private `#engine`."
+    }
+  ],
+  "pitfalls": [
+    "Use `extends` only for a true is-a relation; prefer composition for has-a.",
+    "Read `this` only after `super()` in a subclass constructor, or it throws.",
+    "An underscore like `_balance` is only a convention; use `#balance` for real privacy."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "class Animal { speak() { return 'generic'; }\n  intro() { return this.speak(); } }\nclass Dog extends Animal { speak() { return 'woof'; } }\nconsole.log(new Dog().intro());",
+    "lang": "js",
+    "options": [
+      "generic",
+      "undefined",
+      "woof",
+      "TypeError"
+    ],
+    "answer": 2,
+    "why": "`intro` runs on a `Dog`, so `this.speak()` finds `Dog`'s override first on the prototype chain."
+  },
+  "takeaway": "Hide state, share behaviour through polymorphism, and prefer composition to inheritance.",
+  "chat": {
+    "starters": [
+      "When should I use inheritance instead of composition?",
+      "How do JavaScript classes relate to prototypes?",
+      "Are #private fields really private at runtime?"
+    ]
+  }
+}

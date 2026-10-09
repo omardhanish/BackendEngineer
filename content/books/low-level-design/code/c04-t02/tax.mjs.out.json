@@ -1,0 +1,11 @@
+{
+  "stdout": "10 0",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node tax.mjs",
+  "tool": null,
+  "hash": "0a63b75ee63e60b6",
+  "at": "2026-10-09T07:07:02.301Z"
+}

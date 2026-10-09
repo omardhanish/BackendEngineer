@@ -1,0 +1,11 @@
+{
+  "stdout": "{ ana: 30, raj: 30, li: 30 }",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node split.mjs",
+  "tool": null,
+  "hash": "c6fb877646f9588b",
+  "at": "2026-10-09T07:08:31.597Z"
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "45 50",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node after.mjs",
+  "tool": null,
+  "hash": "50b1fcd00598058e",
+  "at": "2026-10-09T07:04:17.924Z"
+}

@@ -1,0 +1,166 @@
+{
+  "title": "GRASP responsibility patterns",
+  "idea": "GRASP (General Responsibility Assignment Software Patterns) is nine guidelines for choosing which class owns each job; Low Coupling and High Cohesion are two of them.",
+  "points": [
+    "Information Expert: give a job to the class holding the data it needs.",
+    "Creator: a class creates objects it contains or closely uses.",
+    "Controller: one object receives a system event and delegates the work.",
+    "Pure Fabrication invents a helper; Indirection puts it between callers and a varying part."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Who does what in an order",
+    "nodes": [
+      {
+        "id": "route",
+        "label": "HTTP route",
+        "sub": "UI layer"
+      },
+      {
+        "id": "ctl",
+        "label": "OrderController",
+        "sub": "Controller"
+      },
+      {
+        "id": "order",
+        "label": "Order",
+        "sub": "Expert, Creator"
+      },
+      {
+        "id": "line",
+        "label": "LineItem",
+        "sub": "Expert"
+      },
+      {
+        "id": "tax",
+        "label": "TaxService",
+        "sub": "Pure Fabrication"
+      },
+      {
+        "id": "rule",
+        "label": "Tax rule",
+        "sub": "Polymorphism"
+      }
+    ],
+    "edges": [
+      {
+        "from": "route",
+        "to": "ctl",
+        "label": "addItem",
+        "caption": "The route hands the system event to a controller, keeping business rules out of the UI."
+      },
+      {
+        "from": "ctl",
+        "to": "order",
+        "label": "addLine",
+        "caption": "The controller delegates. It decides nothing about prices itself."
+      },
+      {
+        "from": "order",
+        "to": "line",
+        "label": "new",
+        "caption": "`Order` contains lines, so it is the Creator of each `LineItem`."
+      },
+      {
+        "from": "line",
+        "to": "order",
+        "label": "subtotal",
+        "back": true,
+        "caption": "Each line knows price and quantity, so it is the Expert for its subtotal."
+      },
+      {
+        "from": "ctl",
+        "to": "tax",
+        "label": "taxFor",
+        "caption": "`TaxService` is invented, not a domain noun: a Pure Fabrication that keeps `Order` cohesive."
+      },
+      {
+        "from": "tax",
+        "to": "rule",
+        "label": "calc",
+        "caption": "Rules share one `calc` shape. New regions add a class: Protected Variations through Polymorphism."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "grasp.mjs",
+      "lang": "js",
+      "title": "Expert, Creator, Controller",
+      "run": "browser",
+      "caption": "Add a `discount` to `LineItem.subtotal`. Only the Expert changes.",
+      "walk": [
+        {
+          "lines": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "text": "`LineItem` holds price and quantity, so it computes its own subtotal."
+        },
+        {
+          "lines": [
+            7
+          ],
+          "text": "`Order` aggregates lines, so it creates them."
+        },
+        {
+          "lines": [
+            8
+          ],
+          "text": "`Order` is the Expert for the total: it asks each line."
+        },
+        {
+          "lines": [
+            10,
+            11,
+            12,
+            13,
+            14
+          ],
+          "text": "The controller receives events and delegates; no pricing logic lives here."
+        },
+        {
+          "lines": [
+            15,
+            16,
+            17
+          ],
+          "text": "Two events, then read the total."
+        }
+      ]
+    },
+    {
+      "file": "tax.mjs",
+      "lang": "js",
+      "title": "Fabrication and variation",
+      "run": "browser",
+      "caption": "Add a `HalfTax` rule for a new region. `TaxService` stays the same."
+    }
+  ],
+  "pitfalls": [
+    "Do not let one controller grow business rules; it should only delegate.",
+    "Avoid fabricating helpers for data a domain class already owns.",
+    "Protect only points likely to vary; every extra layer costs reading time."
+  ],
+  "quiz": {
+    "q": "An `Invoice` holds its lines and their prices. Which class should compute the invoice total?",
+    "options": [
+      "A new `InvoiceTotalCalculator` class",
+      "The controller that handles the request",
+      "The `Invoice` itself",
+      "The repository that loads the invoice"
+    ],
+    "answer": 2,
+    "why": "Information Expert: `Invoice` already has the lines and prices, so computing there needs no extra coupling."
+  },
+  "takeaway": "Give each job to the class that already knows enough to do it.",
+  "chat": {
+    "starters": [
+      "How does GRASP differ from SOLID?",
+      "When is a Pure Fabrication better than a domain class?",
+      "Which GRASP ideas matter most in an LLD interview?"
+    ]
+  }
+}

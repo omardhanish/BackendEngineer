@@ -1,0 +1,11 @@
+{
+  "stdout": "404 NotFoundError no user 7\n400 ValidationError bad id: x",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node errors.mjs",
+  "tool": null,
+  "hash": "148acf22b252e673",
+  "at": "2026-10-09T07:14:18.370Z"
+}

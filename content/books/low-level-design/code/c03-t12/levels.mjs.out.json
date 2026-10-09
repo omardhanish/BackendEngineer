@@ -1,0 +1,11 @@
+{
+  "stdout": "DEBUG dropped\nINFO  dropped\nWARN  written\nERROR written",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node levels.mjs",
+  "tool": null,
+  "hash": "ac270cd6b2ac3047",
+  "at": "2026-10-09T07:06:52.954Z"
+}

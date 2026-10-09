@@ -1,0 +1,11 @@
+{
+  "stdout": "Hello, world\nHello",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node undo.mjs",
+  "tool": null,
+  "hash": "3cd753e5c1c4ddb9",
+  "at": "2026-10-09T07:06:32.680Z"
+}

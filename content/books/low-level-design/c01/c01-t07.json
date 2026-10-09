@@ -1,0 +1,198 @@
+{
+  "title": "Error handling in class design",
+  "idea": "Error handling decides which class detects a failure, what error type it throws, and which single layer catches it and turns it into a response.",
+  "points": [
+    "Throw where you detect the problem; catch where you can act on it.",
+    "Custom error classes let callers branch with `instanceof`, not message text.",
+    "Wrap low-level errors with `{ cause }` so the original is kept.",
+    "Use `finally` for cleanup that must run on success or failure."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "A missing user travels back up",
+    "scenario": {
+      "token": {
+        "label": "GET /users/7",
+        "tone": "req"
+      },
+      "stages": [
+        {
+          "id": "ctrl",
+          "label": "UserController",
+          "sub": "maps errors"
+        },
+        {
+          "id": "svc",
+          "label": "UserService",
+          "sub": "business rules"
+        },
+        {
+          "id": "repo",
+          "label": "UserRepository",
+          "sub": "data access"
+        },
+        {
+          "id": "db",
+          "label": "Database",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "The request enters the controller, which calls the service.",
+          "at": "ctrl",
+          "slot": "top",
+          "state": {
+            "ctrl": "active"
+          }
+        },
+        {
+          "caption": "The service asks the repository for user 7. It has no `try` block.",
+          "at": "svc",
+          "slot": "top",
+          "state": {
+            "ctrl": "done",
+            "svc": "active"
+          }
+        },
+        {
+          "caption": "The repository runs the query.",
+          "at": "repo",
+          "slot": "top",
+          "state": {
+            "svc": "done",
+            "repo": "active"
+          }
+        },
+        {
+          "caption": "The database answers with no row.",
+          "at": "db",
+          "state": {
+            "repo": "done",
+            "db": "done"
+          }
+        },
+        {
+          "caption": "The repository throws `NotFoundError`, a domain error, not a raw driver error.",
+          "at": "repo",
+          "slot": "bottom",
+          "token": {
+            "label": "NotFoundError",
+            "tone": "err"
+          },
+          "state": {
+            "repo": "error"
+          }
+        },
+        {
+          "caption": "The service cannot fix a missing user, so it lets the error pass up.",
+          "at": "svc",
+          "slot": "bottom",
+          "token": {
+            "label": "NotFoundError",
+            "tone": "err"
+          },
+          "state": {
+            "svc": "error"
+          }
+        },
+        {
+          "caption": "The controller catches it once, at the edge, and maps it to a `404` response.",
+          "at": "ctrl",
+          "slot": "bottom",
+          "token": {
+            "label": "404 Not Found",
+            "tone": "err"
+          },
+          "state": {
+            "ctrl": "done"
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "errors.mjs",
+      "lang": "js",
+      "title": "An error hierarchy",
+      "run": "browser",
+      "caption": "Error types carry the meaning; one table maps them to status codes. Add a `ConflictError` mapped to `409`.",
+      "walk": [
+        {
+          "lines": [
+            1
+          ],
+          "text": "A base class sets `name` from the subclass, so logs show the real type."
+        },
+        {
+          "lines": [
+            2,
+            3
+          ],
+          "text": "Each failure kind is its own empty subclass; `AppError` already sets its `name`."
+        },
+        {
+          "lines": [
+            4,
+            5,
+            6,
+            7
+          ],
+          "text": "The finder throws at the point it detects the problem."
+        },
+        {
+          "lines": [
+            8
+          ],
+          "text": "One place maps error types to HTTP status codes."
+        },
+        {
+          "lines": [
+            9,
+            10,
+            11,
+            12,
+            13,
+            14
+          ],
+          "text": "The edge matches with `instanceof`, so subclasses inherit a status; surprises fall back to `500`."
+        }
+      ]
+    },
+    {
+      "file": "cause.mjs",
+      "lang": "js",
+      "title": "Wrap with a cause",
+      "run": "browser",
+      "caption": "The low-level `SyntaxError` is wrapped in a domain error. `cause` keeps the original for logs and debugging."
+    }
+  ],
+  "pitfalls": [
+    "Never leave a `catch` empty; it hides the failure and the bug.",
+    "Branch on error class or code, not on `e.message` text that may change.",
+    "Do not catch in every layer; catch only where you can recover or respond."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "function run() {\n  try { throw new Error('boom'); }\n  catch (e) { return 'caught'; }\n  finally { console.log('cleanup'); }\n}\nconsole.log(run());",
+    "lang": "js",
+    "options": [
+      "caught",
+      "caught, then cleanup",
+      "cleanup, then caught",
+      "boom"
+    ],
+    "answer": 2,
+    "why": "`finally` runs before `run` actually returns, so `cleanup` prints first. The caller then logs the returned `caught`."
+  },
+  "takeaway": "Throw typed errors where you detect them; catch once where you respond.",
+  "chat": {
+    "starters": [
+      "Should a service return null or throw when something is missing?",
+      "How do I handle errors from async functions in a class?",
+      "How should I design an error hierarchy in an LLD interview?"
+    ]
+  }
+}

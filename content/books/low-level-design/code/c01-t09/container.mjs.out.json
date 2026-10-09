@@ -1,0 +1,11 @@
+{
+  "stdout": "Hello, Ada\ntrue\nNo provider for db",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node container.mjs",
+  "tool": null,
+  "hash": "6f5a51e09eb8135f",
+  "at": "2026-10-09T07:04:18.210Z"
+}

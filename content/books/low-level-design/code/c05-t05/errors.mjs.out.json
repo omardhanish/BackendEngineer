@@ -1,0 +1,11 @@
+{
+  "stdout": "{ status: 409, code: 'ROOM_TAKEN' }\n{ status: 403, code: 'NOT_OWNER' }\n{ status: 500, code: 'INTERNAL' }\nRoomTakenError room r2 is taken",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node errors.mjs",
+  "tool": null,
+  "hash": "87e829dd8a357f6a",
+  "at": "2026-10-09T07:17:31.298Z"
+}

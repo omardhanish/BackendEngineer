@@ -1,0 +1,109 @@
+{
+  "title": "What design patterns are",
+  "idea": "A design pattern is a named, proven solution shape for a problem that keeps coming back in object-oriented code.",
+  "points": [
+    "The Gang of Four book named 23 classic patterns in three families.",
+    "Creational patterns control how objects are made.",
+    "Structural patterns control how objects are wired together.",
+    "Behavioural patterns control how objects split up work and talk."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "The three Gang of Four families",
+    "head": [
+      "Family",
+      "Question it answers",
+      "Patterns in this book"
+    ],
+    "rows": [
+      [
+        "Creational",
+        "Who builds this object, and how?",
+        "Factory pattern, Builder, Singleton"
+      ],
+      [
+        "Structural",
+        "How do these objects fit together?",
+        "Adapter, Decorator, Facade"
+      ],
+      [
+        "Behavioural",
+        "Who does which part of the work?",
+        "Strategy, Observer, Command"
+      ]
+    ],
+    "caption": "Each pattern has a name, a problem, a solution and trade-offs. Name the family first to narrow the choice."
+  },
+  "code": [
+    {
+      "file": "before.mjs",
+      "lang": "js",
+      "title": "Before: one growing function",
+      "run": "browser",
+      "caption": "Every new channel adds a branch here. Try adding `push` and notice you must edit working code."
+    },
+    {
+      "file": "strategy.mjs",
+      "lang": "js",
+      "title": "After: Strategy pattern",
+      "run": "browser",
+      "caption": "Each channel is a class with `send()`. Add a `PushSender` class without touching `Notifier`.",
+      "walk": [
+        {
+          "lines": [
+            2,
+            3
+          ],
+          "text": "Two interchangeable strategies share one method name: `send(to, msg)`."
+        },
+        {
+          "lines": [
+            5,
+            6,
+            7
+          ],
+          "text": "`Notifier` holds a sender in `#sender` and never checks which kind it is."
+        },
+        {
+          "lines": [
+            8
+          ],
+          "text": "It delegates the varying part to the strategy."
+        },
+        {
+          "lines": [
+            11,
+            12
+          ],
+          "text": "The caller picks the strategy; `Notifier` stays closed for modification."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not add a pattern before the problem it solves actually shows up.",
+    "Learn the problem each pattern solves, not only its class diagram.",
+    "In JavaScript a plain function can replace a small pattern; prefer the simpler shape."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "class Upper { format(s) { return s.toUpperCase(); } }\nclass Lower { format(s) { return s.toLowerCase(); } }\nclass Printer {\n  constructor(f) { this.f = f; }\n  print(s) { console.log(this.f.format(s)); }\n}\nconst p = new Printer(new Lower());\np.f = new Upper();\np.print('Hi');",
+    "lang": "js",
+    "options": [
+      "hi",
+      "Hi",
+      "TypeError",
+      "HI"
+    ],
+    "answer": 3,
+    "why": "`print` asks whatever strategy `this.f` holds at call time. It was swapped to `Upper` before the call."
+  },
+  "takeaway": "A pattern is a named fix for a recurring design problem.",
+  "chat": {
+    "starters": [
+      "How do I know which pattern fits a problem in an interview?",
+      "Are design patterns still useful in JavaScript with first-class functions?",
+      "What is the difference between Strategy and a simple if/else?"
+    ]
+  }
+}

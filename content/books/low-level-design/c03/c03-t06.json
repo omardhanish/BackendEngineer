@@ -1,0 +1,185 @@
+{
+  "title": "Cab booking system design",
+  "idea": "A cab booking design matches a rider to a free driver through a swappable matching strategy, then tracks the trip as a ride with strict state transitions.",
+  "points": [
+    "Core classes: `Rider`, `Driver`, `Ride`, `RideService` and a matching strategy.",
+    "`Ride` owns its state and refuses any transition the table does not allow.",
+    "`RideService` picks a driver and marks them busy in one synchronous step.",
+    "Matching is injected, so nearest-driver can become rating-based without edits."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "The life of one ride",
+    "nodes": [
+      {
+        "id": "req",
+        "label": "REQUESTED",
+        "sub": "rider asks"
+      },
+      {
+        "id": "acc",
+        "label": "ACCEPTED",
+        "sub": "driver claimed"
+      },
+      {
+        "id": "sta",
+        "label": "STARTED",
+        "sub": "rider on board"
+      },
+      {
+        "id": "com",
+        "label": "COMPLETED",
+        "sub": "fare, driver freed"
+      },
+      {
+        "id": "can",
+        "label": "CANCELLED",
+        "sub": "driver freed"
+      }
+    ],
+    "edges": [
+      {
+        "from": "req",
+        "to": "acc",
+        "label": "match",
+        "caption": "`RideService` asks the strategy for a free driver, marks them busy, and moves the ride to `ACCEPTED`."
+      },
+      {
+        "from": "acc",
+        "to": "sta",
+        "label": "pickup",
+        "caption": "The driver reaches the rider and starts the trip. Only an accepted ride can start."
+      },
+      {
+        "from": "sta",
+        "to": "com",
+        "label": "drop",
+        "caption": "At drop-off the ride completes, the fare is computed, and the driver becomes free again."
+      },
+      {
+        "from": "req",
+        "to": "can",
+        "label": "cancel",
+        "dashed": true,
+        "caption": "A rider may cancel before a driver is matched. No driver is claimed yet."
+      },
+      {
+        "from": "acc",
+        "to": "can",
+        "label": "cancel",
+        "dashed": true,
+        "caption": "After acceptance, cancelling must free the claimed driver. `STARTED` has no cancel arrow, so a trip in progress must finish."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "cab.mjs",
+      "lang": "js",
+      "title": "Match, claim, finish",
+      "run": "browser",
+      "caption": "Positions are grid points, so distance is easy to check by hand. Write a `FirstFreeDriver` strategy that returns the first free driver, and pass it in.",
+      "walk": [
+        {
+          "lines": [
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10
+          ],
+          "text": "The strategy only chooses among free drivers. It never changes any state."
+        },
+        {
+          "lines": [
+            11,
+            12
+          ],
+          "text": "The allowed transitions live in one table, so the rules are easy to read."
+        },
+        {
+          "lines": [
+            17,
+            18,
+            19,
+            20,
+            21
+          ],
+          "text": "`moveTo` rejects any jump the table does not list, such as skipping `STARTED`."
+        },
+        {
+          "lines": [
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37
+          ],
+          "text": "Pick and claim run with no `await` between them, so no other request can sneak in."
+        },
+        {
+          "lines": [
+            38,
+            39,
+            40,
+            41,
+            42
+          ],
+          "text": "Finishing frees the driver only after the state change succeeds."
+        },
+        {
+          "lines": [
+            46,
+            47,
+            48,
+            49,
+            50
+          ],
+          "text": "Ben gets the far driver because the near one is busy; Cleo gets none."
+        },
+        {
+          "lines": [
+            51,
+            52,
+            53,
+            54
+          ],
+          "text": "Finishing an accepted ride is refused. After `STARTED`, it completes and D2 is free."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Never `await` between choosing a driver and marking them busy; two riders can win.",
+    "Do not set `ride.state` from outside; route every change through one checked method.",
+    "Free the driver on cancel too, or they stay busy forever."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const NEXT = { A: ['B'], B: ['C'] };\nconst ok = (s, n) => (NEXT[s] ?? []).includes(n);\nconsole.log(ok('A', 'C'), ok('B', 'C'), ok('C', 'A'));",
+    "lang": "js",
+    "options": [
+      "true true false",
+      "false true TypeError",
+      "false true false",
+      "false false false"
+    ],
+    "answer": 2,
+    "why": "A only lists B, so A to C is refused. C has no entry, and `?? []` turns that into an empty list instead of a crash."
+  },
+  "takeaway": "Match with a strategy, claim atomically, and let the ride guard its states.",
+  "chat": {
+    "starters": [
+      "How would surge pricing fit into this design?",
+      "How do two servers avoid assigning the same driver?",
+      "What if the matched driver rejects the ride?"
+    ]
+  }
+}

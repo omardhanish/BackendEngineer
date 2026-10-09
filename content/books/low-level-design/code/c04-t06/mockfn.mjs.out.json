@@ -1,0 +1,11 @@
+{
+  "stdout": "calls: 1\nargs: [ 'USD', 'EUR' ]",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node mockfn.mjs",
+  "tool": null,
+  "hash": "157abb870b659474",
+  "at": "2026-10-09T07:15:43.838Z"
+}

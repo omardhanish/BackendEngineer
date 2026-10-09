@@ -1,0 +1,11 @@
+{
+  "stdout": "c1 due on day 14\nstill free: c2\nc1 is already on loan\nfine: 30 loans: 0",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node library.mjs",
+  "tool": null,
+  "hash": "f621a930fed9b62c",
+  "at": "2026-10-09T07:13:49.784Z"
+}

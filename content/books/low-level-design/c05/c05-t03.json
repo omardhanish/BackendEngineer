@@ -1,0 +1,172 @@
+{
+  "title": "Class diagram and interfaces",
+  "idea": "A class diagram shows each class, its public methods and how classes relate; interfaces mark the seams where one part can be swapped for another.",
+  "points": [
+    "In an interview diagram, a box shows the class name, key fields and methods.",
+    "Arrows say how classes relate: has-a, uses, creates or implements.",
+    "`BookingService` depends on interfaces, never on a concrete database or rule.",
+    "JavaScript has no interfaces; a base class whose methods throw stands in."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "The booking system's class diagram",
+    "nodes": [
+      {
+        "id": "svc",
+        "label": "BookingService",
+        "sub": "searchFree, book, cancel"
+      },
+      {
+        "id": "policy",
+        "label": "ConflictPolicy",
+        "sub": "interface: conflicts()"
+      },
+      {
+        "id": "brepo",
+        "label": "BookingRepository",
+        "sub": "interface: save, forRoom"
+      },
+      {
+        "id": "rrepo",
+        "label": "RoomRepository",
+        "sub": "interface: all()"
+      },
+      {
+        "id": "notify",
+        "label": "NotificationService",
+        "sub": "notify attendees"
+      },
+      {
+        "id": "booking",
+        "label": "Booking",
+        "sub": "room, employee, slot"
+      },
+      {
+        "id": "building",
+        "label": "Building",
+        "sub": "has rooms"
+      },
+      {
+        "id": "room",
+        "label": "Room",
+        "sub": "capacity, fits()"
+      }
+    ],
+    "edges": [
+      {
+        "from": "svc",
+        "to": "policy",
+        "label": "uses",
+        "caption": "The service asks the policy whether a slot clashes. It never knows which rule is plugged in."
+      },
+      {
+        "from": "svc",
+        "to": "brepo",
+        "label": "uses",
+        "caption": "Bookings are read and saved through an interface, so memory or a database both fit."
+      },
+      {
+        "from": "svc",
+        "to": "rrepo",
+        "label": "uses",
+        "caption": "Room lookups go through their own repository: one interface per kind of data."
+      },
+      {
+        "from": "svc",
+        "to": "notify",
+        "label": "uses",
+        "caption": "Telling attendees is a separate job, so the service only calls the notifier."
+      },
+      {
+        "from": "svc",
+        "to": "booking",
+        "label": "creates",
+        "caption": "The service creates a `Booking` only after the policy says the slot is free."
+      },
+      {
+        "from": "building",
+        "to": "room",
+        "label": "has many",
+        "caption": "Composition: a `Building` owns its rooms. A room does not exist outside one."
+      },
+      {
+        "from": "booking",
+        "to": "room",
+        "label": "refers to",
+        "caption": "A booking stores the room id, not a copy of the room."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "policy.mjs",
+      "lang": "js",
+      "title": "Two policies, one interface",
+      "run": "browser",
+      "caption": "Both classes honour the same contract, so `BookingService` can take either. Set the strict gap on line 9 to `0.25` and run again.",
+      "walk": [
+        {
+          "lines": [
+            1,
+            4
+          ],
+          "text": "The interface: a base class whose method throws until a subclass overrides it."
+        },
+        {
+          "lines": [
+            6,
+            6
+          ],
+          "text": "One overlap test with an optional gap, shared by both policies."
+        },
+        {
+          "lines": [
+            8,
+            13
+          ],
+          "text": "Two strategies. The buffer one adds a quarter hour between meetings for cleaning."
+        },
+        {
+          "lines": [
+            15,
+            19
+          ],
+          "text": "The same back-to-back request gets a different answer from each policy."
+        }
+      ]
+    },
+    {
+      "file": "repo.mjs",
+      "lang": "js",
+      "title": "A missing method fails loudly",
+      "run": "browser",
+      "caption": "The subclass forgot `forRoom`. The base class turns that gap into a clear error, not `undefined`."
+    }
+  ],
+  "pitfalls": [
+    "Do not draw every private field; show the public methods others call.",
+    "Avoid an arrow from `BookingService` to a concrete class like an in-memory repository.",
+    "Keep interfaces small; split one that forces classes to stub unused methods."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "class ConflictPolicy {\n  conflicts() { throw new Error('not implemented'); }\n}\nclass LenientPolicy extends ConflictPolicy {}\ntry { console.log(new LenientPolicy().conflicts()); }\ncatch (e) { console.log(e.message); }",
+    "lang": "js",
+    "options": [
+      "undefined",
+      "false",
+      "TypeError: conflicts is not a function",
+      "not implemented"
+    ],
+    "answer": 3,
+    "why": "`LenientPolicy` does not override `conflicts`, so the call finds the base method on the prototype chain, and it throws."
+  },
+  "takeaway": "Draw classes with public methods; depend on interfaces at every seam.",
+  "chat": {
+    "starters": [
+      "How do I draw composition versus aggregation in UML?",
+      "Why is ConflictPolicy an interface and not an if statement?",
+      "How detailed should a class diagram be in an interview?"
+    ]
+  }
+}

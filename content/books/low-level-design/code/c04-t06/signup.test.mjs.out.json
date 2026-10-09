@@ -1,0 +1,11 @@
+{
+  "stdout": "pass new email is welcomed\npass duplicate sends no mail",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node signup.test.mjs",
+  "tool": null,
+  "hash": "8009f1e24539e30c",
+  "at": "2026-10-09T07:07:07.151Z"
+}

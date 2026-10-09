@@ -1,0 +1,205 @@
+{
+  "title": "Dependency injection and IoC",
+  "idea": "Dependency injection (DI) means a class receives the objects it needs instead of creating them; inversion of control (IoC) is the wider idea that outside code drives yours.",
+  "analogy": {
+    "text": "A camera body accepts any lens that fits its mount. The photographer chooses and attaches the lens; the camera never builds one.",
+    "breaks": "JavaScript does not check the mount; a wrong object fails at call time."
+  },
+  "points": [
+    "A class that calls `new` on its helpers is welded to them.",
+    "Constructor injection passes helpers in, so the class depends only on their methods.",
+    "One composition root, near `main`, decides which concrete classes to wire together.",
+    "IoC means the outside calls and configures you; a DI container automates the wiring."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Who creates what, who calls what",
+    "nodes": [
+      {
+        "id": "root",
+        "label": "Composition root",
+        "sub": "app start-up"
+      },
+      {
+        "id": "svc",
+        "label": "SignupService",
+        "sub": "business logic"
+      },
+      {
+        "id": "port",
+        "label": "mailer.send()",
+        "sub": "the expected shape"
+      },
+      {
+        "id": "real",
+        "label": "ConsoleMailer",
+        "sub": "production"
+      },
+      {
+        "id": "fake",
+        "label": "FakeMailer",
+        "sub": "tests"
+      }
+    ],
+    "edges": [
+      {
+        "from": "root",
+        "to": "real",
+        "label": "creates",
+        "caption": "Only the composition root uses `new` on concrete helpers."
+      },
+      {
+        "from": "root",
+        "to": "svc",
+        "label": "injects mailer",
+        "caption": "It hands the mailer to `SignupService` through the constructor."
+      },
+      {
+        "from": "svc",
+        "to": "port",
+        "label": "calls",
+        "caption": "`SignupService` knows only that the object has `send(to, text)`."
+      },
+      {
+        "from": "real",
+        "to": "port",
+        "label": "fits",
+        "dashed": true,
+        "caption": "`ConsoleMailer` satisfies that shape in production."
+      },
+      {
+        "from": "fake",
+        "to": "port",
+        "label": "fits",
+        "dashed": true,
+        "caption": "A test injects `FakeMailer` instead. `SignupService` does not change."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "inject.mjs",
+      "lang": "js",
+      "title": "Constructor injection",
+      "run": "browser",
+      "caption": "One service, two mailers. Write a `LoudMailer` that upper-cases the text and inject it.",
+      "walk": [
+        {
+          "lines": [
+            1,
+            2,
+            3
+          ],
+          "text": "A real-ish mailer that prints."
+        },
+        {
+          "lines": [
+            4,
+            5,
+            6,
+            7
+          ],
+          "text": "A fake that records calls, so a test can check them."
+        },
+        {
+          "lines": [
+            10,
+            11
+          ],
+          "text": "The service stores what it is given; it never calls `new` on a mailer."
+        },
+        {
+          "lines": [
+            12,
+            13
+          ],
+          "text": "It relies only on `send(to, text)`: dependency inversion in practice."
+        },
+        {
+          "lines": [
+            18,
+            19
+          ],
+          "text": "The composition root picks the concrete class in one place."
+        },
+        {
+          "lines": [
+            21,
+            22,
+            23
+          ],
+          "text": "Swap in the fake and inspect what would have been sent."
+        }
+      ]
+    },
+    {
+      "file": "container.mjs",
+      "lang": "js",
+      "title": "A tiny DI container",
+      "run": "browser",
+      "caption": "A container maps names to factories and builds each object once. Frameworks add scopes and auto-wiring on top.",
+      "walk": [
+        {
+          "lines": [
+            2,
+            3
+          ],
+          "text": "Two maps: how to build each thing, and what is already built."
+        },
+        {
+          "lines": [
+            6
+          ],
+          "text": "Return the cached instance, so every caller shares one object."
+        },
+        {
+          "lines": [
+            8
+          ],
+          "text": "Fail loudly when nothing was registered under that name."
+        },
+        {
+          "lines": [
+            9
+          ],
+          "text": "The factory receives the container, so it can resolve its own dependencies."
+        },
+        {
+          "lines": [
+            17,
+            18,
+            19,
+            20
+          ],
+          "text": "`greeter` asks for `config`; it never knows how `config` is built."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not pass the container into business classes; that hides dependencies again.",
+    "A constructor with a long list of dependencies signals a class doing too much.",
+    "Avoid default `new Helper()` parameters in core logic; they quietly re-weld the dependency."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "class Repo { find() { return 'real'; } }\nclass Service {\n  constructor(repo = new Repo()) { this.repo = repo; }\n  get() { return this.repo.find(); }\n}\nconst fake = { find: () => 'fake' };\nconsole.log(new Service().get(), new Service(fake).get());",
+    "lang": "js",
+    "options": [
+      "real real",
+      "fake fake",
+      "fake real",
+      "real fake"
+    ],
+    "answer": 3,
+    "why": "The default builds a `Repo` only when nothing is passed, which quietly re-welds it. The second call injects the fake, so its `find` runs."
+  },
+  "takeaway": "Classes ask for their helpers; one composition root decides which ones.",
+  "chat": {
+    "starters": [
+      "What is the difference between DI, IoC and dependency inversion?",
+      "Do I need a DI framework in a Node project?",
+      "Constructor injection or setter injection: which should I use?"
+    ]
+  }
+}

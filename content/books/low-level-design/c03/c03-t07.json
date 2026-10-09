@@ -1,0 +1,143 @@
+{
+  "title": "Shopping cart design",
+  "idea": "A shopping cart design keeps the cart as a list of product lines, and moves pricing, discounts and stock checks into separate classes that run at checkout.",
+  "points": [
+    "`Cart` stores lines keyed by product id, so adding twice raises the quantity.",
+    "Money is held in whole cents, so adding prices never drifts like floats.",
+    "Discounts are strategies with one `discount(cart)` method, summed at checkout.",
+    "`Checkout` checks every line's stock first, then deducts, so orders never half-apply."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "Who owns what",
+    "head": [
+      "Class",
+      "Owns",
+      "Must not do"
+    ],
+    "rows": [
+      [
+        "Product",
+        "sku, name, price in cents, stock",
+        "Know which carts hold it"
+      ],
+      [
+        "Cart",
+        "lines of product and quantity",
+        "Charge money or touch stock"
+      ],
+      [
+        "PercentOff",
+        "one discount rule",
+        "Change cart contents"
+      ],
+      [
+        "Checkout",
+        "stock check, deduction, final total",
+        "Store items between requests"
+      ],
+      [
+        "Order (next step)",
+        "a frozen copy of lines and prices",
+        "Change after it is placed"
+      ]
+    ],
+    "highlight": {
+      "row": 3
+    },
+    "caption": "Each row has one reason to change. A new coupon type adds a row; it edits none."
+  },
+  "code": [
+    {
+      "file": "cart.mjs",
+      "lang": "js",
+      "title": "Cart, discount, checkout",
+      "run": "browser",
+      "caption": "Prices are in cents. Add a `FlatOff` class that takes 200 cents off orders above 1000, and pass both rules.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12
+          ],
+          "text": "A `Map` keyed by sku merges repeated adds into one line."
+        },
+        {
+          "lines": [
+            16,
+            17,
+            18
+          ],
+          "text": "The subtotal is computed from the lines each time, never stored and left stale."
+        },
+        {
+          "lines": [
+            20,
+            21,
+            22,
+            23
+          ],
+          "text": "A discount rule reads the cart and returns cents. It never edits the cart."
+        },
+        {
+          "lines": [
+            28,
+            29,
+            30
+          ],
+          "text": "Validate every line first, then deduct stock, so a failure leaves nothing changed."
+        },
+        {
+          "lines": [
+            31,
+            32,
+            33,
+            34
+          ],
+          "text": "Sum all discount rules, then empty the cart once the order is placed."
+        },
+        {
+          "lines": [
+            43,
+            44,
+            45,
+            46,
+            47
+          ],
+          "text": "Ana took the only mug, so Raj's checkout fails and stock stays correct."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not store prices as floats like `8.99`; use integer cents.",
+    "Re-check stock and price at checkout; the cart may be days old.",
+    "Do not put coupon `if` chains inside `Cart`; add a discount class instead."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "console.log(0.1 + 0.2 === 0.3, 10 + 20 === 30);",
+    "lang": "js",
+    "options": [
+      "true true",
+      "false true",
+      "true false",
+      "false false"
+    ],
+    "answer": 1,
+    "why": "Binary floats cannot hold 0.1 or 0.2 exactly, so their sum misses 0.3. Integers add exactly, which is why carts count cents."
+  },
+  "takeaway": "The cart holds lines; checkout validates, prices and deducts in one place.",
+  "chat": {
+    "starters": [
+      "How should an order snapshot prices so later changes do not affect it?",
+      "How would I stop two shoppers buying the last item at once?",
+      "Where do taxes and shipping fees fit in this design?"
+    ]
+  }
+}

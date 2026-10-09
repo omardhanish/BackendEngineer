@@ -1,0 +1,80 @@
+{
+  "title": "Adapter and Bridge",
+  "idea": "Adapter wraps an existing class so it fits the interface your code expects. Bridge splits an abstraction from its implementation so both can vary independently.",
+  "points": [
+    "An adapter translates names, units and errors; it adds no new behaviour.",
+    "Your code depends on its own interface, never on the vendor's.",
+    "Bridge holds the implementation as a field, instead of subclassing every combination.",
+    "Adapter fixes a mismatch after the fact; Bridge is planned up front."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Translate one, split the other",
+    "nodes": [
+      { "id": "checkout", "label": "checkout()", "sub": "calls `pay(amount)`" },
+      { "id": "adapter", "label": "GatewayAdapter", "sub": "translates the call" },
+      { "id": "old", "label": "OldGateway", "sub": "`makePayment(cents)`" },
+      { "id": "alert", "label": "Alert", "sub": "what to say" },
+      { "id": "urgent", "label": "UrgentAlert", "sub": "refined abstraction" },
+      { "id": "email", "label": "EmailChannel", "sub": "how to send" },
+      { "id": "sms", "label": "SmsChannel", "sub": "how to send" }
+    ],
+    "edges": [
+      { "from": "checkout", "to": "adapter", "label": "pay(12.5)", "caption": "Checkout calls the interface it owns: `pay(amount)` in euros." },
+      { "from": "adapter", "to": "old", "label": "makePayment(1250)", "caption": "The adapter converts euros to cents and renames the call for the vendor class." },
+      { "from": "urgent", "to": "alert", "label": "extends", "caption": "Bridge: alert kinds grow on one side, as subclasses of `Alert`." },
+      { "from": "alert", "to": "email", "label": "deliver()", "caption": "`Alert` holds a channel and calls `deliver`. It never knows which channel." },
+      { "from": "alert", "to": "sms", "label": "deliver()", "dashed": true, "caption": "Channels grow on the other side. Kinds and channels add instead of multiply: 3 kinds and 3 channels need 6 classes, not 9 subclasses." }
+    ]
+  },
+  "code": [
+    {
+      "file": "adapter.mjs",
+      "lang": "js",
+      "title": "Adapter around a vendor class",
+      "run": "browser",
+      "caption": "Change the vendor result to `ok: false` and run: the adapter turns it into your own error.",
+      "walk": [
+        { "lines": [1, 2, 3, 4, 5], "text": "Vendor code you cannot edit: amounts in cents, a result object." },
+        { "lines": [7, 8], "text": "The adapter wraps the vendor object it receives." },
+        { "lines": [9, 10], "text": "It converts units and renames the call." },
+        { "lines": [11, 12], "text": "It maps the vendor's result to your error and return shapes." },
+        { "lines": [15, 16], "text": "`checkout` knows only `pay`; swapping vendors means writing one new adapter." }
+      ]
+    },
+    {
+      "file": "bridge.mjs",
+      "lang": "js",
+      "title": "Bridge: alerts and channels",
+      "run": "browser",
+      "caption": "Add a `PushChannel` class with `deliver`. Both alert kinds work with it unchanged.",
+      "walk": [
+        { "lines": [1, 2], "text": "Implementations: each channel delivers text its own way; SMS trims to 16 characters." },
+        { "lines": [4, 5, 6], "text": "The abstraction holds a channel, the bridge, and delegates to it." },
+        { "lines": [8, 9, 10], "text": "Refine the abstraction by subclassing `Alert`; channels are untouched." },
+        { "lines": [11, 12, 13, 14], "text": "Any alert pairs with any channel at runtime." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Keep business rules out of adapters; they only translate between two shapes.",
+    "Do not leak vendor types or error codes past the adapter.",
+    "Skip the Bridge when only one dimension varies; one class holding a channel field is enough."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "class Celsius { read() { return 20; } }\nclass FahrenheitAdapter {\n  constructor(s) { this.s = s; }\n  read() { return this.s.read() * 9 / 5 + 32; }\n}\nconsole.log(new FahrenheitAdapter(new Celsius()).read());",
+    "lang": "js",
+    "options": ["20", "68", "36", "NaN"],
+    "answer": 1,
+    "why": "The adapter calls the wrapped `read()`, gets 20, and converts it: 20 × 9 / 5 + 32 is 68."
+  },
+  "takeaway": "Adapter makes a misfit class fit; Bridge keeps two dimensions apart.",
+  "chat": {
+    "starters": [
+      "How is an Adapter different from a Facade?",
+      "Is Bridge just Strategy with another name?",
+      "Where would an Adapter appear in an LLD interview answer?"
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "charged 11",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node checkout.mjs",
+  "tool": null,
+  "hash": "3b1ce7ae282f39b9",
+  "at": "2026-10-09T07:07:01.915Z"
+}

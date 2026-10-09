@@ -1,0 +1,11 @@
+{
+  "stdout": "receipt OG-1250-EUR",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node adapter.mjs",
+  "tool": null,
+  "hash": "661b763b3e0b32c2",
+  "at": "2026-10-09T07:05:07.179Z"
+}

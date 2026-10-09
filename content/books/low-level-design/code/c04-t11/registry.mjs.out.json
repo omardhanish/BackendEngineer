@@ -1,0 +1,11 @@
+{
+  "stdout": "HELLO\nhello!\nunknown plugin: caps",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node registry.mjs",
+  "tool": null,
+  "hash": "53b1fa8def6bf43f",
+  "at": "2026-10-09T07:16:26.727Z"
+}

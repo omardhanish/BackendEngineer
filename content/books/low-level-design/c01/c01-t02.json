@@ -1,0 +1,134 @@
+{
+  "title": "The SOLID principles",
+  "idea": "SOLID is five rules for classes that keep change cheap: one reason to change, extend without editing, honest subtypes, small interfaces, and depending on abstractions.",
+  "analogy": {
+    "text": "A kitchen with standard sockets. Each appliance does one thing, and you plug in a new one without rewiring the wall.",
+    "breaks": "Code has no physical socket; you design the interface yourself."
+  },
+  "points": [
+    "Each principle answers one question: what breaks when a requirement changes?",
+    "New behaviour should arrive as a new class, not an edit to working code.",
+    "A subclass must work anywhere its parent works, with no surprises.",
+    "High-level code depends on an abstraction; concrete helpers are passed in from outside."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "Five rules, five smells",
+    "head": [
+      "Principle",
+      "Rule",
+      "Smell it fixes"
+    ],
+    "rows": [
+      [
+        "S · Single responsibility",
+        "One reason to change per class",
+        "Invoice class that also emails and saves"
+      ],
+      [
+        "O · Open/closed",
+        "Add behaviour by adding code",
+        "A growing switch on type"
+      ],
+      [
+        "L · Liskov substitution",
+        "Subtypes keep the parent's promises",
+        "Override that throws or does nothing"
+      ],
+      [
+        "I · Interface segregation",
+        "Small, focused interfaces",
+        "Classes stubbing methods they never use"
+      ],
+      [
+        "D · Dependency inversion",
+        "Depend on abstractions, injected",
+        "new MySqlClient() inside business logic"
+      ]
+    ],
+    "caption": "Read each row as: if you smell this, apply that rule."
+  },
+  "code": [
+    {
+      "file": "checkout.mjs",
+      "lang": "js",
+      "title": "S, O, I, D together",
+      "run": "browser",
+      "caption": "Add a `Cap` rule that limits the total to 50, and pass it in. `Checkout` never changes.",
+      "walk": [
+        {
+          "lines": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "text": "Each discount is its own class with one job: S."
+        },
+        {
+          "lines": [
+            2,
+            4
+          ],
+          "text": "Both expose one method, `apply(total)`. In JS, that method shape is the interface: I."
+        },
+        {
+          "lines": [
+            6,
+            7
+          ],
+          "text": "`Checkout` depends only on the `apply` shape; concrete rules are injected: D."
+        },
+        {
+          "lines": [
+            8,
+            9,
+            10
+          ],
+          "text": "It only knows `apply`, so new rules need no edit here: O."
+        },
+        {
+          "lines": [
+            12,
+            13,
+            14
+          ],
+          "text": "Compose rules at the edge of the program, then run."
+        }
+      ]
+    },
+    {
+      "file": "lsp.mjs",
+      "lang": "js",
+      "title": "Breaking Liskov",
+      "run": "browser",
+      "caption": "`LockedDeposit` is an `Account` by syntax, but not by behaviour. Callers pay the price."
+    }
+  ],
+  "pitfalls": [
+    "Split a class only when its parts change for different reasons.",
+    "An override that throws `not supported` signals a wrong inheritance tree.",
+    "Injection helps only if the receiving class calls the method and never checks `instanceof`."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "class Flat { constructor(off) { this.off = off; }\n  apply(t) { return Math.max(0, t - this.off); } }\nclass Checkout { constructor(rules) { this.rules = rules; }\n  total(a) { return this.rules.reduce((s, rule) => rule.apply(s), a); } }\nconsole.log(new Checkout([new Flat(30), new Flat(30)]).total(50));",
+    "lang": "js",
+    "options": [
+      "-10",
+      "0",
+      "20",
+      "50"
+    ],
+    "answer": 1,
+    "why": "The first rule turns 50 into 20. The second floors 20 minus 30 at zero with `Math.max`."
+  },
+  "takeaway": "SOLID keeps change local: small jobs, honest subtypes, injected abstractions.",
+  "chat": {
+    "starters": [
+      "How do I spot a Single Responsibility violation in my code?",
+      "Is Liskov substitution only about inheritance?",
+      "How strictly should I apply SOLID in an interview?"
+    ]
+  }
+}

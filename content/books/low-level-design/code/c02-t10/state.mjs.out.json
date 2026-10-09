@@ -1,0 +1,11 @@
+{
+  "stdout": "approve: refused: still a draft -> Draft\nsubmit: sent for review -> InReview\nreject: back to draft -> Draft\nsubmit: sent for review -> InReview\napprove: approved -> Published\nsubmit: refused: already live -> Published",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node state.mjs",
+  "tool": null,
+  "hash": "8b2543e35cabbec9",
+  "at": "2026-10-09T07:15:07.640Z"
+}

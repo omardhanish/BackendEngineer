@@ -1,0 +1,11 @@
+{
+  "stdout": "cafe@1,2 cafe@5,1 bank@3,3 cafe@0,9\npins 4 icons 2",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node markers.mjs",
+  "tool": null,
+  "hash": "1670c774420f0f15",
+  "at": "2026-10-09T07:14:43.212Z"
+}

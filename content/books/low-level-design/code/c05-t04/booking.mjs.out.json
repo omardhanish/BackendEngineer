@@ -1,0 +1,11 @@
+{
+  "stdout": "[ 'r1' ]\nroom r2 is taken\nnot your booking\n[ 'r1', 'r2' ]",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node booking.mjs",
+  "tool": null,
+  "hash": "498ef475861a629f",
+  "at": "2026-10-09T07:17:31.226Z"
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "burst   ok ok ok NO\nother   ok\nt=1030  ok NO\nt=9000  ok ok ok NO",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node bucket.mjs",
+  "tool": null,
+  "hash": "b07edd9e91d1315c",
+  "at": "2026-10-09T07:08:17.981Z"
+}

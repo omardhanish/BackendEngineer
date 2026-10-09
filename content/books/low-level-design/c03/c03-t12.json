@@ -1,0 +1,251 @@
+{
+  "title": "Logger framework design",
+  "idea": "A logger framework lets code report events by level, then decides separately which events to keep, how to format them and where to write them.",
+  "points": [
+    "`Logger` checks the level first, so a dropped message costs almost nothing.",
+    "A log record is plain data: time, level, logger name and message.",
+    "A formatter turns a record into text, such as plain lines or JSON.",
+    "Appenders are destinations; adding a file or network target means one new class."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "One log call, start to finish",
+    "scenario": {
+      "token": {
+        "label": "info('order 42 placed')",
+        "tone": "req"
+      },
+      "stages": [
+        {
+          "id": "caller",
+          "label": "Your code",
+          "sub": "log.info(…)",
+          "kind": "end"
+        },
+        {
+          "id": "logger",
+          "label": "Logger",
+          "sub": "level ≥ INFO?"
+        },
+        {
+          "id": "record",
+          "label": "Log record",
+          "sub": "time, level, name"
+        },
+        {
+          "id": "format",
+          "label": "Formatter",
+          "sub": "text or JSON"
+        },
+        {
+          "id": "append",
+          "label": "Appenders",
+          "sub": "console, memory",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "Application code calls `log.info` and knows nothing about files, consoles or formats.",
+          "at": "caller",
+          "state": {
+            "caller": "active"
+          },
+          "out": []
+        },
+        {
+          "caption": "The logger compares INFO with its minimum level. INFO passes.",
+          "at": "logger",
+          "state": {
+            "caller": "done",
+            "logger": "active"
+          },
+          "out": []
+        },
+        {
+          "caption": "The logger builds one record, reading the time from an injected clock.",
+          "at": "record",
+          "state": {
+            "caller": "done",
+            "logger": "done",
+            "record": "active"
+          },
+          "out": []
+        },
+        {
+          "caption": "Each appender asks its own formatter to turn the record into a line.",
+          "at": "format",
+          "state": {
+            "caller": "done",
+            "logger": "done",
+            "record": "done",
+            "format": "active"
+          },
+          "out": []
+        },
+        {
+          "caption": "Every appender writes the line to its own destination: here the console and a memory list.",
+          "at": "append",
+          "state": {
+            "caller": "done",
+            "logger": "done",
+            "record": "done",
+            "format": "done",
+            "append": "active"
+          },
+          "out": [
+            "10:00:00 INFO [orders] order 42 placed"
+          ]
+        },
+        {
+          "caption": "A `debug` call arrives while the minimum level is INFO.",
+          "at": "caller",
+          "token": {
+            "label": "debug('cart')",
+            "tone": "err"
+          },
+          "state": {
+            "caller": "active"
+          },
+          "out": [
+            "10:00:00 INFO [orders] order 42 placed"
+          ]
+        },
+        {
+          "caption": "The level check fails. No record is built and no appender runs.",
+          "at": "logger",
+          "token": {
+            "label": "debug('cart')",
+            "tone": "err"
+          },
+          "state": {
+            "caller": "done",
+            "logger": "blocked"
+          },
+          "out": [
+            "10:00:00 INFO [orders] order 42 placed"
+          ]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "levels.mjs",
+      "lang": "js",
+      "title": "Levels are numbers",
+      "run": "browser",
+      "caption": "A level filter is one comparison. Change `'WARN'` to `'DEBUG'` and run again."
+    },
+    {
+      "file": "logger.mjs",
+      "lang": "js",
+      "title": "Logger, formatters, appenders",
+      "run": "browser",
+      "caption": "Two appenders, two formats, one call site. Add a `WarnOnlyAppender` that ignores anything below WARN.",
+      "walk": [
+        {
+          "lines": [
+            1
+          ],
+          "text": "Levels map to numbers, so filtering is a simple comparison."
+        },
+        {
+          "lines": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "text": "Formatters decide how a record looks. Both share one `format(record)` method."
+        },
+        {
+          "lines": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "text": "Appenders decide where a line goes. Each one is given its formatter."
+        },
+        {
+          "lines": [
+            17,
+            18,
+            19,
+            20,
+            21,
+            22
+          ],
+          "text": "`Logger` receives its level, appenders and clock instead of creating them."
+        },
+        {
+          "lines": [
+            23,
+            24,
+            25,
+            26,
+            27
+          ],
+          "text": "Filter first, build the record once, then hand it to every appender."
+        },
+        {
+          "lines": [
+            33,
+            34,
+            35,
+            36,
+            37,
+            38
+          ],
+          "text": "Wiring happens in one place. A fixed clock keeps the output repeatable."
+        },
+        {
+          "lines": [
+            39,
+            40,
+            41,
+            42,
+            43,
+            44
+          ],
+          "text": "The debug line is dropped; the other three reach both appenders."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not build costly messages before the level check; pass cheap values or check first.",
+    "Never log passwords, tokens or card numbers; mask them before the record is built.",
+    "Do not call `new Date()` inside the logger; inject a clock so tests can assert lines."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const L = { DEBUG: 10, INFO: 20, WARN: 30, ERROR: 40 };\nconst min = L.WARN;\nconst out = ['INFO', 'ERROR', 'WARN', 'DEBUG']\n  .filter((l) => L[l] >= min);\nconsole.log(out.join(','));",
+    "lang": "js",
+    "options": [
+      "WARN,ERROR",
+      "INFO,ERROR,WARN",
+      "ERROR,WARN",
+      "ERROR"
+    ],
+    "answer": 2,
+    "why": "Only levels at or above 30 pass. `filter` keeps the array's own order, so ERROR comes before WARN."
+  },
+  "takeaway": "Filter by level, then format and write through swappable appenders.",
+  "chat": {
+    "starters": [
+      "Should a logger be a Singleton or passed in with dependency injection?",
+      "How would I write logs asynchronously without losing lines on a crash?",
+      "How do child loggers inherit levels and appenders?"
+    ]
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "note": "Versions that example code is verified against. They can be newer than most training data: trust only what you have run. Add every library a page imports to content/books/package.json and run `npm run examples:install`.",
+  "node": "20.20",
+  "python": "3.14.3",
+  "java": "17.0.11",
+  "cc": "17.0.0"
+}

@@ -1,0 +1,28 @@
+{
+  "slug": "low-level-design",
+  "title": "Low-Level Design",
+  "tagline": "From SOLID and design patterns to real systems you can design, code and defend in an interview.",
+  "audience": "a backend engineer who knows JavaScript and wants to design clean, extensible classes and ace LLD interviews",
+  "hue": 135,
+  "order": 20,
+  "profile": "js",
+  "locale": "en",
+  "tutor": {
+    "name": "Low-Level Design",
+    "about": "Teaches low-level design (OOP, SOLID, design patterns, classic LLD case studies and a capstone) to a backend engineer preparing for real work and interviews.",
+    "examples": "JavaScript (Node.js classes), UML class and sequence diagrams",
+    "learnerRole": "engineer",
+    "mentorRole": "senior engineer and interviewer"
+  },
+  "runtime": {
+    "bannedApis": [
+      "Object.groupBy",
+      "Map.groupBy",
+      "Promise.withResolvers",
+      "Array.fromAsync",
+      "fs.glob",
+      "new WebSocket"
+    ],
+    "banHint": "missing from Node 20"
+  }
+}

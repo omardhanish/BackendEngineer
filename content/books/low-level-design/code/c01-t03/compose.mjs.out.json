@@ -1,0 +1,11 @@
+{
+  "stdout": "engine on, moving\nundefined",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node compose.mjs",
+  "tool": null,
+  "hash": "576e2a7e00aef63a",
+  "at": "2026-10-09T06:58:48.421Z"
+}

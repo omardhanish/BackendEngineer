@@ -1,0 +1,172 @@
+{
+  "title": "Visitor, Iterator and Memento",
+  "idea": "Visitor adds operations to a class family without editing it; Iterator walks a collection without exposing its shape; Memento saves an object's state for restoring later.",
+  "points": [
+    "A visitor has one method per node class; each node calls it from `accept`.",
+    "In JavaScript, `*[Symbol.iterator]` makes an object work with `for...of` and spread.",
+    "A memento is a snapshot that, by agreement, only its creator reads.",
+    "A caretaker stores mementos for undo but never looks inside them."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "Three behavioural patterns side by side",
+    "head": [
+      "Pattern",
+      "Use it when",
+      "JavaScript shape",
+      "Cost"
+    ],
+    "rows": [
+      [
+        "Visitor",
+        "Many operations over stable node classes",
+        "accept(v) calls v.visitFile(this)",
+        "A new node class edits every visitor"
+      ],
+      [
+        "Iterator",
+        "Callers need the items, not the structure",
+        "A *[Symbol.iterator]() generator",
+        "Changing the collection mid-walk is unsafe"
+      ],
+      [
+        "Memento",
+        "Undo or rollback for one object",
+        "save() returns a frozen snapshot",
+        "Memory grows with every snapshot kept"
+      ]
+    ],
+    "caption": "Read each row as a trade: what the pattern buys, and what it costs."
+  },
+  "code": [
+    {
+      "file": "files.mjs",
+      "lang": "js",
+      "title": "Iterator and Visitor",
+      "run": "browser",
+      "caption": "Write a `CountVisitor` that returns 1 for files and 0 for folders, then sum it.",
+      "walk": [
+        {
+          "lines": [
+            3,
+            7
+          ],
+          "text": "Each node class has `accept`, which calls the visitor method for its own type."
+        },
+        {
+          "lines": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14
+          ],
+          "text": "The generator yields the folder, then every child; `yield*` descends into subfolders."
+        },
+        {
+          "lines": [
+            16,
+            17,
+            18,
+            19
+          ],
+          "text": "`ListVisitor` formats each node. It is one operation, kept in one class."
+        },
+        {
+          "lines": [
+            20,
+            21,
+            22,
+            23
+          ],
+          "text": "`SizeVisitor` adds a second operation without editing `File` or `Folder`."
+        },
+        {
+          "lines": [
+            27
+          ],
+          "text": "`for...of` uses the iterator; the caller never needs to touch `items`."
+        },
+        {
+          "lines": [
+            28,
+            29,
+            30
+          ],
+          "text": "A fresh loop over the same root starts a new walk from the top."
+        }
+      ]
+    },
+    {
+      "file": "undo.mjs",
+      "lang": "js",
+      "title": "Memento",
+      "run": "browser",
+      "caption": "Save a second memento after typing ', world', type more, then restore twice.",
+      "walk": [
+        {
+          "lines": [
+            2
+          ],
+          "text": "The editor's text is private. Nothing outside can set it directly."
+        },
+        {
+          "lines": [
+            5,
+            6
+          ],
+          "text": "`save` returns a frozen snapshot; `restore` is the only way back in."
+        },
+        {
+          "lines": [
+            8,
+            9,
+            10,
+            11,
+            12
+          ],
+          "text": "`History` stacks mementos for undo and never reads their contents."
+        },
+        {
+          "lines": [
+            14,
+            15,
+            16,
+            17,
+            18,
+            19
+          ],
+          "text": "Save, keep typing, then restore the saved text."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Avoid Visitor when node classes change often; each new class edits every visitor.",
+    "Never add or remove items while iterating; collect the changes, then apply them.",
+    "Snapshot copies, not references; a memento holding a shared array changes later."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "class Range {\n  constructor(a, b) { this.a = a; this.b = b; }\n  *[Symbol.iterator]() {\n    for (let i = this.a; i < this.b; i++) yield i;\n  }\n}\nconst r = new Range(2, 5);\nconsole.log([...r].join(','), [...r].length);",
+    "lang": "js",
+    "options": [
+      "2,3,4,5 4",
+      "2,3,4 0",
+      "TypeError: r is not iterable",
+      "2,3,4 3"
+    ],
+    "answer": 3,
+    "why": "Each spread calls `[Symbol.iterator]` again and gets a fresh generator, so the second spread is not exhausted. The loop stops before `b`."
+  },
+  "takeaway": "Visitor adds operations, Iterator hides structure, Memento keeps undo points.",
+  "chat": {
+    "starters": [
+      "Why does Visitor need double dispatch?",
+      "When should I write a generator instead of returning an array?",
+      "How do I keep memento memory under control for long undo histories?"
+    ]
+  }
+}

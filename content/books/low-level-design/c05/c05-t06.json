@@ -1,0 +1,213 @@
+{
+  "title": "Patterns in the booking system",
+  "idea": "Incorporating design patterns means adding a pattern only where the booking system has a real change point, such as overlap rules or who hears about a booking.",
+  "points": [
+    "Start from a change you expect, then pick the pattern that isolates it.",
+    "Strategy pattern: `ConflictPolicy` lets `BookingService` swap overlap rules without edits.",
+    "Observer pattern: `NotificationService` and `AuditLogger` subscribe to new bookings.",
+    "Each pattern should remove an `if` chain or a hard-wired call, not add ceremony."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "Where each pattern earns its place",
+    "head": [
+      "Change you expect",
+      "Pattern",
+      "Class in the system",
+      "What stays closed"
+    ],
+    "rows": [
+      [
+        "New overlap rules, such as a cleaning gap",
+        "Strategy",
+        "ConflictPolicy",
+        "BookingService"
+      ],
+      [
+        "More reactions to a booking",
+        "Observer",
+        "NotificationService, AuditLogger",
+        "BookingService"
+      ],
+      [
+        "Swap memory storage for a database",
+        "Repository",
+        "RoomRepository, BookingRepository",
+        "BookingService"
+      ],
+      [
+        "Different room types to create",
+        "Factory",
+        "a RoomFactory, only if types appear",
+        "Building"
+      ]
+    ],
+    "highlight": {
+      "col": 1
+    },
+    "caption": "Read each row left to right: the expected change picks the pattern, and the last column is the code you no longer edit."
+  },
+  "code": [
+    {
+      "file": "policy.mjs",
+      "lang": "js",
+      "title": "Strategy: ConflictPolicy",
+      "run": "browser",
+      "caption": "Times are hours as numbers, so `0.25` is 15 minutes. Add a policy whose `conflicts` always returns `false` and run it again.",
+      "walk": [
+        {
+          "lines": [
+            1,
+            2,
+            3
+          ],
+          "text": "`ConflictPolicy` is the interface: it takes a candidate slot and the room's existing bookings."
+        },
+        {
+          "lines": [
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "text": "`StrictOverlapPolicy` rejects only slots that truly overlap; back-to-back is fine."
+        },
+        {
+          "lines": [
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "text": "`BufferPolicy` also blocks slots that come within the gap of a booking, before or after it."
+        },
+        {
+          "lines": [
+            17,
+            18,
+            19,
+            20,
+            21
+          ],
+          "text": "`BookingRepository` stores bookings, so the service holds no list of its own."
+        },
+        {
+          "lines": [
+            24,
+            25,
+            26
+          ],
+          "text": "The repository and policy are injected, so the service never names a concrete rule."
+        },
+        {
+          "lines": [
+            29
+          ],
+          "text": "The overlap decision is delegated to whichever policy was passed in."
+        },
+        {
+          "lines": [
+            36,
+            37,
+            38,
+            39,
+            40,
+            41
+          ],
+          "text": "One loop runs the identical bookings under both policies."
+        }
+      ]
+    },
+    {
+      "file": "observer.mjs",
+      "lang": "js",
+      "title": "Observer: booking listeners",
+      "run": "browser",
+      "caption": "The service tells every subscriber about a booking. It never imports the notifier or the logger.",
+      "walk": [
+        {
+          "lines": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "text": "`AuditLogger` is the c05-t05 class: `record(event, fields)` writes JSON to an injected sink."
+        },
+        {
+          "lines": [
+            6,
+            7,
+            8
+          ],
+          "text": "`NotificationService` is an observer with one `onBooked` method and one job."
+        },
+        {
+          "lines": [
+            10,
+            11
+          ],
+          "text": "The service keeps a private list and lets anyone subscribe."
+        },
+        {
+          "lines": [
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "text": "`book(employeeId, roomId, start, end)` keeps the c05-t01 contract, then tells every listener in order."
+        },
+        {
+          "lines": [
+            21,
+            22
+          ],
+          "text": "A small listener adapts `onBooked` to `audit.record`, so `AuditLogger` stays unchanged."
+        },
+        {
+          "lines": [
+            18,
+            19,
+            20,
+            23
+          ],
+          "text": "Wiring happens outside the service, so adding a listener needs no edit there."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not add a pattern because it is famous; name the change it absorbs.",
+    "Keep observers free of booking rules, or the order they run starts to matter.",
+    "Avoid a Factory for one concrete class; a constructor call is clearer."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const gap = new BufferPolicy(0.5);\nconst a = { start: 9, end: 10 };\nconsole.log(gap.conflicts({ start: 10.25, end: 11 }, [a]),\n  gap.conflicts({ start: 10.5, end: 11 }, [a]));",
+    "lang": "js",
+    "options": [
+      "false false",
+      "true false",
+      "true true",
+      "false true"
+    ],
+    "answer": 1,
+    "why": "With a half-hour gap, `10.25 < 10.5` clashes. A start of `10.5` is not below `10.5`, so it is allowed."
+  },
+  "takeaway": "Each pattern in your design should absorb one change you can name.",
+  "chat": {
+    "starters": [
+      "Should ConflictPolicy be a class or a plain function in JavaScript?",
+      "How do I explain in an interview why I chose the Observer pattern?",
+      "What if a slow observer delays every booking?"
+    ]
+  }
+}

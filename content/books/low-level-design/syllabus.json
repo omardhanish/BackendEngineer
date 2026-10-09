@@ -1,0 +1,653 @@
+{
+  "version": 1,
+  "chapters": [
+    {
+      "id": "c01",
+      "n": 1,
+      "title": "Foundations of LLD",
+      "tagline": "Classes, principles and diagrams: the vocabulary of good design.",
+      "outcomes": [
+        "Apply each SOLID principle to real code",
+        "Draw a UML class diagram for a small system",
+        "Inject dependencies instead of hard-wiring them",
+        "Design a small system end to end"
+      ],
+      "hue": 135,
+      "topics": [
+        "c01-t01",
+        "c01-t02",
+        "c01-t03",
+        "c01-t04",
+        "c01-t05",
+        "c01-t06",
+        "c01-t07",
+        "c01-t08",
+        "c01-t09",
+        "c01-t10"
+      ]
+    },
+    {
+      "id": "c02",
+      "n": 2,
+      "title": "Design Patterns",
+      "tagline": "The creational, structural and behavioural patterns, each with code that runs.",
+      "outcomes": [
+        "Pick the right pattern for a problem",
+        "Implement each pattern in JavaScript",
+        "Spot when a pattern is overkill",
+        "Combine patterns in one system"
+      ],
+      "hue": 159,
+      "topics": [
+        "c02-t01",
+        "c02-t02",
+        "c02-t03",
+        "c02-t04",
+        "c02-t05",
+        "c02-t06",
+        "c02-t07",
+        "c02-t08",
+        "c02-t09",
+        "c02-t10",
+        "c02-t11",
+        "c02-t12"
+      ]
+    },
+    {
+      "id": "c03",
+      "n": 3,
+      "title": "Classic LLD Case Studies",
+      "tagline": "Twelve interview favourites, designed and coded step by step.",
+      "outcomes": [
+        "Turn requirements into entities and classes",
+        "Handle concurrency in booking systems",
+        "Implement LRU/LFU caches and rate limiters",
+        "Design a system end to end on your own"
+      ],
+      "hue": 183,
+      "topics": [
+        "c03-t01",
+        "c03-t02",
+        "c03-t03",
+        "c03-t04",
+        "c03-t05",
+        "c03-t06",
+        "c03-t07",
+        "c03-t08",
+        "c03-t09",
+        "c03-t10",
+        "c03-t11",
+        "c03-t12",
+        "c03-t13",
+        "c03-t14"
+      ]
+    },
+    {
+      "id": "c04",
+      "n": 4,
+      "title": "Advanced Design Principles",
+      "tagline": "Cohesion, GRASP, DDD, testing, concurrency and designs that last.",
+      "outcomes": [
+        "Measure cohesion and coupling",
+        "Model a domain with DDD building blocks",
+        "Test a design with mocks and TDD",
+        "Make a design safe under concurrency"
+      ],
+      "hue": 207,
+      "topics": [
+        "c04-t01",
+        "c04-t02",
+        "c04-t03",
+        "c04-t04",
+        "c04-t05",
+        "c04-t06",
+        "c04-t07",
+        "c04-t08",
+        "c04-t09",
+        "c04-t10",
+        "c04-t11"
+      ]
+    },
+    {
+      "id": "c05",
+      "n": 5,
+      "title": "Capstone Project",
+      "tagline": "One system, from requirements to a reviewed, documented design.",
+      "outcomes": [
+        "Model requirements as use cases and entities",
+        "Build and test the core modules",
+        "Document a design with UML",
+        "Present and defend your design"
+      ],
+      "hue": 231,
+      "topics": [
+        "c05-t01",
+        "c05-t02",
+        "c05-t03",
+        "c05-t04",
+        "c05-t05",
+        "c05-t06",
+        "c05-t07",
+        "c05-t08",
+        "c05-t09",
+        "c05-t10",
+        "c05-t11",
+        "c05-t12",
+        "c05-t13"
+      ]
+    },
+    {
+      "id": "c06",
+      "n": 6,
+      "title": "Interviews and Career",
+      "tagline": "How LLD interviews run, and where to go next.",
+      "outcomes": [
+        "Run a 45-minute LLD interview answer",
+        "Plan your next steps in system design"
+      ],
+      "hue": 255,
+      "topics": [
+        "c06-t01",
+        "c06-t02"
+      ]
+    }
+  ],
+  "topics": [
+    {
+      "id": "c01-t01",
+      "chapter": "c01",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Introduction to Low-Level Design (LLD)"
+    },
+    {
+      "id": "c01-t02",
+      "chapter": "c01",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "SOLID Principles"
+    },
+    {
+      "id": "c01-t03",
+      "chapter": "c01",
+      "n": 3,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Object-Oriented Programming Refresher"
+    },
+    {
+      "id": "c01-t04",
+      "chapter": "c01",
+      "n": 4,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Design Patterns: Introduction"
+    },
+    {
+      "id": "c01-t05",
+      "chapter": "c01",
+      "n": 5,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "UML Diagrams for LLD"
+    },
+    {
+      "id": "c01-t06",
+      "chapter": "c01",
+      "n": 6,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Designing Classes & Interfaces"
+    },
+    {
+      "id": "c01-t07",
+      "chapter": "c01",
+      "n": 7,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Error Handling & Exceptions"
+    },
+    {
+      "id": "c01-t08",
+      "chapter": "c01",
+      "n": 8,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Code Readability & Clean Code Practices"
+    },
+    {
+      "id": "c01-t09",
+      "chapter": "c01",
+      "n": 9,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Dependency Injection & Inversion of Control"
+    },
+    {
+      "id": "c01-t10",
+      "chapter": "c01",
+      "n": 10,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Case Study: Simple LLD for a Library Management System"
+    },
+    {
+      "id": "c02-t01",
+      "chapter": "c02",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Factory & Abstract Factory Pattern"
+    },
+    {
+      "id": "c02-t02",
+      "chapter": "c02",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Singleton & Builder Pattern"
+    },
+    {
+      "id": "c02-t03",
+      "chapter": "c02",
+      "n": 3,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Prototype & Object Pool Pattern"
+    },
+    {
+      "id": "c02-t04",
+      "chapter": "c02",
+      "n": 4,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Adapter & Bridge Pattern"
+    },
+    {
+      "id": "c02-t05",
+      "chapter": "c02",
+      "n": 5,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Composite & Decorator Pattern"
+    },
+    {
+      "id": "c02-t06",
+      "chapter": "c02",
+      "n": 6,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Facade & Flyweight Pattern"
+    },
+    {
+      "id": "c02-t07",
+      "chapter": "c02",
+      "n": 7,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Proxy & Chain of Responsibility Pattern"
+    },
+    {
+      "id": "c02-t08",
+      "chapter": "c02",
+      "n": 8,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Command & Mediator Pattern"
+    },
+    {
+      "id": "c02-t09",
+      "chapter": "c02",
+      "n": 9,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Observer & Strategy Pattern"
+    },
+    {
+      "id": "c02-t10",
+      "chapter": "c02",
+      "n": 10,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Template Method & State Pattern"
+    },
+    {
+      "id": "c02-t11",
+      "chapter": "c02",
+      "n": 11,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Visitor, Iterator, and Memento Pattern"
+    },
+    {
+      "id": "c02-t12",
+      "chapter": "c02",
+      "n": 12,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Pattern Integration Project: Design a Notification System"
+    },
+    {
+      "id": "c03-t01",
+      "chapter": "c03",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "LLD of a Parking Lot System"
+    },
+    {
+      "id": "c03-t02",
+      "chapter": "c03",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "LLD of an Elevator System"
+    },
+    {
+      "id": "c03-t03",
+      "chapter": "c03",
+      "n": 3,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "LLD of a Tic-Tac-Toe Game"
+    },
+    {
+      "id": "c03-t04",
+      "chapter": "c03",
+      "n": 4,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "LLD of a Splitwise System"
+    },
+    {
+      "id": "c03-t05",
+      "chapter": "c03",
+      "n": 5,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "LLD of a BookMyShow (Ticket Booking) System"
+    },
+    {
+      "id": "c03-t06",
+      "chapter": "c03",
+      "n": 6,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "LLD of a Cab Booking System (like Uber)"
+    },
+    {
+      "id": "c03-t07",
+      "chapter": "c03",
+      "n": 7,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "LLD of an Online Shopping Cart"
+    },
+    {
+      "id": "c03-t08",
+      "chapter": "c03",
+      "n": 8,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "LLD of a Hotel Booking System"
+    },
+    {
+      "id": "c03-t09",
+      "chapter": "c03",
+      "n": 9,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "LLD of a Food Delivery System"
+    },
+    {
+      "id": "c03-t10",
+      "chapter": "c03",
+      "n": 10,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "LLD of a Rate Limiter"
+    },
+    {
+      "id": "c03-t11",
+      "chapter": "c03",
+      "n": 11,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "LLD of a Cache System (LRU, LFU)"
+    },
+    {
+      "id": "c03-t12",
+      "chapter": "c03",
+      "n": 12,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "LLD of a Logger Framework"
+    },
+    {
+      "id": "c03-t13",
+      "chapter": "c03",
+      "n": 13,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Mid-Course Project – Pick one system and design it end-to-end"
+    },
+    {
+      "id": "c03-t14",
+      "chapter": "c03",
+      "n": 14,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Project Discussion and Peer Review"
+    },
+    {
+      "id": "c04-t01",
+      "chapter": "c04",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "High Cohesion & Low Coupling"
+    },
+    {
+      "id": "c04-t02",
+      "chapter": "c04",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "GRASP Principles Overview"
+    },
+    {
+      "id": "c04-t03",
+      "chapter": "c04",
+      "n": 3,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Domain-Driven Design (DDD) – Part 1"
+    },
+    {
+      "id": "c04-t04",
+      "chapter": "c04",
+      "n": 4,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Domain-Driven Design (DDD) – Part 2"
+    },
+    {
+      "id": "c04-t05",
+      "chapter": "c04",
+      "n": 5,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Error Resilient Designs & Defensive Programming"
+    },
+    {
+      "id": "c04-t06",
+      "chapter": "c04",
+      "n": 6,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Testing Your LLD (Unit Testing, Mocking, TDD)"
+    },
+    {
+      "id": "c04-t07",
+      "chapter": "c04",
+      "n": 7,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Versioning & Backward Compatibility in APIs"
+    },
+    {
+      "id": "c04-t08",
+      "chapter": "c04",
+      "n": 8,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Extensibility and Maintainability in LLD"
+    },
+    {
+      "id": "c04-t09",
+      "chapter": "c04",
+      "n": 9,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Refactoring Techniques"
+    },
+    {
+      "id": "c04-t10",
+      "chapter": "c04",
+      "n": 10,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Designing for Concurrency"
+    },
+    {
+      "id": "c04-t11",
+      "chapter": "c04",
+      "n": 11,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Designing Pluggable & Modular Architecture"
+    },
+    {
+      "id": "c05-t01",
+      "chapter": "c05",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Capstone Project Kickoff"
+    },
+    {
+      "id": "c05-t02",
+      "chapter": "c05",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Requirement Analysis & Modeling"
+    },
+    {
+      "id": "c05-t03",
+      "chapter": "c05",
+      "n": 3,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Designing Class Diagrams & Interfaces"
+    },
+    {
+      "id": "c05-t04",
+      "chapter": "c05",
+      "n": 4,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Building the Core Modules"
+    },
+    {
+      "id": "c05-t05",
+      "chapter": "c05",
+      "n": 5,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Handling Errors, Logging, and Monitoring"
+    },
+    {
+      "id": "c05-t06",
+      "chapter": "c05",
+      "n": 6,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Incorporating Design Patterns"
+    },
+    {
+      "id": "c05-t07",
+      "chapter": "c05",
+      "n": 7,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Writing Test Cases"
+    },
+    {
+      "id": "c05-t08",
+      "chapter": "c05",
+      "n": 8,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Peer Review and Feedback"
+    },
+    {
+      "id": "c05-t09",
+      "chapter": "c05",
+      "n": 9,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Refinement and Optimization"
+    },
+    {
+      "id": "c05-t10",
+      "chapter": "c05",
+      "n": 10,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Documentation & UML Diagrams"
+    },
+    {
+      "id": "c05-t11",
+      "chapter": "c05",
+      "n": 11,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Presentation Day: Explain your project"
+    },
+    {
+      "id": "c05-t12",
+      "chapter": "c05",
+      "n": 12,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Feedback & Iteration"
+    },
+    {
+      "id": "c05-t13",
+      "chapter": "c05",
+      "n": 13,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Final Submission"
+    },
+    {
+      "id": "c06-t01",
+      "chapter": "c06",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Design Interviews: Tips, Practice Problems & Demos"
+    },
+    {
+      "id": "c06-t02",
+      "chapter": "c06",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 1,
+      "source": "Course Conclusion & Career Roadmap in System Design"
+    }
+  ]
+}

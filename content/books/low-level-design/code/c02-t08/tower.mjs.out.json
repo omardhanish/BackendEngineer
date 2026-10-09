@@ -1,0 +1,11 @@
+{
+  "stdout": "  B2 sees A1 landing\nA1: cleared\nB2: hold",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node tower.mjs",
+  "tool": null,
+  "hash": "574629767af40fb3",
+  "at": "2026-10-09T07:04:30.658Z"
+}

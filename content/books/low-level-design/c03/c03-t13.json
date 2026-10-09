@@ -1,0 +1,73 @@
+{
+  "title": "Your end-to-end design project",
+  "idea": "The mid-course project asks you to design one system from this chapter on your own, from requirements to a running demo, using one repeatable checklist.",
+  "points": [
+    "Pick a system you found hard: a booking system, cache, rate limiter or logger.",
+    "Write the brief before code; it is your interview answer in written form.",
+    "For every pattern you use, name the change it protects you from.",
+    "Finish with a demo script that shows the main flow and one failure."
+  ],
+  "hero": {
+    "type": "timeline",
+    "title": "Six steps from prompt to demo",
+    "items": [
+      {
+        "label": "Scope",
+        "text": "Pick one system. List its must-have actions and what is out of scope."
+      },
+      {
+        "label": "Entities",
+        "text": "Underline the nouns. Keep those that hold state or enforce a rule."
+      },
+      {
+        "label": "Responsibilities",
+        "text": "Give each class one job and a few public methods. Draw the has-a links."
+      },
+      {
+        "label": "Change points",
+        "text": "Mark what is likely to change. Put each behind an interface or strategy."
+      },
+      {
+        "label": "Core flow",
+        "text": "Code the main use case end to end in a small runnable script."
+      },
+      {
+        "label": "Break it",
+        "text": "Try invalid input, no free capacity and two users at once. Fix what fails."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "design-brief.md",
+      "lang": "markdown",
+      "title": "Design brief template",
+      "run": "static",
+      "caption": "Copy this into your project folder and fill each section before writing classes. Keep it to one page."
+    }
+  ],
+  "pitfalls": [
+    "Do not start coding before the brief lists both requirements and out-of-scope items.",
+    "If one class holds most methods, split its jobs into smaller classes.",
+    "Do not add a pattern unless you can name the change it isolates."
+  ],
+  "quiz": {
+    "q": "You start the project on a hotel booking system. What do you settle first?",
+    "options": [
+      "Which design patterns the solution will use",
+      "The must-have actions and what is out of scope",
+      "The database tables and their indexes",
+      "A class name for every noun in the prompt"
+    ],
+    "answer": 1,
+    "why": "Scope decides which entities matter. Patterns, storage and class names follow from the requirements, not the other way round."
+  },
+  "takeaway": "Scope first, classes second, patterns only where change is expected.",
+  "chat": {
+    "starters": [
+      "Which system from this chapter is best for practising concurrency?",
+      "How detailed should my class diagram be for this project?",
+      "Can you review my requirements list before I start on classes?"
+    ]
+  }
+}

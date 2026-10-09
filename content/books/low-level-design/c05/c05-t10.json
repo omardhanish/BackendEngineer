@@ -1,0 +1,171 @@
+{
+  "title": "Documenting the booking system",
+  "idea": "Design documentation records what the system does, which classes do it and why, using a short README, UML diagrams and doc comments on public methods.",
+  "points": [
+    "A class diagram shows classes, their key members and how they relate.",
+    "A sequence diagram shows one use case, such as booking a room, in order.",
+    "Doc comments explain each public method's inputs, result and errors.",
+    "Record decisions and trade-offs, such as why `ConflictPolicy` is a strategy."
+  ],
+  "hero": {
+    "type": "anatomy",
+    "title": "Reading one UML member line",
+    "parts": [
+      {
+        "text": "+",
+        "label": "Visibility",
+        "note": "`+` public, `-` private, `#` protected. A JavaScript `#field` is private, so draw it with `-`.",
+        "tone": "a"
+      },
+      {
+        "text": "book",
+        "label": "Name",
+        "note": "The method name, exactly as it appears in the code."
+      },
+      {
+        "text": "(employeeId, roomId, start, end)",
+        "label": "Parameters",
+        "note": "Inputs the caller passes. Add types when they clarify the design."
+      },
+      {
+        "text": " Booking",
+        "label": "Return type",
+        "note": "What the method returns. Standard UML writes `: Booking`; Mermaid drops the colon."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "classes.mmd",
+      "lang": "text",
+      "title": "Class diagram as text",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Mermaid class diagram source. Keeping the diagram as text lets it live in the repository and change with the code.",
+      "walk": [
+        {
+          "lines": [
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "text": "A class box: one private field and two public methods."
+        },
+        {
+          "lines": [
+            7,
+            8,
+            9,
+            10
+          ],
+          "text": "`<<interface>>` marks `ConflictPolicy` as a contract, not a concrete class."
+        },
+        {
+          "lines": [
+            11,
+            12
+          ],
+          "text": "Plain arrows show that `BookingService` uses its collaborators."
+        },
+        {
+          "lines": [
+            13,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "text": "`BookingService` notifies only the `BookingListener` interface; `NotificationService` and `AuditLogger` implement it, as built in c05-t06."
+        },
+        {
+          "lines": [
+            14
+          ],
+          "text": "A dotted arrow with a hollow head means \"implements\"."
+        },
+        {
+          "lines": [
+            15
+          ],
+          "text": "A filled diamond is composition: rooms belong to one building."
+        },
+        {
+          "lines": [
+            16,
+            17
+          ],
+          "text": "Multiplicities say how many objects sit at each end of a link."
+        }
+      ]
+    },
+    {
+      "file": "policy-doc.mjs",
+      "lang": "js",
+      "title": "Doc comments on an interface",
+      "run": "browser",
+      "caption": "JSDoc records the contract next to the code. Editors show it on hover.",
+      "walk": [
+        {
+          "lines": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "text": "The class comment says what the interface decides, and tags it `@interface`."
+        },
+        {
+          "lines": [
+            6,
+            7,
+            8,
+            9,
+            10
+          ],
+          "text": "Each parameter and the return value get one plain line."
+        },
+        {
+          "lines": [
+            11
+          ],
+          "text": "The base method throws, so a missing override fails loudly."
+        },
+        {
+          "lines": [
+            18,
+            19
+          ],
+          "text": "The documented contract holds: back-to-back slots do not clash."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not draw every getter; show the members that explain the design.",
+    "Update diagrams when classes change, or readers will trust a wrong picture.",
+    "Do not use a composition diamond where objects outlive their owner."
+  ],
+  "quiz": {
+    "q": "Which UML notation fits `StrictOverlapPolicy` and `ConflictPolicy`?",
+    "options": [
+      "A filled diamond from `ConflictPolicy` to `StrictOverlapPolicy`",
+      "A dotted line with a hollow triangle pointing to `ConflictPolicy`",
+      "A plain arrow labelled \"uses\" from `ConflictPolicy`",
+      "No link, because interfaces are left off class diagrams"
+    ],
+    "answer": 1,
+    "why": "`StrictOverlapPolicy` implements the `ConflictPolicy` interface. UML draws realisation as a dotted line with a hollow triangle at the interface."
+  },
+  "takeaway": "Document the why, keep diagrams as text, and keep them current.",
+  "chat": {
+    "starters": [
+      "What should go in the README for my booking system?",
+      "How do I draw the sequence diagram for cancelling a booking?",
+      "What is the difference between aggregation and composition in UML?"
+    ]
+  }
+}

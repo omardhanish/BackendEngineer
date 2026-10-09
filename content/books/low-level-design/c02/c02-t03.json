@@ -1,0 +1,106 @@
+{
+  "title": "Prototype and Object Pool",
+  "idea": "Prototype makes new objects by cloning a configured one. Object Pool keeps expensive objects alive and lends them out, so you reuse instead of rebuilding.",
+  "points": [
+    "A prototype object owns a `clone()` method that knows how deep to copy.",
+    "Clone a preset, then change only the fields that differ.",
+    "A pool hands out a free object, or creates one while under its limit.",
+    "Released objects return to the free list; a full pool refuses or waits."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "lanes",
+    "title": "A pool of two connections",
+    "scenario": {
+      "lanes": [
+        { "id": "free", "label": "Free", "kind": "stack", "hint": "ready to lend" },
+        { "id": "busy", "label": "In use", "kind": "area", "hint": "lent to callers" }
+      ],
+      "tokens": {
+        "c1": { "label": "conn 1", "tone": "io" },
+        "c2": { "label": "conn 2", "tone": "io" }
+      },
+      "steps": [
+        {
+          "caption": "The pool starts empty. It creates connections lazily, up to a maximum of two.",
+          "at": { "free": [], "busy": [] }
+        },
+        {
+          "caption": "First `acquire()`: nothing is free, so the pool creates `conn 1` and lends it.",
+          "at": { "free": [], "busy": ["c1"] },
+          "active": "c1"
+        },
+        {
+          "caption": "Second `acquire()`: still under the limit, so it creates `conn 2`.",
+          "at": { "free": [], "busy": ["c1", "c2"] },
+          "active": "c2"
+        },
+        {
+          "caption": "Third `acquire()`: nothing free and the limit is reached, so the pool throws.",
+          "at": { "free": [], "busy": ["c1", "c2"] },
+          "out": ["pool exhausted"]
+        },
+        {
+          "caption": "`release(conn 1)` moves it back to the free list. It is not destroyed.",
+          "at": { "free": ["c1"], "busy": ["c2"] },
+          "active": "c1"
+        },
+        {
+          "caption": "The next `acquire()` reuses `conn 1`. No new connection is built.",
+          "at": { "free": [], "busy": ["c1", "c2"] },
+          "active": "c1"
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "drafts.mjs",
+      "lang": "js",
+      "title": "Prototype with clone()",
+      "run": "browser",
+      "caption": "`clone()` copies the tags array; a plain shallow copy shares it. `structuredClone` copies data but drops the class.",
+      "walk": [
+        { "lines": [3], "text": "`clone()` decides the depth: a new array, so tags are not shared." },
+        { "lines": [5, 6, 7], "text": "Clone a preset and change only what differs. The preset stays intact." },
+        { "lines": [8, 9], "text": "`Object.assign` copies the array reference, so pushing edits the preset too." },
+        { "lines": [11, 12], "text": "`clone()` keeps the class; `structuredClone` returns a plain object." }
+      ]
+    },
+    {
+      "file": "pool.mjs",
+      "lang": "js",
+      "title": "A bounded Object Pool",
+      "run": "browser",
+      "caption": "Change the limit to 3 and run again: the third `acquire()` now succeeds.",
+      "walk": [
+        { "lines": [2, 3], "text": "Free list, a set of lent objects, and a count of how many exist." },
+        { "lines": [5, 6], "text": "Reuse a free object first; create one only while under `max`." },
+        { "lines": [7], "text": "Full pool: fail loudly. Real pools often queue the caller instead." },
+        { "lines": [11, 12], "text": "Only objects this pool lent can return, so a double release is ignored." },
+        { "lines": [17, 18, 19], "text": "After a release, `acquire()` hands back the very same object." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "A shallow copy shares nested arrays and objects; clone those explicitly.",
+    "Reset a pooled object's state on release, or the next caller sees old data.",
+    "Pool only objects that are costly to create; pooling cheap objects adds bugs, not speed."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const base = { name: 'base', opts: { retries: 3 } };\nconst copy = { ...base };\ncopy.name = 'copy';\ncopy.opts.retries = 5;\nconsole.log(base.name, base.opts.retries);",
+    "lang": "js",
+    "options": ["base 3", "copy 5", "base 5", "copy 3"],
+    "answer": 2,
+    "why": "Spread copies top-level fields, so `name` is separate. `opts` is one shared object, so the change shows through `base`."
+  },
+  "takeaway": "Clone presets with care; pool only what is expensive to build.",
+  "chat": {
+    "starters": [
+      "How is the Prototype pattern different from JavaScript prototypes?",
+      "When should I use structuredClone instead of a clone method?",
+      "Does a database driver already give me an Object Pool?"
+    ]
+  }
+}

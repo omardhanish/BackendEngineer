@@ -1,0 +1,339 @@
+{
+  "title": "Concurrency-safe class design",
+  "idea": "Designing for concurrency means making every check-then-act on shared state happen as one unit, so overlapping requests cannot both pass the check.",
+  "analogy": {
+    "text": "Two shop assistants both see one mug left on the stock list, go to the back room, and both promise it to a customer.",
+    "breaks": "In Node the trip to the back room is an `await`, not a thread."
+  },
+  "points": [
+    "Node runs JavaScript on one thread, but `await` lets other requests run between lines.",
+    "A check made before an `await` can be stale when you act.",
+    "Let the store enforce the rule with a unique key or a version check.",
+    "Prefer immutable values and fewer shared fields: less shared state means fewer races."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "lanes",
+    "title": "Two orders, one mug",
+    "scenario": {
+      "code": [
+        "async function buy(who) {",
+        "  await db();                     // read",
+        "  if (stock < 1) return 'sold out';",
+        "  await db();                     // write",
+        "  stock = stock - 1;",
+        "  return 'sold';",
+        "}",
+        "Promise.all([buy('A'), buy('B')]);"
+      ],
+      "lanes": [
+        {
+          "id": "stack",
+          "label": "Running now",
+          "kind": "stack"
+        },
+        {
+          "id": "wait",
+          "label": "Awaiting the store",
+          "kind": "area",
+          "hint": "parked at an await"
+        },
+        {
+          "id": "ready",
+          "label": "Ready to resume",
+          "kind": "queue"
+        },
+        {
+          "id": "store",
+          "label": "Stock store",
+          "kind": "area",
+          "hint": "shared state"
+        }
+      ],
+      "tokens": {
+        "ann": {
+          "label": "buy(A)",
+          "tone": "sync"
+        },
+        "bo": {
+          "label": "buy(B)",
+          "tone": "io"
+        },
+        "free": {
+          "label": "mug: 1",
+          "tone": "neutral"
+        },
+        "rAnn": {
+          "label": "mug: 0",
+          "tone": "micro"
+        },
+        "rBo": {
+          "label": "mug: -1",
+          "tone": "timer"
+        }
+      },
+      "steps": [
+        {
+          "caption": "Order A starts. One mug is left in the shared stock store.",
+          "line": 7,
+          "at": {
+            "stack": [
+              "ann"
+            ],
+            "wait": [],
+            "ready": [],
+            "store": [
+              "free"
+            ]
+          },
+          "active": "ann",
+          "out": []
+        },
+        {
+          "caption": "A reaches `await db()` and parks. The thread is now free for other work.",
+          "line": 1,
+          "at": {
+            "stack": [],
+            "wait": [
+              "ann"
+            ],
+            "ready": [],
+            "store": [
+              "free"
+            ]
+          },
+          "active": "ann",
+          "out": []
+        },
+        {
+          "caption": "Order B runs in that gap and parks at the same `await`.",
+          "line": 1,
+          "at": {
+            "stack": [],
+            "wait": [
+              "ann",
+              "bo"
+            ],
+            "ready": [],
+            "store": [
+              "free"
+            ]
+          },
+          "active": "bo",
+          "out": []
+        },
+        {
+          "caption": "A's read finishes first; B is still waiting on its read.",
+          "line": 1,
+          "at": {
+            "stack": [],
+            "wait": [
+              "bo"
+            ],
+            "ready": [
+              "ann"
+            ],
+            "store": [
+              "free"
+            ]
+          },
+          "out": []
+        },
+        {
+          "caption": "A's check passes: one mug left. A starts its write and parks again.",
+          "line": 2,
+          "at": {
+            "stack": [
+              "ann"
+            ],
+            "wait": [
+              "bo"
+            ],
+            "ready": [],
+            "store": [
+              "free"
+            ]
+          },
+          "active": "ann",
+          "out": []
+        },
+        {
+          "caption": "B's check also passes: A has not written yet. Both hold a stale count.",
+          "line": 2,
+          "at": {
+            "stack": [
+              "bo"
+            ],
+            "wait": [
+              "ann"
+            ],
+            "ready": [],
+            "store": [
+              "free"
+            ]
+          },
+          "active": "bo",
+          "out": []
+        },
+        {
+          "caption": "A's write lands. A is told the mug is sold.",
+          "line": 4,
+          "at": {
+            "stack": [
+              "ann"
+            ],
+            "wait": [
+              "bo"
+            ],
+            "ready": [],
+            "store": [
+              "rAnn"
+            ]
+          },
+          "active": "ann",
+          "out": [
+            "A: sold"
+          ]
+        },
+        {
+          "caption": "B's write lands too. Both were told 'sold': the stock is now -1.",
+          "line": 4,
+          "at": {
+            "stack": [
+              "bo"
+            ],
+            "wait": [],
+            "ready": [],
+            "store": [
+              "rBo"
+            ]
+          },
+          "active": "bo",
+          "out": [
+            "A: sold",
+            "B: sold"
+          ]
+        },
+        {
+          "caption": "The fix: the store rejects B's write because the version changed. B rereads and sees sold out.",
+          "line": 3,
+          "at": {
+            "stack": [
+              "bo"
+            ],
+            "wait": [],
+            "ready": [],
+            "store": [
+              "rAnn"
+            ]
+          },
+          "active": "bo",
+          "out": [
+            "A: sold",
+            "B: sold out"
+          ]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "version.mjs",
+      "lang": "js",
+      "title": "Store-enforced rule",
+      "run": "browser",
+      "caption": "You met this race and the `KeyedLock` in the booking case studies (c03-t05, c03-t08). Here the store refuses a stale write instead.",
+      "walk": [
+        {
+          "lines": [
+            2
+          ],
+          "text": "Each row carries a `version` that changes on every write."
+        },
+        {
+          "lines": [
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "text": "`update` writes only if the version is still the one the caller read."
+        },
+        {
+          "lines": [
+            13,
+            14,
+            15,
+            16
+          ],
+          "text": "A refused write means someone else won: read again and recheck."
+        },
+        {
+          "lines": [
+            17,
+            18
+          ],
+          "text": "Cap the retries so a busy item cannot loop forever."
+        }
+      ]
+    },
+    {
+      "file": "short.mjs",
+      "lang": "js",
+      "title": "Short, synchronous section",
+      "run": "browser",
+      "caption": "Do slow work first. Then check and write with no `await` between them.",
+      "walk": [
+        {
+          "lines": [
+            4,
+            5,
+            6,
+            7
+          ],
+          "text": "No `await` inside `reserve`, so no other request can run between check and write."
+        },
+        {
+          "lines": [
+            8
+          ],
+          "text": "Callers get a frozen value, not a handle on shared state."
+        },
+        {
+          "lines": [
+            13,
+            14
+          ],
+          "text": "The slow price lookup happens before the short section, not inside it."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Never check, then `await`, then act on the check without a lock or a constraint.",
+    "Do not retry a refused version check forever; cap retries and report the conflict.",
+    "Keep locked sections short and never `await` another lock inside one, or you risk deadlock."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "let n = 0;\nasync function inc() { const v = n; await null; n = v + 1; }\nPromise.all([inc(), inc(), inc()]).then(() => console.log(n));",
+    "lang": "js",
+    "options": [
+      "3",
+      "0",
+      "2",
+      "1"
+    ],
+    "answer": 3,
+    "why": "All three calls read `n` as 0 before any of them resumes after `await`. Each then writes 0 + 1: a lost update."
+  },
+  "takeaway": "Make check-then-act one unit: a lock, a transaction, or a constraint.",
+  "chat": {
+    "starters": [
+      "If Node is single-threaded, how can it have race conditions?",
+      "How would I stop overselling when the service runs on several servers?",
+      "When should I use optimistic locking with a version field instead of a lock?"
+    ]
+  }
+}

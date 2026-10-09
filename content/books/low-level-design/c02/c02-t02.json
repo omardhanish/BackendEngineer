@@ -1,0 +1,138 @@
+{
+  "title": "Singleton and Builder",
+  "idea": "Singleton guarantees one shared instance of a class with one access point. Builder assembles a complex object step by step, then checks and freezes it.",
+  "points": [
+    "A Singleton creates its instance on first request and returns it ever after.",
+    "A module exporting one instance acts as a Singleton: Node loads each file once.",
+    "A Builder collects options through chained methods that each return `this`.",
+    "`build()` validates required parts once, then returns a finished, frozen object."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "memory",
+    "title": "Two calls, one object",
+    "scenario": {
+      "code": [
+        "class Config {",
+        "  static #instance = null;",
+        "  static get() {",
+        "    if (!Config.#instance) Config.#instance = new Config();",
+        "    return Config.#instance;",
+        "  }",
+        "}",
+        "const a = Config.get();",
+        "const b = Config.get();",
+        "console.log(a === b);"
+      ],
+      "steps": [
+        {
+          "caption": "The class exists, but its private static `#instance` is still `null`. No object has been made.",
+          "line": 6,
+          "stack": [
+            { "name": "Global", "vars": { "Config": { "ref": "cls" }, "a": "<uninitialized>", "b": "<uninitialized>" } }
+          ],
+          "heap": [
+            { "id": "cls", "label": "class Config", "props": { "#instance": "null" } }
+          ]
+        },
+        {
+          "caption": "The first `get()` finds `#instance` empty, so it creates the one `Config` object and stores it.",
+          "line": 3,
+          "stack": [
+            { "name": "Global", "vars": { "Config": { "ref": "cls" }, "a": "<uninitialized>", "b": "<uninitialized>" } },
+            { "name": "get()", "vars": {} }
+          ],
+          "heap": [
+            { "id": "cls", "label": "class Config", "props": { "#instance": { "ref": "inst" } } },
+            { "id": "inst", "label": "Config instance" }
+          ]
+        },
+        {
+          "caption": "`a` now points at that instance.",
+          "line": 7,
+          "stack": [
+            { "name": "Global", "vars": { "Config": { "ref": "cls" }, "a": { "ref": "inst" }, "b": "<uninitialized>" } }
+          ],
+          "heap": [
+            { "id": "cls", "label": "class Config", "props": { "#instance": { "ref": "inst" } } },
+            { "id": "inst", "label": "Config instance" }
+          ]
+        },
+        {
+          "caption": "The second `get()` skips creation and returns the stored object.",
+          "line": 4,
+          "stack": [
+            { "name": "Global", "vars": { "Config": { "ref": "cls" }, "a": { "ref": "inst" }, "b": "<uninitialized>" } },
+            { "name": "get()", "vars": { "return": { "ref": "inst" } } }
+          ],
+          "heap": [
+            { "id": "cls", "label": "class Config", "props": { "#instance": { "ref": "inst" } } },
+            { "id": "inst", "label": "Config instance" }
+          ]
+        },
+        {
+          "caption": "`a` and `b` hold the same reference, so `a === b` is `true`.",
+          "line": 9,
+          "stack": [
+            { "name": "Global", "vars": { "Config": { "ref": "cls" }, "a": { "ref": "inst" }, "b": { "ref": "inst" } } }
+          ],
+          "heap": [
+            { "id": "cls", "label": "class Config", "props": { "#instance": { "ref": "inst" } } },
+            { "id": "inst", "label": "Config instance" }
+          ]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "counter.mjs",
+      "lang": "js",
+      "title": "A guarded Singleton",
+      "run": "browser",
+      "caption": "Every `Counter.get()` returns the same object, so hits add up. A direct `new` after the first `get()` is refused; one that runs earlier would still slip through.",
+      "walk": [
+        { "lines": [2, 3], "text": "One private static slot for the instance, and private state inside it." },
+        { "lines": [4, 5, 6], "text": "The constructor refuses a second object once the first exists." },
+        { "lines": [7], "text": "`??=` creates the instance only on the first call." },
+        { "lines": [10, 11, 12], "text": "Two calls share one counter; `new Counter()` now throws." }
+      ]
+    },
+    {
+      "file": "builder.mjs",
+      "lang": "js",
+      "title": "A fluent Builder",
+      "run": "browser",
+      "caption": "Add a `note(text)` step to the builder. The `Order` class does not change.",
+      "walk": [
+        { "lines": [1, 2, 3], "text": "`Order` is the product. `Object.freeze` is shallow, so `build()` also freezes the items array." },
+        { "lines": [5], "text": "The builder keeps parts in a private draft with safe defaults." },
+        { "lines": [6, 7, 8], "text": "Each step sets one part and returns `this`, so calls chain." },
+        { "lines": [9, 10, 11], "text": "`build()` checks required parts once, then copies and freezes the array, so the builder cannot leak edits." },
+        { "lines": [14, 15, 16], "text": "Readable construction: each call names what it sets." },
+        { "lines": [17, 18], "text": "A missing customer fails at build time with a clear message." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "A Singleton is global state; inject it into classes so tests can pass a fake.",
+    "Skip the Builder when an options object with defaults reads clearly enough.",
+    "Validate in `build()`, not in each step, or the order of calls starts to matter."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const make = () => ({ n: 0 });\nlet inst;\nconst get = () => (inst ??= make());\nget().n++;\nget().n++;\nconsole.log(get().n, make().n);",
+    "lang": "js",
+    "options": ["1 0", "2 2", "2 0", "0 0"],
+    "answer": 2,
+    "why": "`get` builds the object once and returns it every time, so both increments hit it. `make()` builds a fresh object with `n` at 0."
+  },
+  "takeaway": "Singleton shares one object; Builder assembles one carefully, then freezes it.",
+  "chat": {
+    "starters": [
+      "Why do people call Singleton an anti-pattern?",
+      "Is an exported module instance really a Singleton in Node?",
+      "When is a Builder better than an options object?"
+    ]
+  }
+}

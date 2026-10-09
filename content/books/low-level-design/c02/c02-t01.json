@@ -1,0 +1,119 @@
+{
+  "title": "Factory and Abstract Factory",
+  "idea": "A Factory pattern puts object creation behind one method, so callers ask for a kind and get a ready object. Abstract Factory creates whole families of matching objects.",
+  "analogy": {
+    "text": "A coffee counter. You ask for a flat white; the barista picks the beans, milk and cup. A franchise kit ships every matching cup and lid together.",
+    "breaks": "A barista improvises; a factory only builds kinds it knows."
+  },
+  "points": [
+    "Callers depend on what an object does, never on its concrete class.",
+    "A simple factory maps kinds to classes, keeping `new` in one place.",
+    "Gang of Four Factory Method: subclasses override one `create` method to pick the product.",
+    "Abstract Factory swaps a whole family at once, so parts never mismatch."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "One request through a factory",
+    "scenario": {
+      "token": { "label": "'sms'", "tone": "req" },
+      "stages": [
+        { "id": "caller", "label": "Caller", "sub": "`create('sms')`" },
+        { "id": "factory", "label": "NotifierFactory", "sub": "static `create`" },
+        { "id": "registry", "label": "#makers", "sub": "kind → class" },
+        { "id": "product", "label": "SmsNotifier", "sub": "concrete product", "kind": "end" }
+      ],
+      "steps": [
+        {
+          "caption": "The caller asks for a notifier by kind. It never names a concrete class.",
+          "at": "caller",
+          "slot": "top",
+          "state": { "caller": "active" }
+        },
+        {
+          "caption": "`create` receives the kind. Every construction decision lives here, in one place.",
+          "at": "factory",
+          "slot": "top",
+          "state": { "caller": "done", "factory": "active" }
+        },
+        {
+          "caption": "The factory looks the kind up in its private registry map.",
+          "at": "registry",
+          "slot": "top",
+          "state": { "caller": "done", "factory": "done", "registry": "active" }
+        },
+        {
+          "caption": "The map returns `SmsNotifier`, and the factory runs `new` on it.",
+          "at": "product",
+          "slot": "top",
+          "state": { "caller": "done", "factory": "done", "registry": "done", "product": "active" }
+        },
+        {
+          "caption": "The object travels back and the caller calls `send('ada')`. It only knows the method exists.",
+          "at": "caller",
+          "slot": "bottom",
+          "token": { "label": "notifier", "tone": "ok" },
+          "state": { "caller": "active", "factory": "done", "registry": "done", "product": "done" },
+          "out": ["sms to ada"]
+        },
+        {
+          "caption": "An unknown kind such as `'fax'` fails fast with a clear error, not a silent `undefined`.",
+          "at": "registry",
+          "slot": "top",
+          "token": { "label": "'fax'", "tone": "err" },
+          "state": { "caller": "done", "factory": "done", "registry": "error" },
+          "out": ["unknown notifier: fax"]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "factory.mjs",
+      "lang": "js",
+      "title": "Simple factory with a registry",
+      "run": "browser",
+      "caption": "Add a `PushNotifier` class, register it as `'push'`, and create one. `create` never changes.",
+      "walk": [
+        { "lines": [1, 2], "text": "Two products share one shape: a `send(to)` method." },
+        { "lines": [5], "text": "The registry maps each kind to its class." },
+        { "lines": [6], "text": "`register` adds kinds from outside, so the factory stays closed for edits." },
+        { "lines": [7, 8, 9, 10], "text": "`create` looks up, validates, then builds. It is the only `new` callers need." },
+        { "lines": [13, 14], "text": "Callers pass a string and get an object, or a clear error." }
+      ]
+    },
+    {
+      "file": "kits.mjs",
+      "lang": "js",
+      "title": "Abstract Factory: families",
+      "run": "browser",
+      "caption": "Each kit builds a matching charger and refunder. `settle` cannot mix a fake charger with a live refunder.",
+      "walk": [
+        { "lines": [1, 2, 3, 4], "text": "Two families of products: live and fake, each with a charger and a refunder." },
+        { "lines": [6, 7, 8, 9], "text": "Each kit is a factory with one method per product in the family." },
+        { "lines": [11, 12, 13], "text": "`settle` takes a kit, so tests pass `FakePayments` and production passes `LivePayments`." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Skip the factory when only one class exists and none is planned; `new` is fine.",
+    "Avoid a `switch` on kind inside `create`; a registry map stays open for extension.",
+    "Throw on an unknown kind instead of returning `null` or a silent default."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "class A { name() { return 'A'; } }\nclass B { name() { return 'B'; } }\nconst makers = { a: A, b: B };\nconst create = (k) => new (makers[k] ?? A)();\nconsole.log(create('b').name() + create('z').name());",
+    "lang": "js",
+    "options": ["BB", "BA", "Bundefined", "TypeError"],
+    "answer": 1,
+    "why": "`makers['z']` is `undefined`, so `??` falls back to `A`. That silent default is exactly what hides typos in real factories."
+  },
+  "takeaway": "Ask a factory for a kind; let one place decide which class to build.",
+  "chat": {
+    "starters": [
+      "What is the difference between Factory Method and a simple factory?",
+      "When does Abstract Factory beat passing several separate factories?",
+      "How do I explain the Factory pattern in an LLD interview?"
+    ]
+  }
+}

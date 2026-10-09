@@ -1,0 +1,11 @@
+{
+  "stdout": "A: insufficient funds\n10 20",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node transfer.mjs",
+  "tool": null,
+  "hash": "f7c45c112cb5e2ad",
+  "at": "2026-10-09T07:07:02.872Z"
+}

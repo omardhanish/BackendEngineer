@@ -1,0 +1,11 @@
+{
+  "stdout": "ok   books a free room\nok   rejects an overlapping slot\nok   allows back-to-back slots\nok   rejects an empty slot",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node booking.test.mjs",
+  "tool": null,
+  "hash": "526de3d120e8d0e6",
+  "at": "2026-10-09T07:25:37.267Z"
+}

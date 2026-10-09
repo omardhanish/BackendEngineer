@@ -1,0 +1,110 @@
+{
+  "title": "The 45-minute LLD interview",
+  "idea": "A low-level design (LLD) interview is a timed conversation: you turn a vague problem into a few well-named classes, code the core path, then show it can grow.",
+  "points": [
+    "Spend the first minutes asking questions and writing down the agreed scope.",
+    "List entities and their jobs before you draw any class diagram.",
+    "Code one core use case end to end, not every class half done.",
+    "Close by adding a requirement through a new class, not by editing old ones."
+  ],
+  "hero": {
+    "type": "timeline",
+    "title": "How the 45 minutes run",
+    "items": [
+      {
+        "label": "Clarify",
+        "text": "Ask who uses it, the main actions and what is out of scope."
+      },
+      {
+        "label": "Entities",
+        "text": "Pull nouns from the scope. Give each candidate class one sentence describing its job."
+      },
+      {
+        "label": "Diagram",
+        "text": "Sketch a class diagram: fields, key methods, has-a and is-a links."
+      },
+      {
+        "label": "Core code",
+        "text": "Write the main use case in runnable classes. Talk while you type."
+      },
+      {
+        "label": "Extend",
+        "text": "The interviewer adds a twist. Show where a new class plugs in."
+      },
+      {
+        "label": "Wrap up",
+        "text": "Name trade-offs, edge cases you skipped and how you would test them."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "split.mjs",
+      "lang": "js",
+      "title": "Interview-sized core",
+      "run": "browser",
+      "caption": "One practice problem, an expense splitter, cut to its core. Others to try: parking lot, elevator, library. Add a `PercentSplit` class and pass it in. Real money needs integer cents and a rule for the leftover cent; mention it as a trade-off.",
+      "walk": [
+        {
+          "lines": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "text": "One strategy class. Its only job is deciding each person's share."
+        },
+        {
+          "lines": [
+            6,
+            7,
+            8
+          ],
+          "text": "`Expense` holds a strategy in a private field, injected through the constructor."
+        },
+        {
+          "lines": [
+            9,
+            10,
+            11
+          ],
+          "text": "`split` delegates the rule, so a new rule never edits `Expense`."
+        },
+        {
+          "lines": [
+            13,
+            14
+          ],
+          "text": "The demo: show the interviewer the core path actually runs."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not start coding before you and the interviewer agree on scope.",
+    "Avoid drawing ten classes; three to five well-named ones show more judgement.",
+    "Say your trade-offs out loud; silent good design earns less credit."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const s = { shares: (amt, ppl) => ppl.map((x) => [x, amt / ppl.length]) };\nconsole.log(Object.fromEntries(s.shares(10, ['ana', 'raj'])));",
+    "lang": "js",
+    "options": [
+      "[ [ 'ana', 5 ], [ 'raj', 5 ] ]",
+      "{ ana: 5, raj: 5 }",
+      "{ ana: 10, raj: 10 }",
+      "{ '0': 5, '1': 5 }"
+    ],
+    "answer": 1,
+    "why": "`shares` returns key-value pairs, each person with 10 divided by 2. `Object.fromEntries` turns those pairs into an object."
+  },
+  "takeaway": "Clarify, model, code the core, then extend without editing old classes.",
+  "chat": {
+    "starters": [
+      "Which practice problems should I do first for LLD interviews?",
+      "What questions should I ask in the first five minutes?",
+      "How do I recover if I run out of time mid-design?"
+    ]
+  }
+}

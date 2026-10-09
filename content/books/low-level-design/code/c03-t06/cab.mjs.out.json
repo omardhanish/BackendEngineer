@@ -1,0 +1,11 @@
+{
+  "stdout": "R1 D2 | R2 D1\nno driver for Cleo\nR1: ACCEPTED -> COMPLETED not allowed\nCOMPLETED D2 busy: false",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node cab.mjs",
+  "tool": null,
+  "hash": "7860420f84d83e55",
+  "at": "2026-10-09T07:05:22.263Z"
+}

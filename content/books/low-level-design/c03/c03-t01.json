@@ -1,0 +1,184 @@
+{
+  "title": "Parking lot design",
+  "idea": "A parking lot design turns \"park, pay, leave\" into a few classes: spots that know their size, tickets that record entry, and a swappable pricing rule.",
+  "analogy": {
+    "text": "A cloakroom. The attendant finds a free hook that fits your coat, hands you a numbered tag, and charges by the hour when you return.",
+    "breaks": "A real lot has many gates working at the same moment."
+  },
+  "points": [
+    "Nouns in the requirements become classes: `Spot`, `Ticket`, `ParkingLot`, `HourlyPricing`.",
+    "Each `Spot` decides whether a vehicle fits, so size rules live in one place.",
+    "`ParkingLot` owns the search and the ticket map; callers never touch spots directly.",
+    "Pricing is an injected strategy, so a new fee rule is a new class."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "One car in, one car out",
+    "actors": [
+      {
+        "id": "driver",
+        "label": "Driver"
+      },
+      {
+        "id": "lot",
+        "label": "ParkingLot"
+      },
+      {
+        "id": "spot",
+        "label": "Spot"
+      },
+      {
+        "id": "price",
+        "label": "HourlyPricing"
+      }
+    ],
+    "messages": [
+      {
+        "from": "driver",
+        "to": "lot",
+        "label": "park(vehicle, now)",
+        "note": "The driver arrives. `ParkingLot` runs the search; the driver never picks a spot."
+      },
+      {
+        "from": "lot",
+        "to": "spot",
+        "label": "fits(vehicle)?",
+        "note": "The lot asks each `Spot` in order. A spot says yes only if it is free and large enough."
+      },
+      {
+        "from": "spot",
+        "to": "lot",
+        "label": "yes",
+        "dashed": true,
+        "note": "The first spot that fits wins. A smarter selection rule could be another strategy."
+      },
+      {
+        "from": "lot",
+        "to": "driver",
+        "label": "Ticket",
+        "dashed": true,
+        "note": "The lot marks the spot taken and returns a `Ticket` with vehicle, spot and entry time."
+      },
+      {
+        "from": "driver",
+        "to": "lot",
+        "label": "leave(plate, now)",
+        "note": "At exit the lot finds the ticket by plate. An unknown plate is an error, not a free exit."
+      },
+      {
+        "from": "lot",
+        "to": "price",
+        "label": "price(ticket, now)",
+        "note": "The fee rule lives outside the lot. Swap in weekend or flat pricing without editing `ParkingLot`."
+      },
+      {
+        "from": "lot",
+        "to": "driver",
+        "label": "fee, spot freed",
+        "dashed": true,
+        "note": "The spot becomes free again and the ticket is removed, so the next car can use it."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "parking.mjs",
+      "lang": "js",
+      "title": "Spots, tickets, pricing",
+      "run": "browser",
+      "caption": "Times are minutes passed in by the caller, so the run is repeatable. Add a `FlatPricing` class and pass it in.",
+      "walk": [
+        {
+          "lines": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "text": "Sizes are ranked numbers. A smaller vehicle may use a larger spot, never the reverse."
+        },
+        {
+          "lines": [
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17
+          ],
+          "text": "The pricing strategy rounds up to whole hours and charges by vehicle type."
+        },
+        {
+          "lines": [
+            19,
+            20
+          ],
+          "text": "Spots and pricing are injected: the lot depends on their shape, not their class."
+        },
+        {
+          "lines": [
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28
+          ],
+          "text": "`park` refuses a plate already parked, then claims the first fitting spot and records the ticket."
+        },
+        {
+          "lines": [
+            30,
+            31,
+            32,
+            33,
+            34,
+            35
+          ],
+          "text": "`leave` checks the ticket, frees the spot, then delegates the fee."
+        },
+        {
+          "lines": [
+            41,
+            42,
+            43,
+            44,
+            45,
+            46
+          ],
+          "text": "The second car fills the truck spot, so the truck is refused. Once KA-1 leaves, A2 takes KA-4."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not read the system clock inside `park`; pass time in so tests stay repeatable.",
+    "Keep fee rules out of `ParkingLot`, or every new tariff edits a working class.",
+    "Two gates can grab one spot at once; claim spots atomically in a multi-gate system."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const rate = 20;\nconst fee = (mins) => Math.max(1, Math.ceil(mins / 60)) * rate;\nconsole.log(fee(0), fee(61), fee(120));",
+    "lang": "js",
+    "options": [
+      "0 40 40",
+      "20 40 40",
+      "20 21 40",
+      "20 40 60"
+    ],
+    "answer": 1,
+    "why": "`Math.max(1, …)` charges at least one hour. 61 minutes rounds up to two hours; 120 is exactly two."
+  },
+  "takeaway": "Spots judge fit, tickets record entry, and pricing is a swappable strategy.",
+  "chat": {
+    "starters": [
+      "How would I add multiple floors and an entry display board?",
+      "How do two entry gates avoid giving out the same spot?",
+      "Which design patterns do interviewers expect in a parking lot?"
+    ]
+  }
+}

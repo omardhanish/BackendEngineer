@@ -1,0 +1,11 @@
+{
+  "stdout": "1,1: playing\n0,0: playing\n1,1: cell 1,1 is taken\n0,2: playing\n0,1: playing\n2,0: Ana wins\n2,2: game is over",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node game.mjs",
+  "tool": null,
+  "hash": "6eaa4111b4b6d53b",
+  "at": "2026-10-09T07:15:38.752Z"
+}

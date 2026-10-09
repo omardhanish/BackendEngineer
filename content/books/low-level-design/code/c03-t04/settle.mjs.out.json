@@ -1,0 +1,11 @@
+{
+  "stdout": "cy pays ana 350\ndev pays ben 200\ndev pays ana 50",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node settle.mjs",
+  "tool": null,
+  "hash": "7ed8465d422912e3",
+  "at": "2026-10-09T07:06:18.931Z"
+}

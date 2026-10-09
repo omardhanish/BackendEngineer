@@ -1,0 +1,11 @@
+{
+  "stdout": "ana: confirmed C7\nben: confirmed C7\nseat C7 belongs to ben",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node race.mjs",
+  "tool": null,
+  "hash": "ccec1b9e34e5246c",
+  "at": "2026-10-09T07:07:16.912Z"
+}

@@ -1,0 +1,228 @@
+{
+  "title": "DDD: language, contexts, objects",
+  "idea": "Domain-driven design (DDD) shapes code around the business: a shared language, bounded contexts where each term has one meaning, and entities and value objects inside them.",
+  "analogy": {
+    "text": "In a port, the harbour master's \"ship\" has a length and a berth. To customs, a \"ship\" is cargo and a flag.",
+    "breaks": "In code, you write the translation between contexts yourself."
+  },
+  "points": [
+    "Ubiquitous language: class and method names match words the experts use.",
+    "A bounded context is a boundary where each model term has one meaning.",
+    "An entity has an identity that lasts while its attributes change.",
+    "A value object is defined by its values, is immutable, and compares by value."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "One word, three contexts",
+    "scenario": {
+      "tiers": [
+        [
+          "ui"
+        ],
+        [
+          "sales"
+        ],
+        [
+          "bus"
+        ],
+        [
+          "ship",
+          "bill"
+        ]
+      ],
+      "nodes": {
+        "ui": {
+          "label": "Checkout page",
+          "kind": "client"
+        },
+        "sales": {
+          "label": "Sales",
+          "sub": "bounded context",
+          "kind": "service"
+        },
+        "bus": {
+          "label": "OrderPlaced",
+          "sub": "domain event",
+          "kind": "topic"
+        },
+        "ship": {
+          "label": "Shipping",
+          "sub": "bounded context",
+          "kind": "service"
+        },
+        "bill": {
+          "label": "Billing",
+          "sub": "bounded context",
+          "kind": "service"
+        }
+      },
+      "links": [
+        [
+          "ui",
+          "sales"
+        ],
+        [
+          "sales",
+          "bus"
+        ],
+        [
+          "bus",
+          "ship"
+        ],
+        [
+          "bus",
+          "bill"
+        ]
+      ],
+      "steps": [
+        {
+          "caption": "The word 'customer' means something different in each context. Each context owns its own model.",
+          "focus": [
+            "sales",
+            "ship",
+            "bill"
+          ]
+        },
+        {
+          "caption": "In Sales, a customer is a buyer: name, basket and loyalty tier.",
+          "send": [
+            {
+              "from": "ui",
+              "to": "sales",
+              "label": "place order",
+              "tone": "req"
+            }
+          ],
+          "badge": {
+            "sales": "buyer"
+          }
+        },
+        {
+          "caption": "Sales does not call the others' classes. It publishes a fact other contexts can read.",
+          "send": [
+            {
+              "from": "sales",
+              "to": "bus",
+              "label": "event",
+              "tone": "info"
+            }
+          ],
+          "state": {
+            "bus": "new"
+          }
+        },
+        {
+          "caption": "Shipping translates the event into its own `Recipient`: an address and delivery slot.",
+          "send": [
+            {
+              "from": "bus",
+              "to": "ship",
+              "label": "recipient",
+              "tone": "ok"
+            }
+          ],
+          "badge": {
+            "ship": "recipient"
+          }
+        },
+        {
+          "caption": "Billing builds a `Payer` with a payment method. Same person, different model.",
+          "send": [
+            {
+              "from": "bus",
+              "to": "bill",
+              "label": "payer",
+              "tone": "ok"
+            }
+          ],
+          "badge": {
+            "bill": "payer"
+          }
+        },
+        {
+          "caption": "Each context can change its model alone. Only the event's shape is a shared contract.",
+          "focus": [
+            "bus"
+          ]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "money.mjs",
+      "lang": "js",
+      "title": "A value object",
+      "run": "browser",
+      "caption": "`Money` is frozen and compares by value. Add `fee.amount = 1; console.log(fee.amount);` and run: the write is ignored, and it still prints 500.",
+      "walk": [
+        {
+          "lines": [
+            2,
+            3,
+            4,
+            5
+          ],
+          "text": "`Object.freeze` makes the instance immutable: no field can be changed after construction."
+        },
+        {
+          "lines": [
+            6,
+            7,
+            8,
+            9
+          ],
+          "text": "`add` returns a new `Money` and refuses to mix currencies."
+        },
+        {
+          "lines": [
+            10
+          ],
+          "text": "Equality compares the values, not the reference."
+        },
+        {
+          "lines": [
+            12,
+            13,
+            14
+          ],
+          "text": "The original fee is unchanged; `===` still compares references."
+        }
+      ]
+    },
+    {
+      "file": "customer.mjs",
+      "lang": "js",
+      "title": "An entity",
+      "run": "browser",
+      "caption": "`Customer` is equal by `id`. A renamed customer is still the same customer."
+    }
+  ],
+  "pitfalls": [
+    "Do not share one `Customer` class across contexts; each context models its own.",
+    "Never mutate a value object; return a new one from every operation.",
+    "Name classes in the experts' words, not `Manager`, `Data` or `Helper`."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const a = Object.freeze({ amount: 5 });\nconst b = Object.freeze({ amount: 5 });\nconsole.log(a === b, a.amount === b.amount);",
+    "lang": "js",
+    "options": [
+      "true true",
+      "false true",
+      "false false",
+      "true false"
+    ],
+    "answer": 1,
+    "why": "`===` on objects compares references, so two separate objects differ. Value objects need an `equals` that compares fields."
+  },
+  "takeaway": "Speak the experts' language, draw context borders, then separate identity from value.",
+  "chat": {
+    "starters": [
+      "How do I find the boundaries of a bounded context?",
+      "Should an address be an entity or a value object?",
+      "Is DDD worth it for a small LLD interview problem?"
+    ]
+  }
+}

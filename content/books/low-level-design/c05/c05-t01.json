@@ -1,0 +1,82 @@
+{
+  "title": "Capstone kickoff: room booking",
+  "idea": "The capstone is one Meeting Room Booking System you take from requirements to a tested, documented design you can present and defend.",
+  "points": [
+    "Fix the scope first: must-have requirements now, stretch goals later.",
+    "Write the public API of `BookingService` before any logic.",
+    "Each page of this chapter adds one layer to the same classes.",
+    "Keep the class names stable so every later step builds on them."
+  ],
+  "hero": {
+    "type": "timeline",
+    "title": "The capstone, step by step",
+    "items": [
+      {
+        "label": "Scope",
+        "text": "Must-haves: search, book, cancel, no double booking, notify. Recurring bookings wait."
+      },
+      {
+        "label": "Model",
+        "text": "Turn requirements into use cases and entities such as `Room`, `Booking` and `Employee`."
+      },
+      {
+        "label": "Diagram",
+        "text": "Draw the class diagram and the interfaces, such as `ConflictPolicy` and the repositories."
+      },
+      {
+        "label": "Build",
+        "text": "Write `BookingService` and in-memory repositories, then run every use case as a script."
+      },
+      {
+        "label": "Harden",
+        "text": "Add typed errors, `AuditLogger`, metrics, patterns and tests."
+      },
+      {
+        "label": "Present",
+        "text": "Document with UML, then explain each trade-off in a review."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "scope.mjs",
+      "lang": "js",
+      "title": "Scope as data",
+      "run": "browser",
+      "caption": "Requirements get ids so classes and tests can point back to them. Mark `R6` as must-have and run again."
+    },
+    {
+      "file": "contract.mjs",
+      "lang": "js",
+      "title": "API before logic",
+      "run": "browser",
+      "caption": "The three public methods are the use cases. Every body throws until a later page fills it in."
+    }
+  ],
+  "pitfalls": [
+    "Agree the scope before coding; adding features mid-design hides the core trade-offs.",
+    "Do not start with recurring bookings; finish the must-have use cases first.",
+    "Avoid renaming core classes later; diagrams, tests and code drift apart."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "class BookingService {\n  book() { throw new Error('not implemented'); }\n}\nconst names = Object.getOwnPropertyNames(BookingService.prototype);\nconsole.log(names.length);",
+    "lang": "js",
+    "options": [
+      "1",
+      "0",
+      "2",
+      "Error: not implemented"
+    ],
+    "answer": 2,
+    "why": "A class prototype always owns `constructor` as well as each declared method. Nothing calls `book()`, so no error is thrown."
+  },
+  "takeaway": "Fix the scope and the public API before writing any logic.",
+  "chat": {
+    "starters": [
+      "How do I decide what is in scope for an LLD interview?",
+      "Why write the public API before the implementation?",
+      "Which requirements would you cut if time runs short?"
+    ]
+  }
+}

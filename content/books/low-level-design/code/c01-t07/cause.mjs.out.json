@@ -1,0 +1,11 @@
+{
+  "stdout": "ConfigError: config is unreadable\ncause: SyntaxError",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node cause.mjs",
+  "tool": null,
+  "hash": "745dee7c4c0b924d",
+  "at": "2026-10-09T07:04:33.079Z"
+}

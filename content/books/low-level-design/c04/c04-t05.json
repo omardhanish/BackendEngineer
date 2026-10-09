@@ -1,0 +1,84 @@
+{
+  "title": "Defensive, error-resilient classes",
+  "idea": "Defensive design means each class checks its inputs at the boundary, refuses bad state with clear typed errors, and recovers only from failures it understands.",
+  "points": [
+    "Guard clauses reject bad input before any state changes.",
+    "Private fields stop callers from breaking a rule behind your back.",
+    "A typed error with a stable `code` tells callers exactly what went wrong.",
+    "Retry only transient failures, a bounded number of times, never bad input."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "Where a bad call gets stopped",
+    "scenario": {
+      "token": { "label": "pay(200)", "tone": "req" },
+      "stages": [
+        { "id": "caller", "label": "Caller", "sub": "checkout code" },
+        { "id": "guard", "label": "Guard clause", "sub": "is it a valid amount?" },
+        { "id": "rule", "label": "Domain rule", "sub": "enough funds?" },
+        { "id": "state", "label": "Private state", "sub": "#cents", "kind": "end" }
+      ],
+      "steps": [
+        { "caption": "The caller asks the `Wallet` to pay 200 cents.", "at": "caller", "slot": "top", "state": { "caller": "active" } },
+        { "caption": "The guard checks the type and sign first. 200 is a positive integer, so it passes.", "at": "guard", "slot": "top", "state": { "caller": "done", "guard": "active" } },
+        { "caption": "The domain rule checks the balance. There is enough, so the change is allowed.", "at": "rule", "slot": "top", "state": { "guard": "done", "rule": "active" } },
+        { "caption": "Only now does private state change. Nothing outside the class could have skipped the checks.", "at": "state", "slot": "top", "state": { "rule": "done", "state": "done" } },
+        { "caption": "Next call: `pay('50')`. A string is not an integer, so the guard throws `BAD_AMOUNT` at once.", "at": "guard", "slot": "bottom", "token": { "label": "BAD_AMOUNT", "tone": "err" }, "state": { "caller": "active", "guard": "error", "rule": "blocked", "state": "blocked" } },
+        { "caption": "`pay(900)` passes the guard but fails the rule. `NO_FUNDS` travels back; the balance is untouched.", "at": "rule", "slot": "bottom", "token": { "label": "NO_FUNDS", "tone": "err" }, "state": { "guard": "done", "rule": "error", "state": "blocked" } },
+        { "caption": "The caller reads `e.code` and decides: show a message, ask for another card, or log it.", "at": "caller", "slot": "bottom", "token": { "label": "e.code", "tone": "err" }, "state": { "caller": "active" } }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "wallet.mjs",
+      "lang": "js",
+      "title": "Guards and typed errors",
+      "run": "browser",
+      "caption": "Try `wallet.pay(-1)` or `wallet.pay(2.5)`. Each is refused before the balance changes.",
+      "walk": [
+        { "lines": [1, 2, 3], "text": "One error class with a stable `code` that callers can switch on." },
+        { "lines": [5], "text": "`#cents` is private, so no caller can set a negative balance directly." },
+        { "lines": [6, 7, 8], "text": "One guard, reused by every method that takes an amount." },
+        { "lines": [10, 11, 12, 13, 14], "text": "Check everything first, then change state. A failed call leaves no half-done update." },
+        { "lines": [19, 20, 21, 22], "text": "The caller catches and reads `e.code`, not the free-text message." }
+      ]
+    },
+    {
+      "file": "retry.mjs",
+      "lang": "js",
+      "title": "Retry only what is transient",
+      "run": "browser",
+      "caption": "A timeout may pass on the next try; bad input never will. Change line 17 to `withRetry(flaky, 2)`: the second timeout is rethrown and the run stops there.",
+      "walk": [
+        { "lines": [1], "text": "A marker class says which failures are worth another try." },
+        { "lines": [3, 4], "text": "The loop has no condition. Each pass calls `fn` once; line 6 decides when to stop." },
+        { "lines": [6], "text": "Stop at the attempt limit, or at once for any non-transient error, by rethrowing." },
+        { "lines": [17], "text": "The flaky call fails twice with a timeout, then succeeds on the third try." },
+        { "lines": [18, 19], "text": "A plain `Error` fails at once, with no wasted retries." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Validate before mutating state, or a thrown error leaves the object half updated.",
+    "Never swallow an error with an empty `catch`; rethrow or handle it on purpose.",
+    "Retry only transient failures of calls that are safe to repeat, and cap the attempts."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "class Box { #n = 0;\n  take(k) {\n    this.#n -= k;\n    if (this.#n < 0) throw new Error('EMPTY');\n  }\n  get n() { return this.#n; } }\nconst b = new Box();\ntry { b.take(3); } catch {}\nconsole.log(b.n);",
+    "lang": "js",
+    "options": ["0", "-3", "3", "EMPTY"],
+    "answer": 1,
+    "why": "The state changes before the check runs. The throw stops the method but does not undo the subtraction."
+  },
+  "takeaway": "Check at the door, fail with a typed error, change state last.",
+  "chat": {
+    "starters": [
+      "Should I throw errors or return result objects in JavaScript?",
+      "How do I decide which failures are safe to retry?",
+      "Where should validation live: controller, service or entity?"
+    ]
+  }
+}

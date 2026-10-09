@@ -1,0 +1,11 @@
+{
+  "stdout": "Novel: 18.00\nTea: 11.00\nPen: 3.00",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node before.mjs",
+  "tool": null,
+  "hash": "3ffbbe1fd649a0fc",
+  "at": "2026-10-09T07:08:22.658Z"
+}

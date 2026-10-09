@@ -1,0 +1,117 @@
+{
+  "title": "Readable, clean code",
+  "idea": "Clean code is code a teammate can read once and change safely: honest names, small functions, flat control flow, and no hidden magic values.",
+  "points": [
+    "A name should say what a value holds or what a function returns.",
+    "Each function does one thing at one level of detail.",
+    "Guard clauses return early, so the main path stays unindented.",
+    "Named constants replace magic numbers, so a rule changes in one place."
+  ],
+  "hero": {
+    "type": "compare",
+    "title": "Same result, different cost to change",
+    "left": {
+      "title": "Hard to read",
+      "tone": "bad",
+      "items": [
+        "Names like `o`, `t`, `r` hide intent",
+        "Flag `t == 1` secretly means 'is a member'",
+        "Nested `if` inside a loop inside a function",
+        "Multiplier `0.9` typed inline, maybe in many places"
+      ]
+    },
+    "right": {
+      "title": "Clean",
+      "tone": "good",
+      "items": [
+        "`orderTotal(items, { isMember })` reads like the requirement",
+        "Named option replaces the mystery flag",
+        "`filter` then `reduce`: one step per line",
+        "`MEMBER_DISCOUNT` defined once, at the top"
+      ]
+    },
+    "verdict": "Both print the same numbers. Only one survives the next requirement change."
+  },
+  "code": [
+    {
+      "file": "before.mjs",
+      "lang": "js",
+      "title": "Before",
+      "run": "browser",
+      "caption": "It works, yet each reader must decode `o`, `t`, `q` and `0.9` before changing anything."
+    },
+    {
+      "file": "after.mjs",
+      "lang": "js",
+      "title": "After",
+      "run": "browser",
+      "caption": "Same output. Add an `isStaff` option with its own discount and notice how little you touch.",
+      "walk": [
+        {
+          "lines": [
+            1
+          ],
+          "text": "A named constant: the business rule lives in one place."
+        },
+        {
+          "lines": [
+            3
+          ],
+          "text": "A tiny helper names one idea: the cost of a line."
+        },
+        {
+          "lines": [
+            5
+          ],
+          "text": "An options object makes call sites self-describing instead of `calc(items, 1)`."
+        },
+        {
+          "lines": [
+            6
+          ],
+          "text": "Guard clause: reject bad input first, with a clear error type."
+        },
+        {
+          "lines": [
+            7,
+            8,
+            9
+          ],
+          "text": "Each step reads as a sentence: keep lines with a positive quantity, then add their totals."
+        },
+        {
+          "lines": [
+            18
+          ],
+          "text": "The call site now explains itself without a comment."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not add comments that repeat the code; rename until the comment is redundant.",
+    "Avoid boolean flag parameters; pass a named option or split the function.",
+    "Do not shrink code into clever one-liners; optimise for the next reader."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "function label(n) {\n  if (n < 0) return 'invalid';\n  if (n === 0) return 'empty';\n  return n > 9 ? 'many' : 'few';\n}\nconsole.log(label(0), label(12));",
+    "lang": "js",
+    "options": [
+      "invalid many",
+      "few many",
+      "empty many",
+      "empty few"
+    ],
+    "answer": 2,
+    "why": "Guard clauses run top to bottom. `0` stops at the second check; `12` passes both guards and is above 9."
+  },
+  "takeaway": "Write for the next reader: clear names, small functions, early returns.",
+  "chat": {
+    "starters": [
+      "How long should a function be before I split it?",
+      "When is a comment actually worth writing?",
+      "How do interviewers judge code readability in an LLD round?"
+    ]
+  }
+}

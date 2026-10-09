@@ -1,0 +1,11 @@
+{
+  "stdout": "c a d",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node lru-map.mjs",
+  "tool": null,
+  "hash": "fc1253812f986be0",
+  "at": "2026-10-09T07:06:13.942Z"
+}

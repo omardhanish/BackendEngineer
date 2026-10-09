@@ -1,0 +1,78 @@
+{
+  "title": "Designing classes and interfaces",
+  "idea": "Good class design gives each class one job and hidden state, and lets classes talk only through small interfaces of the methods callers need.",
+  "points": [
+    "Nouns in the requirements suggest classes; verbs suggest their methods.",
+    "Give each class one reason to change and keep its state private.",
+    "An interface is the set of methods a caller relies on.",
+    "In JavaScript, write one as a base class whose methods throw."
+  ],
+  "hero": {
+    "type": "compare",
+    "title": "One big class versus focused ones",
+    "left": {
+      "title": "One `OrderManager` does all",
+      "tone": "bad",
+      "items": [
+        "Validates, prices, charges cards and sends emails",
+        "Creates its own payment client inside",
+        "Every change risks every feature",
+        "Tests need a real payment provider"
+      ]
+    },
+    "right": {
+      "title": "Focused classes, narrow interfaces",
+      "tone": "good",
+      "items": [
+        "`Checkout` coordinates; each job has its own class",
+        "Depends on a `PaymentGateway` interface",
+        "A new provider is one new class",
+        "Tests pass a fake gateway in"
+      ]
+    },
+    "verdict": "Split classes by job, and connect them through the smallest interface that works."
+  },
+  "code": [
+    {
+      "file": "gateway.mjs",
+      "lang": "js",
+      "title": "Program to an interface",
+      "run": "browser",
+      "caption": "`Checkout` knows only `charge()`. Write a `DeclineAllGateway` and pass it in instead.",
+      "walk": [
+        { "lines": [1, 2, 3, 4], "text": "The interface: a base class whose method throws until a subclass overrides it." },
+        { "lines": [5, 6, 7], "text": "One implementation. A real provider would be another subclass." },
+        { "lines": [8, 9, 10], "text": "`Checkout` receives its gateway and keeps it private." },
+        { "lines": [11], "text": "It calls only the interface method, never provider details." }
+      ]
+    },
+    {
+      "file": "money.mjs",
+      "lang": "js",
+      "title": "Guard the invariants",
+      "run": "browser",
+      "caption": "A value class that rejects bad input in its constructor and never changes after creation. `add` returns a new `Money`."
+    }
+  ],
+  "pitfalls": [
+    "Expose behaviour such as `add()`, not a getter and setter for every field.",
+    "Keep interfaces small; callers should not depend on methods they never use.",
+    "Validate in the constructor so no object exists in a broken state."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "class Store { save(x) { throw new Error('not implemented'); } }\nclass MemStore extends Store { put(x) { return 'saved'; } }\ntry { console.log(new MemStore().save(1)); }\ncatch (e) { console.log(e.message); }",
+    "lang": "js",
+    "options": ["saved", "not implemented", "undefined", "TypeError: save is not a function"],
+    "answer": 1,
+    "why": "`MemStore` named its method `put`, so `save` is found on `Store` and throws. The base class caught the missing override."
+  },
+  "takeaway": "One job per class; talk through small interfaces.",
+  "chat": {
+    "starters": [
+      "How do I turn interview requirements into a list of classes?",
+      "Should I use JSDoc interfaces or base classes in JavaScript?",
+      "When is a class too small?"
+    ]
+  }
+}

@@ -1,0 +1,134 @@
+{
+  "title": "Hotel booking and double bookings",
+  "idea": "A hotel booking design stores bookings as date ranges per room, and makes the overlap check and the save one step, so no night is sold twice.",
+  "points": [
+    "Core classes: `Hotel`, `Room`, `Guest`, `Booking`, `BookingRepository` and `BookingService`.",
+    "A stay is a half-open range `[from, to)`; checkout day stays free.",
+    "Two ranges clash when each one starts before the other ends.",
+    "Checking then saving with an `await` between them lets a second request slip in."
+  ],
+  "hero": {
+    "type": "timeline",
+    "title": "Two guests, one room, one night",
+    "items": [
+      {
+        "label": "Ann reads",
+        "text": "Ann's request reads room 101's bookings. There are none, so her check passes."
+      },
+      {
+        "label": "Bo reads",
+        "text": "Before Ann's save lands, Bo reads the same empty list. His check passes too."
+      },
+      {
+        "label": "Both save",
+        "text": "Ann's booking is written, then Bo's. Night 4 now has two guests."
+      },
+      {
+        "label": "Add a lock",
+        "text": "A per-room lock queues Bo's check-and-save behind Ann's. Other rooms carry on."
+      },
+      {
+        "label": "Bo runs next",
+        "text": "Bo's queued check runs after Ann's save. He sees her booking and is refused."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "hotel.mjs",
+      "lang": "js",
+      "title": "Race, then lock",
+      "run": "browser",
+      "caption": "The repository fakes a database with a timer. Three guests ask for room 101 at once, first without a lock, then with one.",
+      "walk": [
+        {
+          "lines": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "text": "Each repository call waits a tick, like a real database round trip."
+        },
+        {
+          "lines": [
+            9
+          ],
+          "text": "Half-open ranges: a stay ending on day 5 does not clash with one starting on 5."
+        },
+        {
+          "lines": [
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17
+          ],
+          "text": "`KeyedLock` chains tasks per key, so tasks for one room run one at a time."
+        },
+        {
+          "lines": [
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28
+          ],
+          "text": "The check and the save form one task: the critical section."
+        },
+        {
+          "lines": [
+            29
+          ],
+          "text": "Without a lock the task runs at once and can interleave with others."
+        },
+        {
+          "lines": [
+            32,
+            33,
+            34,
+            35,
+            36,
+            37
+          ],
+          "text": "Ann and Bo overlap on night 4. Cy starts on Ann's checkout day."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Never check availability and save in separate steps with an `await` between them.",
+    "An in-memory lock covers one process only; with several servers use a database constraint.",
+    "Store stays as `[from, to)`; inclusive end dates make back-to-back stays clash."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const overlaps = (a, b) => a.from < b.to && b.from < a.to;\nconsole.log(\n  overlaps({ from: 3, to: 5 }, { from: 5, to: 7 }),\n  overlaps({ from: 1, to: 9 }, { from: 4, to: 6 }));",
+    "lang": "js",
+    "options": [
+      "true true",
+      "false false",
+      "true false",
+      "false true"
+    ],
+    "answer": 3,
+    "why": "The first pair only touch on day 5, and `5 < 5` is false. The second range sits inside the first, so both comparisons hold."
+  },
+  "takeaway": "Overlap check and save must be one atomic step per room.",
+  "chat": {
+    "starters": [
+      "How would a database unique or exclusion constraint prevent double booking?",
+      "Should I use optimistic or pessimistic locking for hotel rooms?",
+      "How do I search for any free room of a given type?"
+    ]
+  }
+}

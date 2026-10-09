@@ -1,0 +1,81 @@
+{
+  "title": "Splitwise expense sharing design",
+  "idea": "A Splitwise design records who paid and who shared each expense, keeps one net balance per person, and turns those balances into a short list of payments.",
+  "analogy": {
+    "text": "A notebook on a shared flat's fridge. Each purchase is one line; at month end you total everyone's column and settle up.",
+    "breaks": "A notebook cannot reject shares that do not add up."
+  },
+  "points": [
+    "Each split rule is a strategy with one method: `shares(total, users)`.",
+    "Money is stored in whole cents, so leftover cents are assigned on purpose.",
+    "The ledger keeps one net number per person, not a pile of pairwise debts.",
+    "Settling matches the largest debtor with the largest creditor until everyone is even."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "From receipt to repayments",
+    "nodes": [
+      { "id": "add", "label": "addExpense()", "sub": "payer, total, users" },
+      { "id": "split", "label": "SplitStrategy", "sub": "Equal · Exact · Percent" },
+      { "id": "ledger", "label": "Ledger", "sub": "net balance per person" },
+      { "id": "settle", "label": "settle()", "sub": "greedy matching" },
+      { "id": "pay", "label": "Payments", "sub": "who pays whom" }
+    ],
+    "edges": [
+      { "from": "add", "to": "split", "label": "shares?", "caption": "The expense asks its strategy for each person's share. The ledger never knows which rule was used." },
+      { "from": "split", "to": "add", "label": "throws", "dashed": true, "back": true, "caption": "An exact split that does not add up throws before any balance changes." },
+      { "from": "split", "to": "ledger", "label": "shares", "caption": "Each sharer's balance goes down by their share; the payer's goes up by the same amount." },
+      { "from": "ledger", "to": "settle", "label": "net balances", "caption": "Balances always sum to zero. Positive means owed money, negative means owing." },
+      { "from": "settle", "to": "pay", "label": "transfers", "caption": "Each match zeroes at least one person, so payments never exceed people minus one." }
+    ]
+  },
+  "code": [
+    {
+      "file": "splits.mjs",
+      "lang": "js",
+      "title": "Split strategies and ledger",
+      "run": "browser",
+      "caption": "Add a `PercentSplit` class with the same `shares` method. The `Ledger` needs no change.",
+      "walk": [
+        { "lines": [2, 3, 4, 5, 6], "text": "Equal split hands leftover cents to the first users, so shares always sum to the total." },
+        { "lines": [9, 10, 11, 12, 13, 14], "text": "Exact split validates that the given amounts add up, or throws." },
+        { "lines": [19, 20], "text": "Shares are computed first, so a bad split leaves balances untouched." },
+        { "lines": [21, 22, 23, 24], "text": "Every share moves money from the sharer's balance to the payer's." },
+        { "lines": [32, 33, 34, 35, 36, 37, 38, 39], "text": "Two good expenses, one rejected, then the net balances." }
+      ]
+    },
+    {
+      "file": "settle.mjs",
+      "lang": "js",
+      "title": "Simplify the debts",
+      "run": "browser",
+      "caption": "Balances in, payments out. Change the numbers, keeping their sum at zero, and rerun.",
+      "walk": [
+        { "lines": [3], "text": "Copy balances into objects we can update." },
+        { "lines": [6, 7, 8], "text": "Sort so the biggest debtor is first and the biggest creditor last; stop when either is even." },
+        { "lines": [9, 10, 11, 12], "text": "Pay the smaller of the two amounts, which zeroes at least one of them." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Never store money as floating-point; use integer cents and assign leftovers explicitly.",
+    "Validate the split before updating any balance, or a failure leaves half-applied state.",
+    "Do not add a new `if` per split type; add a strategy class instead."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const total = 100, users = ['a', 'b', 'c'];\nconst base = Math.floor(total / users.length);\nconst extra = total - base * users.length;\nconsole.log(users.map((u, i) => base + (i < extra ? 1 : 0)).join(' '));",
+    "lang": "js",
+    "options": ["33 33 33", "33.33 33.33 33.33", "33 33 34", "34 33 33"],
+    "answer": 3,
+    "why": "`base` is 33 and one cent is left over. The index check gives it to the first user."
+  },
+  "takeaway": "Strategies compute shares, the ledger nets them, and settle pays them off.",
+  "chat": {
+    "starters": [
+      "How would I support groups and per-group balances?",
+      "Is the greedy settle always the minimum number of payments?",
+      "How would I add a percentage split without rounding errors?"
+    ]
+  }
+}

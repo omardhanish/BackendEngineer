@@ -1,0 +1,31 @@
+{
+  "title": "Presenting your design",
+  "idea": "A design presentation is a short, guided tour: the problem, the classes that solve it, one use case traced end to end, and the trade-offs you chose.",
+  "points": [
+    "Open with the requirements in one breath, so everyone judges the same problem.",
+    "Show the class diagram, then trace one use case through real method calls.",
+    "Name each trade-off and the alternative you rejected, with the reason.",
+    "Answer \"what if\" questions by pointing at the class that would change."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "Tracing \"book a room\" live",
+    "actors": [
+      { "id": "emp", "label": "Employee" },
+      { "id": "svc", "label": "BookingService" },
+      { "id": "pol", "label": "ConflictPolicy" },
+      { "id": "repo", "label": "BookingRepository" },
+      { "id": "note", "label": "NotificationService" }
+    ],
+    "messages": [
+      { "from": "emp", "to": "svc", "label": "book(room, slot)", "note": "Start from the user's action. The audience follows one request, not the whole diagram at once." },
+      { "from": "svc", "to": "repo", "label": "forRoom(roomId)", "note": "The service asks the repository for existing bookings. Say why storage sits behind its own class." },
+      { "from": "svc", "to": "pol", "label": "conflicts(slot, existing)", "note": "The overlap rule lives in a strategy. This is where you defend the Open/closed (OCP) choice." },
+      { "from": "svc", "to": "repo", "label": "save(booking)", "note": "Only a clash-free booking is stored. Point out that no double booking is enforced here." },
+      { "from": "svc", "to": "note", "label": "onBooked(booking)", "note": "Notification is a separate job. Mention you could swap email for chat without touching the service." },
+      { "from": "svc", "to": "emp", "label": "Booking", "dashed": true, "note": "End where you started: the employee gets a booking. Then invite questions." }
+    ]
+  },
+  "takeaway": "Tell one story: problem, classes, one traced flow, then trade-offs.",
+  "chat": { "starters": ["How long should a design walkthrough take?", "How do I answer a question I did not plan for?", "Should I show code or only diagrams when presenting?"] }
+}

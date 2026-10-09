@@ -1,0 +1,83 @@
+{
+  "title": "Proxy and Chain of Responsibility",
+  "idea": "Proxy stands in for an object with the same interface and controls access to it. Chain of Responsibility passes a request along handlers until one deals with it.",
+  "points": [
+    "A proxy can check permissions, cache results or create the real object lazily.",
+    "Unlike a decorator, a proxy often creates or guards the real object itself.",
+    "In a chain, each handler either answers the request or passes it on.",
+    "Handlers know only the next link, so you reorder them without edits."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "A protection proxy at work",
+    "actors": [
+      { "id": "admin", "label": "Admin caller" },
+      { "id": "guest", "label": "Guest caller" },
+      { "id": "proxy", "label": "ReportProxy" },
+      { "id": "real", "label": "Reports" }
+    ],
+    "messages": [
+      { "from": "admin", "to": "proxy", "label": "build('q3')", "note": "The admin calls `build` on what looks like the real service." },
+      { "from": "proxy", "to": "real", "label": "new Reports()", "note": "The role check passes. The proxy creates `Reports` now, on first use." },
+      { "from": "proxy", "to": "real", "label": "build('q3')", "note": "It forwards the same call with the same argument." },
+      { "from": "real", "to": "proxy", "label": "'report q3'", "dashed": true, "note": "The real object does the costly work and returns." },
+      { "from": "proxy", "to": "admin", "label": "'report q3'", "dashed": true, "note": "The proxy hands the result back unchanged." },
+      { "from": "guest", "to": "proxy", "label": "build('q3')", "note": "A guest makes the same call through its own `ReportProxy`." },
+      { "from": "proxy", "to": "guest", "label": "Error: forbidden", "dashed": true, "note": "The check fails, so `Reports` is never created or called." }
+    ]
+  },
+  "code": [
+    {
+      "file": "proxy.mjs",
+      "lang": "js",
+      "title": "Proxy: guard and lazy load",
+      "run": "browser",
+      "caption": "Same method name, extra control. Change the guest's role to `admin` and run it.",
+      "walk": [
+        { "lines": [1, 2, 3], "text": "The real subject: costly to build, no security of its own." },
+        { "lines": [4, 5, 6], "text": "The proxy holds the user and, later, the real object." },
+        { "lines": [8], "text": "Access control runs before any real work." },
+        { "lines": [9], "text": "`??=` creates `Reports` only on the first allowed call." },
+        { "lines": [10], "text": "Then it forwards the call unchanged." },
+        { "lines": [13, 14, 15], "text": "An admin gets a report; a guest gets an error." }
+      ]
+    },
+    {
+      "file": "chain.mjs",
+      "lang": "js",
+      "title": "Chain: request checks",
+      "run": "browser",
+      "caption": "Three requests, three different handlers answer. Build the chain as `Limit`, `Auth`, `Route` on lines 13–14 and watch `/b`.",
+      "walk": [
+        { "lines": [1, 2, 3], "text": "The base class stores the next handler; `setNext` returns it for chaining." },
+        { "lines": [4], "text": "Default: pass the request on, or report that nobody took it." },
+        { "lines": [6, 7, 8], "text": "`Auth` answers with 401 or calls `super.handle` to pass along." },
+        { "lines": [9, 10, 11], "text": "`Limit` stops busy callers; otherwise it passes along." },
+        { "lines": [12], "text": "`Route` ends the chain and always answers." },
+        { "lines": [13, 14], "text": "Build the chain once: `Auth`, then `Limit`, then `Route`." },
+        { "lines": [15, 16, 17], "text": "Each request stops at the first handler that answers." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Keep the proxy's methods identical to the real object's, or callers break on swap.",
+    "End every chain with a default handler so no request disappears unanswered.",
+    "Order chain handlers on purpose: put cheap checks that reject many requests first."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const chain = [\n  (n) => (n < 0 ? 'negative' : null),\n  (n) => (n % 2 === 0 ? 'even' : null),\n  () => 'odd',\n];\nconst run = (n) => {\n  for (const h of chain) { const r = h(n); if (r !== null) return r; }\n};\nconsole.log(run(-4));",
+    "lang": "js",
+    "options": ["even", "odd", "null", "negative"],
+    "answer": 3,
+    "why": "The loop stops at the first handler that answers. The first handler already returns `negative` for -4, so the others never run."
+  },
+  "takeaway": "A proxy controls access to one object; a chain finds who handles a request.",
+  "chat": {
+    "starters": [
+      "How does a Proxy differ from a Decorator?",
+      "Is Express middleware a Chain of Responsibility?",
+      "When would I use JavaScript's built-in Proxy object instead?"
+    ]
+  }
+}

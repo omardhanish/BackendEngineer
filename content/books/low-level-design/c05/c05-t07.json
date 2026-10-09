@@ -1,0 +1,174 @@
+{
+  "title": "Unit tests for BookingService",
+  "idea": "A test case calls one public method with known inputs and checks the result, so you can prove the booking rules still hold after every change.",
+  "points": [
+    "Each test follows arrange, act, assert: set up, call once, check the outcome.",
+    "Inject an in-memory `BookingRepository` so tests need no database.",
+    "Test the boundaries: back-to-back slots, exact overlaps and empty slots.",
+    "Assert on public results and error codes, never on private fields."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "One test, one booking",
+    "actors": [
+      {
+        "id": "test",
+        "label": "Test case"
+      },
+      {
+        "id": "svc",
+        "label": "BookingService"
+      },
+      {
+        "id": "repo",
+        "label": "In-memory repository"
+      }
+    ],
+    "messages": [
+      {
+        "from": "test",
+        "to": "svc",
+        "label": "new BookingService(repo)",
+        "note": "Arrange: the test builds the service with a fake repository it controls."
+      },
+      {
+        "from": "test",
+        "to": "svc",
+        "label": "book('e1', 'R1', 9, 10)",
+        "note": "Act: the test makes exactly one call through the public method."
+      },
+      {
+        "from": "svc",
+        "to": "repo",
+        "label": "forRoom('R1')",
+        "note": "The service asks for existing bookings of that room, as it would in production."
+      },
+      {
+        "from": "repo",
+        "to": "svc",
+        "label": "[ ]",
+        "dashed": true,
+        "note": "The fake returns an empty list, so there is nothing to clash with."
+      },
+      {
+        "from": "svc",
+        "to": "repo",
+        "label": "save(booking)",
+        "note": "No clash, so the service stores the new booking."
+      },
+      {
+        "from": "svc",
+        "to": "test",
+        "label": "booking",
+        "dashed": true,
+        "note": "Assert: the test compares the returned booking with the one it expects."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "booking.test.mjs",
+      "lang": "js",
+      "title": "Four focused tests",
+      "run": "browser",
+      "caption": "A tiny `check` helper keeps the output stable. Add a test that the same slot in room `R2` is allowed.",
+      "walk": [
+        {
+          "lines": [
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "text": "The fake has only the two methods `book` needs, `save` and `forRoom`, named as in the real one."
+        },
+        {
+          "lines": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            20,
+            23
+          ],
+          "text": "Each error is a c05-t05 class carrying a stable `code`, so tests never match message text."
+        },
+        {
+          "lines": [
+            29,
+            30,
+            31,
+            32
+          ],
+          "text": "`check` runs one test and prints `ok` or `FAIL` with the reason."
+        },
+        {
+          "lines": [
+            33
+          ],
+          "text": "Every test gets a fresh service, so no state leaks between tests."
+        },
+        {
+          "lines": [
+            35,
+            36,
+            37,
+            38,
+            39,
+            40
+          ],
+          "text": "Arrange, act and assert, one line each, for the happy path."
+        },
+        {
+          "lines": [
+            47,
+            48,
+            49,
+            50,
+            51
+          ],
+          "text": "Back-to-back slots share an edge; the strict `<` check must allow them."
+        },
+        {
+          "lines": [
+            52,
+            53,
+            54,
+            55
+          ],
+          "text": "An empty slot is invalid input, caught before any lookup."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not share one service across tests; earlier bookings will break later tests.",
+    "Test the edge where one slot ends as the next begins.",
+    "Avoid asserting on log lines or private state; they change during refactors."
+  ],
+  "quiz": {
+    "q": "Which test would catch both `<` in the overlap check becoming `<=`?",
+    "options": [
+      "Booking a free room returns a booking",
+      "Booking 10–11 after 9–10 in the same room succeeds",
+      "Booking 9–10 twice in the same room fails",
+      "An empty slot throws `INVALID_SLOT`"
+    ],
+    "answer": 1,
+    "why": "With `<=`, a slot ending at 10 and one starting at 10 count as clashing. Only the back-to-back test notices."
+  },
+  "takeaway": "Test through the public method, with fakes, at the boundaries.",
+  "chat": {
+    "starters": [
+      "Should I use node:test or a library like Jest for these tests?",
+      "How do I test that NotificationService was called after a booking?",
+      "How many test cases are enough in an LLD interview?"
+    ]
+  }
+}

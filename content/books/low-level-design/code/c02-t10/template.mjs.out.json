@@ -1,0 +1,11 @@
+{
+  "stdout": "item,qty\npens,12\nink,3\n-- end --\nSTOCK\npens   x12\nink    x3\n==========",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node template.mjs",
+  "tool": null,
+  "hash": "e4e9c12edfd0937e",
+  "at": "2026-10-09T07:15:07.580Z"
+}

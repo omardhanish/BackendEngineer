@@ -1,0 +1,201 @@
+{
+  "title": "Designing a library system",
+  "idea": "A small LLD turns requirements into classes: find the nouns, give each one clear data and duties, then trace one use case through them.",
+  "points": [
+    "Requirements: search books, borrow and return copies, cap loans, charge late fines.",
+    "`Book` is the title; `BookCopy` is one physical item that can be lent.",
+    "`LoanService` holds the rules; `Catalog` only finds available copies.",
+    "Fines vary by library, so `FinePolicy` is an injected strategy."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "Borrow and return, step by step",
+    "actors": [
+      {
+        "id": "desk",
+        "label": "Desk (caller)"
+      },
+      {
+        "id": "cat",
+        "label": "Catalog"
+      },
+      {
+        "id": "svc",
+        "label": "LoanService"
+      },
+      {
+        "id": "copy",
+        "label": "BookCopy"
+      },
+      {
+        "id": "fine",
+        "label": "FinePolicy"
+      }
+    ],
+    "messages": [
+      {
+        "from": "desk",
+        "to": "cat",
+        "label": "available('Dune')",
+        "note": "The desk searches by title. The catalog returns only copies not on loan."
+      },
+      {
+        "from": "cat",
+        "to": "desk",
+        "label": "[c1, c2]",
+        "dashed": true,
+        "note": "Copies, not books, come back: each copy is lent on its own."
+      },
+      {
+        "from": "desk",
+        "to": "svc",
+        "label": "borrow(ana, c1, day)",
+        "note": "`LoanService` checks the copy is free and the member is under the limit."
+      },
+      {
+        "from": "svc",
+        "to": "copy",
+        "label": "onLoan = true",
+        "note": "The copy is marked, and a `Loan` records member, copy and due day."
+      },
+      {
+        "from": "svc",
+        "to": "desk",
+        "label": "Loan",
+        "dashed": true,
+        "note": "The caller keeps the `Loan` to return it later."
+      },
+      {
+        "from": "desk",
+        "to": "svc",
+        "label": "giveBack(loan, day)",
+        "note": "Returning frees the copy and removes the loan from the member."
+      },
+      {
+        "from": "svc",
+        "to": "fine",
+        "label": "feeFor(daysLate)",
+        "note": "The fine rule is delegated, so a new policy needs no edit to `LoanService`."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "library.mjs",
+      "lang": "js",
+      "title": "The whole model",
+      "run": "browser",
+      "caption": "Four entities, a catalog, a fine policy and one service. Add a `CappedFine` policy that never charges more than 50, and inject it.",
+      "walk": [
+        {
+          "lines": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "text": "Entities hold data: a `Book` title, its lendable `BookCopy`, a `Member`, and the `Loan` linking them."
+        },
+        {
+          "lines": [
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "text": "`Catalog` answers one question: which copies of this title are free?"
+        },
+        {
+          "lines": [
+            24,
+            25,
+            29
+          ],
+          "text": "`FlatFine` is one `FinePolicy`: any object with `feeFor(daysLate)`. The service receives it."
+        },
+        {
+          "lines": [
+            30,
+            31,
+            32,
+            33,
+            34
+          ],
+          "text": "Validate first with guard clauses: the copy must be free, the member under the limit."
+        },
+        {
+          "lines": [
+            35,
+            36,
+            37,
+            38
+          ],
+          "text": "Then change state: record a `Loan` due in 14 days, mark the copy, add it to the member."
+        },
+        {
+          "lines": [
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46
+          ],
+          "text": "Returning refuses a loan already returned, then frees the copy and asks the policy for the fee."
+        },
+        {
+          "lines": [
+            50,
+            51,
+            52,
+            53,
+            54
+          ],
+          "text": "Wire everything at the edge: a small composition root."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not merge `Book` and `BookCopy`; one title can have many lendable copies.",
+    "Keep rules out of entities like `Member`; put them in a service or policy.",
+    "State requirements and assumptions aloud before drawing classes in an interview."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "class Copy { onLoan = false; }\nfunction borrow(copy) {\n  if (copy.onLoan) return 'refused';\n  copy.onLoan = true;\n  return 'ok';\n}\nconst c = new Copy();\nconsole.log(borrow(c), borrow(c));",
+    "lang": "js",
+    "options": [
+      "ok ok",
+      "ok refused",
+      "refused ok",
+      "refused refused"
+    ],
+    "answer": 1,
+    "why": "The first call finds the copy free and marks it. The second sees `onLoan` is true and returns early."
+  },
+  "takeaway": "Nouns become classes, rules live in services, varying rules become strategies.",
+  "chat": {
+    "starters": [
+      "How would I add reservations when every copy is on loan?",
+      "Should Loan be a class or just a record in a repository?",
+      "How do I draw this as a UML class diagram?"
+    ]
+  }
+}

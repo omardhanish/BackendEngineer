@@ -1,0 +1,40 @@
+{
+  "title": "Design review feedback loop",
+  "idea": "Peer review is asking another engineer to read your design and code, find weak spots, and then deciding which comments change the design.",
+  "points": [
+    "Share the class diagram, the requirements and your assumptions before the code.",
+    "Ask reviewers specific questions, such as \"is `ConflictPolicy` the right seam?\"",
+    "Sort each comment: fix now, discuss, or note as a known trade-off.",
+    "Reply to every comment, so reviewers see what changed and why."
+  ],
+  "hero": {
+    "type": "timeline",
+    "title": "One review round",
+    "items": [
+      { "label": "Self-review", "text": "Check names, one job per class and passing tests before anyone reads it." },
+      { "label": "Share", "text": "Send the diagram, use cases and two or three questions you want answered." },
+      { "label": "Review", "text": "A peer reads it, for example asking who should send the cancellation notice." },
+      { "label": "Triage", "text": "Mark each comment as fix now, discuss, or accepted trade-off." },
+      { "label": "Respond", "text": "Change the design, rerun the tests, and reply with what you did." }
+    ]
+  },
+  "quiz": {
+    "q": "A reviewer says `BookingService` should also send emails directly. What is the best response?",
+    "options": [
+      "Agree at once, since reviewers are usually right",
+      "Ignore it, because the design is already finished",
+      "Explain why `NotificationService` owns emails, then ask their concern",
+      "Delete `NotificationService` to keep the class count low"
+    ],
+    "answer": 2,
+    "why": "Good review is a discussion. You defend the separation with a reason and look for the real concern behind the comment."
+  },
+  "takeaway": "Ask focused questions, triage every comment, and show what changed.",
+  "chat": {
+    "starters": [
+      "What should I ask a reviewer to look at in my booking design?",
+      "How do I handle a review comment I disagree with?",
+      "What makes a review comment useful rather than vague?"
+    ]
+  }
+}

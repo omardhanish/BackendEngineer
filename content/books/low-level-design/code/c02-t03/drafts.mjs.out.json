@@ -1,0 +1,11 @@
+{
+  "stdout": "[\"onboarding\",\"oops\"] [\"onboarding\",\"vip\"]\ntrue\nfalse",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node drafts.mjs",
+  "tool": null,
+  "hash": "8918deb328256895",
+  "at": "2026-10-09T07:05:06.901Z"
+}

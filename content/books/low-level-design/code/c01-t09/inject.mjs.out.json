@@ -1,0 +1,11 @@
+{
+  "stdout": "mail to ada@example.com: Welcome!\n1 lin@example.com",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node inject.mjs",
+  "tool": null,
+  "hash": "8048b42c5204bb70",
+  "at": "2026-10-09T07:04:18.149Z"
+}

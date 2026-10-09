@@ -1,0 +1,92 @@
+{
+  "title": "Command and Mediator",
+  "idea": "Command turns a request into an object you can store, queue or undo. Mediator puts one object between peers so they talk through it, not to each other.",
+  "points": [
+    "A command object holds the receiver and arguments, plus `run` and `undo`.",
+    "The invoker keeps executed commands on a stack, so undo pops the last.",
+    "A mediator owns the rules for how a group of peers coordinates.",
+    "Peers hold one reference, the mediator, instead of references to every peer."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "lanes",
+    "title": "Commands on an undo stack",
+    "scenario": {
+      "code": [
+        "ed.exec(new Append(doc, 'Hello'));",
+        "ed.exec(new Append(doc, ' world'));",
+        "console.log(doc.text);",
+        "ed.undo(); console.log(doc.text);"
+      ],
+      "lanes": [
+        { "id": "exec", "label": "Editor.exec", "kind": "area", "hint": "calls run()" },
+        { "id": "history", "label": "History", "kind": "stack", "hint": "executed commands" },
+        { "id": "undone", "label": "Undone", "kind": "area", "hint": "after undo()" }
+      ],
+      "tokens": {
+        "c1": { "label": "Append 'Hello'", "tone": "sync" },
+        "c2": { "label": "Append ' world'", "tone": "micro" }
+      },
+      "steps": [
+        { "caption": "The first request becomes an object. `exec` calls its `run`, which edits `doc`.", "line": 0, "at": { "exec": ["c1"], "history": [], "undone": [] }, "active": "c1", "out": [] },
+        { "caption": "After running, the command is pushed onto the history stack.", "line": 0, "at": { "exec": [], "history": ["c1"], "undone": [] }, "active": "c1", "out": [] },
+        { "caption": "The second command runs the same way. `Editor` never knows what `Append` does inside.", "line": 1, "at": { "exec": ["c2"], "history": ["c1"], "undone": [] }, "active": "c2", "out": [] },
+        { "caption": "It lands on top of the stack, above the first one.", "line": 1, "at": { "exec": [], "history": ["c1", "c2"], "undone": [] }, "active": "c2", "out": [] },
+        { "caption": "Both commands have changed the document.", "line": 2, "at": { "exec": [], "history": ["c1", "c2"], "undone": [] }, "out": ["Hello world"] },
+        { "caption": "`undo` pops the top command and calls its own `undo`. Only the last change is reversed.", "line": 3, "at": { "exec": [], "history": ["c1"], "undone": ["c2"] }, "active": "c2", "out": ["Hello world", "Hello"] }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "editor.mjs",
+      "lang": "js",
+      "title": "Command: undo in an editor",
+      "run": "browser",
+      "caption": "The code from the animation. Add a second `ed.undo()` and predict the text first.",
+      "walk": [
+        { "lines": [1], "text": "The receiver: the object the command acts on." },
+        { "lines": [2, 3, 4, 5, 6], "text": "`Append` stores its receiver and argument, and saves the old text so it can reverse itself." },
+        { "lines": [7, 8, 9], "text": "The invoker runs any command and records it." },
+        { "lines": [10], "text": "`?.` makes undo on an empty history a safe no-op." },
+        { "lines": [12, 13], "text": "Requests are objects, so they can be stored, queued or replayed." },
+        { "lines": [15], "text": "Undo reverses only the most recent command." }
+      ]
+    },
+    {
+      "file": "tower.mjs",
+      "lang": "js",
+      "title": "Mediator: control tower",
+      "run": "browser",
+      "caption": "Planes never reference each other. Add a third plane; no `Plane` code changes.",
+      "walk": [
+        { "lines": [1, 2], "text": "`Tower` is the mediator. It keeps the peers and the shared runway state." },
+        { "lines": [3], "text": "Joining gives each plane one link: back to the tower." },
+        { "lines": [4, 5, 6, 7, 8, 9], "text": "The landing rule lives here: clear one plane, tell the others." },
+        { "lines": [11, 12, 13, 14, 15], "text": "A `Plane` only asks the tower and listens for notices." },
+        { "lines": [17, 18], "text": "The second plane is told to hold; it never asked `A1` directly." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Store enough state in each command to undo it; read the receiver before changing it.",
+    "Split a mediator that absorbs every rule; it becomes a god object.",
+    "Skip Command for plain calls that never need queuing, logging or undo."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "let n = 0;\nconst history = [];\nconst add = (k) => ({ run: () => (n += k), undo: () => (n -= k) });\nfor (const k of [5, 3]) { const c = add(k); c.run(); history.push(c); }\nhistory.pop().undo();\nconsole.log(n);",
+    "lang": "js",
+    "options": ["8", "3", "5", "0"],
+    "answer": 2,
+    "why": "Both commands run, making 8. `pop` removes the last command, the one that added 3, and its `undo` subtracts 3."
+  },
+  "takeaway": "Command makes actions into objects; Mediator routes peer talk through one hub.",
+  "chat": {
+    "starters": [
+      "How would I add redo to the Command example?",
+      "How is a Mediator different from an Observer?",
+      "Where do job queues use the Command pattern?"
+    ]
+  }
+}

@@ -1,0 +1,121 @@
+{
+  "title": "Cohesion and coupling",
+  "idea": "Cohesion is how closely a class's parts serve one purpose; coupling is how much one class depends on another's details. Aim for high cohesion, low coupling.",
+  "points": [
+    "A cohesive class has methods that mostly use the same fields.",
+    "Coupling grows with every class you import, construct or reach into.",
+    "Depend on a small method shape, and inject the object that provides it.",
+    "Count the files one change touches; many files means the design leaks."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "Signals you can count",
+    "head": [
+      "Signal",
+      "What to count",
+      "Healthy sign"
+    ],
+    "rows": [
+      [
+        "Field use",
+        "Methods that touch each field",
+        "Most methods share the same fields"
+      ],
+      [
+        "Fan-out",
+        "Classes this class imports or creates",
+        "A few, mostly abstractions"
+      ],
+      [
+        "Reach-through",
+        "Chains like a.b.c.d",
+        "One dot: ask, do not dig"
+      ],
+      [
+        "Control flags",
+        "Boolean arguments that pick a branch",
+        "None; split into two methods"
+      ],
+      [
+        "Change ripple",
+        "Files edited for one requirement",
+        "One or two files"
+      ]
+    ],
+    "caption": "Each signal is a number you can check in review, not a feeling."
+  },
+  "code": [
+    {
+      "file": "checkout.mjs",
+      "lang": "js",
+      "title": "Cohesive, loosely coupled",
+      "run": "browser",
+      "caption": "Swap `fakePayments` for any object with a `charge` method. `Checkout` does not change.",
+      "walk": [
+        {
+          "lines": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "text": "`Cart` owns its items, and both methods use `#items`: high cohesion."
+        },
+        {
+          "lines": [
+            8,
+            9,
+            10
+          ],
+          "text": "`Checkout` knows only `charge(amount)` and `total()`: low coupling."
+        },
+        {
+          "lines": [
+            12
+          ],
+          "text": "A fake gateway is enough to run it; no payment library is imported."
+        },
+        {
+          "lines": [
+            13,
+            14
+          ],
+          "text": "Build the parts at the edge, then connect them."
+        }
+      ]
+    },
+    {
+      "file": "reach.mjs",
+      "lang": "js",
+      "title": "Ask, do not dig",
+      "run": "browser",
+      "caption": "Both print the same today. Rename `address` and you fix one method in `Order`, not every caller like `tightLabel`."
+    }
+  ],
+  "pitfalls": [
+    "Do not split a class until its methods stop sharing fields.",
+    "Avoid calling `new` on concrete helpers inside business logic; inject them.",
+    "Replace long chains like `order.customer.address.city` with a method on the owner."
+  ],
+  "quiz": {
+    "q": "`ReportService` imports nine classes, and each method uses different fields. What is true?",
+    "options": [
+      "High cohesion, low coupling",
+      "Low cohesion, high coupling",
+      "High cohesion, high coupling",
+      "Low cohesion, low coupling"
+    ],
+    "answer": 1,
+    "why": "Methods sharing no fields means the class does several jobs. Nine imports means many classes can break it."
+  },
+  "takeaway": "Keep related things together and talk to others through small interfaces.",
+  "chat": {
+    "starters": [
+      "How do I tell if a class has low cohesion?",
+      "Is some coupling unavoidable, and which kind is acceptable?",
+      "How do cohesion and coupling relate to the SOLID principles?"
+    ]
+  }
+}

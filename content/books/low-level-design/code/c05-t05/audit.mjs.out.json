@@ -1,0 +1,11 @@
+{
+  "stdout": "{\"event\":\"booking.created\",\"employeeId\":\"e1\",\"roomId\":\"r2\"}\n{\"event\":\"booking.rejected\",\"employeeId\":\"e2\",\"roomId\":\"r2\",\"reason\":\"ROOM_TAKEN\"}\ncaller got ROOM_TAKEN\n{\"event\":\"booking.created\",\"employeeId\":\"e2\",\"roomId\":\"r1\"}\n{ 'booking.created': 2, 'booking.conflict': 1 }",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node audit.mjs",
+  "tool": null,
+  "hash": "bfb8ecc0fd8833a9",
+  "at": "2026-10-09T07:17:31.361Z"
+}

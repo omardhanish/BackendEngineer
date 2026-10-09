@@ -1,0 +1,122 @@
+{
+  "title": "Refining the booking design",
+  "idea": "Refinement is improving a working design in small steps, with tests passing after each step, and optimising only where a measured cost appears.",
+  "points": [
+    "Refactor first for clarity: remove duplication, sharpen names, shrink long methods.",
+    "Measure before optimising; count the work done by code that runs on every booking.",
+    "Keep the interface fixed, so `BookingService` and its tests do not change.",
+    "Here, indexing by room means each overlap check reads only that room's bookings."
+  ],
+  "hero": {
+    "type": "compare",
+    "title": "Before and after one refinement",
+    "left": {
+      "title": "List repository",
+      "tone": "bad",
+      "items": [
+        "Stores every booking in one array",
+        "Each overlap check reads all bookings",
+        "Work grows with total bookings in the building"
+      ]
+    },
+    "right": {
+      "title": "Indexed repository",
+      "tone": "good",
+      "items": [
+        "Stores bookings in a `Map` keyed by room",
+        "Each check reads only that room's bookings",
+        "Same `save` and `forRoom` methods, same tests"
+      ]
+    },
+    "verdict": "Swap the repository behind its interface; the service never notices."
+  },
+  "code": [
+    {
+      "file": "index.mjs",
+      "lang": "js",
+      "title": "Measure, then index",
+      "run": "browser",
+      "caption": "Both repositories answer the same question. Compare how many bookings each one reads.",
+      "walk": [
+        {
+          "lines": [
+            1
+          ],
+          "text": "A counter records how many bookings each lookup touches."
+        },
+        {
+          "lines": [
+            5,
+            6,
+            7,
+            8
+          ],
+          "text": "The list version filters the whole array on every lookup."
+        },
+        {
+          "lines": [
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "text": "The indexed version groups bookings by `roomId` when they are saved."
+        },
+        {
+          "lines": [
+            16,
+            17,
+            18,
+            19,
+            20
+          ],
+          "text": "A lookup reads only one room's list, or an empty one."
+        },
+        {
+          "lines": [
+            22,
+            23,
+            24,
+            25
+          ],
+          "text": "Load the same bookings, spread across many rooms, into each repository."
+        },
+        {
+          "lines": [
+            26,
+            27,
+            28
+          ],
+          "text": "Reset the counter, then measure a single lookup."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not optimise code you have not measured; clarity usually matters more.",
+    "Run the full test suite after every refactor step, not only at the end.",
+    "Keep the index in step with cancellations, or stale bookings will block rooms."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const repo = new IndexedBookingRepository();\nrepo.save({ roomId: 'R1', start: 9, end: 10 });\nrepo.save({ roomId: 'R2', start: 9, end: 10 });\nreads = 0;\nrepo.forRoom('R3');\nconsole.log(reads);",
+    "lang": "js",
+    "options": [
+      "2",
+      "0",
+      "undefined",
+      "1"
+    ],
+    "answer": 1,
+    "why": "Room `R3` has no entry in the `Map`, so `forRoom` falls back to an empty list and reads nothing."
+  },
+  "takeaway": "Refine in small, tested steps, and optimise only what you measured.",
+  "chat": {
+    "starters": [
+      "What other parts of BookingService are worth refactoring?",
+      "How would I index bookings by time as well as by room?",
+      "How do I explain a trade-off like this in an LLD interview?"
+    ]
+  }
+}

@@ -1,0 +1,135 @@
+{
+  "title": "Use cases and domain entities",
+  "idea": "Requirement analysis turns a vague brief into use cases (who does what), entities (the nouns with identity) and rules the design must enforce.",
+  "points": [
+    "Each verb an actor performs becomes a use case and a public method.",
+    "Nouns with their own identity, such as `Room` and `Booking`, become entities.",
+    "Each rule gets one owner: `Booking` checks its own slot, `ConflictPolicy` checks overlaps.",
+    "Ask about edge cases early: zero-length slots, back-to-back meetings, cancellations."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "Use cases mapped to entities",
+    "head": [
+      "Use case",
+      "Actor",
+      "Entities",
+      "Rule to enforce"
+    ],
+    "rows": [
+      [
+        "Search free rooms",
+        "Employee",
+        "Building, Room, Booking",
+        "Room fits the group and the slot is free"
+      ],
+      [
+        "Book a room",
+        "Employee",
+        "Room, Booking",
+        "No overlap with another booking of that room"
+      ],
+      [
+        "Cancel a booking",
+        "Organiser",
+        "Booking",
+        "Only the employee who booked may cancel"
+      ],
+      [
+        "Notify attendees",
+        "System",
+        "Booking, Employee",
+        "Send after every booking or cancellation"
+      ],
+      [
+        "Recurring booking (stretch)",
+        "Employee",
+        "Booking",
+        "Every occurrence must be free"
+      ]
+    ],
+    "caption": "Read across a row: one use case, who starts it, the entities it touches and the rule it must keep."
+  },
+  "code": [
+    {
+      "file": "entities.mjs",
+      "lang": "js",
+      "title": "Entities with their rules",
+      "run": "browser",
+      "caption": "Times are hours as numbers, so `9.5` means 9:30. Try a booking that ends before it starts.",
+      "walk": [
+        {
+          "lines": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "text": "`Room` knows its capacity, so it answers whether a group fits."
+        },
+        {
+          "lines": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13
+          ],
+          "text": "`Booking` owns one rule: it refuses an empty or reversed slot."
+        },
+        {
+          "lines": [
+            14,
+            15,
+            16,
+            17,
+            18
+          ],
+          "text": "Overlap belongs to `ConflictPolicy`, not `Booking`. Half-open slots let back-to-back meetings pass."
+        },
+        {
+          "lines": [
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27
+          ],
+          "text": "Each line checks one rule: capacity, overlap, back-to-back and an invalid slot."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not make every noun a class; `Floor` may be a plain field of `Room`.",
+    "Treat slots as half-open, or back-to-back meetings will be rejected.",
+    "Write each rule down with its owner, so it is not checked in two places."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const overlaps = (a, b) => a.start < b.end && b.start < a.end;\nconsole.log(\n  overlaps({ start: 9, end: 10 }, { start: 10, end: 11 }),\n  overlaps({ start: 9, end: 11 }, { start: 10, end: 10.5 }),\n);",
+    "lang": "js",
+    "options": [
+      "true true",
+      "false true",
+      "false false",
+      "true false"
+    ],
+    "answer": 1,
+    "why": "The first pair only touch at 10, and `10 < 10` is false. The second slot sits fully inside the first, so both comparisons hold."
+  },
+  "takeaway": "Verbs become use cases, nouns become entities, rules find an owner.",
+  "chat": {
+    "starters": [
+      "How do I tell an entity from a value object?",
+      "What clarifying questions should I ask about the booking system?",
+      "Where should the overlap rule live, Booking or BookingService?"
+    ]
+  }
+}

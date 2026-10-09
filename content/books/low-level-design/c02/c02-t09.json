@@ -1,0 +1,285 @@
+{
+  "title": "Observer and Strategy",
+  "idea": "Observer lets one object announce events to any number of subscribers; Strategy lets an object swap the algorithm behind one method at runtime.",
+  "analogy": {
+    "text": "A newsletter: readers sign up, and every issue reaches them all (Observer). The editor picks a printer, local or online, without rewriting the issue (Strategy).",
+    "breaks": "Code observers run one by one, inside the publisher's call."
+  },
+  "points": [
+    "The subject is the object observers subscribe to; it calls each on publish.",
+    "Subscribing returns an unsubscribe handle, so an observer can leave cleanly.",
+    "A strategy is an object with one agreed method, such as `cost(parcel)`.",
+    "The context is the object holding a strategy; swapping it changes behaviour, not code."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "One event, many observers",
+    "scenario": {
+      "tiers": [
+        [
+          "checkout"
+        ],
+        [
+          "events"
+        ],
+        [
+          "email",
+          "stock",
+          "ship"
+        ]
+      ],
+      "nodes": {
+        "checkout": {
+          "label": "Checkout",
+          "sub": "publisher",
+          "kind": "service"
+        },
+        "events": {
+          "label": "OrderEvents",
+          "sub": "the subject",
+          "kind": "topic"
+        },
+        "email": {
+          "label": "Email",
+          "sub": "observer",
+          "kind": "service"
+        },
+        "stock": {
+          "label": "Stock",
+          "sub": "observer",
+          "kind": "service"
+        },
+        "ship": {
+          "label": "Shipping",
+          "sub": "observer + strategy",
+          "kind": "service"
+        }
+      },
+      "links": [
+        [
+          "checkout",
+          "events"
+        ],
+        [
+          "events",
+          "email"
+        ],
+        [
+          "events",
+          "stock"
+        ],
+        [
+          "events",
+          "ship"
+        ]
+      ],
+      "steps": [
+        {
+          "caption": "Three observers call `subscribe` on `OrderEvents`. The subject stores them and knows nothing else about them.",
+          "focus": [
+            "events",
+            "email",
+            "stock",
+            "ship"
+          ]
+        },
+        {
+          "caption": "Checkout publishes one order. It talks only to the subject, never to the observers.",
+          "send": [
+            {
+              "from": "checkout",
+              "to": "events",
+              "label": "order 7",
+              "tone": "req"
+            }
+          ]
+        },
+        {
+          "caption": "The subject calls every observer in turn, each with the same order.",
+          "send": [
+            {
+              "from": "events",
+              "to": "email",
+              "label": "order 7",
+              "tone": "info"
+            },
+            {
+              "from": "events",
+              "to": "stock",
+              "label": "order 7",
+              "tone": "info"
+            },
+            {
+              "from": "events",
+              "to": "ship",
+              "label": "order 7",
+              "tone": "info"
+            }
+          ]
+        },
+        {
+          "caption": "Shipping prices the order by delegating to its current strategy, `FlatRate`.",
+          "badge": {
+            "ship": "FlatRate"
+          },
+          "focus": [
+            "ship"
+          ]
+        },
+        {
+          "caption": "Swap the strategy to `ByWeight`. Neither the subject nor the observer code changes.",
+          "badge": {
+            "ship": "ByWeight"
+          },
+          "state": {
+            "ship": "new"
+          },
+          "focus": [
+            "ship"
+          ]
+        },
+        {
+          "caption": "Stock calls its unsubscribe handle. The next order reaches only the observers that remain.",
+          "state": {
+            "stock": "down"
+          },
+          "send": [
+            {
+              "from": "events",
+              "to": "email",
+              "label": "order 8",
+              "tone": "info"
+            },
+            {
+              "from": "events",
+              "to": "ship",
+              "label": "order 8",
+              "tone": "info"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "observer.mjs",
+      "lang": "js",
+      "title": "Observer",
+      "run": "browser",
+      "caption": "Add a third subscriber that logs the order id, then run it again.",
+      "walk": [
+        {
+          "lines": [
+            2
+          ],
+          "text": "A private `Set` holds the listeners. The same function added twice is stored once."
+        },
+        {
+          "lines": [
+            3,
+            4,
+            5,
+            6
+          ],
+          "text": "`subscribe` stores the function and returns another function that removes it."
+        },
+        {
+          "lines": [
+            7,
+            8,
+            9
+          ],
+          "text": "`publish` calls every listener with the same data, in subscription order."
+        },
+        {
+          "lines": [
+            12,
+            13,
+            14
+          ],
+          "text": "Two observers react to one event. Neither knows the other exists."
+        },
+        {
+          "lines": [
+            15,
+            16
+          ],
+          "text": "After `stop()`, only the email listener runs for order 8."
+        }
+      ]
+    },
+    {
+      "file": "strategy.mjs",
+      "lang": "js",
+      "title": "Strategy",
+      "run": "browser",
+      "caption": "Write an `Express` strategy that doubles the flat rate, and pass it to `setStrategy`.",
+      "walk": [
+        {
+          "lines": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "text": "Three strategies share one method, `cost(parcel)`. That shared shape is the interface."
+        },
+        {
+          "lines": [
+            8,
+            9,
+            10
+          ],
+          "text": "`Shipping` holds one strategy, set in the constructor and replaceable later."
+        },
+        {
+          "lines": [
+            11
+          ],
+          "text": "`quote` delegates. No `if` on the strategy type appears anywhere."
+        },
+        {
+          "lines": [
+            14,
+            15,
+            16,
+            17,
+            18,
+            19
+          ],
+          "text": "One context, three behaviours, chosen while the program runs."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Unsubscribe observers you no longer need, or they keep firing and leak memory.",
+    "A throwing observer stops later ones in a synchronous loop; catch errors inside each.",
+    "Skip Strategy when two fixed branches will never grow; a plain `if` reads better."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const subs = [];\nconst on = (fn) => {\n  subs.push(fn);\n  return () => subs.splice(subs.indexOf(fn), 1);\n};\nconst emit = (x) => subs.forEach((fn) => fn(x));\non((x) => console.log('A', x));\nconst off = on((x) => console.log('B', x));\nemit(1); off(); emit(2);",
+    "lang": "js",
+    "options": [
+      "A 1, B 1, A 2, B 2",
+      "A 1, A 2",
+      "A 1, B 1, A 2",
+      "B 1, A 2"
+    ],
+    "answer": 2,
+    "why": "Both listeners run for `emit(1)`. Calling `off()` removes B from the list, so `emit(2)` reaches only A."
+  },
+  "takeaway": "Observer decouples who reacts; Strategy decouples how the work gets done.",
+  "chat": {
+    "starters": [
+      "How is Observer different from Node's EventEmitter?",
+      "When is Strategy better than passing a plain function?",
+      "Should observers run synchronously or asynchronously?"
+    ]
+  }
+}

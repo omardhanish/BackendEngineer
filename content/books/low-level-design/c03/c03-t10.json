@@ -1,0 +1,320 @@
+{
+  "title": "Rate limiter design",
+  "idea": "A rate limiter decides, per client key, whether a request may run now, and refuses the rest so one caller cannot flood a service.",
+  "analogy": {
+    "text": "An arcade coin jar. A tap drips one coin in each second, the jar holds three, and every game costs one coin.",
+    "breaks": "Real tokens are only a number, recomputed when a request arrives."
+  },
+  "points": [
+    "Every limiter answers one question: may this key make a request now?",
+    "Token bucket: tokens refill at a steady rate, and each request spends one.",
+    "Sliding window log: keep recent request times and refuse once the window is full.",
+    "Algorithms share one `RateLimiter` interface, so callers swap them without edits."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "lanes",
+    "title": "Token bucket, capacity three",
+    "scenario": {
+      "lanes": [
+        {
+          "id": "in",
+          "label": "Incoming",
+          "kind": "queue",
+          "hint": "requests from ip-1"
+        },
+        {
+          "id": "bucket",
+          "label": "Bucket",
+          "kind": "area",
+          "hint": "max 3 tokens, +1 per second"
+        },
+        {
+          "id": "ok",
+          "label": "Allowed",
+          "kind": "area"
+        },
+        {
+          "id": "no",
+          "label": "Rejected",
+          "kind": "area",
+          "hint": "HTTP 429"
+        }
+      ],
+      "tokens": {
+        "t1": {
+          "label": "token",
+          "tone": "timer"
+        },
+        "t2": {
+          "label": "token",
+          "tone": "timer"
+        },
+        "t3": {
+          "label": "token",
+          "tone": "timer"
+        },
+        "t4": {
+          "label": "token",
+          "tone": "timer"
+        },
+        "r1": {
+          "label": "req 1",
+          "tone": "io"
+        },
+        "r2": {
+          "label": "req 2",
+          "tone": "io"
+        },
+        "r3": {
+          "label": "req 3",
+          "tone": "io"
+        },
+        "r4": {
+          "label": "req 4",
+          "tone": "io"
+        },
+        "r5": {
+          "label": "req 5",
+          "tone": "io"
+        }
+      },
+      "steps": [
+        {
+          "caption": "A new key starts with a full bucket of three tokens. Four requests arrive almost together.",
+          "at": {
+            "in": [
+              "r1",
+              "r2",
+              "r3",
+              "r4"
+            ],
+            "bucket": [
+              "t1",
+              "t2",
+              "t3"
+            ],
+            "ok": [],
+            "no": []
+          }
+        },
+        {
+          "caption": "Request 1 spends a token and goes through.",
+          "at": {
+            "in": [
+              "r2",
+              "r3",
+              "r4"
+            ],
+            "bucket": [
+              "t2",
+              "t3"
+            ],
+            "ok": [
+              "r1"
+            ],
+            "no": []
+          },
+          "active": "r1"
+        },
+        {
+          "caption": "Requests 2 and 3 spend the last two tokens. The burst capacity is used up.",
+          "at": {
+            "in": [
+              "r4"
+            ],
+            "bucket": [],
+            "ok": [
+              "r1",
+              "r2",
+              "r3"
+            ],
+            "no": []
+          },
+          "active": "r3"
+        },
+        {
+          "caption": "Request 4 finds the bucket empty and is refused at once. It is not queued.",
+          "at": {
+            "in": [],
+            "bucket": [],
+            "ok": [
+              "r1",
+              "r2",
+              "r3"
+            ],
+            "no": [
+              "r4"
+            ]
+          },
+          "active": "r4"
+        },
+        {
+          "caption": "A second passes. The refill adds one token, computed from elapsed time on the next call.",
+          "at": {
+            "in": [
+              "r5"
+            ],
+            "bucket": [
+              "t4"
+            ],
+            "ok": [
+              "r1",
+              "r2",
+              "r3"
+            ],
+            "no": [
+              "r4"
+            ]
+          },
+          "active": "t4"
+        },
+        {
+          "caption": "Request 5 spends the fresh token. Long-run rate: one per second, bursts up to three.",
+          "at": {
+            "in": [],
+            "bucket": [],
+            "ok": [
+              "r1",
+              "r2",
+              "r3",
+              "r5"
+            ],
+            "no": [
+              "r4"
+            ]
+          },
+          "active": "r5"
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "bucket.mjs",
+      "lang": "js",
+      "title": "Token bucket",
+      "run": "browser",
+      "caption": "Time is passed in as milliseconds, so the run is repeatable. Change the bucket to `new TokenBucket(1, 2)` and predict the output.",
+      "walk": [
+        {
+          "lines": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "text": "The interface: one method, `allow(key, nowMs)`, returning `true` or `false`."
+        },
+        {
+          "lines": [
+            6
+          ],
+          "text": "One bucket per key, so each client has its own allowance."
+        },
+        {
+          "lines": [
+            11,
+            12,
+            13,
+            14
+          ],
+          "text": "No timer runs. Tokens are topped up from elapsed time, capped at capacity."
+        },
+        {
+          "lines": [
+            16,
+            17,
+            18
+          ],
+          "text": "Below one token, refuse. Otherwise spend one and allow."
+        },
+        {
+          "lines": [
+            21,
+            22,
+            23,
+            24
+          ],
+          "text": "Three pass, the fourth fails. A different key has its own full bucket."
+        },
+        {
+          "lines": [
+            25
+          ],
+          "text": "One second after the burst, one token has refilled: one passes, the next fails."
+        },
+        {
+          "lines": [
+            26
+          ],
+          "text": "After a long idle gap the bucket is full again, but never above three."
+        }
+      ]
+    },
+    {
+      "file": "window.mjs",
+      "lang": "js",
+      "title": "Sliding window log",
+      "run": "browser",
+      "caption": "Same `allow(key, nowMs)` method as the `RateLimiter` interface, a different rule: at most two requests in any rolling second.",
+      "walk": [
+        {
+          "lines": [
+            2
+          ],
+          "text": "Each key keeps a list of the times it was allowed."
+        },
+        {
+          "lines": [
+            7,
+            8
+          ],
+          "text": "Drop times older than the window. What is left is recent traffic."
+        },
+        {
+          "lines": [
+            9,
+            10,
+            11,
+            12
+          ],
+          "text": "Allow only if the window holds fewer than the limit, and record it."
+        },
+        {
+          "lines": [
+            16,
+            17
+          ],
+          "text": "At 1000 the request at 0 has left the window, so there is room again."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Limit per user or API key, not with one global counter for everyone.",
+    "A fixed window resets each clock second, so two full bursts can land 1 ms apart.",
+    "An in-process `Map` limits one server only; several servers need a shared store."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "const windowOf = (ms) => Math.floor(ms / 1000);\nconsole.log(windowOf(999), windowOf(1000));",
+    "lang": "js",
+    "options": [
+      "1 1",
+      "0 0",
+      "0 1",
+      "1 0"
+    ],
+    "answer": 2,
+    "why": "A fixed window counts per clock second. 999 ms and 1000 ms fall in different windows, so a client can spend a full limit in each."
+  },
+  "takeaway": "Hide the algorithm behind `allow(key, now)` and keep one allowance per key.",
+  "chat": {
+    "starters": [
+      "When should I choose token bucket over sliding window?",
+      "How would I build this rate limiter on Redis for many servers?",
+      "How do I stop the per-key map from growing forever?"
+    ]
+  }
+}

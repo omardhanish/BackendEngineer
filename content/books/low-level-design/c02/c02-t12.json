@@ -1,0 +1,222 @@
+{
+  "title": "Designing a notification system",
+  "idea": "A notification system turns domain events into messages over channels, combining Observer, Factory, Strategy and Decorator so new channels plug in without edits.",
+  "points": [
+    "Observer: business code emits `order.shipped` and never calls a channel directly.",
+    "Strategy: every channel shares one method, `send(user, text)`.",
+    "Factory: one table maps a channel name to the object that serves it.",
+    "Decorator: `WithRetry` wraps any channel and adds retries without changing it."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "One event through four patterns",
+    "actors": [
+      {
+        "id": "order",
+        "label": "Order code"
+      },
+      {
+        "id": "bus",
+        "label": "EventEmitter"
+      },
+      {
+        "id": "svc",
+        "label": "NotificationService"
+      },
+      {
+        "id": "fac",
+        "label": "makeChannel"
+      },
+      {
+        "id": "ch",
+        "label": "WithRetry(Push)"
+      }
+    ],
+    "messages": [
+      {
+        "from": "order",
+        "to": "bus",
+        "label": "emit('order.shipped')",
+        "note": "The order code announces what happened. It imports nothing about notifications."
+      },
+      {
+        "from": "bus",
+        "to": "svc",
+        "label": "notify(type, event)",
+        "note": "The subscribed listener hands the event to the service, which builds the text from a template."
+      },
+      {
+        "from": "svc",
+        "to": "fac",
+        "label": "push()",
+        "note": "First use of push: the factory builds a `PushChannel` wrapped in `WithRetry`."
+      },
+      {
+        "from": "fac",
+        "to": "svc",
+        "label": "channel",
+        "dashed": true,
+        "note": "The service caches the channel and knows only its `send` method."
+      },
+      {
+        "from": "svc",
+        "to": "ch",
+        "label": "send(user, text)",
+        "note": "Email has already gone out. The service now calls `send` on the push channel."
+      },
+      {
+        "from": "ch",
+        "to": "svc",
+        "label": "delivered after retry",
+        "dashed": true,
+        "note": "The inner channel fails once; the decorator retries and returns the delivered line."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "channels.mjs",
+      "lang": "js",
+      "title": "Channels, retry, factory",
+      "run": "captured",
+      "caption": "A module of building blocks. `notify.mjs` imports it, so running it alone prints nothing.",
+      "walk": [
+        {
+          "lines": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "text": "Strategy: each channel is a class with the same `send(user, text)` method."
+        },
+        {
+          "lines": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14
+          ],
+          "text": "`PushChannel` fails on its first call, so the retry has something to do."
+        },
+        {
+          "lines": [
+            16,
+            17,
+            18
+          ],
+          "text": "Decorator: `WithRetry` has the same `send` and holds the channel it wraps."
+        },
+        {
+          "lines": [
+            19,
+            20,
+            21,
+            22,
+            23,
+            24
+          ],
+          "text": "It retries until a call succeeds or the tries run out, then rethrows."
+        },
+        {
+          "lines": [
+            28,
+            29,
+            30,
+            31,
+            32
+          ],
+          "text": "Factory: one table names every channel. A new channel adds one line here."
+        }
+      ]
+    },
+    {
+      "file": "notify.mjs",
+      "lang": "js",
+      "title": "Wiring it together",
+      "run": "captured",
+      "caption": "Three shipped orders for two users. Watch where the retry happens, and where it does not.",
+      "walk": [
+        {
+          "lines": [
+            4,
+            5,
+            6
+          ],
+          "text": "Each event type has one text builder, kept apart from delivery."
+        },
+        {
+          "lines": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14
+          ],
+          "text": "Channels come from the factory on first use and are reused afterwards."
+        },
+        {
+          "lines": [
+            15,
+            16,
+            17,
+            18,
+            19,
+            20
+          ],
+          "text": "The service loops over the user's preferred channels and calls `send` on each."
+        },
+        {
+          "lines": [
+            22,
+            23,
+            24
+          ],
+          "text": "Observer: the service subscribes once; the order code only emits."
+        },
+        {
+          "lines": [
+            28,
+            29,
+            30
+          ],
+          "text": "Order 41 triggers the retry. Order 42 reuses the same push channel."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Keep channel names out of business code; emit events and let preferences decide.",
+    "Retry only failures that may pass later; a bad address never succeeds.",
+    "`emit` runs listeners synchronously; a channel's thrown error escapes `emit`, so catch inside the listener."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "class Flaky {\n  n = 0;\n  send() { if (++this.n < 3) throw new Error('busy'); return 'sent'; }\n}\nfunction retry(ch, tries) {\n  for (let i = 0; i < tries; i++) try { return ch.send(); } catch {}\n  return 'gave up';\n}\nconsole.log(retry(new Flaky(), 2), retry(new Flaky(), 3));",
+    "lang": "js",
+    "options": [
+      "sent sent",
+      "gave up sent",
+      "gave up gave up",
+      "Error: busy"
+    ],
+    "answer": 1,
+    "why": "Each `Flaky` succeeds only on its third call. Two tries are not enough, so the first call gives up; three tries reach success."
+  },
+  "takeaway": "Events in, channels out: each pattern owns one axis of change.",
+  "chat": {
+    "starters": [
+      "How would I add user quiet hours to this design?",
+      "Where would a message queue fit in this notification system?",
+      "Which patterns should I name first in an LLD interview for this?"
+    ]
+  }
+}

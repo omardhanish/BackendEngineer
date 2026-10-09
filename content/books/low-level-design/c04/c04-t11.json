@@ -1,0 +1,210 @@
+{
+  "title": "Plugin architecture",
+  "idea": "A pluggable design is a small, stable core that exposes extension points, so new features arrive as separate modules the core never names.",
+  "points": [
+    "The core defines a contract: what a plugin must provide and when it runs.",
+    "Plugins register with the core through hooks; the core calls them without knowing them.",
+    "Unlike c04-t08's one extension point, a host offers many hooks; config picks modules.",
+    "Each plugin is its own module exporting one object; the host keeps `#hooks` private."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Core, contract and plugins",
+    "nodes": [
+      {
+        "id": "cfg",
+        "label": "Config",
+        "sub": "plugins: [tenOff, vat]"
+      },
+      {
+        "id": "host",
+        "label": "Core host",
+        "sub": "use(), on(), run()"
+      },
+      {
+        "id": "contract",
+        "label": "Plugin contract",
+        "sub": "name + setup(host)"
+      },
+      {
+        "id": "p1",
+        "label": "tenOff plugin",
+        "sub": "price - 10"
+      },
+      {
+        "id": "p2",
+        "label": "vat plugin",
+        "sub": "price * 1.2"
+      },
+      {
+        "id": "caller",
+        "label": "Checkout code",
+        "sub": "run('price', 100)"
+      }
+    ],
+    "edges": [
+      {
+        "from": "cfg",
+        "to": "host",
+        "label": "chooses plugins",
+        "caption": "Config lists which plugins to load and their order. The core's source never changes."
+      },
+      {
+        "from": "p1",
+        "to": "contract",
+        "label": "implements",
+        "dashed": true,
+        "caption": "Every plugin meets one contract: a `name` and a `setup(host)` function."
+      },
+      {
+        "from": "p2",
+        "to": "contract",
+        "label": "implements",
+        "dashed": true,
+        "caption": "A new plugin is a new module. Nothing else is edited."
+      },
+      {
+        "from": "host",
+        "to": "p1",
+        "label": "setup(host)",
+        "caption": "`use()` calls `setup`, and the plugin registers a handler with `on('price', …)`."
+      },
+      {
+        "from": "caller",
+        "to": "host",
+        "label": "run hook",
+        "caption": "Core code fires the hook. Each registered handler runs in order, passing the value along."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "plugins.mjs",
+      "lang": "js",
+      "title": "A hook-based host",
+      "run": "browser",
+      "caption": "Swap the two `use` calls and predict the price before you run it.",
+      "walk": [
+        {
+          "lines": [
+            1
+          ],
+          "text": "The contract, written as a JSDoc interface: a name and a `setup` function."
+        },
+        {
+          "lines": [
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "text": "`use` rejects anything that breaks the contract, then lets the plugin register itself."
+        },
+        {
+          "lines": [
+            11,
+            12,
+            13
+          ],
+          "text": "`on` is the extension point: plugins attach handlers to a named hook."
+        },
+        {
+          "lines": [
+            15,
+            16
+          ],
+          "text": "`run` passes a value through every handler, in registration order."
+        },
+        {
+          "lines": [
+            19,
+            20
+          ],
+          "text": "Each plugin is a plain object; it knows the host, not the other plugins."
+        },
+        {
+          "lines": [
+            22,
+            23,
+            24
+          ],
+          "text": "With or without plugins, the core runs. Plugins add behaviour, not requirements."
+        }
+      ]
+    },
+    {
+      "file": "registry.mjs",
+      "lang": "js",
+      "title": "Loading by config",
+      "run": "browser",
+      "caption": "Same contract as before; a config object now picks the plugins and their order.",
+      "walk": [
+        {
+          "lines": [
+            3,
+            4,
+            5
+          ],
+          "text": "Each plugin meets the same contract: a `name` and a `setup` that calls `on`."
+        },
+        {
+          "lines": [
+            9
+          ],
+          "text": "This host offers only `on`, the one extension point plugins need."
+        },
+        {
+          "lines": [
+            10,
+            11,
+            12,
+            13,
+            14
+          ],
+          "text": "Config picks the plugins and their order; unknown names fail at load time."
+        },
+        {
+          "lines": [
+            17,
+            18
+          ],
+          "text": "One core, two configs, two different pipelines."
+        },
+        {
+          "lines": [
+            19
+          ],
+          "text": "A typo in the config fails loudly with a clear message."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not let plugins import each other; share data only through the host's hooks.",
+    "Validate each plugin against the contract at load time, not on first use.",
+    "Document hook order when handlers transform values; order changes results."
+  ],
+  "quiz": {
+    "q": "Using the `Host` from the example, what does this print?",
+    "code": "const shop = new Host().use(vat).use(tenOff);\nconsole.log(shop.run('price', 100));",
+    "lang": "js",
+    "options": [
+      "108",
+      "110",
+      "120",
+      "90"
+    ],
+    "answer": 1,
+    "why": "Handlers run in registration order: `vat` makes 100 into 120, then `tenOff` subtracts 10, giving 110."
+  },
+  "takeaway": "Keep the core small and stable; let features plug in through contracts.",
+  "chat": {
+    "starters": [
+      "How is a plugin system different from the Strategy pattern?",
+      "How do I version a plugin contract without breaking old plugins?",
+      "Should plugins be loaded with dynamic import() in Node?"
+    ]
+  }
+}

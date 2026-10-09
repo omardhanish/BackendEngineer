@@ -1,0 +1,11 @@
+{
+  "stdout": "A2\nA3\nno spot for truck\nKA-1 pays 60\nA2",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node parking.mjs",
+  "tool": null,
+  "hash": "56221dc4a8b7b8a9",
+  "at": "2026-10-09T07:15:38.562Z"
+}

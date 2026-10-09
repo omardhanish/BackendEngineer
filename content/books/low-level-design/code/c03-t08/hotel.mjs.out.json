@@ -1,0 +1,11 @@
+{
+  "stdout": "no lock  : Ann booked, Bo booked, Cy booked\nwith lock: Ann booked, Bo refused, Cy booked",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node hotel.mjs",
+  "tool": null,
+  "hash": "a4b5a4ba98fb26d8",
+  "at": "2026-10-09T07:06:50.752Z"
+}

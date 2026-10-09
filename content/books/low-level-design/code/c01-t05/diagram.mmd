@@ -1,0 +1,14 @@
+classDiagram
+  class PaymentMethod {
+    <<interface>>
+    +pay(cents) bool
+  }
+  class Order {
+    -LineItem[] items
+    +add(product, qty) void
+  }
+  Customer "1" --> "0..*" Order : places
+  Order "1" *-- "1..*" LineItem : owns
+  LineItem --> Product : refers to
+  Order ..> PaymentMethod : uses
+  PaymentMethod <|.. CardPayment

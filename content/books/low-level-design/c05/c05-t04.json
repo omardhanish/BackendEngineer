@@ -1,0 +1,163 @@
+{
+  "title": "The booking core in code",
+  "idea": "Building the core means writing `BookingService` and its repositories so search, book and cancel run end to end in memory, before any database or HTTP.",
+  "points": [
+    "Build inside out: repositories and policy first, then the service that uses them.",
+    "In-memory repositories with `Map` stand in for a database behind the same methods.",
+    "The service orchestrates: it asks, decides and saves, but stores nothing itself.",
+    "Constructor injection hands in every collaborator, so tests can swap any of them."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "One booking, end to end",
+    "actors": [
+      {
+        "id": "emp",
+        "label": "Caller"
+      },
+      {
+        "id": "svc",
+        "label": "BookingService"
+      },
+      {
+        "id": "repo",
+        "label": "BookingRepository"
+      },
+      {
+        "id": "policy",
+        "label": "ConflictPolicy"
+      }
+    ],
+    "messages": [
+      {
+        "from": "emp",
+        "to": "svc",
+        "label": "book('e1', 'r2', 9, 10)",
+        "note": "An employee asks for room `r2` from 9 to 10."
+      },
+      {
+        "from": "svc",
+        "to": "repo",
+        "label": "forRoom('r2')",
+        "note": "The service loads only that room's bookings, not every booking."
+      },
+      {
+        "from": "repo",
+        "to": "svc",
+        "label": "existing bookings",
+        "dashed": true,
+        "note": "The repository returns a list; the service does not know how it is stored."
+      },
+      {
+        "from": "svc",
+        "to": "policy",
+        "label": "conflicts(slot, existing)",
+        "note": "The overlap decision is delegated to the injected policy."
+      },
+      {
+        "from": "policy",
+        "to": "svc",
+        "label": "false",
+        "dashed": true,
+        "note": "No clash, so the booking can go ahead."
+      },
+      {
+        "from": "svc",
+        "to": "repo",
+        "label": "save(booking)",
+        "note": "Only now does the service create an id and save the booking."
+      },
+      {
+        "from": "svc",
+        "to": "emp",
+        "label": "booking",
+        "dashed": true,
+        "note": "The caller gets the saved booking back, with its id for a later cancel."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "booking.mjs",
+      "lang": "js",
+      "title": "Core modules, in memory",
+      "run": "browser",
+      "caption": "All three use cases run with no database. Book `r1` for 9 to 10 too, and run again.",
+      "walk": [
+        {
+          "lines": [
+            1,
+            5
+          ],
+          "text": "`InMemoryRoomRepository` keeps rooms in a private `Map` and lists them."
+        },
+        {
+          "lines": [
+            6,
+            14
+          ],
+          "text": "`InMemoryBookingRepository` saves, finds, removes, and lists one room's bookings."
+        },
+        {
+          "lines": [
+            15,
+            19
+          ],
+          "text": "`StrictOverlapPolicy` implements `ConflictPolicy`: half-open slots, so back-to-back is allowed."
+        },
+        {
+          "lines": [
+            20,
+            28
+          ],
+          "text": "The service receives its collaborators. `searchFree` filters by capacity, then asks the policy."
+        },
+        {
+          "lines": [
+            29,
+            37
+          ],
+          "text": "`book` checks first and creates an id only for a booking that is saved."
+        },
+        {
+          "lines": [
+            38,
+            42
+          ],
+          "text": "`cancel` lets only the employee who booked remove the booking."
+        },
+        {
+          "lines": [
+            44,
+            55
+          ],
+          "text": "Wire the parts by hand and run each use case, including two failures."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not put `Map` storage inside `BookingService`; keep storage behind a repository.",
+    "Check for conflicts before generating ids or side effects, not after.",
+    "Avoid `new` for collaborators inside the service; inject them through the constructor."
+  ],
+  "quiz": {
+    "q": "Why does `BookingService` take its repositories and policy as constructor arguments?",
+    "options": [
+      "Because JavaScript classes cannot use `new` inside methods",
+      "So a test can pass in fakes or another policy",
+      "So the service can store bookings itself",
+      "To make `book` run faster"
+    ],
+    "answer": 1,
+    "why": "Injected collaborators can be swapped without editing the service, so tests and new rules plug in from outside."
+  },
+  "takeaway": "Make every use case run in memory before adding storage or HTTP.",
+  "chat": {
+    "starters": [
+      "Why use in-memory repositories before a real database?",
+      "How would two concurrent bookings for the same room be handled?",
+      "Should searchFree live in BookingService or RoomRepository?"
+    ]
+  }
+}

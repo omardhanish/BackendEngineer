@@ -1,0 +1,90 @@
+{
+  "title": "Composite and Decorator",
+  "idea": "Composite lets you treat one object and a group of objects through the same method. Decorator wraps an object to add behaviour without editing its class.",
+  "analogy": {
+    "text": "Composite is a parcel that holds items or smaller parcels; weigh any of them the same way. Decorator is gift wrap: layers added outside, same box inside.",
+    "breaks": "Gift wrap does nothing; each decorator layer runs its own code on every call."
+  },
+  "points": [
+    "Composite: a leaf and a group expose the same method, such as `total()`.",
+    "A group answers by asking each child, which may be another group.",
+    "Decorator: a wrapper has the same methods as the object it holds.",
+    "Each wrapper adds its step, then forwards the call to the inner object."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "Two calls through stacked decorators",
+    "scenario": {
+      "token": { "label": "find('u1')", "tone": "req" },
+      "stages": [
+        { "id": "client", "label": "Caller", "kind": "end" },
+        { "id": "log", "label": "LoggedRepo", "sub": "logs the call" },
+        { "id": "cache", "label": "CachedRepo", "sub": "Map of results" },
+        { "id": "db", "label": "UserRepo", "sub": "the real object", "kind": "end" }
+      ],
+      "steps": [
+        { "caption": "The caller holds one object and calls `find('u1')`. It cannot tell how many wrappers there are.", "at": "client", "slot": "top", "state": { "client": "active" }, "out": [] },
+        { "caption": "The outer wrapper, `LoggedRepo`, logs the call and forwards it inward.", "at": "log", "slot": "top", "state": { "client": "done", "log": "active" }, "out": ["find u1"] },
+        { "caption": "`CachedRepo` finds no entry for `u1`, so it forwards the call too.", "at": "cache", "slot": "top", "state": { "client": "done", "log": "done", "cache": "active" }, "out": ["find u1"] },
+        { "caption": "The real `UserRepo` does the expensive read and returns the user.", "at": "db", "slot": "top", "state": { "client": "done", "log": "done", "cache": "done", "db": "active" }, "out": ["find u1", "  db read u1"] },
+        { "caption": "On the way back, `CachedRepo` stores the result before returning it.", "at": "cache", "slot": "bottom", "token": { "label": "{ name: 'Ada' }", "tone": "ok" }, "state": { "client": "done", "log": "done", "cache": "active", "db": "done" }, "out": ["find u1", "  db read u1"] },
+        { "caption": "Second call: `LoggedRepo` logs again, because it always runs first.", "at": "log", "slot": "top", "token": { "label": "find('u1')", "tone": "req" }, "state": { "client": "done", "log": "active", "cache": null, "db": null }, "out": ["find u1", "  db read u1", "find u1"] },
+        { "caption": "This time `CachedRepo` has the entry. It returns at once; `UserRepo` is never reached.", "at": "cache", "slot": "bottom", "token": { "label": "cache hit", "tone": "ok" }, "state": { "client": "done", "log": "done", "cache": "active", "db": "blocked" }, "out": ["find u1", "  db read u1", "find u1"] },
+        { "caption": "The caller gets the same user. Behaviour was added by stacking objects, not by editing `UserRepo`.", "at": "client", "slot": "bottom", "token": { "label": "{ name: 'Ada' }", "tone": "ok" }, "state": { "client": "active", "log": "done", "cache": "done", "db": "blocked" }, "out": ["find u1", "  db read u1", "find u1", "Ada"] }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "bundle.mjs",
+      "lang": "js",
+      "title": "Composite: nested bundles",
+      "run": "browser",
+      "caption": "An `Item` and a `Bundle` both answer `total()`. Add a bundle inside `combo` and run it again.",
+      "walk": [
+        { "lines": [1, 2, 3, 4], "text": "The leaf: an `Item` returns its own price." },
+        { "lines": [5, 6, 7, 8], "text": "The composite: a `Bundle` keeps a private list of parts, leaves or bundles." },
+        { "lines": [9], "text": "It answers `total()` by asking every child; recursion handles any depth." },
+        { "lines": [11, 12], "text": "`combo` holds an item and a whole bundle." },
+        { "lines": [13, 14], "text": "The loop never checks what kind of node it has." }
+      ]
+    },
+    {
+      "file": "repo.mjs",
+      "lang": "js",
+      "title": "Decorator: cache and log",
+      "run": "browser",
+      "caption": "The code from the animation. Swap the order of the two wrappers on line 17 and compare the output.",
+      "walk": [
+        { "lines": [1, 2, 3], "text": "The real object. It knows nothing about caching or logging." },
+        { "lines": [4, 5, 6], "text": "`CachedRepo` holds an inner object with the same `find` method." },
+        { "lines": [7, 8, 9, 10], "text": "On a miss it forwards the call and stores the answer." },
+        { "lines": [12, 13, 14, 15, 16], "text": "`LoggedRepo` adds one line of output, then forwards." },
+        { "lines": [17], "text": "Wrappers stack at the edge of the program. Order decides who runs first." },
+        { "lines": [18, 19], "text": "The second call is logged but served from the cache." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Give leaves and groups the same method names, or callers start checking `instanceof`.",
+    "Forward every method a decorator wraps; a forgotten one silently loses behaviour.",
+    "Check wrapper order: logging outside a cache logs hits; logging inside does not."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "class Text { get() { return 'hi'; } }\nclass Loud {\n  constructor(i) { this.i = i; }\n  get() { return this.i.get().toUpperCase(); } }\nclass Bang {\n  constructor(i) { this.i = i; }\n  get() { return this.i.get() + '!'; } }\nconsole.log(new Bang(new Loud(new Text())).get());",
+    "lang": "js",
+    "options": ["hi!", "HI!", "HI", "hi"],
+    "answer": 1,
+    "why": "`Bang` asks `Loud`, which asks `Text` for `hi` and upper-cases it. `Bang` then appends `!` to `HI`."
+  },
+  "takeaway": "Composite treats parts and wholes alike; Decorator stacks behaviour around one interface.",
+  "chat": {
+    "starters": [
+      "How is Decorator different from subclassing?",
+      "Where does Composite show up in real backend code?",
+      "Is Express middleware a Decorator or a Chain of Responsibility?"
+    ]
+  }
+}

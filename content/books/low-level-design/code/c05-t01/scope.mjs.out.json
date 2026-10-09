@@ -1,0 +1,11 @@
+{
+  "stdout": "build first: R1 R2 R3 R4 R5\nstretch: R6",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node scope.mjs",
+  "tool": null,
+  "hash": "2f15cb1cfd3a738b",
+  "at": "2026-10-09T07:11:37.705Z"
+}
