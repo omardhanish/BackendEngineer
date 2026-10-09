@@ -1,0 +1,11 @@
+{
+  "stdout": "0\n450\n-1",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java MessyDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "f888cee03b614432",
+  "at": "2026-10-09T08:11:45.774Z"
+}

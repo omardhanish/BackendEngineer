@@ -1,205 +1,282 @@
 {
   "title": "Dependency injection and IoC",
-  "idea": "Dependency injection (DI) means a class receives the objects it needs instead of creating them; inversion of control (IoC) is the wider idea that outside code drives yours.",
+  "idea": "Dependency injection (DI) means a class receives the objects it needs instead of creating them; inversion of control (IoC) means something outside the class decides and wires them.",
   "analogy": {
-    "text": "A camera body accepts any lens that fits its mount. The photographer chooses and attaches the lens; the camera never builds one.",
-    "breaks": "JavaScript does not check the mount; a wrong object fails at call time."
+    "text": "A film crew does not hire its own camera. The production office books one and delivers it; the crew only says it needs a camera.",
+    "breaks": "Offices pick once per film; a container can rebuild objects on demand."
   },
   "points": [
-    "A class that calls `new` on its helpers is welded to them.",
-    "Constructor injection passes helpers in, so the class depends only on their methods.",
-    "One composition root, near `main`, decides which concrete classes to wire together.",
-    "IoC means the outside calls and configures you; a DI container automates the wiring."
+    "A class declares what it needs as constructor parameters typed by interfaces.",
+    "One composition root, often `main`, creates concrete objects and passes them in.",
+    "Swapping an implementation, or a test fake, needs no edit to the class.",
+    "An IoC container such as Spring automates the wiring from registered recipes."
   ],
   "hero": {
-    "type": "flow",
-    "title": "Who creates what, who calls what",
-    "nodes": [
-      {
-        "id": "root",
-        "label": "Composition root",
-        "sub": "app start-up"
+    "type": "anim",
+    "engine": "topology",
+    "title": "Who calls new, and who just uses",
+    "scenario": {
+      "tiers": [
+        [
+          "root"
+        ],
+        [
+          "service"
+        ],
+        [
+          "console",
+          "fake"
+        ]
+      ],
+      "nodes": {
+        "root": {
+          "label": "main",
+          "sub": "composition root",
+          "kind": "client"
+        },
+        "service": {
+          "label": "OrderService",
+          "sub": "needs a Notifier",
+          "kind": "service"
+        },
+        "console": {
+          "label": "ConsoleNotifier",
+          "sub": "real",
+          "kind": "box"
+        },
+        "fake": {
+          "label": "RecordingNotifier",
+          "sub": "test double",
+          "kind": "box"
+        }
       },
-      {
-        "id": "svc",
-        "label": "SignupService",
-        "sub": "business logic"
-      },
-      {
-        "id": "port",
-        "label": "mailer.send()",
-        "sub": "the expected shape"
-      },
-      {
-        "id": "real",
-        "label": "ConsoleMailer",
-        "sub": "production"
-      },
-      {
-        "id": "fake",
-        "label": "FakeMailer",
-        "sub": "tests"
-      }
-    ],
-    "edges": [
-      {
-        "from": "root",
-        "to": "real",
-        "label": "creates",
-        "caption": "Only the composition root uses `new` on concrete helpers."
-      },
-      {
-        "from": "root",
-        "to": "svc",
-        "label": "injects mailer",
-        "caption": "It hands the mailer to `SignupService` through the constructor."
-      },
-      {
-        "from": "svc",
-        "to": "port",
-        "label": "calls",
-        "caption": "`SignupService` knows only that the object has `send(to, text)`."
-      },
-      {
-        "from": "real",
-        "to": "port",
-        "label": "fits",
-        "dashed": true,
-        "caption": "`ConsoleMailer` satisfies that shape in production."
-      },
-      {
-        "from": "fake",
-        "to": "port",
-        "label": "fits",
-        "dashed": true,
-        "caption": "A test injects `FakeMailer` instead. `SignupService` does not change."
-      }
-    ]
+      "links": [
+        [
+          "root",
+          "service",
+          {
+            "label": "injects"
+          }
+        ],
+        [
+          "service",
+          "console",
+          {
+            "label": "Notifier",
+            "dashed": true
+          }
+        ],
+        [
+          "service",
+          "fake",
+          {
+            "label": "Notifier",
+            "dashed": true
+          }
+        ]
+      ],
+      "steps": [
+        {
+          "caption": "`OrderService` holds a `private final Notifier`. It never writes `new` for one.",
+          "focus": [
+            "service"
+          ]
+        },
+        {
+          "caption": "`main` is the composition root. It creates a `ConsoleNotifier` first.",
+          "state": {
+            "console": "new"
+          },
+          "focus": [
+            "root",
+            "console"
+          ]
+        },
+        {
+          "caption": "It passes that object into the `OrderService` constructor. That is constructor injection.",
+          "send": [
+            {
+              "from": "root",
+              "to": "service",
+              "label": "new OrderService(n)",
+              "tone": "info"
+            }
+          ],
+          "state": {
+            "service": "up"
+          }
+        },
+        {
+          "caption": "`place` calls `notifier.send`. The service sees only the `Notifier` role.",
+          "send": [
+            {
+              "from": "service",
+              "to": "console",
+              "label": "send",
+              "tone": "req"
+            }
+          ],
+          "state": {
+            "console": "ok"
+          }
+        },
+        {
+          "caption": "For a test, `main` injects a `RecordingNotifier` instead. No line of `OrderService` changes.",
+          "state": {
+            "fake": "new",
+            "console": "old"
+          },
+          "send": [
+            {
+              "from": "root",
+              "to": "service",
+              "label": "inject fake",
+              "tone": "info"
+            }
+          ]
+        },
+        {
+          "caption": "The fake records the call, so a check can read what was sent.",
+          "send": [
+            {
+              "from": "service",
+              "to": "fake",
+              "label": "send",
+              "tone": "ok"
+            }
+          ],
+          "state": {
+            "fake": "ok"
+          },
+          "items": {
+            "fake": [
+              "lin@"
+            ]
+          }
+        },
+        {
+          "caption": "Control is inverted: the class asks for help, and the outside decides which help arrives.",
+          "focus": [
+            "root"
+          ]
+        }
+      ]
+    }
   },
   "code": [
     {
-      "file": "inject.mjs",
-      "lang": "js",
+      "file": "InjectionDemo.java",
+      "lang": "java",
       "title": "Constructor injection",
-      "run": "browser",
-      "caption": "One service, two mailers. Write a `LoudMailer` that upper-cases the text and inject it.",
+      "run": "captured",
+      "caption": "One service, two notifiers, chosen by `main`. The service code is identical in both runs.",
       "walk": [
         {
           "lines": [
-            1,
-            2,
-            3
+            17,
+            19
           ],
-          "text": "A real-ish mailer that prints."
+          "text": "The role: an interface with one method, named for what it does."
         },
         {
           "lines": [
-            4,
-            5,
-            6,
-            7
+            33,
+            38
           ],
-          "text": "A fake that records calls, so a test can check them."
+          "text": "The dependency is a `private final` field set only by the constructor."
+        },
+        {
+          "lines": [
+            40,
+            42
+          ],
+          "text": "The service uses the role and never names a concrete class."
+        },
+        {
+          "lines": [
+            6,
+            8
+          ],
+          "text": "The composition root picks the real notifier for normal use."
         },
         {
           "lines": [
             10,
-            11
-          ],
-          "text": "The service stores what it is given; it never calls `new` on a mailer."
-        },
-        {
-          "lines": [
-            12,
             13
           ],
-          "text": "It relies only on `send(to, text)`: dependency inversion in practice."
-        },
-        {
-          "lines": [
-            18,
-            19
-          ],
-          "text": "The composition root picks the concrete class in one place."
-        },
-        {
-          "lines": [
-            21,
-            22,
-            23
-          ],
-          "text": "Swap in the fake and inspect what would have been sent."
+          "text": "The same service gets a recording fake, which a test can inspect."
         }
       ]
     },
     {
-      "file": "container.mjs",
-      "lang": "js",
-      "title": "A tiny DI container",
-      "run": "browser",
-      "caption": "A container maps names to factories and builds each object once. Frameworks add scopes and auto-wiring on top.",
+      "file": "ContainerDemo.java",
+      "lang": "java",
+      "title": "A tiny IoC container",
+      "run": "captured",
+      "caption": "A container holds recipes and builds each object once, then reuses it. Spring does the same wiring at scale, though by default it builds singletons at startup.",
       "walk": [
         {
           "lines": [
-            2,
-            3
+            21,
+            23
           ],
-          "text": "Two maps: how to build each thing, and what is already built."
+          "text": "`register` stores a recipe: a function that builds the type from the container."
         },
         {
           "lines": [
-            6
+            25,
+            32
           ],
-          "text": "Return the cached instance, so every caller shares one object."
+          "text": "`get` builds on first request, keeps the instance, and returns it after that."
         },
         {
           "lines": [
-            8
-          ],
-          "text": "Fail loudly when nothing was registered under that name."
-        },
-        {
-          "lines": [
+            9,
             9
           ],
-          "text": "The factory receives the container, so it can resolve its own dependencies."
+          "text": "The `Greeter` recipe asks the container for its `Clock`; it never calls `new FixedClock`."
         },
         {
           "lines": [
-            17,
-            18,
-            19,
-            20
+            10,
+            12
           ],
-          "text": "`greeter` asks for `config`; it never knows how `config` is built."
+          "text": "The caller asks for a ready `Greeter`; the container resolved the whole graph."
+        },
+        {
+          "lines": [
+            39,
+            45
+          ],
+          "text": "`Greeter` is plain constructor injection; it works with or without a container."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Do not pass the container into business classes; that hides dependencies again.",
-    "A constructor with a long list of dependencies signals a class doing too much.",
-    "Avoid default `new Helper()` parameters in core logic; they quietly re-weld the dependency."
+    "Do not call `new` for a collaborator inside a class you want to test or swap.",
+    "Prefer constructor injection over setter or field injection; it keeps fields `final` and objects complete.",
+    "Do not pass the container itself into business classes; that hides their real dependencies."
   ],
   "quiz": {
-    "q": "What does this print?",
-    "code": "class Repo { find() { return 'real'; } }\nclass Service {\n  constructor(repo = new Repo()) { this.repo = repo; }\n  get() { return this.repo.find(); }\n}\nconst fake = { find: () => 'fake' };\nconsole.log(new Service().get(), new Service(fake).get());",
-    "lang": "js",
+    "q": "Using `Container` above, what does this print?",
+    "code": "Container c = new Container();\nc.register(Greeter.class, k -> new Greeter(k.get(Clock.class)));\nc.register(Clock.class, k -> new FixedClock(15));\nSystem.out.println(c.get(Greeter.class).greet(\"Lin\"));",
+    "lang": "java",
     "options": [
-      "real real",
-      "fake fake",
-      "fake real",
-      "real fake"
+      "Hello, Lin",
+      "Good morning, Lin",
+      "NullPointerException: no Clock yet",
+      "Good morning, Ada"
     ],
-    "answer": 3,
-    "why": "The default builds a `Repo` only when nothing is passed, which quietly re-welds it. The second call injects the fake, so its `find` runs."
+    "answer": 0,
+    "why": "Recipes run only when `get` is called, and both are registered by then. The clock says 15, which is not below 12, so it says Hello."
   },
-  "takeaway": "Classes ask for their helpers; one composition root decides which ones.",
+  "takeaway": "Ask for dependencies through the constructor; let one outside place wire them.",
   "chat": {
     "starters": [
-      "What is the difference between DI, IoC and dependency inversion?",
-      "Do I need a DI framework in a Node project?",
-      "Constructor injection or setter injection: which should I use?"
+      "How is dependency injection different from the dependency inversion principle?",
+      "What does Spring actually do when it sees a constructor with parameters?",
+      "When is calling new inside a class perfectly fine?"
     ]
   }
 }

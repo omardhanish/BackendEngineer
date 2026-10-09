@@ -1,43 +1,59 @@
 {
   "title": "What low-level design is",
-  "idea": "Low-level design is deciding the classes, their responsibilities, their methods and how they talk to each other, before or while you write the code.",
+  "idea": "Low-level design (LLD) turns a feature into concrete classes, interfaces, methods and the links between them, so the code is clear, testable and easy to extend.",
   "points": [
-    "High-level design picks services and databases; low-level design shapes the code inside one service.",
-    "You start from requirements and find the nouns: they become candidate classes.",
-    "Each class gets one clear job and a small public surface of methods.",
-    "Interviews judge whether your classes are easy to extend, test and explain."
+    "High-level design (HLD) picks services, databases and how they talk.",
+    "LLD works inside one service: which classes exist and who owns what.",
+    "A good LLD lets you add a feature by adding code, not editing it.",
+    "LLD interviews ask you to model a small system and defend each choice."
   ],
   "hero": {
-    "type": "flow",
-    "title": "From requirements to classes",
-    "nodes": [
-      { "id": "req", "label": "Requirements", "sub": "park, pay, leave" },
-      { "id": "nouns", "label": "Entities", "sub": "Garage, Slot, Ticket" },
-      { "id": "jobs", "label": "Responsibilities", "sub": "who does what" },
-      { "id": "links", "label": "Relationships", "sub": "has, uses, is" },
-      { "id": "code", "label": "Classes in code", "sub": "methods and state" }
-    ],
-    "edges": [
-      { "from": "req", "to": "nouns", "label": "find nouns", "caption": "Read the requirements and list the nouns. A garage, its slots and the tickets it issues." },
-      { "from": "nouns", "to": "jobs", "label": "assign", "caption": "Give each entity one job. The garage hands out slots; a ticket only records a visit." },
-      { "from": "jobs", "to": "links", "label": "connect", "caption": "Decide how they relate. A garage has slots and creates tickets." },
-      { "from": "links", "to": "code", "label": "write", "caption": "Only now write classes, with private state and a few public methods." }
+    "type": "timeline",
+    "title": "From a request to classes",
+    "items": [
+      {
+        "label": "Clarify",
+        "text": "Ask what the system must do and what is out of scope."
+      },
+      {
+        "label": "Find nouns",
+        "text": "Nouns in the use cases become candidate classes: `Room`, `Booking`, `Employee`."
+      },
+      {
+        "label": "Assign jobs",
+        "text": "Give each class one responsibility and the data it needs to do it."
+      },
+      {
+        "label": "Draw links",
+        "text": "Decide is-a and has-a links, then sketch a UML class diagram."
+      },
+      {
+        "label": "Define contracts",
+        "text": "Put an `interface` where behaviour may vary, such as a pricing rule."
+      },
+      {
+        "label": "Code and check",
+        "text": "Write the classes, run a scenario, and adjust names and links."
+      }
     ]
   },
-  "code": [
-    { "file": "parking.mjs", "lang": "js", "title": "A tiny design", "run": "browser", "caption": "Two classes, one job each. Add a `leave(ticket)` method that frees the slot, then run again." }
-  ],
   "quiz": {
-    "q": "Which question belongs to low-level design?",
+    "q": "Which question belongs to low-level design rather than high-level design?",
     "options": [
-      "Should orders live in Postgres or MongoDB?",
-      "How many servers sit behind the load balancer?",
-      "Should `Garage` or `Ticket` decide which slot is free?",
-      "Which cloud region hosts the service?"
+      "Should orders and payments be separate services?",
+      "Which class decides whether two bookings overlap?",
+      "Which database should store the bookings?",
+      "How many servers sit behind the load balancer?"
     ],
-    "answer": 2,
-    "why": "Low-level design assigns responsibilities to classes inside one service. Databases, servers and regions are high-level design choices."
+    "answer": 1,
+    "why": "LLD works inside one service: it decides which class owns a rule. Services, databases and servers are HLD choices."
   },
-  "takeaway": "Low-level design gives every class one job and a clear way to talk.",
-  "chat": { "starters": ["How is LLD different from HLD in an interview?", "How do I find the right classes from a problem statement?", "How much code should I write in an LLD interview?"] }
+  "takeaway": "HLD picks the boxes; LLD designs the classes inside each box.",
+  "chat": {
+    "starters": [
+      "What does an LLD interview round usually look like?",
+      "How is low-level design different from just writing code?",
+      "Which topics should I learn first for LLD interviews?"
+    ]
+  }
 }

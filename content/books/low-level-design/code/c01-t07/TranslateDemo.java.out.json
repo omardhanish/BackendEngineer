@@ -1,0 +1,11 @@
+{
+  "stdout": "profile u-7 unavailable\ncause: disk read failed for profiles/u-7",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java TranslateDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "1bb25aae3d451fa1",
+  "at": "2026-10-09T08:11:21.757Z"
+}

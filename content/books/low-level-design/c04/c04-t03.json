@@ -1,149 +1,175 @@
 {
-  "title": "DDD: language, contexts, objects",
-  "idea": "Domain-driven design (DDD) shapes code around the business: a shared language, bounded contexts where each term has one meaning, and entities and value objects inside them.",
+  "title": "DDD language and models",
+  "idea": "Domain-driven design (DDD) shapes code around the business's own language, splits it into bounded contexts, and builds each model from entities and value objects.",
   "analogy": {
-    "text": "In a port, the harbour master's \"ship\" has a length and a berth. To customs, a \"ship\" is cargo and a flag.",
-    "breaks": "In code, you write the translation between contexts yourself."
+    "text": "In a hospital, \"patient\" means a bed and a chart on the ward, but an account and a bill in finance. Each department keeps its own meaning.",
+    "breaks": "Departments share people; your contexts share data only through explicit translation."
   },
   "points": [
-    "Ubiquitous language: class and method names match words the experts use.",
-    "A bounded context is a boundary where each model term has one meaning.",
-    "An entity has an identity that lasts while its attributes change.",
-    "A value object is defined by its values, is immutable, and compares by value."
+    "Ubiquitous language: class and method names use the domain experts' exact words.",
+    "A bounded context is a boundary inside which each term has one meaning.",
+    "An entity has an identity that stays while its attributes change.",
+    "A value object is immutable and equal to any other with the same values."
   ],
   "hero": {
     "type": "anim",
     "engine": "topology",
-    "title": "One word, three contexts",
+    "title": "Two contexts, one translator",
     "scenario": {
       "tiers": [
         [
-          "ui"
+          "buyer"
         ],
         [
-          "sales"
+          "order"
         ],
         [
-          "bus"
+          "xlate"
         ],
         [
-          "ship",
-          "bill"
+          "parcel",
+          "recip"
         ]
       ],
       "nodes": {
-        "ui": {
-          "label": "Checkout page",
-          "kind": "client"
+        "buyer": {
+          "label": "Buyer",
+          "sub": "id C-7",
+          "kind": "user"
         },
-        "sales": {
-          "label": "Sales",
-          "sub": "bounded context",
-          "kind": "service"
+        "order": {
+          "label": "SalesOrder",
+          "sub": "entity O-1",
+          "kind": "box"
         },
-        "bus": {
-          "label": "OrderPlaced",
-          "sub": "domain event",
-          "kind": "topic"
+        "xlate": {
+          "label": "ShippingTranslator",
+          "sub": "translation",
+          "kind": "proxy"
         },
-        "ship": {
-          "label": "Shipping",
-          "sub": "bounded context",
-          "kind": "service"
+        "parcel": {
+          "label": "Parcel",
+          "sub": "shipping model",
+          "kind": "box"
         },
-        "bill": {
-          "label": "Billing",
-          "sub": "bounded context",
-          "kind": "service"
+        "recip": {
+          "label": "Recipient",
+          "sub": "value object",
+          "kind": "box"
         }
       },
       "links": [
         [
-          "ui",
-          "sales"
+          "buyer",
+          "order",
+          {
+            "label": "places"
+          }
         ],
         [
-          "sales",
-          "bus"
+          "order",
+          "xlate"
         ],
         [
-          "bus",
-          "ship"
+          "xlate",
+          "parcel"
         ],
         [
-          "bus",
-          "bill"
+          "xlate",
+          "recip"
         ]
       ],
-      "steps": [
+      "groups": [
         {
-          "caption": "The word 'customer' means something different in each context. Each context owns its own model.",
-          "focus": [
-            "sales",
-            "ship",
-            "bill"
+          "label": "Sales context",
+          "nodes": [
+            "buyer",
+            "order"
           ]
         },
         {
-          "caption": "In Sales, a customer is a buyer: name, basket and loyalty tier.",
+          "label": "Shipping context",
+          "nodes": [
+            "parcel",
+            "recip"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "caption": "In Sales, a customer is a `Buyer`: an entity with id C-7 and a credit limit.",
+          "badge": {
+            "buyer": "limit 2000"
+          },
+          "focus": [
+            "buyer"
+          ]
+        },
+        {
+          "caption": "`SalesOrder` O-1 checks its amount against the buyer's limit, in Sales words.",
           "send": [
             {
-              "from": "ui",
-              "to": "sales",
-              "label": "place order",
+              "from": "buyer",
+              "to": "order",
+              "label": "1500",
               "tone": "req"
             }
           ],
+          "state": {
+            "order": "ok"
+          },
           "badge": {
-            "sales": "buyer"
+            "order": "credit ok"
           }
         },
         {
-          "caption": "Sales does not call the others' classes. It publishes a fact other contexts can read.",
+          "caption": "Shipping never asks about credit. Its model holds only what a courier needs.",
+          "focus": [
+            "parcel",
+            "recip"
+          ]
+        },
+        {
+          "caption": "The order crosses the boundary through one translator, not by sharing the `Buyer` class.",
           "send": [
             {
-              "from": "sales",
-              "to": "bus",
-              "label": "event",
+              "from": "order",
+              "to": "xlate",
+              "label": "O-1",
               "tone": "info"
             }
           ],
           "state": {
-            "bus": "new"
+            "xlate": "busy"
           }
         },
         {
-          "caption": "Shipping translates the event into its own `Recipient`: an address and delivery slot.",
+          "caption": "The translator builds a `Parcel` and a `Recipient` value from the sales data.",
           "send": [
             {
-              "from": "bus",
-              "to": "ship",
-              "label": "recipient",
+              "from": "xlate",
+              "to": "parcel",
+              "label": "Parcel",
+              "tone": "ok"
+            },
+            {
+              "from": "xlate",
+              "to": "recip",
+              "label": "Ana",
               "tone": "ok"
             }
           ],
-          "badge": {
-            "ship": "recipient"
+          "state": {
+            "xlate": "ok",
+            "parcel": "new",
+            "recip": "new"
           }
         },
         {
-          "caption": "Billing builds a `Payer` with a payment method. Same person, different model.",
-          "send": [
-            {
-              "from": "bus",
-              "to": "bill",
-              "label": "payer",
-              "tone": "ok"
-            }
-          ],
-          "badge": {
-            "bill": "payer"
-          }
-        },
-        {
-          "caption": "Each context can change its model alone. Only the event's shape is a shared contract.",
+          "caption": "Renaming the buyer keeps entity C-7. A new address means a whole new `Recipient` value.",
           "focus": [
-            "bus"
+            "buyer",
+            "recip"
           ]
         }
       ]
@@ -151,78 +177,118 @@
   },
   "code": [
     {
-      "file": "money.mjs",
-      "lang": "js",
-      "title": "A value object",
-      "run": "browser",
-      "caption": "`Money` is frozen and compares by value. Add `fee.amount = 1; console.log(fee.amount);` and run: the write is ignored, and it still prints 500.",
+      "file": "ValueVsEntityDemo.java",
+      "lang": "java",
+      "title": "Value object vs entity",
+      "run": "captured",
+      "caption": "`Money` is equal by value and never changes. `Customer` is equal by id, whatever its name.",
       "walk": [
         {
           "lines": [
-            2,
-            3,
-            4,
-            5
+            23,
+            27
           ],
-          "text": "`Object.freeze` makes the instance immutable: no field can be changed after construction."
+          "text": "The compact constructor checks every value, so an invalid `Money` can never exist."
         },
         {
           "lines": [
-            6,
-            7,
-            8,
-            9
+            28,
+            33
           ],
-          "text": "`add` returns a new `Money` and refuses to mix currencies."
+          "text": "`plus` returns a new `Money`; neither operand changes."
         },
         {
           "lines": [
-            10
+            5,
+            8
           ],
-          "text": "Equality compares the values, not the reference."
+          "text": "Records compare by fields, so two separate 500-cent EUR values are equal."
         },
         {
           "lines": [
-            12,
-            13,
-            14
+            36,
+            45
           ],
-          "text": "The original fee is unchanged; `===` still compares references."
+          "text": "`Customer` bases `equals` and `hashCode` on the id alone."
+        },
+        {
+          "lines": [
+            10,
+            13
+          ],
+          "text": "A renamed customer is still the same customer: identity outlives attributes."
+        },
+        {
+          "lines": [
+            15,
+            19
+          ],
+          "text": "Domain rules live in the value: mixing currencies is refused."
         }
       ]
     },
     {
-      "file": "customer.mjs",
-      "lang": "js",
-      "title": "An entity",
-      "run": "browser",
-      "caption": "`Customer` is equal by `id`. A renamed customer is still the same customer."
+      "file": "ContextsDemo.java",
+      "lang": "java",
+      "title": "Two bounded contexts",
+      "run": "captured",
+      "caption": "Sales and Shipping each model the same person their own way. One translator connects them.",
+      "walk": [
+        {
+          "lines": [
+            12,
+            17
+          ],
+          "text": "Sales words: a `Buyer` with a credit limit, and an order that checks it. Records keep it short."
+        },
+        {
+          "lines": [
+            19,
+            22
+          ],
+          "text": "Shipping words: a `Recipient` value and a `Parcel`. No credit, no id."
+        },
+        {
+          "lines": [
+            24,
+            29
+          ],
+          "text": "The translator is the one place that knows both models."
+        },
+        {
+          "lines": [
+            3,
+            8
+          ],
+          "text": "Each context answers its own question: credit in Sales, delivery in Shipping."
+        }
+      ]
     }
   ],
   "pitfalls": [
-    "Do not share one `Customer` class across contexts; each context models its own.",
-    "Never mutate a value object; return a new one from every operation.",
-    "Name classes in the experts' words, not `Manager`, `Data` or `Helper`."
+    "Do not share one huge `Customer` class across contexts; each context models its own.",
+    "Do not give value objects setters; replace the whole value instead.",
+    "Do not base an entity's `equals` on mutable fields like name; compare ids."
   ],
   "quiz": {
-    "q": "What does this print?",
-    "code": "const a = Object.freeze({ amount: 5 });\nconst b = Object.freeze({ amount: 5 });\nconsole.log(a === b, a.amount === b.amount);",
-    "lang": "js",
+    "q": "Using the classes above, what does this print?",
+    "code": "Money a = new Money(500, \"EUR\");\nMoney b = new Money(500, \"EUR\");\nCustomer x = new Customer(\"C-1\", \"Li\");\nCustomer y = new Customer(\"C-1\", \"Lee\");\nSystem.out.println(a.equals(b) + \" \" + x.equals(y));",
+    "lang": "java",
     "options": [
-      "true true",
       "false true",
+      "true false",
       "false false",
-      "true false"
+      "true true"
     ],
-    "answer": 1,
-    "why": "`===` on objects compares references, so two separate objects differ. Value objects need an `equals` that compares fields."
+    "answer": 3,
+    "why": "`Money` is a record, so equality compares fields. `Customer.equals` compares only the id, and both ids are C-1."
   },
-  "takeaway": "Speak the experts' language, draw context borders, then separate identity from value.",
+  "takeaway": "Speak the domain's language; values compare by content, entities by identity.",
   "chat": {
     "starters": [
-      "How do I find the boundaries of a bounded context?",
-      "Should an address be an entity or a value object?",
-      "Is DDD worth it for a small LLD interview problem?"
+      "How do I find the bounded contexts in a new system?",
+      "Should a value object ever be mutable?",
+      "What is an anti-corruption layer?"
     ]
   }
 }

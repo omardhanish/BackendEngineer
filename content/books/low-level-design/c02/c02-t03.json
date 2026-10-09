@@ -1,53 +1,69 @@
 {
   "title": "Prototype and Object Pool",
-  "idea": "Prototype makes new objects by cloning a configured one. Object Pool keeps expensive objects alive and lends them out, so you reuse instead of rebuilding.",
+  "idea": "Prototype creates a new object by copying a ready-made one. Object Pool keeps a fixed set of costly objects and lends them out instead of rebuilding them.",
   "points": [
-    "A prototype object owns a `clone()` method that knows how deep to copy.",
-    "Clone a preset, then change only the fields that differ.",
-    "A pool hands out a free object, or creates one while under its limit.",
-    "Released objects return to the free list; a full pool refuses or waits."
+    "A prototype exposes a `copy()` method or copy constructor that returns a new twin.",
+    "A deep copy duplicates mutable fields; a shallow copy shares them with the original.",
+    "A pool hands out an idle object, or creates one while under its limit.",
+    "Callers must return borrowed objects with `release`, or the pool runs dry."
   ],
   "hero": {
     "type": "anim",
     "engine": "lanes",
-    "title": "A pool of two connections",
+    "title": "Borrow, refuse, return, reuse",
     "scenario": {
+      "code": [
+        "ConnectionPool pool = new ConnectionPool(2);",
+        "Connection a = pool.acquire().orElseThrow();",
+        "Connection b = pool.acquire().orElseThrow();",
+        "pool.acquire().isPresent();   // third",
+        "pool.release(a);",
+        "Connection c = pool.acquire().orElseThrow();"
+      ],
       "lanes": [
-        { "id": "free", "label": "Free", "kind": "stack", "hint": "ready to lend" },
-        { "id": "busy", "label": "In use", "kind": "area", "hint": "lent to callers" }
+        { "id": "idle", "label": "Idle in pool", "kind": "stack", "hint": "ready to lend" },
+        { "id": "used", "label": "Borrowed", "kind": "area", "hint": "held by callers" },
+        { "id": "none", "label": "Refused", "kind": "area", "hint": "Optional.empty()" }
       ],
       "tokens": {
-        "c1": { "label": "conn 1", "tone": "io" },
-        "c2": { "label": "conn 2", "tone": "io" }
+        "c1": { "label": "conn-1", "tone": "io" },
+        "c2": { "label": "conn-2", "tone": "io" },
+        "r3": { "label": "3rd acquire", "tone": "timer" }
       },
       "steps": [
         {
-          "caption": "The pool starts empty. It creates connections lazily, up to a maximum of two.",
-          "at": { "free": [], "busy": [] }
+          "caption": "The pool starts empty with a limit of two. Nothing is created until someone asks.",
+          "line": 0,
+          "at": { "idle": [], "used": [], "none": [] }
         },
         {
-          "caption": "First `acquire()`: nothing is free, so the pool creates `conn 1` and lends it.",
-          "at": { "free": [], "busy": ["c1"] },
+          "caption": "First `acquire`: nothing is idle, so the pool creates `conn-1` and lends it.",
+          "line": 1,
+          "at": { "idle": [], "used": ["c1"], "none": [] },
           "active": "c1"
         },
         {
-          "caption": "Second `acquire()`: still under the limit, so it creates `conn 2`.",
-          "at": { "free": [], "busy": ["c1", "c2"] },
+          "caption": "Second `acquire` creates `conn-2`. The pool has now reached its limit.",
+          "line": 2,
+          "at": { "idle": [], "used": ["c1", "c2"], "none": [] },
           "active": "c2"
         },
         {
-          "caption": "Third `acquire()`: nothing free and the limit is reached, so the pool throws.",
-          "at": { "free": [], "busy": ["c1", "c2"] },
-          "out": ["pool exhausted"]
+          "caption": "Third `acquire`: nothing idle and no room to create, so it gets an empty `Optional`.",
+          "line": 3,
+          "at": { "idle": [], "used": ["c1", "c2"], "none": ["r3"] },
+          "active": "r3"
         },
         {
-          "caption": "`release(conn 1)` moves it back to the free list. It is not destroyed.",
-          "at": { "free": ["c1"], "busy": ["c2"] },
+          "caption": "`release(a)` puts `conn-1` back on the idle stack. It is not destroyed.",
+          "line": 4,
+          "at": { "idle": ["c1"], "used": ["c2"], "none": [] },
           "active": "c1"
         },
         {
-          "caption": "The next `acquire()` reuses `conn 1`. No new connection is built.",
-          "at": { "free": [], "busy": ["c1", "c2"] },
+          "caption": "The next `acquire` pops `conn-1` again. Reuse, not a third creation.",
+          "line": 5,
+          "at": { "idle": [], "used": ["c1", "c2"], "none": [] },
           "active": "c1"
         }
       ]
@@ -55,52 +71,59 @@
   },
   "code": [
     {
-      "file": "drafts.mjs",
-      "lang": "js",
-      "title": "Prototype with clone()",
-      "run": "browser",
-      "caption": "`clone()` copies the tags array; a plain shallow copy shares it. `structuredClone` copies data but drops the class.",
+      "file": "PrototypeDemo.java",
+      "lang": "java",
+      "title": "Prototype",
+      "run": "captured",
+      "caption": "Copy a template invoice, then edit the copy. A shallow copy leaks edits into the template.",
       "walk": [
-        { "lines": [3], "text": "`clone()` decides the depth: a new array, so tags are not shared." },
-        { "lines": [5, 6, 7], "text": "Clone a preset and change only what differs. The preset stays intact." },
-        { "lines": [8, 9], "text": "`Object.assign` copies the array reference, so pushing edits the preset too." },
-        { "lines": [11, 12], "text": "`clone()` keeps the class; `structuredClone` returns a plain object." }
+        { "lines": [23, 26], "text": "A `private` constructor stores the list it is given, as is." },
+        { "lines": [28, 30], "text": "The factory method builds the original with its own mutable list." },
+        { "lines": [32, 32], "text": "`copy` makes a new list: a deep copy, safe to edit." },
+        { "lines": [34, 35], "text": "`shallowCopy` reuses the same list: the classic Prototype bug." },
+        { "lines": [8, 11], "text": "Editing the deep copy leaves the template alone." },
+        { "lines": [13, 15], "text": "Editing the shallow copy changes the template too." }
       ]
     },
     {
-      "file": "pool.mjs",
-      "lang": "js",
-      "title": "A bounded Object Pool",
-      "run": "browser",
-      "caption": "Change the limit to 3 and run again: the third `acquire()` now succeeds.",
+      "file": "ObjectPoolDemo.java",
+      "lang": "java",
+      "title": "Object Pool",
+      "run": "captured",
+      "caption": "A two-slot connection pool. The fake `Connection` stands in for something costly to open. It is a single-threaded sketch; a pool shared by threads needs a lock or a concurrent queue.",
       "walk": [
-        { "lines": [2, 3], "text": "Free list, a set of lent objects, and a count of how many exist." },
-        { "lines": [5, 6], "text": "Reuse a free object first; create one only while under `max`." },
-        { "lines": [7], "text": "Full pool: fail loudly. Real pools often queue the caller instead." },
-        { "lines": [11, 12], "text": "Only objects this pool lent can return, so a double release is ignored." },
-        { "lines": [17, 18, 19], "text": "After a release, `acquire()` hands back the very same object." }
+        { "lines": [27, 29], "text": "The pool tracks idle objects, its limit and how many it has made." },
+        { "lines": [33, 37], "text": "Lend an idle one first; create only under the limit; else refuse." },
+        { "lines": [39, 39], "text": "`release` returns the object to the idle stack for the next caller." },
+        { "lines": [7, 11], "text": "Two borrows succeed; the third is refused while both are out." },
+        { "lines": [13, 16], "text": "After a return, the next borrow gets the same object back." }
       ]
     }
   ],
   "pitfalls": [
-    "A shallow copy shares nested arrays and objects; clone those explicitly.",
-    "Reset a pooled object's state on release, or the next caller sees old data.",
-    "Pool only objects that are costly to create; pooling cheap objects adds bugs, not speed."
+    "Deep-copy every mutable field in a prototype; copying references shares state silently.",
+    "Prefer a copy constructor or `copy()` over `Cloneable`, whose `clone()` is shallow by default.",
+    "Release pooled objects in `finally`, and reset their state before lending them again."
   ],
   "quiz": {
-    "q": "What does this print?",
-    "code": "const base = { name: 'base', opts: { retries: 3 } };\nconst copy = { ...base };\ncopy.name = 'copy';\ncopy.opts.retries = 5;\nconsole.log(base.name, base.opts.retries);",
-    "lang": "js",
-    "options": ["base 3", "copy 5", "base 5", "copy 3"],
+    "q": "What is the last line `ObjectPoolDemo` prints?",
+    "options": [
+      "reused a: false, created: 3",
+      "reused a: true, created: 3",
+      "reused a: true, created: 2",
+      "reused a: false, created: 2"
+    ],
     "answer": 2,
-    "why": "Spread copies top-level fields, so `name` is separate. `opts` is one shared object, so the change shows through `base`."
+    "why": "`release(a)` put `a` on the idle stack, and `acquire` pops idle objects before creating new ones. Only two were ever created.",
+    "code": "pool.release(a);\nConnection c = pool.acquire().orElseThrow();\nSystem.out.println(\"reused a: \" + (c == a)\n    + \", created: \" + pool.created());",
+    "lang": "java"
   },
-  "takeaway": "Clone presets with care; pool only what is expensive to build.",
+  "takeaway": "Prototype copies a ready object; Object Pool lends costly objects for reuse.",
   "chat": {
     "starters": [
-      "How is the Prototype pattern different from JavaScript prototypes?",
-      "When should I use structuredClone instead of a clone method?",
-      "Does a database driver already give me an Object Pool?"
+      "Why is Cloneable considered broken in Java?",
+      "Should I write my own pool or use a library like HikariCP?",
+      "How would I make this pool safe for many threads?"
     ]
   }
 }

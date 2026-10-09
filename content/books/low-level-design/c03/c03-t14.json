@@ -1,66 +1,42 @@
 {
-  "title": "Reviewing a design with peers",
-  "idea": "A design peer review is a short session where others test your classes against the requirements, and you record each finding with the change it asks for.",
+  "title": "Reviewing a design together",
+  "idea": "A design review is a short session where peers test your design against its requirements and leave specific, actionable comments.",
   "points": [
-    "Present the requirements first, then walk one use case through your classes.",
-    "Reviewers ask questions about the design, not about your naming taste.",
-    "Each comment names a problem, a concrete scenario and a suggested change.",
-    "You leave with a short list of fixes, ranked by how much they matter."
+    "The author states the requirements first, then walks one use case end to end.",
+    "Reviewers ask what happens when a requirement changes, and which class must change.",
+    "Every comment names a class, a problem and a suggested next step."
   ],
   "hero": {
-    "type": "table",
-    "title": "A review checklist",
-    "head": [
-      "Area",
-      "Question to ask",
-      "Red flag"
-    ],
-    "rows": [
-      [
-        "Requirements",
-        "Does every must-have action have a method?",
-        "A use case with no owner"
-      ],
-      [
-        "Responsibilities",
-        "Can each class be described in one sentence?",
-        "One class does most of the work"
-      ],
-      [
-        "Extension",
-        "What changes if a new type or rule arrives?",
-        "Editing a switch in several places"
-      ],
-      [
-        "Concurrency",
-        "What if two users act at the same moment?",
-        "Check, then act, with no guard"
-      ],
-      [
-        "Testability",
-        "Can the core flow run with a fake clock and no network?",
-        "Hidden new Date() or global state"
+    "type": "compare",
+    "title": "Comments that help, and those that do not",
+    "left": {
+      "title": "Vague",
+      "tone": "bad",
+      "items": [
+        "This feels too complex.",
+        "Use more patterns here.",
+        "I would do it differently.",
+        "Looks fine to me."
       ]
-    ],
-    "caption": "Ask these in order. Each red flag points at a concrete fix, not a matter of taste."
+    },
+    "right": {
+      "title": "Actionable",
+      "tone": "good",
+      "items": [
+        "Elevator picks cars in a long if-else; extract a DispatchStrategy.",
+        "A new fee type edits Ticket; move pricing behind an interface.",
+        "Two threads can book seat 4; lock per show.",
+        "R3 has no check; add one for a full lot."
+      ]
+    },
+    "verdict": "A useful comment points at a class, a risk and a fix."
   },
-  "quiz": {
-    "q": "Which review comment is the most useful?",
-    "options": [
-      "This design feels too complicated.",
-      "I would have used different class names.",
-      "Two users can book one room; lock inside `book()`.",
-      "Consider using more design patterns here."
-    ],
-    "answer": 2,
-    "why": "It names a scenario, the code that fails and a fix. The others are opinions with nothing to act on."
-  },
-  "takeaway": "Good review comments name a scenario, a failure and a fix.",
+  "takeaway": "Review against requirements, and make every comment specific and actionable.",
   "chat": {
     "starters": [
-      "How do I respond when a reviewer disagrees with my design choice?",
-      "What should I prepare before presenting my design for review?",
-      "Can you review my project design using this checklist?"
+      "How do I respond when a reviewer disagrees with my design?",
+      "What questions should I ask when reviewing someone else's design?",
+      "How long should a design review take?"
     ]
   }
 }

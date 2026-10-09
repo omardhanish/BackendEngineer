@@ -1,171 +1,90 @@
 {
-  "title": "Documenting the booking system",
-  "idea": "Design documentation records what the system does, which classes do it and why, using a short README, UML diagrams and doc comments on public methods.",
+  "title": "Design docs and UML",
+  "idea": "Design documentation is a short written record of scope, key decisions and diagrams, so a reader understands the system without reading the code.",
   "points": [
-    "A class diagram shows classes, their key members and how they relate.",
-    "A sequence diagram shows one use case, such as booking a room, in order.",
-    "Doc comments explain each public method's inputs, result and errors.",
-    "Record decisions and trade-offs, such as why `ConflictPolicy` is a strategy."
+    "A class diagram shows structure: classes, interfaces and how they connect.",
+    "A sequence diagram shows behaviour: who calls whom, in order, for one use case.",
+    "A one-page design doc states scope, decisions with reasons, and links to diagrams.",
+    "Keep diagrams as text files next to the code, so reviews diff them."
   ],
   "hero": {
     "type": "anatomy",
-    "title": "Reading one UML member line",
+    "title": "One Mermaid class-diagram line",
     "parts": [
       {
-        "text": "+",
-        "label": "Visibility",
-        "note": "`+` public, `-` private, `#` protected. A JavaScript `#field` is private, so draw it with `-`.",
-        "tone": "a"
+        "text": "BookingService",
+        "label": "source",
+        "note": "A line from `class-diagram.txt`, in Mermaid text. The class that holds the reference."
       },
       {
-        "text": "book",
-        "label": "Name",
-        "note": "The method name, exactly as it appears in the code."
+        "text": " \"1\"",
+        "label": "multiplicity",
+        "note": "One service on this end of the link.",
+        "tone": "b"
       },
       {
-        "text": "(employeeId, roomId, start, end)",
-        "label": "Parameters",
-        "note": "Inputs the caller passes. Add types when they clarify the design."
+        "text": " -->",
+        "label": "association",
+        "note": "A solid arrow: the service holds and calls its listeners."
       },
       {
-        "text": " Booking",
-        "label": "Return type",
-        "note": "What the method returns. Standard UML writes `: Booking`; Mermaid drops the colon."
+        "text": " \"0..*\"",
+        "label": "multiplicity",
+        "note": "Zero or more listeners. The service works with none.",
+        "tone": "b"
+      },
+      {
+        "text": " BookingListener",
+        "label": "target",
+        "note": "An interface, so any class implementing it fits."
+      },
+      {
+        "text": " : notifies",
+        "label": "label",
+        "note": "A verb that says why the link exists."
       }
     ]
   },
   "code": [
     {
-      "file": "classes.mmd",
+      "file": "sequence-book.txt",
       "lang": "text",
-      "title": "Class diagram as text",
+      "title": "Sequence diagram: book()",
       "run": "static",
       "illustrative": true,
-      "caption": "Mermaid class diagram source. Keeping the diagram as text lets it live in the repository and change with the code.",
-      "walk": [
-        {
-          "lines": [
-            2,
-            3,
-            4,
-            5,
-            6
-          ],
-          "text": "A class box: one private field and two public methods."
-        },
-        {
-          "lines": [
-            7,
-            8,
-            9,
-            10
-          ],
-          "text": "`<<interface>>` marks `ConflictPolicy` as a contract, not a concrete class."
-        },
-        {
-          "lines": [
-            11,
-            12
-          ],
-          "text": "Plain arrows show that `BookingService` uses its collaborators."
-        },
-        {
-          "lines": [
-            13,
-            18,
-            19,
-            20,
-            21,
-            22,
-            23
-          ],
-          "text": "`BookingService` notifies only the `BookingListener` interface; `NotificationService` and `AuditLogger` implement it, as built in c05-t06."
-        },
-        {
-          "lines": [
-            14
-          ],
-          "text": "A dotted arrow with a hollow head means \"implements\"."
-        },
-        {
-          "lines": [
-            15
-          ],
-          "text": "A filled diamond is composition: rooms belong to one building."
-        },
-        {
-          "lines": [
-            16,
-            17
-          ],
-          "text": "Multiplicities say how many objects sit at each end of a link."
-        }
-      ]
+      "caption": "Mermaid text for one successful booking. Solid arrows are calls; dashed arrows are returns."
     },
     {
-      "file": "policy-doc.mjs",
-      "lang": "js",
-      "title": "Doc comments on an interface",
-      "run": "browser",
-      "caption": "JSDoc records the contract next to the code. Editors show it on hover.",
-      "walk": [
-        {
-          "lines": [
-            1,
-            2,
-            3,
-            4
-          ],
-          "text": "The class comment says what the interface decides, and tags it `@interface`."
-        },
-        {
-          "lines": [
-            6,
-            7,
-            8,
-            9,
-            10
-          ],
-          "text": "Each parameter and the return value get one plain line."
-        },
-        {
-          "lines": [
-            11
-          ],
-          "text": "The base method throws, so a missing override fails loudly."
-        },
-        {
-          "lines": [
-            18,
-            19
-          ],
-          "text": "The documented contract holds: back-to-back slots do not clash."
-        }
-      ]
+      "file": "DESIGN.md",
+      "lang": "markdown",
+      "title": "One-page design doc",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Scope, each decision with its reason and the option it rejected, and links to the diagrams."
     }
   ],
   "pitfalls": [
-    "Do not draw every getter; show the members that explain the design.",
-    "Update diagrams when classes change, or readers will trust a wrong picture.",
-    "Do not use a composition diamond where objects outlive their owner."
+    "Do not draw every getter and field; show only types and calls that explain the design.",
+    "A decision without its reason invites the same debate again; write the why.",
+    "Update the diagram in the same change as the code, or it silently goes stale."
   ],
   "quiz": {
-    "q": "Which UML notation fits `StrictOverlapPolicy` and `ConflictPolicy`?",
+    "q": "A reviewer asks when listeners hear about a booking. Which artefact answers best?",
     "options": [
-      "A filled diamond from `ConflictPolicy` to `StrictOverlapPolicy`",
-      "A dotted line with a hollow triangle pointing to `ConflictPolicy`",
-      "A plain arrow labelled \"uses\" from `ConflictPolicy`",
-      "No link, because interfaces are left off class diagrams"
+      "The class diagram",
+      "The sequence diagram for book()",
+      "The scope section of the design doc",
+      "The `BookingListener` interface's Javadoc"
     ],
     "answer": 1,
-    "why": "`StrictOverlapPolicy` implements the `ConflictPolicy` interface. UML draws realisation as a dotted line with a hollow triangle at the interface."
+    "why": "Timing is behaviour. The sequence diagram orders the calls: `onBooked` comes only after `save`. A class diagram shows links, not order."
   },
-  "takeaway": "Document the why, keep diagrams as text, and keep them current.",
+  "takeaway": "Class diagrams show structure, sequence diagrams show order, docs explain why.",
   "chat": {
     "starters": [
-      "What should go in the README for my booking system?",
-      "How do I draw the sequence diagram for cancelling a booking?",
-      "What is the difference between aggregation and composition in UML?"
+      "Which UML arrows do I really need for an LLD interview?",
+      "How do I draw composition versus aggregation in Mermaid?",
+      "Should the design doc include the refused-booking path?"
     ]
   }
 }

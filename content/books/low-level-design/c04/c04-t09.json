@@ -1,128 +1,119 @@
 {
-  "title": "Refactoring in safe steps",
-  "idea": "Refactoring is changing the structure of code without changing what it does, in small steps that tests confirm one at a time.",
+  "title": "Safe refactoring moves",
+  "idea": "Refactoring changes the structure of code without changing its behaviour, in small named steps, each checked by tests before the next.",
   "points": [
-    "First pin today's behaviour with characterization tests, odd inputs included.",
-    "Make one small named move, run the tests, then commit.",
-    "Each code smell points to a known move, like Extract Function.",
-    "Never mix a refactor and a new feature in the same commit."
+    "First pin today's behaviour with tests, even where that behaviour looks odd.",
+    "Make one small move at a time: rename, extract, inline or move.",
+    "Run the tests after every move, so a mistake points at one change.",
+    "Never mix a refactor with a behaviour change in the same step."
   ],
   "hero": {
-    "type": "table",
-    "title": "Smell to move to result",
-    "head": [
-      "Smell you notice",
-      "Refactoring move",
-      "What improves"
-    ],
-    "rows": [
-      [
-        "Long function doing three jobs",
-        "Extract Function",
-        "Each piece has a name and one job"
-      ],
-      [
-        "if/else chain on a type field",
-        "Replace Conditional with Polymorphism or a lookup",
-        "New types added without editing the chain"
-      ],
-      [
-        "Same five arguments passed everywhere",
-        "Introduce Parameter Object",
-        "Shorter signatures, one place to validate"
-      ],
-      [
-        "Method uses another class's data more than its own",
-        "Move Method",
-        "Behaviour lives next to its data"
-      ],
-      [
-        "Unexplained literal like 0.9",
-        "Replace Magic Literal (named constant)",
-        "Intent is readable and changed once"
-      ],
-      [
-        "Copied block in two classes",
-        "Extract Function or Extract Class",
-        "One fix reaches every caller"
-      ]
-    ],
-    "caption": "Name the smell first; the move follows from it."
+    "type": "timeline",
+    "title": "Cleaning a pricing method, move by move",
+    "items": [
+      {
+        "label": "Pin behaviour",
+        "text": "Write tests that record what `price` returns today for every seat, age and day."
+      },
+      {
+        "label": "Rename",
+        "text": "Replace `t`, `a` and `w` with names that say what they hold."
+      },
+      {
+        "label": "Extract constant",
+        "text": "Turn magic numbers such as 300 and 200 into named constants."
+      },
+      {
+        "label": "Extract method",
+        "text": "Move the child rule into `discount(age)`; its two copies become one."
+      },
+      {
+        "label": "Replace type code",
+        "text": "Swap the `\"S\"` and `\"P\"` strings for a `Seat` enum with base prices."
+      },
+      {
+        "label": "Compare and commit",
+        "text": "Old and new agree on every pinned case: commit, then find the next smell."
+      }
+    ]
   },
   "code": [
     {
-      "file": "before.mjs",
-      "lang": "js",
-      "title": "Before",
-      "run": "browser",
-      "caption": "Run it and keep the output. That output is the behaviour the refactor must preserve."
-    },
-    {
-      "file": "after.mjs",
-      "lang": "js",
-      "title": "After",
-      "run": "browser",
-      "caption": "Same output, three named pieces. A new type is now one entry in `rules`.",
+      "file": "RefactorDemo.java",
+      "lang": "java",
+      "title": "Before and after, side by side",
+      "run": "captured",
+      "caption": "The legacy method and its refactored version run on every valid input mix. Matching results show the behaviour is unchanged for those cases.",
       "walk": [
         {
           "lines": [
-            2
+            16,
+            23
           ],
-          "text": "Replace Magic Literal: `BOOK_DISCOUNT = 0.1` names the 10% hidden in the unexplained `0.9`."
+          "text": "Before: cryptic names, magic numbers, and the same rules written twice."
         },
         {
           "lines": [
-            3
+            25,
+            32
           ],
-          "text": "Replace Conditional with a lookup: the `if/else` chain becomes a map from type to rule."
+          "text": "Replace type code: each `Seat` carries its base price. Unknown codes, which legacy priced at 0, now throw."
         },
         {
           "lines": [
-            4
+            35,
+            37
           ],
-          "text": "`keep` preserves the old fall-through for unknown types like `misc`."
+          "text": "Extract constant: each number gets a name that explains it."
         },
         {
           "lines": [
-            5
+            42,
+            44
           ],
-          "text": "Extract Function: `subtotal` names the price-times-quantity step."
+          "text": "Extract method: the child rule lives in one named place."
         },
         {
           "lines": [
-            6,
-            7,
-            8
+            4,
+            11
           ],
-          "text": "`invoiceLine` now reads as a sentence: pick a rule, apply it, format."
+          "text": "A characterization test: run old and new on every case and count matches."
+        },
+        {
+          "lines": [
+            12,
+            13
+          ],
+          "text": "Print the match count, then one sample from the new code."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Do not refactor code with no tests; write characterization tests for today's output first.",
-    "Check the default branch: dropping an implicit `else` silently changes behaviour.",
-    "Keep each step small enough to undo; a big-bang rewrite is not refactoring."
+    "Do not refactor code with no tests; write characterization tests first.",
+    "Keep each commit to one move, so a review or revert stays small.",
+    "Stop when the code is clear enough for the next change, not perfect."
   ],
   "quiz": {
-    "q": "A refactor dropped the fallback. What does this print?",
-    "code": "const rules = { book: (t) => t * 0.9 };\nconst line = (i) => rules[i.type](i.price).toFixed(2);\nconsole.log(line({ type: 'pen', price: 5 }));",
-    "lang": "js",
+    "q": "Using the refactored code, what does this print?",
     "options": [
-      "5.00",
-      "NaN",
-      "A TypeError: not a function",
-      "undefined"
+      "1000",
+      "500",
+      "900",
+      "700"
     ],
-    "answer": 2,
-    "why": "`rules['pen']` is `undefined`, and calling `undefined` throws a `TypeError`. The old `if/else` left unknown types unchanged."
+    "answer": 3,
+    "why": "Base 800, minus the 300 child discount because 11 is under 12, plus the 200 weekend surcharge.",
+    "code": "System.out.println(Ticket.price(Seat.STANDARD, 11, true));",
+    "lang": "java"
   },
-  "takeaway": "Tests first, one small move, tests again, commit.",
+  "takeaway": "Pin the behaviour, make one small move, rerun tests, repeat.",
   "chat": {
     "starters": [
-      "How do I write characterization tests for messy legacy code?",
-      "When should I replace a conditional with polymorphism instead of a lookup table?",
-      "How do I refactor safely when there are no tests at all?"
+      "Which code smells should I refactor first in a legacy class?",
+      "How is Replace Conditional with Polymorphism done step by step?",
+      "How do I refactor safely when the class has no tests at all?"
     ]
   }
 }

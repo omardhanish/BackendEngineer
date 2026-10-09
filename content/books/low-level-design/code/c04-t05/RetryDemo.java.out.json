@@ -1,0 +1,11 @@
+{
+  "stdout": "attempt 1: timeout\nattempt 2: timeout\nattempt 3 ok\nlive 1.12\nattempt 1: timeout\nattempt 2: timeout\nattempt 3: timeout\ngiving up, using fallback\ncached 1.10",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java RetryDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "57efb65cc364d5d4",
+  "at": "2026-10-09T08:26:03.434Z"
+}

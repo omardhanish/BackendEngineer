@@ -1,0 +1,11 @@
+{
+  "stdout": "conn-1 reads rooms | conn-2 reads users\nthird acquire: false\nreused a: true, created: 2",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ObjectPoolDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "d4d70a241b7c9fbd",
+  "at": "2026-10-09T08:12:08.826Z"
+}

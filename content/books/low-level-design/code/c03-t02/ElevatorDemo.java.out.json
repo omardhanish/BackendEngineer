@@ -1,0 +1,11 @@
+{
+  "stdout": "stop at 2 going UP\nstop at 5 going UP\nstop at 8 going UP\nstop at 1 going DOWN",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ElevatorDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "c335ae61cf471d76",
+  "at": "2026-10-09T08:15:34.613Z"
+}

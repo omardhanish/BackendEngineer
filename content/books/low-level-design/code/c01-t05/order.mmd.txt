@@ -1,0 +1,24 @@
+classDiagram
+    class Order {
+        -List~OrderLine~ lines
+        -Customer customer
+        +add(String item, int qty, long price) void
+        +total() long
+        +pay(Payment payment) boolean
+    }
+    class OrderLine {
+        +String item
+        +int qty
+        +long price
+    }
+    class Customer {
+        +String name
+    }
+    class Payment {
+        <<interface>>
+        +charge(long amount) boolean
+    }
+    Order "1" *-- "0..*" OrderLine : owns
+    Order "*" --> "1" Customer : placed by
+    Order ..> Payment : uses
+    Payment <|.. CardPayment

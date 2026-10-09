@@ -1,92 +1,276 @@
 {
   "title": "Command and Mediator",
-  "idea": "Command turns a request into an object you can store, queue or undo. Mediator puts one object between peers so they talk through it, not to each other.",
+  "idea": "Command turns a request into an object you can store, queue and undo. Mediator routes talk between many objects through one hub, so none references another.",
   "points": [
-    "A command object holds the receiver and arguments, plus `run` and `undo`.",
-    "The invoker keeps executed commands on a stack, so undo pops the last.",
-    "A mediator owns the rules for how a group of peers coordinates.",
-    "Peers hold one reference, the mediator, instead of references to every peer."
+    "A command holds its receiver (the object doing the work) and arguments.",
+    "An invoker, like `History`, runs commands and keeps them on a stack for undo.",
+    "Colleagues, the objects the mediator connects, hold only its interface and report to it.",
+    "The mediator holds the rules, so changing how widgets interact touches one class."
   ],
   "hero": {
     "type": "anim",
     "engine": "lanes",
-    "title": "Commands on an undo stack",
+    "title": "Undo and redo are two stacks",
     "scenario": {
-      "code": [
-        "ed.exec(new Append(doc, 'Hello'));",
-        "ed.exec(new Append(doc, ' world'));",
-        "console.log(doc.text);",
-        "ed.undo(); console.log(doc.text);"
-      ],
       "lanes": [
-        { "id": "exec", "label": "Editor.exec", "kind": "area", "hint": "calls run()" },
-        { "id": "history", "label": "History", "kind": "stack", "hint": "executed commands" },
-        { "id": "undone", "label": "Undone", "kind": "area", "hint": "after undo()" }
+        {
+          "id": "doc",
+          "label": "Document",
+          "kind": "area",
+          "hint": "the receiver's text"
+        },
+        {
+          "id": "undo",
+          "label": "Undo stack",
+          "kind": "stack",
+          "hint": "commands already run"
+        },
+        {
+          "id": "redo",
+          "label": "Redo stack",
+          "kind": "stack",
+          "hint": "commands undone"
+        }
       ],
       "tokens": {
-        "c1": { "label": "Append 'Hello'", "tone": "sync" },
-        "c2": { "label": "Append ' world'", "tone": "micro" }
+        "cHello": {
+          "label": "Append Hello",
+          "tone": "io"
+        },
+        "cWorld": {
+          "label": "Append world",
+          "tone": "io"
+        },
+        "cBang": {
+          "label": "Append !",
+          "tone": "io"
+        },
+        "pHello": {
+          "label": "Hello",
+          "tone": "sync"
+        },
+        "pWorld": {
+          "label": "world",
+          "tone": "sync"
+        },
+        "pBang": {
+          "label": "!",
+          "tone": "sync"
+        }
       },
       "steps": [
-        { "caption": "The first request becomes an object. `exec` calls its `run`, which edits `doc`.", "line": 0, "at": { "exec": ["c1"], "history": [], "undone": [] }, "active": "c1", "out": [] },
-        { "caption": "After running, the command is pushed onto the history stack.", "line": 0, "at": { "exec": [], "history": ["c1"], "undone": [] }, "active": "c1", "out": [] },
-        { "caption": "The second command runs the same way. `Editor` never knows what `Append` does inside.", "line": 1, "at": { "exec": ["c2"], "history": ["c1"], "undone": [] }, "active": "c2", "out": [] },
-        { "caption": "It lands on top of the stack, above the first one.", "line": 1, "at": { "exec": [], "history": ["c1", "c2"], "undone": [] }, "active": "c2", "out": [] },
-        { "caption": "Both commands have changed the document.", "line": 2, "at": { "exec": [], "history": ["c1", "c2"], "undone": [] }, "out": ["Hello world"] },
-        { "caption": "`undo` pops the top command and calls its own `undo`. Only the last change is reversed.", "line": 3, "at": { "exec": [], "history": ["c1"], "undone": ["c2"] }, "active": "c2", "out": ["Hello world", "Hello"] }
+        {
+          "caption": "`run` calls `execute` on the first command, then pushes it on the undo stack.",
+          "at": {
+            "doc": [
+              "pHello"
+            ],
+            "undo": [
+              "cHello"
+            ],
+            "redo": []
+          },
+          "active": "cHello"
+        },
+        {
+          "caption": "The second command runs the same way and lands on top.",
+          "at": {
+            "doc": [
+              "pHello",
+              "pWorld"
+            ],
+            "undo": [
+              "cHello",
+              "cWorld"
+            ],
+            "redo": []
+          },
+          "active": "cWorld"
+        },
+        {
+          "caption": "`undo` pops the top command, calls its `undo`, and pushes it on the redo stack.",
+          "at": {
+            "doc": [
+              "pHello"
+            ],
+            "undo": [
+              "cHello"
+            ],
+            "redo": [
+              "cWorld"
+            ]
+          },
+          "active": "cWorld"
+        },
+        {
+          "caption": "`redo` pops from the redo stack, calls `execute` again, and moves it back.",
+          "at": {
+            "doc": [
+              "pHello",
+              "pWorld"
+            ],
+            "undo": [
+              "cHello",
+              "cWorld"
+            ],
+            "redo": []
+          },
+          "active": "cWorld"
+        },
+        {
+          "caption": "Undo once more: the `world` command waits on the redo stack again.",
+          "at": {
+            "doc": [
+              "pHello"
+            ],
+            "undo": [
+              "cHello"
+            ],
+            "redo": [
+              "cWorld"
+            ]
+          },
+          "active": "cWorld"
+        },
+        {
+          "caption": "Running a new command clears the redo stack. That undone branch is gone.",
+          "at": {
+            "doc": [
+              "pHello",
+              "pBang"
+            ],
+            "undo": [
+              "cHello",
+              "cBang"
+            ],
+            "redo": []
+          },
+          "active": "cBang"
+        }
       ]
     }
   },
   "code": [
     {
-      "file": "editor.mjs",
-      "lang": "js",
-      "title": "Command: undo in an editor",
-      "run": "browser",
-      "caption": "The code from the animation. Add a second `ed.undo()` and predict the text first.",
+      "file": "CommandDemo.java",
+      "lang": "java",
+      "title": "Command",
+      "run": "captured",
+      "caption": "Each edit is an object, so `History` can undo and redo it later.",
       "walk": [
-        { "lines": [1], "text": "The receiver: the object the command acts on." },
-        { "lines": [2, 3, 4, 5, 6], "text": "`Append` stores its receiver and argument, and saves the old text so it can reverse itself." },
-        { "lines": [7, 8, 9], "text": "The invoker runs any command and records it." },
-        { "lines": [10], "text": "`?.` makes undo on an empty history a safe no-op." },
-        { "lines": [12, 13], "text": "Requests are objects, so they can be stored, queued or replayed." },
-        { "lines": [15], "text": "Undo reverses only the most recent command." }
+        {
+          "lines": [
+            18,
+            18
+          ],
+          "text": "The command contract: do the work, and reverse it."
+        },
+        {
+          "lines": [
+            20,
+            25
+          ],
+          "text": "`Document` is the receiver. It knows nothing about commands or history."
+        },
+        {
+          "lines": [
+            27,
+            30
+          ],
+          "text": "`Append` stores its receiver and text, which is all it needs to undo."
+        },
+        {
+          "lines": [
+            32,
+            35
+          ],
+          "text": "`History` is the invoker. A new command clears the redo stack."
+        },
+        {
+          "lines": [
+            37,
+            44
+          ],
+          "text": "Undo and redo move one command between the two stacks."
+        },
+        {
+          "lines": [
+            6,
+            14
+          ],
+          "text": "`main` runs two edits, undoes one, then redoes it."
+        }
       ]
     },
     {
-      "file": "tower.mjs",
-      "lang": "js",
-      "title": "Mediator: control tower",
-      "run": "browser",
-      "caption": "Planes never reference each other. Add a third plane; no `Plane` code changes.",
+      "file": "MediatorDemo.java",
+      "lang": "java",
+      "title": "Mediator",
+      "run": "captured",
+      "caption": "Two inputs and a button never reference each other. The dialog decides.",
       "walk": [
-        { "lines": [1, 2], "text": "`Tower` is the mediator. It keeps the peers and the shared runway state." },
-        { "lines": [3], "text": "Joining gives each plane one link: back to the tower." },
-        { "lines": [4, 5, 6, 7, 8, 9], "text": "The landing rule lives here: clear one plane, tell the others." },
-        { "lines": [11, 12, 13, 14, 15], "text": "A `Plane` only asks the tower and listens for notices." },
-        { "lines": [17, 18], "text": "The second plane is told to hold; it never asked `A1` directly." }
+        {
+          "lines": [
+            10,
+            12
+          ],
+          "text": "The mediator interface: widgets only report that they changed."
+        },
+        {
+          "lines": [
+            14,
+            28
+          ],
+          "text": "Each widget holds the mediator, updates itself, then calls `changed`."
+        },
+        {
+          "lines": [
+            30,
+            34
+          ],
+          "text": "The button has no idea which fields exist."
+        },
+        {
+          "lines": [
+            36,
+            44
+          ],
+          "text": "`SignupDialog` owns the rule: valid email and ticked terms enable submit."
+        },
+        {
+          "lines": [
+            3,
+            6
+          ],
+          "text": "`main` changes the widgets; every reaction goes through the dialog."
+        }
       ]
     }
   ],
   "pitfalls": [
-    "Store enough state in each command to undo it; read the receiver before changing it.",
-    "Split a mediator that absorbs every rule; it becomes a god object.",
-    "Skip Command for plain calls that never need queuing, logging or undo."
+    "Store what `undo` needs inside the command at run time, not in shared fields.",
+    "Watch the mediator's size: when it holds every rule, it becomes a god class.",
+    "Skip Command for one-off calls with no undo, queueing or logging need."
   ],
   "quiz": {
     "q": "What does this print?",
-    "code": "let n = 0;\nconst history = [];\nconst add = (k) => ({ run: () => (n += k), undo: () => (n -= k) });\nfor (const k of [5, 3]) { const c = add(k); c.run(); history.push(c); }\nhistory.pop().undo();\nconsole.log(n);",
-    "lang": "js",
-    "options": ["8", "3", "5", "0"],
-    "answer": 2,
-    "why": "Both commands run, making 8. `pop` removes the last command, the one that added 3, and its `undo` subtracts 3."
+    "options": [
+      "[]",
+      "[abcd]",
+      "[cd]",
+      "[ab]"
+    ],
+    "answer": 3,
+    "why": "Two undos empty the undo stack; the third does nothing. The redo stack's top is `ab`, undone last, so redo re-applies it.",
+    "code": "history.run(new Append(doc, \"ab\"));\nhistory.run(new Append(doc, \"cd\"));\nhistory.undo();\nhistory.undo();\nhistory.undo();\nhistory.redo();\nSystem.out.println(doc.text());",
+    "lang": "java"
   },
-  "takeaway": "Command makes actions into objects; Mediator routes peer talk through one hub.",
+  "takeaway": "Command makes an action an object; Mediator makes one hub own the interactions.",
   "chat": {
     "starters": [
-      "How would I add redo to the Command example?",
-      "How is a Mediator different from an Observer?",
-      "Where do job queues use the Command pattern?"
+      "How would I add macro commands that group several edits?",
+      "Is a `Runnable` in Java a Command?",
+      "How is Mediator different from Observer?"
     ]
   }
 }

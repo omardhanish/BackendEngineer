@@ -1,31 +1,53 @@
 {
   "title": "Presenting your design",
-  "idea": "A design presentation is a short, guided tour: the problem, the classes that solve it, one use case traced end to end, and the trade-offs you chose.",
+  "idea": "Presenting a design means walking listeners from the problem to your classes and trade-offs, so they can follow, question and trust every choice you made.",
   "points": [
-    "Open with the requirements in one breath, so everyone judges the same problem.",
-    "Show the class diagram, then trace one use case through real method calls.",
-    "Name each trade-off and the alternative you rejected, with the reason.",
-    "Answer \"what if\" questions by pointing at the class that would change."
+    "Open with the problem and the use cases, not with the classes.",
+    "Show the class diagram, then trace one request through it.",
+    "Name each trade-off you made and the option you rejected.",
+    "End with how the design grows, such as recurring bookings."
   ],
   "hero": {
-    "type": "seq",
-    "title": "Tracing \"book a room\" live",
-    "actors": [
-      { "id": "emp", "label": "Employee" },
-      { "id": "svc", "label": "BookingService" },
-      { "id": "pol", "label": "ConflictPolicy" },
-      { "id": "repo", "label": "BookingRepository" },
-      { "id": "note", "label": "NotificationService" }
-    ],
-    "messages": [
-      { "from": "emp", "to": "svc", "label": "book(room, slot)", "note": "Start from the user's action. The audience follows one request, not the whole diagram at once." },
-      { "from": "svc", "to": "repo", "label": "forRoom(roomId)", "note": "The service asks the repository for existing bookings. Say why storage sits behind its own class." },
-      { "from": "svc", "to": "pol", "label": "conflicts(slot, existing)", "note": "The overlap rule lives in a strategy. This is where you defend the Open/closed (OCP) choice." },
-      { "from": "svc", "to": "repo", "label": "save(booking)", "note": "Only a clash-free booking is stored. Point out that no double booking is enforced here." },
-      { "from": "svc", "to": "note", "label": "onBooked(booking)", "note": "Notification is a separate job. Mention you could swap email for chat without touching the service." },
-      { "from": "svc", "to": "emp", "label": "Booking", "dashed": true, "note": "End where you started: the employee gets a booking. Then invite questions." }
+    "type": "timeline",
+    "title": "A ten-minute design talk",
+    "items": [
+      {
+        "label": "Problem",
+        "text": "Employees need a room for a time slot, with no double booking."
+      },
+      {
+        "label": "Use cases",
+        "text": "Search free rooms, book, cancel, notify attendees. Say what is out of scope."
+      },
+      {
+        "label": "Classes",
+        "text": "Show the class diagram: `BookingService` in the middle, repositories and `ConflictPolicy` beside it."
+      },
+      {
+        "label": "One flow",
+        "text": "Trace `book(...)`: policy check, `save`, then each `BookingListener` hears `onBooked`."
+      },
+      {
+        "label": "Trade-offs",
+        "text": "Why `ConflictPolicy` is a strategy; why errors are unchecked with a stable `code()`."
+      },
+      {
+        "label": "Next steps",
+        "text": "Which class would change for recurring bookings, and which stay untouched; then take questions."
+      }
     ]
   },
-  "takeaway": "Tell one story: problem, classes, one traced flow, then trade-offs.",
-  "chat": { "starters": ["How long should a design walkthrough take?", "How do I answer a question I did not plan for?", "Should I show code or only diagrams when presenting?"] }
+  "pitfalls": [
+    "Do not read code line by line; trace one request through the diagram instead.",
+    "Answer a challenge with the requirement it serves, not with a pattern name.",
+    "Rehearse once with a timer so the trade-offs are not cut for time."
+  ],
+  "takeaway": "Problem, use cases, classes, one flow, trade-offs, next steps.",
+  "chat": {
+    "starters": [
+      "How do I answer \"why not just use inheritance here\" during my talk?",
+      "What should I do if a reviewer finds a bug while I present?",
+      "How much code should I show in a design presentation?"
+    ]
+  }
 }

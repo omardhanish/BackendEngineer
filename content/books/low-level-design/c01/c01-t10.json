@@ -1,201 +1,288 @@
 {
-  "title": "Designing a library system",
-  "idea": "A small LLD turns requirements into classes: find the nouns, give each one clear data and duties, then trace one use case through them.",
+  "title": "Library system LLD",
+  "idea": "A small LLD case study turns a library's rules into a handful of classes: nouns become types, verbs become methods, and changing rules sit behind interfaces.",
   "points": [
-    "Requirements: search books, borrow and return copies, cap loans, charge late fines.",
-    "`Book` is the title; `BookCopy` is one physical item that can be lent.",
-    "`LoanService` holds the rules; `Catalog` only finds available copies.",
-    "Fines vary by library, so `FinePolicy` is an injected strategy."
+    "Start from use cases: lend a copy, return it, charge a late fine.",
+    "Separate `Book`, the title, from `BookCopy`, the physical item you lend.",
+    "A `Loan` record links one copy to one member with a due day.",
+    "Inject the `FinePolicy`, because fine rules change more often than lending does."
   ],
   "hero": {
-    "type": "seq",
-    "title": "Borrow and return, step by step",
-    "actors": [
+    "type": "flow",
+    "title": "From requirements to classes",
+    "nodes": [
       {
-        "id": "desk",
-        "label": "Desk (caller)"
+        "id": "lib",
+        "label": "Library",
+        "sub": "lend, giveBack"
       },
       {
-        "id": "cat",
-        "label": "Catalog"
+        "id": "member",
+        "label": "Member",
+        "sub": "id, maxLoans"
       },
       {
-        "id": "svc",
-        "label": "LoanService"
+        "id": "loan",
+        "label": "Loan",
+        "sub": "dueDay"
       },
       {
         "id": "copy",
-        "label": "BookCopy"
+        "label": "BookCopy",
+        "sub": "physical item"
+      },
+      {
+        "id": "book",
+        "label": "Book",
+        "sub": "isbn, title"
       },
       {
         "id": "fine",
-        "label": "FinePolicy"
+        "label": "FinePolicy",
+        "sub": "interface"
+      },
+      {
+        "id": "perday",
+        "label": "PerDayFine",
+        "sub": "one rule"
       }
     ],
-    "messages": [
+    "edges": [
       {
-        "from": "desk",
-        "to": "cat",
-        "label": "available('Dune')",
-        "note": "The desk searches by title. The catalog returns only copies not on loan."
-      },
-      {
-        "from": "cat",
-        "to": "desk",
-        "label": "[c1, c2]",
-        "dashed": true,
-        "note": "Copies, not books, come back: each copy is lent on its own."
-      },
-      {
-        "from": "desk",
-        "to": "svc",
-        "label": "borrow(ana, c1, day)",
-        "note": "`LoanService` checks the copy is free and the member is under the limit."
-      },
-      {
-        "from": "svc",
+        "from": "lib",
         "to": "copy",
-        "label": "onLoan = true",
-        "note": "The copy is marked, and a `Loan` records member, copy and due day."
+        "label": "owns"
       },
       {
-        "from": "svc",
-        "to": "desk",
-        "label": "Loan",
-        "dashed": true,
-        "note": "The caller keeps the `Loan` to return it later."
+        "from": "copy",
+        "to": "book",
+        "label": "copy of"
       },
       {
-        "from": "desk",
-        "to": "svc",
-        "label": "giveBack(loan, day)",
-        "note": "Returning frees the copy and removes the loan from the member."
+        "from": "lib",
+        "to": "loan",
+        "label": "tracks open"
       },
       {
-        "from": "svc",
+        "from": "loan",
+        "to": "member",
+        "label": "borrowed by"
+      },
+      {
+        "from": "loan",
+        "to": "copy",
+        "label": "lends"
+      },
+      {
+        "from": "lib",
         "to": "fine",
-        "label": "feeFor(daysLate)",
-        "note": "The fine rule is delegated, so a new policy needs no edit to `LoanService`."
+        "label": "injected",
+        "dashed": true
+      },
+      {
+        "from": "perday",
+        "to": "fine",
+        "label": "implements",
+        "dashed": true
+      }
+    ],
+    "steps": [
+      {
+        "caption": "Requirement: a title can have several copies. So `Book` and `BookCopy` are separate classes.",
+        "active": [
+          "copy",
+          "book"
+        ],
+        "edges": [
+          1
+        ]
+      },
+      {
+        "caption": "`Library` owns the copies and is the one entry point for lending.",
+        "active": [
+          "lib",
+          "copy"
+        ],
+        "edges": [
+          0
+        ]
+      },
+      {
+        "caption": "Lending creates a `Loan`: which copy, which member, due on which day.",
+        "active": [
+          "lib",
+          "loan",
+          "member",
+          "copy"
+        ],
+        "edges": [
+          2,
+          3,
+          4
+        ]
+      },
+      {
+        "caption": "Members have a loan limit. `lend` counts open loans before it hands out a copy.",
+        "active": [
+          "lib",
+          "member"
+        ],
+        "edges": [
+          2,
+          3
+        ]
+      },
+      {
+        "caption": "Fine rules vary, so `Library` depends on the `FinePolicy` interface, injected through its constructor.",
+        "active": [
+          "lib",
+          "fine"
+        ],
+        "edges": [
+          5
+        ]
+      },
+      {
+        "caption": "`PerDayFine` is one rule. A capped or student rule would be a new class, not an edit.",
+        "active": [
+          "perday",
+          "fine"
+        ],
+        "edges": [
+          6
+        ]
       }
     ]
   },
   "code": [
     {
-      "file": "library.mjs",
-      "lang": "js",
-      "title": "The whole model",
-      "run": "browser",
-      "caption": "Four entities, a catalog, a fine policy and one service. Add a `CappedFine` policy that never charges more than 50, and inject it.",
+      "file": "library.mmd",
+      "lang": "text",
+      "title": "Class diagram",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Mermaid source for the class diagram. Draw this before you write any code.",
       "walk": [
         {
           "lines": [
-            1,
             2,
-            3,
-            4,
-            5,
+            5
+          ],
+          "text": "`FinePolicy` is marked `<<interface>>`: a role, not a concrete class."
+        },
+        {
+          "lines": [
             6,
-            7,
-            8,
-            9,
-            10,
-            11,
-            12,
+            12
+          ],
+          "text": "Each class lists only the fields the use cases need."
+        },
+        {
+          "lines": [
             13,
-            14,
-            15,
-            16
+            15
           ],
-          "text": "Entities hold data: a `Book` title, its lendable `BookCopy`, a `Member`, and the `Loan` linking them."
+          "text": "`Library` exposes what the use cases need: add a copy, lend, give back."
         },
         {
           "lines": [
-            17,
-            18,
-            19,
-            20,
+            16,
+            20
+          ],
+          "text": "Arrows show has-a links; `o--` marks a collection the library holds."
+        },
+        {
+          "lines": [
             21,
-            22,
-            23
+            22
           ],
-          "text": "`Catalog` answers one question: which copies of this title are free?"
+          "text": "The library depends on the interface; `..|>` means implements."
+        }
+      ]
+    },
+    {
+      "file": "LibraryDemo.java",
+      "lang": "java",
+      "title": "The design, running",
+      "run": "captured",
+      "caption": "One copy, two members: the second must wait, and a late return earns a fine.",
+      "walk": [
+        {
+          "lines": [
+            23,
+            26
+          ],
+          "text": "Value objects are `record`s: small, immutable and compared by value."
         },
         {
           "lines": [
-            24,
-            25,
-            29
+            28,
+            32
           ],
-          "text": "`FlatFine` is one `FinePolicy`: any object with `feeFor(daysLate)`. The service receives it."
+          "text": "The fine rule sits behind an interface; returning a book on time costs nothing."
         },
         {
           "lines": [
-            30,
-            31,
-            32,
-            33,
-            34
+            38,
+            44
           ],
-          "text": "Validate first with guard clauses: the copy must be free, the member under the limit."
+          "text": "`Library` keeps copies and open loans private; the policy arrives by constructor."
         },
         {
           "lines": [
-            35,
-            36,
-            37,
-            38
+            48,
+            52
           ],
-          "text": "Then change state: record a `Loan` due in 14 days, mark the copy, add it to the member."
+          "text": "Rule one: refuse a member who is already at the loan limit."
         },
         {
           "lines": [
-            40,
-            41,
-            42,
-            43,
-            44,
-            45,
-            46
-          ],
-          "text": "Returning refuses a loan already returned, then frees the copy and asks the policy for the fee."
-        },
-        {
-          "lines": [
-            50,
-            51,
-            52,
             53,
-            54
+            59
           ],
-          "text": "Wire everything at the edge: a small composition root."
+          "text": "Rule two: find a copy of the title that is not out, or refuse."
+        },
+        {
+          "lines": [
+            62,
+            65
+          ],
+          "text": "Returning closes the loan and asks the policy for the fine."
+        },
+        {
+          "lines": [
+            6,
+            19
+          ],
+          "text": "The demo walks the main use cases, including a refusal."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Do not merge `Book` and `BookCopy`; one title can have many lendable copies.",
-    "Keep rules out of entities like `Member`; put them in a service or policy.",
-    "State requirements and assumptions aloud before drawing classes in an interview."
+    "Do not merge `Book` and `BookCopy`; you cannot then lend two copies of one title.",
+    "Avoid one god class doing search, lending, fines and notices; split by responsibility.",
+    "Clarify requirements first: limits, due periods and fine rules shape the classes."
   ],
   "quiz": {
-    "q": "What does this print?",
-    "code": "class Copy { onLoan = false; }\nfunction borrow(copy) {\n  if (copy.onLoan) return 'refused';\n  copy.onLoan = true;\n  return 'ok';\n}\nconst c = new Copy();\nconsole.log(borrow(c), borrow(c));",
-    "lang": "js",
+    "q": "Using the classes above, what does this print?",
+    "code": "Library lib = new Library(new PerDayFine(20));\nlib.addCopy(new BookCopy(\"C1\", new Book(\"isbn-1\", \"Dune\")));\nLoan loan = lib.lend(new Member(\"M1\", 2), \"Dune\", 0);\nSystem.out.println(\"fine \" + lib.giveBack(loan, 12));",
+    "lang": "java",
     "options": [
-      "ok ok",
-      "ok refused",
-      "refused ok",
-      "refused refused"
+      "fine -40",
+      "fine 0",
+      "fine 240",
+      "fine 40"
     ],
     "answer": 1,
-    "why": "The first call finds the copy free and marks it. The second sees `onLoan` is true and returns early."
+    "why": "The loan is due on day 14. Returning on day 12 gives -2 days late, and `Math.max(0, daysLate)` turns that into 0."
   },
-  "takeaway": "Nouns become classes, rules live in services, varying rules become strategies.",
+  "takeaway": "Find nouns and rules, give each a class, and inject what varies.",
   "chat": {
     "starters": [
-      "How would I add reservations when every copy is on loan?",
-      "Should Loan be a class or just a record in a repository?",
-      "How do I draw this as a UML class diagram?"
+      "How would I add reservations when no copy is free?",
+      "Where should search by author or title live in this design?",
+      "How would this design change for an interview follow-up on concurrency?"
     ]
   }
 }

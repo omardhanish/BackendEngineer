@@ -1,0 +1,11 @@
+{
+  "stdout": "12.0 -> auto refund\n150.0 -> agent refund\n900.0 -> manager review",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ChainDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "d4cc860e77dbe1f9",
+  "at": "2026-10-09T08:11:49.939Z"
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "Ticket[plate=CAR-1, spotId=M1]\nTicket[plate=VAN-1, spotId=L1]\nbus: Optional.empty\nbus: Optional[Ticket[plate=BUS-1, spotId=L1]]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ParkingLotDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "c979f46845c5c591",
+  "at": "2026-10-09T08:15:28.313Z"
+}

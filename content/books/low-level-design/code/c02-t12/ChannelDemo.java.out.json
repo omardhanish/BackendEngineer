@@ -1,0 +1,11 @@
+{
+  "stdout": "email ada: your order shipped\n  try 1: gateway busy\nsms ada: your order shipped",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ChannelDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "bed57ef2a743d69f",
+  "at": "2026-10-09T08:12:34.868Z"
+}

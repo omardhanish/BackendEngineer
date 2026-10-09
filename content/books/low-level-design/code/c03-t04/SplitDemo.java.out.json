@@ -1,0 +1,11 @@
+{
+  "stdout": "rejected: 600 != 1000\n{ana=5166, ben=-6333, cy=1167}",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java SplitDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "8c1e91d82cfb2233",
+  "at": "2026-10-09T08:16:32.001Z"
+}

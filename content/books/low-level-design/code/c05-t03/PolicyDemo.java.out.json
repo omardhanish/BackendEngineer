@@ -1,0 +1,11 @@
+{
+  "stdout": "9.0-10.0 conflicts: false\n10.5-12.0 conflicts: true\n11.0-12.0 conflicts: false",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java PolicyDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "32510d40731992cf",
+  "at": "2026-10-09T08:17:47.843Z"
+}

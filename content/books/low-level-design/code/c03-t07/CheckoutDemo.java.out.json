@@ -1,0 +1,11 @@
+{
+  "stdout": "Order[id=O-1, lines=[Line[sku=PEN, qty=2, price=150], Line[sku=BOOK, qty=1, price=1200]]]\nO-2 failed: not enough BOOK\nstock: {BOOK=0, PEN=3}\nana: [], ben: [Line[sku=PEN, qty=1, price=150], Line[sku=BOOK, qty=1, price=1200]]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java CheckoutDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "bf4fad4b8ab38fba",
+  "at": "2026-10-09T08:26:03.820Z"
+}

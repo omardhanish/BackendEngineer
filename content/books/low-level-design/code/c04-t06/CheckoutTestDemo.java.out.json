@@ -1,0 +1,11 @@
+{
+  "stdout": "PASS charges the cart total\nPASS gateway saw one call\nPASS reports a decline\nPASS rejects an empty cart\nPASS empty cart never charged\nall green",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java CheckoutTestDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "461c755e60317795",
+  "at": "2026-10-09T08:26:27.739Z"
+}

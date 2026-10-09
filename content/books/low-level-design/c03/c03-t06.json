@@ -1,185 +1,188 @@
 {
   "title": "Cab booking system design",
-  "idea": "A cab booking design matches a rider to a free driver through a swappable matching strategy, then tracks the trip as a ride with strict state transitions.",
+  "idea": "A cab booking design matches a ride request to one free driver, then drives the trip through a strict lifecycle while a swappable rule prices it.",
   "points": [
-    "Core classes: `Rider`, `Driver`, `Ride`, `RideService` and a matching strategy.",
-    "`Ride` owns its state and refuses any transition the table does not allow.",
-    "`RideService` picks a driver and marks them busy in one synchronous step.",
-    "Matching is injected, so nearest-driver can become rating-based without edits."
+    "Core entities: `Rider`, `Driver`, `Location`, `Trip`, plus a `TripService` that coordinates them.",
+    "A `DriverMatcher` strategy picks the driver: nearest today, top rated tomorrow.",
+    "Assigning a driver is an atomic check-and-set, so two trips never share one.",
+    "A `TripStatus` enum owns the legal moves; a `FareRule` prices the finished trip."
   ],
   "hero": {
-    "type": "flow",
-    "title": "The life of one ride",
-    "nodes": [
+    "type": "seq",
+    "title": "One ride, start to finish",
+    "actors": [
       {
-        "id": "req",
-        "label": "REQUESTED",
-        "sub": "rider asks"
+        "id": "rider",
+        "label": "Rider"
       },
       {
-        "id": "acc",
-        "label": "ACCEPTED",
-        "sub": "driver claimed"
+        "id": "svc",
+        "label": "TripService"
       },
       {
-        "id": "sta",
-        "label": "STARTED",
-        "sub": "rider on board"
+        "id": "match",
+        "label": "DriverMatcher"
       },
       {
-        "id": "com",
-        "label": "COMPLETED",
-        "sub": "fare, driver freed"
-      },
-      {
-        "id": "can",
-        "label": "CANCELLED",
-        "sub": "driver freed"
+        "id": "driver",
+        "label": "Driver"
       }
     ],
-    "edges": [
+    "messages": [
       {
-        "from": "req",
-        "to": "acc",
-        "label": "match",
-        "caption": "`RideService` asks the strategy for a free driver, marks them busy, and moves the ride to `ACCEPTED`."
+        "from": "rider",
+        "to": "svc",
+        "label": "requestRide(pickup)",
+        "note": "The rider sends a pickup point. A `Trip` is created in state `REQUESTED`."
       },
       {
-        "from": "acc",
-        "to": "sta",
-        "label": "pickup",
-        "caption": "The driver reaches the rider and starts the trip. Only an accepted ride can start."
+        "from": "svc",
+        "to": "match",
+        "label": "match(pickup, drivers)",
+        "note": "The service asks the strategy. It never knows which rule is plugged in."
       },
       {
-        "from": "sta",
-        "to": "com",
-        "label": "drop",
-        "caption": "At drop-off the ride completes, the fare is computed, and the driver becomes free again."
-      },
-      {
-        "from": "req",
-        "to": "can",
-        "label": "cancel",
+        "from": "match",
+        "to": "svc",
+        "label": "D2",
         "dashed": true,
-        "caption": "A rider may cancel before a driver is matched. No driver is claimed yet."
+        "note": "The matcher filters out busy drivers, then ranks the rest by its own rule."
       },
       {
-        "from": "acc",
-        "to": "can",
-        "label": "cancel",
+        "from": "svc",
+        "to": "driver",
+        "label": "tryAssign()",
+        "note": "One atomic step marks the driver busy. A second claim gets `false`."
+      },
+      {
+        "from": "driver",
+        "to": "svc",
+        "label": "true",
         "dashed": true,
-        "caption": "After acceptance, cancelling must free the claimed driver. `STARTED` has no cancel arrow, so a trip in progress must finish."
+        "note": "Assigned. The trip moves to `ACCEPTED`; on `false` the service asks the matcher again."
+      },
+      {
+        "from": "driver",
+        "to": "svc",
+        "label": "start, complete",
+        "note": "Each move is checked by `TripStatus.canMoveTo`. Skipping a state throws."
+      },
+      {
+        "from": "svc",
+        "to": "rider",
+        "label": "fare",
+        "dashed": true,
+        "note": "The trip's `FareRule` prices distance and time. Surge wraps the standard rule."
       }
     ]
   },
   "code": [
     {
-      "file": "cab.mjs",
-      "lang": "js",
-      "title": "Match, claim, finish",
-      "run": "browser",
-      "caption": "Positions are grid points, so distance is easy to check by hand. Write a `FirstFreeDriver` strategy that returns the first free driver, and pass it in.",
+      "file": "MatchDemo.java",
+      "lang": "java",
+      "title": "Matching a driver",
+      "run": "captured",
+      "caption": "Two matching strategies over the same drivers, and an assignment that cannot happen twice.",
       "walk": [
         {
           "lines": [
-            4,
-            5,
-            6,
-            7,
-            8,
-            9,
-            10
+            23,
+            25
           ],
-          "text": "The strategy only chooses among free drivers. It never changes any state."
+          "text": "`Location` is a value object. Manhattan distance keeps the maths in whole numbers."
         },
         {
           "lines": [
-            11,
-            12
+            27,
+            36
           ],
-          "text": "The allowed transitions live in one table, so the rules are easy to read."
-        },
-        {
-          "lines": [
-            17,
-            18,
-            19,
-            20,
-            21
-          ],
-          "text": "`moveTo` rejects any jump the table does not list, such as skipping `STARTED`."
-        },
-        {
-          "lines": [
-            28,
-            29,
-            30,
-            31,
-            32,
-            33,
-            34,
-            35,
-            36,
-            37
-          ],
-          "text": "Pick and claim run with no `await` between them, so no other request can sneak in."
+          "text": "`compareAndSet` claims the driver in one step. A real `Driver` entity would be a class, not a record."
         },
         {
           "lines": [
             38,
-            39,
-            40,
-            41,
-            42
+            45
           ],
-          "text": "Finishing frees the driver only after the state change succeeds."
+          "text": "`DriverMatcher` is the strategy. `NearestMatcher` skips busy drivers, then takes the closest."
         },
         {
           "lines": [
-            46,
-            47,
-            48,
-            49,
-            50
+            12,
+            14
           ],
-          "text": "Ben gets the far driver because the near one is busy; Cleo gets none."
+          "text": "A second rule needs no new class: the interface has one method, so a lambda fits."
         },
         {
           "lines": [
-            51,
-            52,
-            53,
-            54
+            17,
+            19
           ],
-          "text": "Finishing an accepted ride is refused. After `STARTED`, it completes and D2 is free."
+          "text": "D2 is claimed once; the second claim fails, and matching moves on to the next nearest."
+        }
+      ]
+    },
+    {
+      "file": "TripDemo.java",
+      "lang": "java",
+      "title": "Trip lifecycle and fare",
+      "run": "captured",
+      "caption": "The enum decides which moves are legal. The fare rule is injected, so surge is a wrapper.",
+      "walk": [
+        {
+          "lines": [
+            19,
+            29
+          ],
+          "text": "Each state lists where it may go next. Finished trips go nowhere."
+        },
+        {
+          "lines": [
+            45,
+            49
+          ],
+          "text": "`moveTo` refuses an illegal move before it changes anything."
+        },
+        {
+          "lines": [
+            31,
+            38
+          ],
+          "text": "`SurgeFare` wraps any `FareRule` and multiplies its result: a small Decorator."
+        },
+        {
+          "lines": [
+            3,
+            15
+          ],
+          "text": "A started trip cannot be cancelled, so that call throws; completing it is fine."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Never `await` between choosing a driver and marking them busy; two riders can win.",
-    "Do not set `ride.state` from outside; route every change through one checked method.",
-    "Free the driver on cancel too, or they stay busy forever."
+    "Do not read `isFree()` then set busy in two steps; claim the driver atomically.",
+    "Keep money in whole units such as `long` paise or cents, never `double`.",
+    "Avoid `if (status == ...)` checks scattered across services; let the enum own the transitions."
   ],
   "quiz": {
-    "q": "What does this print?",
-    "code": "const NEXT = { A: ['B'], B: ['C'] };\nconst ok = (s, n) => (NEXT[s] ?? []).includes(n);\nconsole.log(ok('A', 'C'), ok('B', 'C'), ok('C', 'A'));",
-    "lang": "js",
+    "q": "What is the first line `TripDemo` prints?",
+    "code": "trip.moveTo(TripStatus.ACCEPTED);\ntrip.moveTo(TripStatus.STARTED);\ntrip.moveTo(TripStatus.CANCELLED); // caught, message printed",
+    "lang": "java",
     "options": [
-      "true true false",
-      "false true TypeError",
-      "false true false",
-      "false false false"
+      "rejected: ACCEPTED -> CANCELLED",
+      "rejected: STARTED -> CANCELLED",
+      "normal fare: 186",
+      "rejected: STARTED -> COMPLETED"
     ],
-    "answer": 2,
-    "why": "A only lists B, so A to C is refused. C has no entry, and `?? []` turns that into an empty list instead of a crash."
+    "answer": 1,
+    "why": "The trip is `STARTED`, and `STARTED` may only move to `COMPLETED`. `moveTo` throws with the current and requested states."
   },
-  "takeaway": "Match with a strategy, claim atomically, and let the ride guard its states.",
+  "takeaway": "Match with a strategy, assign atomically, let the status enum guard every move.",
   "chat": {
     "starters": [
-      "How would surge pricing fit into this design?",
-      "How do two servers avoid assigning the same driver?",
-      "What if the matched driver rejects the ride?"
+      "How would I find nearby drivers fast when there are thousands of them?",
+      "What should happen if the assigned driver never accepts the ride?",
+      "Should cancellation fees live in Trip or in a separate class?"
     ]
   }
 }

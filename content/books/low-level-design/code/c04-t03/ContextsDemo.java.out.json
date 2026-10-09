@@ -1,0 +1,11 @@
+{
+  "stdout": "within credit? true\nParcel[orderRef=O-1, to=Recipient[name=Ana, address=12 Elm St]]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ContextsDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "603f2e3703a18b05",
+  "at": "2026-10-09T08:25:57.164Z"
+}

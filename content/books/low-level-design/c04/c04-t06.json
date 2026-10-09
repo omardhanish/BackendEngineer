@@ -1,79 +1,229 @@
 {
-  "title": "Testing designs with test doubles",
-  "idea": "A unit test checks one class in isolation by injecting test doubles for its collaborators; TDD writes that failing test first, then the code, then tidies.",
+  "title": "Unit tests, test doubles, TDD",
+  "idea": "Testing a low-level design (LLD) checks each class through its public contract, with test doubles for risky collaborators; test-driven development (TDD) writes each test first.",
   "analogy": {
-    "text": "A car seat is tested on a rig with a crash dummy, not a real driver. The dummy records every force it feels.",
-    "breaks": "A dummy only behaves as you scripted it, never like the real thing."
+    "text": "A flight simulator. Pilots rehearse an engine failure safely because the cockpit takes its signals from software, not from a real engine.",
+    "breaks": "A simulator can disagree with the real plane; so can a test double."
   },
   "points": [
-    "Inject collaborators through the constructor so a test can pass in doubles.",
-    "A fake is a small working version; a stub returns canned answers.",
-    "A spy or mock records calls, so the test checks what was sent.",
-    "TDD loops red, green, refactor: failing test, smallest fix, then clean up."
+    "Constructor injection gives every collaborator a seam where a test double plugs in.",
+    "A stub returns canned answers; a mock also records calls you then verify.",
+    "Test behaviour through public methods, never through private fields or helpers.",
+    "TDD loops red, green, refactor: failing test, least code, then tidy up."
   ],
   "hero": {
-    "type": "seq",
-    "title": "One unit test, two doubles",
-    "actors": [
-      { "id": "test", "label": "Test" },
-      { "id": "svc", "label": "SignupService" },
-      { "id": "users", "label": "FakeUsers" },
-      { "id": "mail", "label": "SpyMailer" }
-    ],
-    "messages": [
-      { "from": "test", "to": "svc", "label": "new SignupService(fake, spy)", "note": "Arrange: the test builds the class and hands it doubles instead of a database and an SMTP client." },
-      { "from": "test", "to": "svc", "label": "register('ada@x.io')", "note": "Act: call the one public method under test." },
-      { "from": "svc", "to": "users", "label": "has(email)?", "note": "The fake answers from an in-memory `Set`. No database, so the test is fast and repeatable." },
-      { "from": "users", "to": "svc", "label": "false", "dashed": true, "note": "The email is new, so the service carries on." },
-      { "from": "svc", "to": "users", "label": "add(email)", "note": "The fake stores it for real, so a second call will see it." },
-      { "from": "svc", "to": "mail", "label": "send(email, 'Welcome')", "note": "The spy sends nothing. It only records the call in its `sent` list." },
-      { "from": "svc", "to": "test", "label": "'OK'", "dashed": true, "note": "Assert on the return value: an output check." },
-      { "from": "test", "to": "mail", "label": "read sent", "note": "Assert on the recorded call: interaction testing. Both checks prove the behaviour, not the internals." }
-    ]
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "One turn of the TDD loop",
+    "scenario": {
+      "token": {
+        "label": "rejects empty cart",
+        "tone": "err"
+      },
+      "stages": [
+        {
+          "id": "red",
+          "label": "Red",
+          "sub": "write a failing test"
+        },
+        {
+          "id": "green",
+          "label": "Green",
+          "sub": "least code to pass"
+        },
+        {
+          "id": "refactor",
+          "label": "Refactor",
+          "sub": "tidy, stay green"
+        },
+        {
+          "id": "next",
+          "label": "Next test",
+          "sub": "one new behaviour",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "Write a test for behaviour that does not exist yet: `pay` must reject a zero total.",
+          "at": "red",
+          "slot": "top",
+          "state": {
+            "red": "active"
+          }
+        },
+        {
+          "caption": "Run it and watch it fail. A test you never saw fail may test nothing.",
+          "at": "red",
+          "slot": "top",
+          "token": {
+            "label": "FAIL",
+            "tone": "err"
+          },
+          "state": {
+            "red": "error"
+          }
+        },
+        {
+          "caption": "Add the least code that passes: one guard clause at the top of `pay`.",
+          "at": "green",
+          "slot": "top",
+          "token": {
+            "label": "PASS",
+            "tone": "ok"
+          },
+          "state": {
+            "red": "done",
+            "green": "active"
+          }
+        },
+        {
+          "caption": "Rename, extract and remove duplication in small steps. Rerun every test after each one.",
+          "at": "refactor",
+          "slot": "top",
+          "token": {
+            "label": "still PASS",
+            "tone": "ok"
+          },
+          "state": {
+            "red": "done",
+            "green": "done",
+            "refactor": "active"
+          }
+        },
+        {
+          "caption": "Pick the next behaviour, such as \"a declined card returns false\", and start the loop again.",
+          "at": "next",
+          "slot": "top",
+          "token": {
+            "label": "declined",
+            "tone": "req"
+          },
+          "state": {
+            "red": "done",
+            "green": "done",
+            "refactor": "done",
+            "next": "active"
+          }
+        }
+      ]
+    }
   },
   "code": [
     {
-      "file": "signup.test.mjs",
-      "lang": "js",
-      "title": "Fake and spy by hand",
-      "run": "browser",
-      "caption": "TDD step: add a test that `register('')` returns `'INVALID'`. Run it red, then make it green.",
+      "file": "CheckoutTestDemo.java",
+      "lang": "java",
+      "title": "Hand-written double and checks",
+      "run": "captured",
+      "caption": "`Checkout` is tested with a hand-written test double that records every charge. No real payment provider is touched.",
       "walk": [
-        { "lines": [4], "text": "Both collaborators arrive through the constructor. That seam is what makes the class testable." },
-        { "lines": [12, 13, 14, 15, 16], "text": "A fake: a working, in-memory stand-in for a user store." },
-        { "lines": [17, 18, 19, 20], "text": "A spy: records each call so the test can inspect it later." },
-        { "lines": [21, 22, 23, 24], "text": "A tiny runner. Real projects use `node --test`; the idea is the same." },
-        { "lines": [25, 26, 27, 28, 29, 30], "text": "Arrange, act, assert. Fresh doubles per test keep tests independent." },
-        { "lines": [31, 32, 33, 34, 35, 36, 37], "text": "The edge case: a duplicate must not send a second email." }
+        {
+          "lines": [
+            5,
+            9
+          ],
+          "text": "A tiny runner: `check` prints PASS or FAIL and counts failures."
+        },
+        {
+          "lines": [
+            26,
+            26
+          ],
+          "text": "The collaborator is an interface, so a test can swap the real gateway out."
+        },
+        {
+          "lines": [
+            28,
+            36
+          ],
+          "text": "`RecordingGateway` answers as told, like a stub, and records calls, like a mock."
+        },
+        {
+          "lines": [
+            38,
+            40
+          ],
+          "text": "`Checkout` receives its gateway through the constructor: the seam the test uses."
+        },
+        {
+          "lines": [
+            13,
+            16
+          ],
+          "text": "State check: the result. Interaction check: what the gateway was asked to do."
+        },
+        {
+          "lines": [
+            17,
+            21
+          ],
+          "text": "The bad input throws, and the recorded calls prove no charge leaked through."
+        }
       ]
     },
     {
-      "file": "mockfn.mjs",
-      "lang": "js",
-      "title": "Built-in mock.fn",
-      "run": "captured",
-      "caption": "Node's `node:test` module ships `mock.fn()`, a stub that also records its calls."
+      "file": "CheckoutTest.junit.txt",
+      "lang": "java",
+      "title": "Same tests in JUnit 5",
+      "run": "static",
+      "illustrative": true,
+      "caption": "What teams write with JUnit 5 and Mockito. Mockito generates the double, so you write no double class.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7
+          ],
+          "text": "`mock` builds a `PaymentGateway` double; the real `Checkout` uses it."
+        },
+        {
+          "lines": [
+            11,
+            11
+          ],
+          "text": "Stub: `when(...).thenReturn` sets the answer for this exact call."
+        },
+        {
+          "lines": [
+            12,
+            13
+          ],
+          "text": "Assert the result, then `verify` the gateway got exactly this call."
+        },
+        {
+          "lines": [
+            18,
+            20
+          ],
+          "text": "`assertThrows` checks the guard; `verifyNoInteractions` proves nothing was charged."
+        }
+      ]
     }
   ],
   "pitfalls": [
-    "Double only collaborators at the class's edge; mocking internal helpers ties tests to internals.",
-    "Assert observable behaviour, not private fields or the order of internal calls.",
-    "Create fresh doubles in every test, or one test's calls leak into the next."
+    "Mock only collaborators at boundaries, never value objects or the class under test.",
+    "Do not verify every call; tests that pin internals break on each safe refactor.",
+    "If `new` builds a collaborator inside the class, inject it so tests can swap it."
   ],
   "quiz": {
-    "q": "What does this print?",
-    "code": "const spy = { calls: [], send(t) { this.calls.push(t); } };\nclass Alerts { constructor(m) { this.m = m; }\n  fire(level) { if (level > 2) this.m.send(level); } }\nconst a = new Alerts(spy);\n[1, 3, 5].forEach((l) => a.fire(l));\nconsole.log(spy.calls.length);",
-    "lang": "js",
-    "options": ["3", "1", "2", "0"],
+    "q": "With this `pay`, what is the last line `CheckoutTestDemo` prints?",
+    "options": [
+      "all green",
+      "2 failed",
+      "1 failed",
+      "It crashes with an exception"
+    ],
     "answer": 2,
-    "why": "Only levels above 2 call `send`. Levels 3 and 5 qualify, so the spy records two calls."
+    "why": "`RecordingGateway` records the zero charge before the throw, so it holds two calls. Only the \"never charged\" check fails; the throw is still caught.",
+    "code": "boolean pay(String customer, long cents) {\n    boolean ok = gateway.charge(customer, cents);\n    if (cents <= 0) throw new IllegalArgumentException(\"empty cart\");\n    return ok;\n}",
+    "lang": "java"
   },
-  "takeaway": "Inject collaborators, swap in doubles, and write the failing test first.",
+  "takeaway": "Inject collaborators, swap risky ones for doubles, and let a failing test lead.",
   "chat": {
     "starters": [
-      "What is the difference between a mock, a stub, a fake and a spy?",
-      "How do I write my first test with node --test?",
-      "Is TDD worth it in an LLD interview?"
+      "When should I hand-write a test double instead of a Mockito mock?",
+      "How do I test a class that calls new inside its methods?",
+      "Is TDD worth doing in a timed LLD interview?"
     ]
   }
 }

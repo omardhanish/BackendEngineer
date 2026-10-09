@@ -1,0 +1,11 @@
+{
+  "stdout": "same money? true\nsum Money[cents=1000, currency=EUR]\nsame customer? true\nrefused: currency mismatch",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ValueVsEntityDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "67985050083527f9",
+  "at": "2026-10-09T08:18:07.129Z"
+}

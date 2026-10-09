@@ -1,279 +1,203 @@
 {
   "title": "Movie ticket booking design",
-  "idea": "A ticket booking design models cinemas, screens, shows and seats, and adds a short-lived seat hold so one seat is never booked twice.",
+  "idea": "A ticket booking design models movies, theatres, screens, shows and seats, and lets a user hold seats briefly so only one person can pay for each.",
   "analogy": {
-    "text": "A shop assistant puts a jacket behind the counter for you for ten minutes. Others cannot buy it unless you fail to return in time.",
-    "breaks": "Thousands of buyers can grab one seat in the same instant."
+    "text": "A busy restaurant host pencils your name against a table for ten minutes. Arrive late and the table goes to the next group.",
+    "breaks": "A host may bend the rule; the code never does."
   },
   "points": [
-    "A `Show` is one movie on one `Screen`, with its own seats and `Booking`s.",
-    "Each show seat moves free, held, booked; an expired hold frees it.",
-    "Check and claim must happen together, with no `await` between them.",
-    "Across servers, the database enforces the claim, for example with a unique key."
+    "`Theatre` has `Screen`s; a `Show` is one `Movie` on one screen at one time.",
+    "Each show seat moves FREE, then HELD with an expiry, then BOOKED.",
+    "Hold and confirm run under one lock, so two users never hold one seat.",
+    "The caller passes the clock in, so expiry is testable and repeatable."
   ],
   "hero": {
-    "type": "anim",
-    "engine": "lanes",
-    "title": "Seat states during a rush",
-    "scenario": {
-      "lanes": [
-        {
-          "id": "free",
-          "label": "Free",
-          "kind": "area",
-          "hint": "anyone may hold"
-        },
-        {
-          "id": "held",
-          "label": "Held",
-          "kind": "area",
-          "hint": "one buyer, until expiry"
-        },
-        {
-          "id": "booked",
-          "label": "Booked",
-          "kind": "area",
-          "hint": "paid and final"
-        }
-      ],
-      "tokens": {
-        "c7": {
-          "label": "C7",
-          "tone": "sync"
-        },
-        "c8": {
-          "label": "C8",
-          "tone": "neutral"
-        },
-        "d1": {
-          "label": "D1",
-          "tone": "timer"
-        }
+    "type": "seq",
+    "title": "Two users, one seat, one winner",
+    "actors": [
+      {
+        "id": "ana",
+        "label": "ana"
       },
-      "steps": [
-        {
-          "caption": "The show opens for sale. Every seat starts free.",
-          "at": {
-            "free": [
-              "c7",
-              "c8",
-              "d1"
-            ],
-            "held": [],
-            "booked": []
-          }
-        },
-        {
-          "caption": "Ana picks C7. The hold is written at once, before any payment starts.",
-          "at": {
-            "free": [
-              "c8",
-              "d1"
-            ],
-            "held": [
-              "c7"
-            ],
-            "booked": []
-          },
-          "active": "c7"
-        },
-        {
-          "caption": "Ben also picks C7. The hold already exists, so his request is refused immediately.",
-          "at": {
-            "free": [
-              "c8",
-              "d1"
-            ],
-            "held": [
-              "c7"
-            ],
-            "booked": []
-          },
-          "active": "c7"
-        },
-        {
-          "caption": "Ana's payment succeeds while her hold is still valid. C7 becomes booked.",
-          "at": {
-            "free": [
-              "c8",
-              "d1"
-            ],
-            "held": [],
-            "booked": [
-              "c7"
-            ]
-          },
-          "active": "c7"
-        },
-        {
-          "caption": "Cy holds D1, but his payment takes longer than the hold allows.",
-          "at": {
-            "free": [
-              "c8"
-            ],
-            "held": [
-              "d1"
-            ],
-            "booked": [
-              "c7"
-            ]
-          },
-          "active": "d1"
-        },
-        {
-          "caption": "The hold expires. D1 is free again, and Cy's late payment must be refunded.",
-          "at": {
-            "free": [
-              "c8",
-              "d1"
-            ],
-            "held": [],
-            "booked": [
-              "c7"
-            ]
-          },
-          "active": "d1"
-        },
-        {
-          "caption": "Dev holds D1 and pays in time. No seat was ever sold twice.",
-          "at": {
-            "free": [
-              "c8"
-            ],
-            "held": [],
-            "booked": [
-              "c7",
-              "d1"
-            ]
-          },
-          "active": "d1"
-        }
-      ]
-    }
+      {
+        "id": "ben",
+        "label": "ben"
+      },
+      {
+        "id": "seats",
+        "label": "ShowSeats"
+      },
+      {
+        "id": "pay",
+        "label": "Payment"
+      }
+    ],
+    "messages": [
+      {
+        "from": "ana",
+        "to": "seats",
+        "label": "hold A1 at 0",
+        "note": "ana picks A1. It is FREE, so it becomes HELD until minute 10."
+      },
+      {
+        "from": "seats",
+        "to": "ana",
+        "label": "true",
+        "dashed": true,
+        "note": "ana has the hold and goes to pay."
+      },
+      {
+        "from": "ben",
+        "to": "seats",
+        "label": "hold A1 at 5",
+        "note": "ben wants the same seat. The hold is live, so he is refused."
+      },
+      {
+        "from": "ana",
+        "to": "pay",
+        "label": "pay",
+        "note": "ana's payment stalls. Her hold expires at minute 10 while she waits."
+      },
+      {
+        "from": "ben",
+        "to": "seats",
+        "label": "hold A1 at 12",
+        "note": "ben retries after the expiry. The stale hold clears and ben holds A1."
+      },
+      {
+        "from": "ben",
+        "to": "pay",
+        "label": "pay",
+        "note": "ben pays inside his ten-minute window."
+      },
+      {
+        "from": "ana",
+        "to": "seats",
+        "label": "confirm A1 at 13",
+        "note": "ana's late confirm is refused: she no longer holds the seat. Refund her."
+      },
+      {
+        "from": "ben",
+        "to": "seats",
+        "label": "confirm A1 at 13",
+        "note": "Only the live holder may confirm. A1 becomes BOOKED for ben."
+      }
+    ]
   },
   "code": [
     {
-      "file": "race.mjs",
-      "lang": "js",
-      "title": "The double-booking bug",
-      "run": "browser",
-      "caption": "Node runs one request at a time, yet both buyers win. The gap is the `await` between check and write.",
+      "file": "SeatHoldDemo.java",
+      "lang": "java",
+      "title": "Hold, expire, confirm",
+      "run": "captured",
+      "caption": "`ShowSeats` is the seat map of one `Show`. The story from the diagram, with the clock passed in as minutes.",
       "walk": [
         {
           "lines": [
-            5
+            17,
+            23
           ],
-          "text": "Both requests check the seat while it is still free."
+          "text": "An `enum` for seat states; each seat remembers its holder and expiry."
         },
         {
           "lines": [
-            6
+            34,
+            37
           ],
-          "text": "Each pauses for payment, letting the other request run its check."
+          "text": "An expired hold is cleared when someone next asks for the seat."
+        },
+        {
+          "lines": [
+            38,
+            42
+          ],
+          "text": "Only a FREE seat can be held; the hold lasts `holdMinutes`."
+        },
+        {
+          "lines": [
+            45,
+            51
+          ],
+          "text": "Confirm only for the current holder, and only before the expiry."
+        },
+        {
+          "lines": [
+            34,
+            34
+          ],
+          "text": "`synchronized` makes the check and the change one step per show."
         },
         {
           "lines": [
             7,
-            8
+            13
           ],
-          "text": "Both write the seat. The last writer silently overwrites the first."
-        },
-        {
-          "lines": [
-            13,
-            14,
-            15,
-            16
-          ],
-          "text": "Two concurrent requests for C7, then the final owner."
+          "text": "`main` replays ana and ben at minutes 0, 5, 12 and 13."
         }
       ]
     },
     {
-      "file": "locks.mjs",
-      "lang": "js",
-      "title": "Seat holds with expiry",
-      "run": "browser",
-      "caption": "A fake clock makes expiry repeatable. Change the hold length from 5 to 10 minutes and rerun.",
+      "file": "SeatRaceDemo.java",
+      "lang": "java",
+      "title": "Eight users race",
+      "run": "captured",
+      "caption": "Eight threads try to hold the same two seats at once. Only counts are printed.",
       "walk": [
         {
           "lines": [
-            4,
-            5,
-            6,
-            7,
-            8
+            14,
+            21
           ],
-          "text": "`hold` checks and claims in one synchronous step, so no other request can slip between."
+          "text": "Eight tasks each ask for seats C4 and C5 together."
         },
         {
           "lines": [
-            10,
-            11,
-            12,
-            13
-          ],
-          "text": "`owns` is true only for the holder, and only before the hold expires."
-        },
-        {
-          "lines": [
-            20,
-            21,
-            22
-          ],
-          "text": "A seat already booked or held by someone else is refused before payment."
-        },
-        {
-          "lines": [
-            23,
+            22,
             24
           ],
-          "text": "After paying, re-check the hold. An expired hold means the seat may be gone."
+          "text": "Wait for every task to finish before reading the results."
+        },
+        {
+          "lines": [
+            33,
+            38
+          ],
+          "text": "All or nothing: check every seat, then take them all, under one lock."
         },
         {
           "lines": [
             25,
-            26,
-            27
+            26
           ],
-          "text": "Confirm the booking, then release the hold it no longer needs."
-        },
-        {
-          "lines": [
-            30,
-            31,
-            32,
-            33
-          ],
-          "text": "The clock and payment are injected, so the run is deterministic."
+          "text": "Print counts only; which user wins changes from run to run."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Never put an `await` between checking a seat and claiming it.",
-    "An in-memory lock protects one process only; use the database for many servers.",
-    "Re-check the hold after payment, and refund if it expired."
+    "Never check-then-take without a lock; two users both see FREE and both book.",
+    "Give every hold an expiry, or abandoned checkouts block seats forever.",
+    "Confirm only for the live holder before expiry, and refund late payments."
   ],
   "quiz": {
-    "q": "What does this print?",
-    "code": "const booked = new Set();\nasync function book(seat) {\n  if (booked.has(seat)) return 'taken';\n  await null;\n  booked.add(seat);\n  return 'ok';\n}\nconst r = await Promise.all([book('A1'), book('A1')]);\nconsole.log(r.join(' '));",
-    "lang": "js",
+    "q": "What does `SeatRaceDemo` print?",
     "options": [
-      "ok taken",
-      "ok ok",
-      "taken ok",
-      "taken taken"
+      "winners: 8 then seats held: 2",
+      "winners: 1 then seats held: 2",
+      "winners: 1 then seats held: 16",
+      "Different counts on each run"
     ],
     "answer": 1,
-    "why": "Both calls run their check before either resumes from `await`. Each sees the seat free, so both return `ok`."
+    "why": "`holdAll` is `synchronized`, so check and take happen as one step. The first thread takes both seats; the other seven see them held.",
+    "code": "// eight threads, each calls:\nholds.holdAll(user, List.of(\"C4\", \"C5\"));\n// then, after awaitTermination:\nSystem.out.println(\"winners: \" + winners.get());\nSystem.out.println(\"seats held: \" + holds.count());",
+    "lang": "java"
   },
-  "takeaway": "Hold first, pay second, re-check the hold, then book.",
+  "takeaway": "Hold seats briefly under a lock; confirm only as the live holder.",
   "chat": {
     "starters": [
-      "How would I enforce seat holds in SQL across many servers?",
-      "Should holds use optimistic or pessimistic locking?",
-      "How do I model seat categories and pricing per show?"
+      "How would this work with a database instead of one lock in memory?",
+      "Should each show have its own lock, or one for the whole system?",
+      "How do I release holds when nobody asks for the seat again?"
     ]
   }
 }

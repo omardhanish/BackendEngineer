@@ -1,0 +1,11 @@
+{
+  "stdout": "list taken=true checks=15\ntree taken=true checks=2",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java IndexedRepoDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "59d9505e1dd49198",
+  "at": "2026-10-09T08:20:46.135Z"
+}

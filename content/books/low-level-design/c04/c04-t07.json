@@ -1,68 +1,164 @@
 {
   "title": "API versioning and compatibility",
-  "idea": "Backward compatibility means old clients keep working after you change an API; versioning gives a breaking change a new name, so both shapes can live side by side.",
+  "idea": "Backward compatibility means a new release still works for every caller written against the old one; versioning lets you ship a breaking change beside it.",
   "points": [
-    "Adding an optional field is safe; removing or renaming one breaks clients.",
-    "Keep one internal model and map it to each public version.",
-    "Old clients should ignore unknown fields: the tolerant reader rule.",
-    "Deprecate a version with notice before removing it, never silently."
+    "A published API is a contract: other code depends on its exact shape.",
+    "Adding is usually safe; removing, renaming or tightening anything breaks some caller.",
+    "Ship a breaking change as a new version that runs beside the old.",
+    "Mark old methods `@Deprecated`, tell callers, and remove them only after they move."
   ],
   "hero": {
     "type": "table",
-    "title": "Which changes break old clients",
-    "head": ["Change", "Old clients", "What to do"],
-    "rows": [
-      ["Add an optional response field", "Keep working", "Ship it in place"],
-      ["Add an optional request parameter", "Keep working", "Default it on the server"],
-      ["Rename or remove a field", "Break", "New version, keep the old one"],
-      ["Change a field type, e.g. number to object", "Break", "New field name or new version"],
-      ["Make an optional parameter required", "Break", "New version"],
-      ["Add a new value to an enum", "May break strict clients", "Document it; clients need a default branch"]
+    "title": "Which changes break old callers?",
+    "head": [
+      "Change",
+      "What an old caller sees",
+      "Compatible?"
     ],
-    "highlight": { "col": 1 },
-    "caption": "Additive changes are usually safe. Anything that takes away or reshapes data needs a new version."
+    "rows": [
+      [
+        "Add an optional response field",
+        "An extra field it ignores",
+        "Yes, if readers ignore unknowns"
+      ],
+      [
+        "Add a new method or endpoint",
+        "Nothing; it never calls it",
+        "Yes"
+      ],
+      [
+        "Add an interface method with a default body",
+        "Its class still compiles",
+        "Usually; a same-signature clash can still break it"
+      ],
+      [
+        "Add an abstract interface method",
+        "Its class no longer compiles",
+        "No"
+      ],
+      [
+        "Rename or remove a field",
+        "A missing value or a failure",
+        "No"
+      ],
+      [
+        "Make an optional input required",
+        "Its requests get rejected",
+        "No"
+      ]
+    ],
+    "highlight": {
+      "col": 2
+    },
+    "caption": "Most additions keep old callers working; an abstract method, a removal or a tightened rule needs a new version."
   },
   "code": [
     {
-      "file": "presenters.mjs",
-      "lang": "js",
-      "title": "One model, two versions",
-      "run": "browser",
-      "caption": "Add a `v3` presenter that also returns `currency` at the top level. `v1` and `v2` stay untouched.",
+      "file": "ApiEvolutionDemo.java",
+      "lang": "java",
+      "title": "Evolving a Java interface",
+      "run": "captured",
+      "caption": "Version 2 adds a priority overload as a `default` method. A class written for version 1 still compiles and gains it.",
       "walk": [
-        { "lines": [1, 2, 3], "text": "The domain object has one shape, the newest one." },
-        { "lines": [5, 6, 7], "text": "`v1` rebuilds the old shape: a flat name and a decimal total." },
-        { "lines": [8, 9], "text": "`v2` exposes the richer shape. Old clients never see it." },
-        { "lines": [11, 12, 13, 14], "text": "An unknown version gets a clear 400, not a guess." }
+        {
+          "lines": [
+            16,
+            16
+          ],
+          "text": "The version 1 contract: one abstract method every implementer wrote."
+        },
+        {
+          "lines": [
+            18,
+            21
+          ],
+          "text": "Version 2 adds an overload with a body, built on the old method."
+        },
+        {
+          "lines": [
+            24,
+            28
+          ],
+          "text": "`LegacySms` was never edited, yet it now answers the new call too."
+        },
+        {
+          "lines": [
+            30,
+            38
+          ],
+          "text": "A newer class overrides the default to use priority its own way."
+        },
+        {
+          "lines": [
+            6,
+            9
+          ],
+          "text": "Old and new callers share one loop; nothing breaks."
+        }
       ]
     },
     {
-      "file": "tolerant.mjs",
-      "lang": "js",
-      "title": "A tolerant reader",
-      "run": "browser",
-      "caption": "Destructuring picks known fields and ignores new ones. A default hides a removed field, but the answer is wrong."
+      "file": "VersionRouterDemo.java",
+      "lang": "java",
+      "title": "Two versions side by side",
+      "run": "captured",
+      "caption": "Version 2 renamed `capacity` to `seats`, a breaking change. Version 1 stays frozen, and both read one model.",
+      "walk": [
+        {
+          "lines": [
+            13,
+            18
+          ],
+          "text": "One current model; each version only maps it to its own shape."
+        },
+        {
+          "lines": [
+            24,
+            27
+          ],
+          "text": "The version 1 shape is frozen: the same field names until that version is retired."
+        },
+        {
+          "lines": [
+            28,
+            33
+          ],
+          "text": "Version 2 carries the rename and new fields."
+        },
+        {
+          "lines": [
+            34,
+            34
+          ],
+          "text": "An unknown version gets a stable error code, not a guess."
+        }
+      ]
     }
   ],
   "pitfalls": [
-    "Never rename a field in place; add the new one and deprecate the old.",
-    "Do not fork the domain model per version; map one model at the edge.",
-    "Clients that reject unknown fields turn every additive change into a breaking one."
+    "Never rename or remove a public field in place; add the new one, deprecate the old.",
+    "Do not add an abstract method to a published interface; give it a `default` body.",
+    "Make clients ignore unknown fields, or every additive change will break them."
   ],
   "quiz": {
-    "q": "What does this print?",
-    "code": "const v1 = (o) => ({ id: o.id, total: o.cents / 100 });\nconst v2 = (o) => ({ id: o.id, cents: o.cents });\nconst order = { id: 7, cents: 350 };\nconst { total = 'none' } = v2(order);\nconsole.log(v1(order).total, total);",
-    "lang": "js",
-    "options": ["3.5 3.5", "3.5 none", "350 none", "3.5 undefined"],
+    "q": "Using `ApiEvolutionDemo`'s types, what does this print?",
+    "options": [
+      "sms to ada: Hi",
+      "sms to ada: [!] Hi",
+      "A compile error: LegacySms lacks the method",
+      "An AbstractMethodError at run time"
+    ],
     "answer": 1,
-    "why": "`v1` divides cents by 100. `v2` has no `total` field, so the destructuring default `'none'` is used."
+    "why": "`LegacySms` inherits the `default` overload. It adds the `[!] ` prefix for `HIGH`, then calls the version 1 `send` that `LegacySms` implements.",
+    "code": "Notifier n = new LegacySms();\nSystem.out.println(n.send(\"ada\", \"Hi\", Priority.HIGH));",
+    "lang": "java"
   },
-  "takeaway": "Add freely, never take away in place; version the breaking change.",
+  "takeaway": "Add freely, never break in place, and version what must break.",
   "chat": {
     "starters": [
-      "Should the version go in the URL path or a header?",
-      "How long should I keep an old API version alive?",
-      "How does semantic versioning apply to a library's public classes?"
+      "Should I version a REST API in the URL or in a header?",
+      "How long should I keep a deprecated version running?",
+      "Why can adding an enum constant still break some callers?"
     ]
   }
 }

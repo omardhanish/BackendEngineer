@@ -1,121 +1,135 @@
 {
   "title": "Cohesion and coupling",
-  "idea": "Cohesion is how closely a class's parts serve one purpose; coupling is how much one class depends on another's details. Aim for high cohesion, low coupling.",
+  "idea": "Cohesion is how closely a class's parts serve one purpose; coupling is how much a class depends on others. Aim for high cohesion and low coupling.",
   "points": [
-    "A cohesive class has methods that mostly use the same fields.",
-    "Coupling grows with every class you import, construct or reach into.",
-    "Depend on a small method shape, and inject the object that provides it.",
-    "Count the files one change touches; many files means the design leaks."
+    "A cohesive class has one job, and its methods share its fields.",
+    "Coupling grows with every concrete class you construct, call or import.",
+    "Depend on narrow interfaces, passed in through the constructor.",
+    "Low coupling lets you change or test one class without touching others."
   ],
   "hero": {
     "type": "table",
     "title": "Signals you can count",
     "head": [
       "Signal",
-      "What to count",
-      "Healthy sign"
+      "How to count it",
+      "Healthy",
+      "Warning sign"
     ],
     "rows": [
       [
-        "Field use",
-        "Methods that touch each field",
-        "Most methods share the same fields"
+        "Fan-out (efferent coupling)",
+        "Types this class uses",
+        "A few, mostly interfaces",
+        "Many concrete classes"
       ],
       [
-        "Fan-out",
-        "Classes this class imports or creates",
-        "A few, mostly abstractions"
+        "Fan-in (afferent coupling)",
+        "Types that use this class",
+        "High on stable core types",
+        "High on a class that changes often"
       ],
       [
-        "Reach-through",
-        "Chains like a.b.c.d",
-        "One dot: ask, do not dig"
-      ],
-      [
-        "Control flags",
-        "Boolean arguments that pick a branch",
-        "None; split into two methods"
+        "Shared fields",
+        "Which methods use which fields",
+        "Most methods touch most fields",
+        "Separate field groups for separate methods"
       ],
       [
         "Change ripple",
-        "Files edited for one requirement",
-        "One or two files"
+        "Classes edited per feature change",
+        "One or two",
+        "Edits spread across many files"
+      ],
+      [
+        "Name test",
+        "Describe the class in one sentence",
+        "No 'and' needed",
+        "It prices and emails and logs"
       ]
     ],
-    "caption": "Each signal is a number you can check in review, not a feeling."
+    "highlight": {
+      "col": 3
+    },
+    "caption": "Use these on any class diagram. In the code below, Invoicing has a fan-out of two: the Sender interface and the small PriceBook class."
   },
   "code": [
     {
-      "file": "checkout.mjs",
-      "lang": "js",
+      "file": "InvoicingDemo.java",
+      "lang": "java",
       "title": "Cohesive, loosely coupled",
-      "run": "browser",
-      "caption": "Swap `fakePayments` for any object with a `charge` method. `Checkout` does not change.",
+      "run": "captured",
+      "caption": "Each class has one job. `Invoicing` knows only two small collaborators, both passed in.",
       "walk": [
         {
           "lines": [
-            1,
-            2,
-            3,
-            4,
-            5,
-            6
-          ],
-          "text": "`Cart` owns its items, and both methods use `#items`: high cohesion."
-        },
-        {
-          "lines": [
-            8,
-            9,
-            10
-          ],
-          "text": "`Checkout` knows only `charge(amount)` and `total()`: low coupling."
-        },
-        {
-          "lines": [
-            12
-          ],
-          "text": "A fake gateway is enough to run it; no payment library is imported."
-        },
-        {
-          "lines": [
-            13,
+            14,
             14
           ],
-          "text": "Build the parts at the edge, then connect them."
+          "text": "`Sender` is a one-method interface: all `Invoicing` needs to know about delivery."
+        },
+        {
+          "lines": [
+            16,
+            22
+          ],
+          "text": "`Outbox` is one way to send. Email, SMS or a test fake fit the same slot."
+        },
+        {
+          "lines": [
+            24,
+            32
+          ],
+          "text": "`PriceBook` only knows prices. Changing a price touches this class and nothing else."
+        },
+        {
+          "lines": [
+            34,
+            40
+          ],
+          "text": "Collaborators arrive through the constructor; `Invoicing` never calls `new` on them."
+        },
+        {
+          "lines": [
+            41,
+            44
+          ],
+          "text": "`bill` uses both fields: a small, cohesive method that coordinates and owns no details."
+        },
+        {
+          "lines": [
+            6,
+            10
+          ],
+          "text": "`main` wires the parts together. Swapping `Outbox` needs no edit to `Invoicing`."
         }
       ]
-    },
-    {
-      "file": "reach.mjs",
-      "lang": "js",
-      "title": "Ask, do not dig",
-      "run": "browser",
-      "caption": "Both print the same today. Rename `address` and you fix one method in `Order`, not every caller like `tightLabel`."
     }
   ],
   "pitfalls": [
-    "Do not split a class until its methods stop sharing fields.",
-    "Avoid calling `new` on concrete helpers inside business logic; inject them.",
-    "Replace long chains like `order.customer.address.city` with a method on the owner."
+    "Do not split classes into trivial fragments; many chatty pieces raise coupling again.",
+    "Do not let two classes share one mutable object; a change ripples to both.",
+    "Watch for chains like `a.getB().getC().run()`; they couple you to internals."
   ],
   "quiz": {
-    "q": "`ReportService` imports nine classes, and each method uses different fields. What is true?",
+    "q": "What does this print?",
+    "code": "Outbox outbox = new Outbox();\nInvoicing inv = new Invoicing(new PriceBook(), outbox);\ninv.bill(\"li\", List.of(\"pad\", \"cup\"));\noutbox.sent().forEach(System.out::println);",
+    "lang": "java",
     "options": [
-      "High cohesion, low coupling",
-      "Low cohesion, high coupling",
-      "High cohesion, high coupling",
-      "Low cohesion, low coupling"
+      "li: total 340",
+      "li: total 1340",
+      "li: total 1240",
+      "total 1240"
     ],
-    "answer": 1,
-    "why": "Methods sharing no fields means the class does several jobs. Nine imports means many classes can break it."
+    "answer": 2,
+    "why": "`PriceBook` gives 340 for a pad and the default 900 for anything unknown. `Outbox` prefixes the recipient, so the line is `li: total 1240`."
   },
-  "takeaway": "Keep related things together and talk to others through small interfaces.",
+  "takeaway": "One job per class; few, narrow, injected collaborators.",
   "chat": {
     "starters": [
-      "How do I tell if a class has low cohesion?",
-      "Is some coupling unavoidable, and which kind is acceptable?",
-      "How do cohesion and coupling relate to the SOLID principles?"
+      "How do I measure cohesion on a real class?",
+      "Is depending on a concrete class always bad coupling?",
+      "How does low coupling make unit testing easier?"
     ]
   }
 }

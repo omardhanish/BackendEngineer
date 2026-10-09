@@ -1,201 +1,167 @@
 {
   "title": "Aggregates, repositories and events",
-  "idea": "DDD's building blocks for one model: an aggregate guards its rules through one root, a repository loads and saves whole aggregates, and domain events record what happened.",
+  "idea": "An aggregate is a cluster of domain objects changed as one unit through a single root, which guards the rules that must always hold.",
   "points": [
-    "Callers go through the root, which checks each invariant (a rule that always holds).",
-    "A domain event is a past-tense fact, like `LineAdded`, that the root records.",
-    "A repository stores and loads whole aggregates, like an in-memory collection.",
-    "A domain service holds a rule that spans several aggregates."
+    "Outside code holds references only to the root, never to inner objects.",
+    "A repository stores and finds whole aggregates by the root's id.",
+    "Domain events record facts, like `OrderPlaced`, for other parts to react to.",
+    "A domain service holds logic that belongs to no single aggregate."
   ],
   "hero": {
     "type": "seq",
-    "title": "One command through the building blocks",
+    "title": "One change through the root",
     "actors": [
       {
         "id": "app",
-        "label": "App service"
+        "label": "Application service"
       },
       {
         "id": "repo",
         "label": "OrderRepository"
       },
       {
-        "id": "order",
-        "label": "Order root"
+        "id": "root",
+        "label": "Order (root)"
       },
       {
-        "id": "bus",
-        "label": "Event bus"
+        "id": "line",
+        "label": "Line"
+      },
+      {
+        "id": "subs",
+        "label": "Listeners"
       }
     ],
     "messages": [
       {
         "from": "app",
         "to": "repo",
-        "label": "byId('o-1')",
-        "note": "The application service loads the whole aggregate by its root's id."
+        "label": "find(O-1)",
+        "note": "The service loads order O-1 by its root id. It already holds 2 pens; the limit is 3."
       },
       {
         "from": "repo",
         "to": "app",
         "label": "Order",
         "dashed": true,
-        "note": "The repository returns the root, with its lines inside."
+        "note": "It gets the root back. Inner lines come with it, never on their own."
       },
       {
         "from": "app",
-        "to": "order",
-        "label": "addLine(sku, price)",
-        "note": "All changes go through the root, so it can check its invariant."
+        "to": "root",
+        "label": "addLine(pad, 1)",
+        "note": "Every change goes through the root, which checks the rules first."
       },
       {
-        "from": "order",
-        "to": "order",
-        "label": "check limit",
-        "note": "The root rejects the change if the total would pass the limit."
+        "from": "root",
+        "to": "line",
+        "label": "new Line",
+        "note": "Only the root creates and holds its lines."
+      },
+      {
+        "from": "app",
+        "to": "root",
+        "label": "addLine(ink, 1)",
+        "note": "Pens plus pad make 3 units. One more ink would make 4, so the root refuses it."
+      },
+      {
+        "from": "app",
+        "to": "root",
+        "label": "place()",
+        "note": "Placing records an `OrderPlaced` domain event inside the aggregate."
       },
       {
         "from": "app",
         "to": "repo",
         "label": "save(order)",
-        "note": "Save the whole aggregate in one step, so it is never half-written."
+        "note": "The service saves the whole aggregate in one step."
       },
       {
         "from": "app",
-        "to": "order",
-        "label": "pullEvents()",
-        "note": "The root recorded `LineAdded` while it changed."
-      },
-      {
-        "from": "app",
-        "to": "bus",
-        "label": "publish LineAdded",
-        "note": "Other parts react to the event without the order knowing them."
+        "to": "subs",
+        "label": "OrderPlaced",
+        "dashed": true,
+        "note": "After saving, the event goes to listeners such as billing, outside the aggregate."
       }
     ]
   },
   "code": [
     {
-      "file": "order.mjs",
-      "lang": "js",
-      "title": "Aggregate and repository",
-      "run": "browser",
-      "caption": "Change the limit to 120 and run again. The lamp is accepted, and two events appear.",
+      "file": "AggregateDemo.java",
+      "lang": "java",
+      "title": "An Order aggregate",
+      "run": "captured",
+      "caption": "`Order` is the root. Its unit limit holds no matter who calls, because every change passes through it.",
       "walk": [
-        {
-          "lines": [
-            1,
-            2,
-            3
-          ],
-          "text": "`Order` is the root. Lines and events are private, so no one bypasses it."
-        },
-        {
-          "lines": [
-            4,
-            5,
-            6,
-            7,
-            8
-          ],
-          "text": "The invariant is checked first; the line and its event are recorded only if it holds."
-        },
-        {
-          "lines": [
-            11
-          ],
-          "text": "`pullEvents` hands over the recorded events once and clears them."
-        },
-        {
-          "lines": [
-            13,
-            14,
-            15,
-            16,
-            17
-          ],
-          "text": "The repository stores whole orders by id. A real one would use a database."
-        },
-        {
-          "lines": [
-            21,
-            22
-          ],
-          "text": "The second line would pass the limit, so the root refuses it."
-        },
         {
           "lines": [
             23,
-            24,
-            25,
-            26
+            29
           ],
-          "text": "Save, then read the state and drain the events."
-        }
-      ]
-    },
-    {
-      "file": "transfer.mjs",
-      "lang": "js",
-      "title": "A domain service",
-      "run": "browser",
-      "caption": "`transfer` touches two wallets, so it lives outside both.",
-      "walk": [
+          "text": "Fields are private; no getter exposes the live list of lines."
+        },
         {
           "lines": [
-            2,
-            3,
-            4,
-            5,
-            6,
-            7,
+            30,
+            34
+          ],
+          "text": "`addLine` is the only way in. It checks state and the unit limit first."
+        },
+        {
+          "lines": [
+            35,
+            35
+          ],
+          "text": "Placing records a domain event instead of calling other code directly."
+        },
+        {
+          "lines": [
+            41,
+            45
+          ],
+          "text": "The repository saves and finds whole orders by id, never single lines."
+        },
+        {
+          "lines": [
             8,
-            9,
-            10,
-            11
-          ],
-          "text": "Each `Wallet` guards its own balance."
-        },
-        {
-          "lines": [
-            12
-          ],
-          "text": "The rule spans two aggregates, so a stateless domain service owns it."
-        },
-        {
-          "lines": [
-            13,
-            14,
-            15,
             16
           ],
-          "text": "The second transfer fails, and the debit is refused before any credit."
+          "text": "The loaded root accepts the pad but refuses the ink: three units is the limit."
+        },
+        {
+          "lines": [
+            38,
+            38
+          ],
+          "text": "Events are handed out as a copy, ready for the caller to publish."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Never return an aggregate's inner arrays; callers could bypass the invariant.",
-    "Keep aggregates small; a huge one makes unrelated writes block or overwrite each other.",
-    "Reference other aggregates by id, not by holding the object."
+    "Do not return the live inner list; callers could bypass the root's checks.",
+    "Keep aggregates small; refer to other aggregates by id, not by object.",
+    "Change one aggregate per transaction; let a domain event update the others."
   ],
   "quiz": {
-    "q": "Which design keeps an order's \"total at most 100\" rule safe?",
+    "q": "Using `Order` above, what does this print?",
+    "code": "Order o = new Order(\"O-2\", 2);\no.addLine(\"pen\", 1);\no.place();\ntry { o.addLine(\"pad\", 1); }\ncatch (IllegalStateException e) {\n    System.out.println(e.getMessage());\n}",
+    "lang": "java",
     "options": [
-      "Expose `order.lines` so services can push lines directly",
-      "Let the repository check the total when saving",
-      "Route every change through `order.addLine`, which checks the limit",
-      "Give each `OrderLine` its own repository"
+      "full",
+      "placed",
+      "Nothing is printed",
+      "OrderPlaced[orderId=O-2, units=1]"
     ],
-    "answer": 2,
-    "why": "The root is the only way in, so it sees every change and can reject one that breaks the invariant."
+    "answer": 1,
+    "why": "`place` set the order to placed, so `addLine` throws `placed` before checking units."
   },
-  "takeaway": "Change an aggregate only through its root, and save it whole.",
+  "takeaway": "Change an aggregate only through its root; load and save it whole.",
   "chat": {
     "starters": [
-      "How do I decide where one aggregate ends?",
-      "Should domain events be published before or after saving?",
-      "How is a domain service different from an application service?"
+      "How do I decide where an aggregate boundary goes?",
+      "When should I use a domain service instead of a method on an entity?",
+      "How are domain events published after saving?"
     ]
   }
 }

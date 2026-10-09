@@ -1,80 +1,121 @@
 {
   "title": "Adapter and Bridge",
-  "idea": "Adapter wraps an existing class so it fits the interface your code expects. Bridge splits an abstraction from its implementation so both can vary independently.",
+  "idea": "Adapter wraps a class with the wrong interface to fit the one your code expects. Bridge splits a class into two hierarchies, linked by has-a, that vary independently.",
   "points": [
-    "An adapter translates names, units and errors; it adds no new behaviour.",
-    "Your code depends on its own interface, never on the vendor's.",
-    "Bridge holds the implementation as a field, instead of subclassing every combination.",
-    "Adapter fixes a mismatch after the fact; Bridge is planned up front."
+    "An adapter implements your interface and translates each call for the wrapped object.",
+    "Adapter fixes a mismatch after the fact, often around code you cannot edit.",
+    "Bridge is planned up front: the abstraction holds an implementor in a field.",
+    "With Bridge, three alerts and three channels need six classes, not nine."
   ],
   "hero": {
     "type": "flow",
-    "title": "Translate one, split the other",
+    "title": "Wrap to fit; split to grow",
     "nodes": [
-      { "id": "checkout", "label": "checkout()", "sub": "calls `pay(amount)`" },
-      { "id": "adapter", "label": "GatewayAdapter", "sub": "translates the call" },
-      { "id": "old", "label": "OldGateway", "sub": "`makePayment(cents)`" },
-      { "id": "alert", "label": "Alert", "sub": "what to say" },
-      { "id": "urgent", "label": "UrgentAlert", "sub": "refined abstraction" },
-      { "id": "email", "label": "EmailChannel", "sub": "how to send" },
-      { "id": "sms", "label": "SmsChannel", "sub": "how to send" }
+      { "id": "co", "label": "Checkout code", "sub": "client" },
+      { "id": "pg", "label": "PaymentGateway", "sub": "the interface you own" },
+      { "id": "ad", "label": "BankAdapter", "sub": "translates calls" },
+      { "id": "lb", "label": "LegacyBankClient", "sub": "cannot be edited" },
+      { "id": "ur", "label": "Notice, Urgent", "sub": "refined alerts" },
+      { "id": "al", "label": "Alert", "sub": "abstraction" },
+      { "id": "ch", "label": "Channel", "sub": "implementor" },
+      { "id": "em", "label": "Email, SMS", "sub": "concrete channels" }
     ],
     "edges": [
-      { "from": "checkout", "to": "adapter", "label": "pay(12.5)", "caption": "Checkout calls the interface it owns: `pay(amount)` in euros." },
-      { "from": "adapter", "to": "old", "label": "makePayment(1250)", "caption": "The adapter converts euros to cents and renames the call for the vendor class." },
-      { "from": "urgent", "to": "alert", "label": "extends", "caption": "Bridge: alert kinds grow on one side, as subclasses of `Alert`." },
-      { "from": "alert", "to": "email", "label": "deliver()", "caption": "`Alert` holds a channel and calls `deliver`. It never knows which channel." },
-      { "from": "alert", "to": "sms", "label": "deliver()", "dashed": true, "caption": "Channels grow on the other side. Kinds and channels add instead of multiply: 3 kinds and 3 channels need 6 classes, not 9 subclasses." }
+      { "from": "co", "to": "pg", "label": "pay(id, 12.5)" },
+      { "from": "ad", "to": "pg", "label": "implements", "dashed": true },
+      { "from": "ad", "to": "lb", "label": "submit(id, 1250, GBP)" },
+      { "from": "ur", "to": "al", "label": "extends", "dashed": true },
+      { "from": "al", "to": "ch", "label": "has-a (bridge)" },
+      { "from": "em", "to": "ch", "label": "implements", "dashed": true }
+    ],
+    "steps": [
+      {
+        "caption": "Adapter: checkout code calls `pay` on the `PaymentGateway` interface it owns.",
+        "active": ["co", "pg"],
+        "edges": [0]
+      },
+      {
+        "caption": "`BankAdapter` implements that interface, so checkout never sees the vendor class.",
+        "active": ["pg", "ad"],
+        "edges": [1]
+      },
+      {
+        "caption": "It renames the call, turns pounds into pence and maps the status code back.",
+        "active": ["ad", "lb"],
+        "edges": [2]
+      },
+      {
+        "caption": "Bridge: one hierarchy says what an alert is. `Notice` and `Urgent` extend `Alert`.",
+        "active": ["ur", "al"],
+        "edges": [3]
+      },
+      {
+        "caption": "`Alert` holds a `Channel` in a field. That has-a link is the bridge.",
+        "active": ["al", "ch"],
+        "edges": [4]
+      },
+      {
+        "caption": "Channels grow on their own side. A new channel works with every alert at once.",
+        "active": ["ch", "em", "al"],
+        "edges": [4, 5]
+      }
     ]
   },
   "code": [
     {
-      "file": "adapter.mjs",
-      "lang": "js",
-      "title": "Adapter around a vendor class",
-      "run": "browser",
-      "caption": "Change the vendor result to `ok: false` and run: the adapter turns it into your own error.",
+      "file": "AdapterDemo.java",
+      "lang": "java",
+      "title": "Adapter",
+      "run": "captured",
+      "caption": "Checkout speaks `PaymentGateway`. The adapter turns that into the vendor's calls and codes. Real money uses `BigDecimal` or minor units; `double` keeps it short.",
       "walk": [
-        { "lines": [1, 2, 3, 4, 5], "text": "Vendor code you cannot edit: amounts in cents, a result object." },
-        { "lines": [7, 8], "text": "The adapter wraps the vendor object it receives." },
-        { "lines": [9, 10], "text": "It converts units and renames the call." },
-        { "lines": [11, 12], "text": "It maps the vendor's result to your error and return shapes." },
-        { "lines": [15, 16], "text": "`checkout` knows only `pay`; swapping vendors means writing one new adapter." }
+        { "lines": [10, 12], "text": "The target: the interface your code is written against." },
+        { "lines": [14, 22], "text": "The adaptee: other method names, amounts in pence, numeric result codes." },
+        { "lines": [24, 31], "text": "The adapter wraps the vendor object it receives through its constructor." },
+        { "lines": [35, 36], "text": "It converts units and renames the call." },
+        { "lines": [37, 38], "text": "It maps the vendor's status code to your own `PAID` or `DECLINED` result." },
+        { "lines": [3, 6], "text": "`main` sees only `PaymentGateway`; swapping vendors means a new adapter." }
       ]
     },
     {
-      "file": "bridge.mjs",
-      "lang": "js",
-      "title": "Bridge: alerts and channels",
-      "run": "browser",
-      "caption": "Add a `PushChannel` class with `deliver`. Both alert kinds work with it unchanged.",
+      "file": "BridgeDemo.java",
+      "lang": "java",
+      "title": "Bridge",
+      "run": "captured",
+      "caption": "Two alert kinds times two channels, with no `UrgentSmsAlert` class anywhere.",
       "walk": [
-        { "lines": [1, 2], "text": "Implementations: each channel delivers text its own way; SMS trims to 16 characters." },
-        { "lines": [4, 5, 6], "text": "The abstraction holds a channel, the bridge, and delegates to it." },
-        { "lines": [8, 9, 10], "text": "Refine the abstraction by subclassing `Alert`; channels are untouched." },
-        { "lines": [11, 12, 13, 14], "text": "Any alert pairs with any channel at runtime." }
+        { "lines": [13, 15], "text": "The implementor interface: how a message physically goes out." },
+        { "lines": [17, 23], "text": "Two concrete channels. They know nothing about alert kinds." },
+        { "lines": [25, 31], "text": "The abstraction keeps a `Channel` in a `final` field: the bridge." },
+        { "lines": [33, 43], "text": "Refined alerts decide the wording, then delegate delivery to the channel." },
+        { "lines": [5, 9], "text": "Any alert pairs with any channel at run time." }
       ]
     }
   ],
   "pitfalls": [
-    "Keep business rules out of adapters; they only translate between two shapes.",
-    "Do not leak vendor types or error codes past the adapter.",
-    "Skip the Bridge when only one dimension varies; one class holding a channel field is enough."
+    "Keep adapters thin: translate calls and data, and put business rules elsewhere.",
+    "Map vendor errors to your own results or exceptions; never leak vendor codes upward.",
+    "Skip Bridge when only one dimension varies; plain composition or Strategy is enough."
   ],
   "quiz": {
-    "q": "What does this print?",
-    "code": "class Celsius { read() { return 20; } }\nclass FahrenheitAdapter {\n  constructor(s) { this.s = s; }\n  read() { return this.s.read() * 9 / 5 + 32; }\n}\nconsole.log(new FahrenheitAdapter(new Celsius()).read());",
-    "lang": "js",
-    "options": ["20", "68", "36", "NaN"],
-    "answer": 1,
-    "why": "The adapter calls the wrapped `read()`, gets 20, and converts it: 20 × 9 / 5 + 32 is 68."
+    "q": "What is the first line `AdapterDemo` prints?",
+    "options": [
+      "PAID A-17",
+      "bank: 12.5 GBP for A-17",
+      "bank: 1250.0 GBP for A-17",
+      "bank: 1250 GBP for A-17"
+    ],
+    "answer": 3,
+    "why": "The vendor prints before `pay` returns. `Math.round` on a `double` returns a `long`, so 12.5 becomes 1250 with no decimal point.",
+    "code": "long minor = Math.round(amount * 100);   // amount = 12.5\nint code = bank.submit(orderId, minor, currency);\n// submit prints: \"bank: \" + minorUnits + \" \" + currency\n//                 + \" for \" + reference",
+    "lang": "java"
   },
-  "takeaway": "Adapter makes a misfit class fit; Bridge keeps two dimensions apart.",
+  "takeaway": "Adapter makes an existing class fit; Bridge keeps two dimensions apart.",
   "chat": {
     "starters": [
-      "How is an Adapter different from a Facade?",
+      "How is Adapter different from Facade and Decorator?",
       "Is Bridge just Strategy with another name?",
-      "Where would an Adapter appear in an LLD interview answer?"
+      "Should an adapter use inheritance or composition in Java?"
     ]
   }
 }

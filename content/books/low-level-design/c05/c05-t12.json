@@ -1,158 +1,137 @@
 {
   "title": "Acting on design feedback",
-  "idea": "Iteration is turning review comments into small, tested design changes, and a good design makes most of those changes local to one class.",
+  "idea": "Iterating on feedback means turning each comment into a check that fails, changing the design until it passes, and telling the reviewer what changed.",
   "points": [
-    "Log every comment as a bug, missing requirement, or preference.",
-    "Bugs and missing requirements mean fix now; preferences mean discuss or known trade-off.",
-    "Change one class at a time and rerun your tests after each change.",
-    "If one comment forces edits in many classes, revisit that boundary."
+    "Sort comments first: bugs, then missing requirements, then style.",
+    "Write a check that reproduces the comment before you change code.",
+    "Change the smallest class that owns the rule, here `ConflictPolicy`.",
+    "Rerun every check, then reply with what changed and why."
   ],
   "hero": {
     "type": "flow",
-    "title": "The feedback loop",
+    "title": "From comment to closed loop",
     "nodes": [
       {
-        "id": "show",
-        "label": "Present design",
-        "sub": "classes and flows"
+        "id": "c",
+        "label": "Reviewer comment",
+        "sub": "11:00 slot refused"
       },
       {
-        "id": "log",
-        "label": "Log comments",
-        "sub": "word for word"
-      },
-      {
-        "id": "sort",
+        "id": "t",
         "label": "Triage",
-        "sub": "bug, gap, preference"
+        "sub": "bug, gap or style"
       },
       {
-        "id": "change",
-        "label": "Change one class",
-        "sub": "smallest edit"
+        "id": "f",
+        "label": "Failing check",
+        "sub": "reproduce first"
       },
       {
-        "id": "test",
-        "label": "Rerun tests",
-        "sub": "nothing else broke"
+        "id": "x",
+        "label": "Smallest change",
+        "sub": "ConflictPolicy"
+      },
+      {
+        "id": "r",
+        "label": "Rerun all checks"
+      },
+      {
+        "id": "a",
+        "label": "Reply and close"
       }
     ],
     "edges": [
       {
-        "from": "show",
-        "to": "log",
-        "label": "listen",
-        "caption": "Write each comment down as said. Do not defend or fix during the review."
+        "from": "c",
+        "to": "t",
+        "caption": "A reviewer says a booking from 11 to 12 is refused after one ending at 11."
       },
       {
-        "from": "log",
-        "to": "sort",
-        "label": "classify",
-        "caption": "Label each comment a bug, a missing requirement, or a preference. The first two are c05-t08's fix now."
+        "from": "t",
+        "to": "f",
+        "caption": "It breaks a requirement, so it is a bug: it goes first."
       },
       {
-        "from": "sort",
-        "to": "change",
-        "label": "pick one",
-        "caption": "Take the most important fix-now item. Preferences go to discuss or a known trade-off."
+        "from": "f",
+        "to": "x",
+        "caption": "A check proves the bug; the overlap rule lives in one class, so only that class changes."
       },
       {
-        "from": "change",
-        "to": "test",
-        "label": "verify",
-        "caption": "Rerun the tests. A green run means nothing else broke."
+        "from": "x",
+        "to": "r",
+        "caption": "Run every check, not only the new one, so the fix breaks nothing else."
       },
       {
-        "from": "test",
-        "to": "show",
-        "label": "next round",
+        "from": "r",
+        "to": "a",
+        "caption": "Tell the reviewer what changed and which check now guards it."
+      },
+      {
+        "from": "r",
+        "to": "x",
+        "label": "still failing",
         "back": true,
-        "caption": "Show the updated design and start the next round with fresh eyes."
+        "dashed": true,
+        "caption": "If a check still fails, change again; the loop ends only when all pass."
       }
     ]
   },
   "code": [
     {
-      "file": "policy.mjs",
-      "lang": "js",
-      "title": "A comment becomes a class",
-      "run": "browser",
-      "caption": "Times are hours as numbers, so 0.25 is 15 minutes.",
+      "file": "FeedbackFixDemo.java",
+      "lang": "java",
+      "title": "Reproduce, then fix",
+      "run": "captured",
+      "caption": "Suppose your first policy used `<=`. The reviewer's comment becomes a check; `<` lets touching slots pass.",
       "walk": [
         {
           "lines": [
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
             7,
-            8
+            9
           ],
-          "text": "The base class is the interface; `StrictOverlapPolicy` is the rule you presented."
+          "text": "Three bookings: one held 10 to 11, one right after it, one inside it."
         },
         {
           "lines": [
-            9,
-            10,
             11,
-            12,
+            12
+          ],
+          "text": "The old policy uses `<=`, so a slot ending at 11 blocks one starting at 11."
+        },
+        {
+          "lines": [
             13,
-            14,
-            15,
+            14
+          ],
+          "text": "The fix uses `<`. A slot covers its start but not its end, so 11 is free."
+        },
+        {
+          "lines": [
             16,
-            17
+            23
           ],
-          "text": "The reviewer's request becomes `BufferPolicy`, the gap rule from c05-t03. No existing class is edited."
+          "text": "The same two checks run against both versions: the old one fails back-to-back, the new one passes both."
         },
         {
           "lines": [
-            18,
-            19,
-            20,
-            21,
-            22
-          ],
-          "text": "`BookingRepository` holds the bookings, so the service keeps no list of its own."
-        },
-        {
-          "lines": [
-            23,
-            24,
-            25,
             26,
-            27,
-            28,
-            29,
-            30,
-            31,
-            32,
-            33,
-            34,
-            35
+            29
           ],
-          "text": "`BookingService` passes the room's bookings to whichever policy it was given."
-        },
-        {
-          "lines": [
-            36,
-            37,
-            38,
-            39,
-            40
-          ],
-          "text": "Same bookings, two policies: back-to-back meetings pass one rule and fail the other."
+          "text": "A tiny hand-written runner; teams use JUnit 5 for this."
         }
       ]
     }
   ],
-  "takeaway": "Log, triage, change one class, rerun tests, present again.",
+  "pitfalls": [
+    "Do not change code before a check reproduces the comment.",
+    "Avoid fixing several comments in one change; one comment, one change, one reply."
+  ],
+  "takeaway": "Reproduce the comment as a check, fix the owner, rerun everything, reply.",
   "chat": {
     "starters": [
       "What if I disagree with a reviewer's comment?",
-      "How do I tell a design bug from a style preference?",
-      "When is a change too big to make before submission?"
+      "How do I prioritise feedback when there is too much to fix?",
+      "Why are time slots treated as half-open intervals?"
     ]
   }
 }

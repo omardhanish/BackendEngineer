@@ -1,78 +1,80 @@
 {
   "title": "Designing classes and interfaces",
-  "idea": "Good class design gives each class one job and hidden state, and lets classes talk only through small interfaces of the methods callers need.",
+  "idea": "A well-designed class owns one job, hides its data behind methods that protect its rules, and depends on small interfaces named for the role they play.",
   "points": [
-    "Nouns in the requirements suggest classes; verbs suggest their methods.",
-    "Give each class one reason to change and keep its state private.",
-    "An interface is the set of methods a caller relies on.",
-    "In JavaScript, write one as a base class whose methods throw."
+    "Start from behaviour: list what the class must do, then the data it needs.",
+    "Make fields `private final`, and reject bad input in the constructor.",
+    "Use a `record` for small immutable data, such as a parcel's label and weight.",
+    "Name an interface for its role, like `RateCard`, and keep it small."
   ],
   "hero": {
     "type": "compare",
-    "title": "One big class versus focused ones",
+    "title": "Data bag versus designed class",
     "left": {
-      "title": "One `OrderManager` does all",
+      "title": "Data bag",
       "tone": "bad",
       "items": [
-        "Validates, prices, charges cards and sends emails",
-        "Creates its own payment client inside",
-        "Every change risks every feature",
-        "Tests need a real payment provider"
+        "Public fields or a setter for every field",
+        "Callers compute the cost from its raw data",
+        "Accepts a parcel weighing zero kilograms",
+        "Returns its internal list for anyone to edit",
+        "Hard-codes one price rule inside"
       ]
     },
     "right": {
-      "title": "Focused classes, narrow interfaces",
+      "title": "Designed class",
       "tone": "good",
       "items": [
-        "`Checkout` coordinates; each job has its own class",
-        "Depends on a `PaymentGateway` interface",
-        "A new provider is one new class",
-        "Tests pass a fake gateway in"
+        "Private final fields, set once in the constructor",
+        "Offers cost(), so the rule lives in one place",
+        "Parcel rejects bad weight when it is built",
+        "Returns a read-only copy of its parcels",
+        "Takes a RateCard interface through the constructor"
       ]
     },
-    "verdict": "Split classes by job, and connect them through the smallest interface that works."
+    "verdict": "Expose behaviour, not data, and every rule has one home."
   },
   "code": [
     {
-      "file": "gateway.mjs",
-      "lang": "js",
-      "title": "Program to an interface",
-      "run": "browser",
-      "caption": "`Checkout` knows only `charge()`. Write a `DeclineAllGateway` and pass it in instead.",
+      "file": "ShipmentDemo.java",
+      "lang": "java",
+      "title": "A shipment, designed",
+      "run": "captured",
+      "caption": "An immutable record, a role interface and a class that guards its own list.",
       "walk": [
-        { "lines": [1, 2, 3, 4], "text": "The interface: a base class whose method throws until a subclass overrides it." },
-        { "lines": [5, 6, 7], "text": "One implementation. A real provider would be another subclass." },
-        { "lines": [8, 9, 10], "text": "`Checkout` receives its gateway and keeps it private." },
-        { "lines": [11], "text": "It calls only the interface method, never provider details." }
+        { "lines": [19, 23], "text": "A `record` with a compact constructor: a parcel without a positive weight cannot exist." },
+        { "lines": [25, 29], "text": "`RateCard` is a one-method role; `FlatRate` is one rule behind it." },
+        { "lines": [32, 36], "text": "Every field is `private final`; the rate rule is injected." },
+        { "lines": [39, 40], "text": "`add` is the only way in; `parcels` hands out a read-only copy." },
+        { "lines": [42, 44], "text": "The class computes its own cost, so callers never repeat the rule." },
+        { "lines": [10, 15], "text": "The zero-weight parcel fails at construction and never reaches the list." }
       ]
-    },
-    {
-      "file": "money.mjs",
-      "lang": "js",
-      "title": "Guard the invariants",
-      "run": "browser",
-      "caption": "A value class that rejects bad input in its constructor and never changes after creation. `add` returns a new `Money`."
     }
   ],
   "pitfalls": [
-    "Expose behaviour such as `add()`, not a getter and setter for every field.",
-    "Keep interfaces small; callers should not depend on methods they never use.",
-    "Validate in the constructor so no object exists in a broken state."
+    "Do not add a getter and setter for every field by habit.",
+    "Avoid returning a mutable internal collection; return `List.copyOf` or an unmodifiable view.",
+    "Do not prefix interfaces with I; name the role, such as `RateCard`."
   ],
   "quiz": {
-    "q": "What does this print?",
-    "code": "class Store { save(x) { throw new Error('not implemented'); } }\nclass MemStore extends Store { put(x) { return 'saved'; } }\ntry { console.log(new MemStore().save(1)); }\ncatch (e) { console.log(e.message); }",
-    "lang": "js",
-    "options": ["saved", "not implemented", "undefined", "TypeError: save is not a function"],
-    "answer": 1,
-    "why": "`MemStore` named its method `put`, so `save` is found on `Store` and throws. The base class caught the missing override."
+    "q": "What is the first line `ShipmentDemo` prints?",
+    "options": [
+      "S-1 costs 27",
+      "S-1 costs 5.5",
+      "S-1 costs 27.5",
+      "S-1 costs 10.0"
+    ],
+    "answer": 2,
+    "why": "`cost` asks the `FlatRate` for each parcel: 2.0 × 5 plus 3.5 × 5. The sum is a `double`, so it prints with a decimal.",
+    "code": "Shipment s = new Shipment(\"S-1\", new FlatRate(5));\ns.add(new Parcel(\"books\", 2.0));\ns.add(new Parcel(\"lamp\", 3.5));\nSystem.out.println(s.id() + \" costs \" + s.cost());",
+    "lang": "java"
   },
-  "takeaway": "One job per class; talk through small interfaces.",
+  "takeaway": "Give each class one job, guard its fields, and depend on roles.",
   "chat": {
     "starters": [
-      "How do I turn interview requirements into a list of classes?",
-      "Should I use JSDoc interfaces or base classes in JavaScript?",
-      "When is a class too small?"
+      "When should I use a record instead of a normal class?",
+      "What does 'tell, don't ask' mean in practice?",
+      "Should I use an interface or an abstract class for RateCard?"
     ]
   }
 }

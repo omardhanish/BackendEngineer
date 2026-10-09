@@ -1,81 +1,259 @@
 {
-  "title": "Splitwise expense sharing design",
-  "idea": "A Splitwise design records who paid and who shared each expense, keeps one net balance per person, and turns those balances into a short list of payments.",
+  "title": "Expense sharing like Splitwise",
+  "idea": "A Splitwise design records who paid and how each expense splits, keeps one net balance per person, and settles those balances with few transfers.",
   "analogy": {
-    "text": "A notebook on a shared flat's fridge. Each purchase is one line; at month end you total everyone's column and settle up.",
-    "breaks": "A notebook cannot reject shares that do not add up."
+    "text": "Flatmates keep a shared notebook. Each receipt adds to the payer and subtracts each person's share. At month end, only the totals matter.",
+    "breaks": "The notebook has no rules; code must reject shares that do not add up."
   },
   "points": [
-    "Each split rule is a strategy with one method: `shares(total, users)`.",
-    "Money is stored in whole cents, so leftover cents are assigned on purpose.",
-    "The ledger keeps one net number per person, not a pile of pairwise debts.",
-    "Settling matches the largest debtor with the largest creditor until everyone is even."
+    "Money is a `long` in cents; `double` drifts when you split and add.",
+    "A `SplitStrategy` turns a total into shares: equal, exact, percent, and more.",
+    "The `Ledger` adds the total to the payer and subtracts each share.",
+    "`Settler` repeatedly pairs the biggest debtor with the biggest creditor."
   ],
   "hero": {
-    "type": "flow",
-    "title": "From receipt to repayments",
-    "nodes": [
-      { "id": "add", "label": "addExpense()", "sub": "payer, total, users" },
-      { "id": "split", "label": "SplitStrategy", "sub": "Equal · Exact · Percent" },
-      { "id": "ledger", "label": "Ledger", "sub": "net balance per person" },
-      { "id": "settle", "label": "settle()", "sub": "greedy matching" },
-      { "id": "pay", "label": "Payments", "sub": "who pays whom" }
-    ],
-    "edges": [
-      { "from": "add", "to": "split", "label": "shares?", "caption": "The expense asks its strategy for each person's share. The ledger never knows which rule was used." },
-      { "from": "split", "to": "add", "label": "throws", "dashed": true, "back": true, "caption": "An exact split that does not add up throws before any balance changes." },
-      { "from": "split", "to": "ledger", "label": "shares", "caption": "Each sharer's balance goes down by their share; the payer's goes up by the same amount." },
-      { "from": "ledger", "to": "settle", "label": "net balances", "caption": "Balances always sum to zero. Positive means owed money, negative means owing." },
-      { "from": "settle", "to": "pay", "label": "transfers", "caption": "Each match zeroes at least one person, so payments never exceed people minus one." }
-    ]
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "One expense, from receipt to settlement",
+    "scenario": {
+      "token": {
+        "label": "10000 cents",
+        "tone": "req"
+      },
+      "stages": [
+        {
+          "id": "expense",
+          "label": "Expense",
+          "sub": "payer, total, split",
+          "kind": "end"
+        },
+        {
+          "id": "split",
+          "label": "SplitStrategy",
+          "sub": "total to shares"
+        },
+        {
+          "id": "ledger",
+          "label": "Ledger",
+          "sub": "net per person"
+        },
+        {
+          "id": "settler",
+          "label": "Settler",
+          "sub": "greedy pairing"
+        },
+        {
+          "id": "out",
+          "label": "Transfers",
+          "sub": "who pays whom",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "`ana` pays 10000 cents for three people. The expense names a payer, a total and a split.",
+          "at": "expense",
+          "slot": "top",
+          "state": {
+            "expense": "active"
+          }
+        },
+        {
+          "caption": "`Equal` divides by three. The one leftover cent goes to the first person, so shares sum exactly.",
+          "at": "split",
+          "slot": "top",
+          "token": {
+            "label": "3334 / 3333 / 3333",
+            "tone": "req"
+          },
+          "state": {
+            "expense": "done",
+            "split": "active"
+          }
+        },
+        {
+          "caption": "The ledger adds 10000 to `ana` and subtracts each share. All balances still sum to zero.",
+          "at": "ledger",
+          "slot": "top",
+          "token": {
+            "label": "+6666 −3333 −3333",
+            "tone": "ok"
+          },
+          "state": {
+            "expense": "done",
+            "split": "done",
+            "ledger": "active"
+          }
+        },
+        {
+          "caption": "A different expense: an `Exact` split whose shares miss the total throws in the strategy. The ledger never changes.",
+          "at": "split",
+          "slot": "top",
+          "token": {
+            "label": "600 ≠ 1000",
+            "tone": "err"
+          },
+          "state": {
+            "expense": "done",
+            "split": "error",
+            "ledger": "blocked"
+          }
+        },
+        {
+          "caption": "To settle, the biggest debtor pays the biggest creditor as much as one side needs.",
+          "at": "settler",
+          "slot": "top",
+          "token": {
+            "label": "max debt → max credit",
+            "tone": "req"
+          },
+          "state": {
+            "expense": "done",
+            "split": "done",
+            "ledger": "done",
+            "settler": "active"
+          }
+        },
+        {
+          "caption": "Each pairing zeroes at least one person, so n people need at most n − 1 transfers.",
+          "at": "out",
+          "slot": "top",
+          "token": {
+            "label": "transfers",
+            "tone": "ok"
+          },
+          "state": {
+            "expense": "done",
+            "split": "done",
+            "ledger": "done",
+            "settler": "done",
+            "out": "active"
+          }
+        }
+      ]
+    }
   },
   "code": [
     {
-      "file": "splits.mjs",
-      "lang": "js",
-      "title": "Split strategies and ledger",
-      "run": "browser",
-      "caption": "Add a `PercentSplit` class with the same `shares` method. The `Ledger` needs no change.",
+      "file": "SplitDemo.java",
+      "lang": "java",
+      "title": "Split and record",
+      "run": "captured",
+      "caption": "Two good expenses and one bad one. Balances print in name order from a `TreeMap`.",
       "walk": [
-        { "lines": [2, 3, 4, 5, 6], "text": "Equal split hands leftover cents to the first users, so shares always sum to the total." },
-        { "lines": [9, 10, 11, 12, 13, 14], "text": "Exact split validates that the given amounts add up, or throws." },
-        { "lines": [19, 20], "text": "Shares are computed first, so a bad split leaves balances untouched." },
-        { "lines": [21, 22, 23, 24], "text": "Every share moves money from the sharer's balance to the payer's." },
-        { "lines": [32, 33, 34, 35, 36, 37, 38, 39], "text": "Two good expenses, one rejected, then the net balances." }
+        {
+          "lines": [
+            20,
+            22
+          ],
+          "text": "The strategy contract: given a total, say who owes how much."
+        },
+        {
+          "lines": [
+            24,
+            32
+          ],
+          "text": "`Equal` hands the leftover cents out one each, so nothing is lost."
+        },
+        {
+          "lines": [
+            34,
+            41
+          ],
+          "text": "`Exact` refuses shares that do not add up to the total."
+        },
+        {
+          "lines": [
+            45,
+            49
+          ],
+          "text": "Ask for shares first; only a valid split touches the balances."
+        },
+        {
+          "lines": [
+            44,
+            44
+          ],
+          "text": "Positive means the group owes you; negative means you owe the group."
+        },
+        {
+          "lines": [
+            8,
+            16
+          ],
+          "text": "The third expense is rejected and leaves every balance as it was."
+        }
       ]
     },
     {
-      "file": "settle.mjs",
-      "lang": "js",
-      "title": "Simplify the debts",
-      "run": "browser",
-      "caption": "Balances in, payments out. Change the numbers, keeping their sum at zero, and rerun.",
+      "file": "SettleDemo.java",
+      "lang": "java",
+      "title": "Settle up",
+      "run": "captured",
+      "caption": "Four net balances turned into transfers by greedy pairing.",
       "walk": [
-        { "lines": [3], "text": "Copy balances into objects we can update." },
-        { "lines": [6, 7, 8], "text": "Sort so the biggest debtor is first and the biggest creditor last; stop when either is even." },
-        { "lines": [9, 10, 11, 12], "text": "Pay the smaller of the two amounts, which zeroes at least one of them." }
+        {
+          "lines": [
+            15,
+            18
+          ],
+          "text": "A `Transfer` is a value: from, to and an amount in cents."
+        },
+        {
+          "lines": [
+            26,
+            27
+          ],
+          "text": "Find the biggest creditor and debtor; stop when either is missing."
+        },
+        {
+          "lines": [
+            28,
+            31
+          ],
+          "text": "Move the smaller of the two amounts, which zeroes at least one person."
+        },
+        {
+          "lines": [
+            36,
+            41
+          ],
+          "text": "`sign` lets one method find the largest credit or the largest debt."
+        },
+        {
+          "lines": [
+            9,
+            11
+          ],
+          "text": "`main` settles a set of balances that sum to zero."
+        }
       ]
     }
   ],
   "pitfalls": [
-    "Never store money as floating-point; use integer cents and assign leftovers explicitly.",
-    "Validate the split before updating any balance, or a failure leaves half-applied state.",
-    "Do not add a new `if` per split type; add a strategy class instead."
+    "Never store money as `double`; use `long` cents or `BigDecimal`.",
+    "Validate the split before touching balances, or a rejected expense leaves half an update.",
+    "Do not promise the fewest transfers: greedy pairing is simple, not always optimal."
   ],
   "quiz": {
-    "q": "What does this print?",
-    "code": "const total = 100, users = ['a', 'b', 'c'];\nconst base = Math.floor(total / users.length);\nconst extra = total - base * users.length;\nconsole.log(users.map((u, i) => base + (i < extra ? 1 : 0)).join(' '));",
-    "lang": "js",
-    "options": ["33 33 33", "33.33 33.33 33.33", "33 33 34", "34 33 33"],
-    "answer": 3,
-    "why": "`base` is 33 and one cent is left over. The index check gives it to the first user."
+    "q": "What does `SplitDemo` print last?",
+    "options": [
+      "{ana=4566, ben=-5333, cy=1167}",
+      "{ana=5167, ben=-6334, cy=1167}",
+      "{ana=5166, ben=-6333, cy=1167}",
+      "{ana=5166, ben=-5333, cy=1167}"
+    ],
+    "answer": 2,
+    "why": "The bad split throws before the ledger changes. `ana`'s 10000 splits 3334, 3333, 3333; then `cy`'s exact split charges 1500 and 3000.",
+    "code": "ledger.add(\"ana\", 10000, new Equal(List.of(\"ana\", \"ben\", \"cy\")));\nledger.add(\"cy\", 4500, new Exact(Map.of(\"ana\", 1500L, \"ben\", 3000L)));\n// throws: shares 600, total 1000\nledger.add(\"ben\", 1000, new Exact(Map.of(\"ana\", 600L)));",
+    "lang": "java"
   },
-  "takeaway": "Strategies compute shares, the ledger nets them, and settle pays them off.",
+  "takeaway": "Split with a strategy, keep net balances in cents, settle greedily.",
   "chat": {
     "starters": [
-      "How would I support groups and per-group balances?",
-      "Is the greedy settle always the minimum number of payments?",
-      "How would I add a percentage split without rounding errors?"
+      "How would I add a percentage split without touching `Ledger`?",
+      "How do groups fit in when one person is in several groups?",
+      "Why is finding the minimum number of transfers hard?"
     ]
   }
 }

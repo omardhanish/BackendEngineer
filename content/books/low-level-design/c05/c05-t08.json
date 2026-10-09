@@ -1,40 +1,55 @@
 {
-  "title": "Design review feedback loop",
-  "idea": "Peer review is asking another engineer to read your design and code, find weak spots, and then deciding which comments change the design.",
+  "title": "Design review feedback",
+  "idea": "A peer review is a second engineer reading your design against the requirements, and giving feedback you can turn into a specific change.",
   "points": [
-    "Share the class diagram, the requirements and your assumptions before the code.",
-    "Ask reviewers specific questions, such as \"is `ConflictPolicy` the right seam?\"",
-    "Sort each comment: fix now, discuss, or note as a known trade-off.",
-    "Reply to every comment, so reviewers see what changed and why."
+    "Share the requirements, the class diagram and the tests before the review.",
+    "Ask reviewers to trace one use case, such as booking a taken room.",
+    "Phrase comments as the chapter 3 review page shows: class, problem, fix.",
+    "Record each point as accept, discuss or decline, with a one-line reason."
   ],
   "hero": {
-    "type": "timeline",
-    "title": "One review round",
-    "items": [
-      { "label": "Self-review", "text": "Check names, one job per class and passing tests before anyone reads it." },
-      { "label": "Share", "text": "Send the diagram, use cases and two or three questions you want answered." },
-      { "label": "Review", "text": "A peer reads it, for example asking who should send the cancellation notice." },
-      { "label": "Triage", "text": "Mark each comment as fix now, discuss, or accepted trade-off." },
-      { "label": "Respond", "text": "Change the design, rerun the tests, and reply with what you did." }
-    ]
-  },
-  "quiz": {
-    "q": "A reviewer says `BookingService` should also send emails directly. What is the best response?",
-    "options": [
-      "Agree at once, since reviewers are usually right",
-      "Ignore it, because the design is already finished",
-      "Explain why `NotificationService` owns emails, then ask their concern",
-      "Delete `NotificationService` to keep the class count low"
+    "type": "table",
+    "title": "A decision log for review comments",
+    "head": [
+      "Comment",
+      "Decision",
+      "Reason"
     ],
-    "answer": 2,
-    "why": "Good review is a discussion. You defend the separation with a reason and look for the real concern behind the comment."
+    "rows": [
+      [
+        "Cancel by a stranger succeeds",
+        "accept",
+        "R3 says own booking"
+      ],
+      [
+        "BookingService also formats emails",
+        "accept",
+        "NotificationService owns messages"
+      ],
+      [
+        "No test for two rooms at one time",
+        "accept",
+        "a real gap in the tests"
+      ],
+      [
+        "Add buffer time between meetings",
+        "discuss",
+        "not in the requirements yet"
+      ],
+      [
+        "Use a Builder for Booking",
+        "decline",
+        "only five fields"
+      ]
+    ],
+    "caption": "Every comment gets a decision and a one-line reason, so the same point is not argued twice."
   },
-  "takeaway": "Ask focused questions, triage every comment, and show what changed.",
+  "takeaway": "Ask for feedback tied to a class and a scenario, then log decisions.",
   "chat": {
     "starters": [
-      "What should I ask a reviewer to look at in my booking design?",
-      "How do I handle a review comment I disagree with?",
-      "What makes a review comment useful rather than vague?"
+      "What should I ask a reviewer to focus on first?",
+      "How do I disagree with feedback without sounding defensive?",
+      "What does a reviewer look for in a booking system design?"
     ]
   }
 }

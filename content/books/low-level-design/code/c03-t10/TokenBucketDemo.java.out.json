@@ -1,0 +1,11 @@
+{
+  "stdout": "0:ok 0:ok 0:ok 0:no 500:no 1000:ok 2500:ok 2500:no 9000:ok 9000:ok 9000:ok 9000:no",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java TokenBucketDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "c2615f59e7d2bf82",
+  "at": "2026-10-09T08:19:42.764Z"
+}

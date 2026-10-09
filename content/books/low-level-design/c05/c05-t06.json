@@ -1,213 +1,159 @@
 {
   "title": "Patterns in the booking system",
-  "idea": "Incorporating design patterns means adding a pattern only where the booking system has a real change point, such as overlap rules or who hears about a booking.",
+  "idea": "Incorporating design patterns means placing a known shape, like Strategy or Observer, exactly where a requirement varies or fans out.",
   "points": [
-    "Start from a change you expect, then pick the pattern that isolates it.",
-    "Strategy pattern: `ConflictPolicy` lets `BookingService` swap overlap rules without edits.",
-    "Observer pattern: `NotificationService` and `AuditLogger` subscribe to new bookings.",
-    "Each pattern should remove an `if` chain or a hard-wired call, not add ceremony."
+    "Find the spots in the requirements that will change or grow.",
+    "Overlap rules differ per building, so `ConflictPolicy` becomes a Strategy.",
+    "Notify and audit react to a booking, so they become Observers.",
+    "`BookingService` depends only on the two interfaces, never on their implementations."
   ],
   "hero": {
-    "type": "table",
-    "title": "Where each pattern earns its place",
-    "head": [
-      "Change you expect",
-      "Pattern",
-      "Class in the system",
-      "What stays closed"
+    "type": "flow",
+    "title": "Two patterns around one service",
+    "nodes": [
+      {
+        "id": "call",
+        "label": "book() call",
+        "sub": "from an employee"
+      },
+      {
+        "id": "svc",
+        "label": "BookingService",
+        "sub": "fixed core"
+      },
+      {
+        "id": "policy",
+        "label": "ConflictPolicy",
+        "sub": "Strategy"
+      },
+      {
+        "id": "buffer",
+        "label": "BufferPolicy",
+        "sub": "one rule"
+      },
+      {
+        "id": "listen",
+        "label": "BookingListener",
+        "sub": "Observer"
+      },
+      {
+        "id": "notify",
+        "label": "NotificationService"
+      },
+      {
+        "id": "audit",
+        "label": "AuditLogger"
+      }
     ],
-    "rows": [
-      [
-        "New overlap rules, such as a cleaning gap",
-        "Strategy",
-        "ConflictPolicy",
-        "BookingService"
-      ],
-      [
-        "More reactions to a booking",
-        "Observer",
-        "NotificationService, AuditLogger",
-        "BookingService"
-      ],
-      [
-        "Swap memory storage for a database",
-        "Repository",
-        "RoomRepository, BookingRepository",
-        "BookingService"
-      ],
-      [
-        "Different room types to create",
-        "Factory",
-        "a RoomFactory, only if types appear",
-        "Building"
-      ]
-    ],
-    "highlight": {
-      "col": 1
-    },
-    "caption": "Read each row left to right: the expected change picks the pattern, and the last column is the code you no longer edit."
+    "edges": [
+      {
+        "from": "call",
+        "to": "svc",
+        "caption": "A request reaches the service. Its own steps never change."
+      },
+      {
+        "from": "svc",
+        "to": "policy",
+        "label": "asks",
+        "caption": "The service asks the `ConflictPolicy` interface whether the slot clashes."
+      },
+      {
+        "from": "policy",
+        "to": "buffer",
+        "label": "implemented by",
+        "dashed": true,
+        "caption": "Today the rule is `BufferPolicy`. Swap it in `main` without editing the service."
+      },
+      {
+        "from": "svc",
+        "to": "listen",
+        "label": "tells",
+        "caption": "After a save, the service tells every `BookingListener` it was given."
+      },
+      {
+        "from": "listen",
+        "to": "notify",
+        "dashed": true,
+        "caption": "`NotificationService` messages the employee."
+      },
+      {
+        "from": "listen",
+        "to": "audit",
+        "dashed": true,
+        "caption": "`AuditLogger` records the booking. A third listener needs no change to the service."
+      }
+    ]
   },
   "code": [
     {
-      "file": "policy.mjs",
-      "lang": "js",
-      "title": "Strategy: ConflictPolicy",
-      "run": "browser",
-      "caption": "Times are hours as numbers, so `0.25` is 15 minutes. Add a policy whose `conflicts` always returns `false` and run it again.",
+      "file": "PatternsDemo.java",
+      "lang": "java",
+      "title": "Strategy plus Observer",
+      "run": "captured",
+      "caption": "The building wants a 15-minute gap between meetings. Only the policy knows that. Trimmed: a clash prints instead of throwing `RoomTakenException`, so the output shows the pattern at work.",
       "walk": [
         {
           "lines": [
-            1,
-            2,
-            3
-          ],
-          "text": "`ConflictPolicy` is the interface: it takes a candidate slot and the room's existing bookings."
-        },
-        {
-          "lines": [
             4,
-            5,
-            6,
-            7,
-            8
+            5
           ],
-          "text": "`StrictOverlapPolicy` rejects only slots that truly overlap; back-to-back is fine."
+          "text": "`main` picks the rule and the listeners; the service receives them through its constructor."
         },
         {
           "lines": [
-            9,
-            10,
-            11,
-            12,
             13,
-            14,
-            15,
-            16
+            15
           ],
-          "text": "`BufferPolicy` also blocks slots that come within the gap of a booking, before or after it."
+          "text": "The Strategy interface: one question, answered by any rule."
         },
         {
           "lines": [
-            17,
-            18,
-            19,
-            20,
+            16,
             21
           ],
-          "text": "`BookingRepository` stores bookings, so the service holds no list of its own."
+          "text": "`BufferPolicy` treats meetings closer than `gap` hours as a clash."
         },
         {
           "lines": [
-            24,
-            25,
-            26
+            22,
+            28
           ],
-          "text": "The repository and policy are injected, so the service never names a concrete rule."
-        },
-        {
-          "lines": [
-            29
-          ],
-          "text": "The overlap decision is delegated to whichever policy was passed in."
+          "text": "The Observer interface and two listeners that react to a booking."
         },
         {
           "lines": [
             36,
-            37,
-            38,
-            39,
-            40,
-            41
+            44
           ],
-          "text": "One loop runs the identical bookings under both policies."
-        }
-      ]
-    },
-    {
-      "file": "observer.mjs",
-      "lang": "js",
-      "title": "Observer: booking listeners",
-      "run": "browser",
-      "caption": "The service tells every subscriber about a booking. It never imports the notifier or the logger.",
-      "walk": [
-        {
-          "lines": [
-            1,
-            2,
-            3,
-            4,
-            5
-          ],
-          "text": "`AuditLogger` is the c05-t05 class: `record(event, fields)` writes JSON to an injected sink."
-        },
-        {
-          "lines": [
-            6,
-            7,
-            8
-          ],
-          "text": "`NotificationService` is an observer with one `onBooked` method and one job."
-        },
-        {
-          "lines": [
-            10,
-            11
-          ],
-          "text": "The service keeps a private list and lets anyone subscribe."
-        },
-        {
-          "lines": [
-            12,
-            13,
-            14,
-            15,
-            16
-          ],
-          "text": "`book(employeeId, roomId, start, end)` keeps the c05-t01 contract, then tells every listener in order."
-        },
-        {
-          "lines": [
-            21,
-            22
-          ],
-          "text": "A small listener adapts `onBooked` to `audit.record`, so `AuditLogger` stays unchanged."
-        },
-        {
-          "lines": [
-            18,
-            19,
-            20,
-            23
-          ],
-          "text": "Wiring happens outside the service, so adding a listener needs no edit there."
+          "text": "The service passes only this room's bookings to the policy, then saves and tells each listener."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Do not add a pattern because it is famous; name the change it absorbs.",
-    "Keep observers free of booking rules, or the order they run starts to matter.",
-    "Avoid a Factory for one concrete class; a constructor call is clearer."
+    "Do not add a pattern without a requirement that varies; it only adds indirection.",
+    "Keep listener work out of the booking rules; a failing email must not refuse a booking.",
+    "Inject the policy and listeners; a `new BufferPolicy()` inside the service locks the rule in."
   ],
   "quiz": {
-    "q": "What does this print?",
-    "code": "const gap = new BufferPolicy(0.5);\nconst a = { start: 9, end: 10 };\nconsole.log(gap.conflicts({ start: 10.25, end: 11 }, [a]),\n  gap.conflicts({ start: 10.5, end: 11 }, [a]));",
-    "lang": "js",
+    "q": "What does the second `book` call print?",
+    "code": "var svc = new BookingService(new BufferPolicy(0.25),\n    List.of(new NotificationService(), new AuditLogger()));\nsvc.book(\"E7\", \"R-101\", 10, 11);\nsvc.book(\"E9\", \"R-101\", 11, 12);",
+    "lang": "java",
     "options": [
-      "false false",
-      "true false",
-      "true true",
-      "false true"
+      "audit BK2",
+      "refused 11.0-12.0",
+      "Nothing at all",
+      "refused 11-12"
     ],
     "answer": 1,
-    "why": "With a half-hour gap, `10.25 < 10.5` clashes. A start of `10.5` is not below `10.5`, so it is allowed."
+    "why": "With a 0.25-hour gap, 11.0 is earlier than 11.0 + 0.25, so the slots clash. Doubles print as 11.0."
   },
-  "takeaway": "Each pattern in your design should absorb one change you can name.",
+  "takeaway": "Put a pattern where the requirements vary, and nowhere else.",
   "chat": {
     "starters": [
-      "Should ConflictPolicy be a class or a plain function in JavaScript?",
-      "How do I explain in an interview why I chose the Observer pattern?",
-      "What if a slow observer delays every booking?"
+      "Would a Factory pattern help create the right ConflictPolicy per building?",
+      "Should listeners run synchronously or on a queue?",
+      "How do I explain these pattern choices in an interview?"
     ]
   }
 }

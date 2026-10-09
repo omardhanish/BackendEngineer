@@ -1,0 +1,11 @@
+{
+  "stdout": "16 of 16 cases unchanged\n1600",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java RefactorDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "fc7eabb2cb434284",
+  "at": "2026-10-09T08:26:30.553Z"
+}

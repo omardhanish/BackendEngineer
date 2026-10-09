@@ -1,0 +1,11 @@
+{
+  "stdout": "S-1 costs 27.5\nrejected: kg must be > 0\nparcels 2",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ShipmentDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "9d02d830a542c89e",
+  "at": "2026-10-09T08:24:07.738Z"
+}

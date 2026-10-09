@@ -1,112 +1,105 @@
 {
-  "title": "Error handling in class design",
-  "idea": "Error handling decides which class detects a failure, what error type it throws, and which single layer catches it and turns it into a response.",
+  "title": "Designing with exceptions",
+  "idea": "Good error handling makes every failure explicit: a method succeeds, or it signals a named failure the caller can see and act on.",
   "points": [
-    "Throw where you detect the problem; catch where you can act on it.",
-    "Custom error classes let callers branch with `instanceof`, not message text.",
-    "Wrap low-level errors with `{ cause }` so the original is kept.",
-    "Use `finally` for cleanup that must run on success or failure."
+    "Validate inputs first and throw before any state changes.",
+    "Throw unchecked exceptions for bugs and broken business rules.",
+    "Use checked exceptions only when the caller can really recover.",
+    "Translate low-level exceptions at a layer boundary, and keep the cause."
   ],
   "hero": {
     "type": "anim",
     "engine": "pipeline",
-    "title": "A missing user travels back up",
+    "title": "An exception climbs back up",
     "scenario": {
       "token": {
-        "label": "GET /users/7",
+        "label": "load(u-7)",
         "tone": "req"
       },
       "stages": [
         {
-          "id": "ctrl",
-          "label": "UserController",
-          "sub": "maps errors"
+          "id": "main",
+          "label": "main",
+          "sub": "caller"
         },
         {
-          "id": "svc",
-          "label": "UserService",
-          "sub": "business rules"
+          "id": "service",
+          "label": "ProfileService",
+          "sub": "domain layer"
         },
         {
-          "id": "repo",
-          "label": "UserRepository",
-          "sub": "data access"
-        },
-        {
-          "id": "db",
-          "label": "Database",
+          "id": "store",
+          "label": "FlakyStore",
+          "sub": "storage layer",
           "kind": "end"
         }
       ],
       "steps": [
         {
-          "caption": "The request enters the controller, which calls the service.",
-          "at": "ctrl",
+          "caption": "`main` asks `ProfileService` to load profile `u-7`.",
+          "at": "main",
           "slot": "top",
           "state": {
-            "ctrl": "active"
+            "main": "active"
           }
         },
         {
-          "caption": "The service asks the repository for user 7. It has no `try` block.",
-          "at": "svc",
+          "caption": "The service calls `store.read` inside a `try` block.",
+          "at": "service",
           "slot": "top",
           "state": {
-            "ctrl": "done",
-            "svc": "active"
+            "main": "done",
+            "service": "active"
           }
         },
         {
-          "caption": "The repository runs the query.",
-          "at": "repo",
+          "caption": "The disk fails. `read` throws a checked `IOException`, so its signature must declare it.",
+          "at": "store",
           "slot": "top",
-          "state": {
-            "svc": "done",
-            "repo": "active"
-          }
-        },
-        {
-          "caption": "The database answers with no row.",
-          "at": "db",
-          "state": {
-            "repo": "done",
-            "db": "done"
-          }
-        },
-        {
-          "caption": "The repository throws `NotFoundError`, a domain error, not a raw driver error.",
-          "at": "repo",
-          "slot": "bottom",
           "token": {
-            "label": "NotFoundError",
+            "label": "IOException",
             "tone": "err"
           },
           "state": {
-            "repo": "error"
+            "service": "done",
+            "store": "error"
           }
         },
         {
-          "caption": "The service cannot fix a missing user, so it lets the error pass up.",
-          "at": "svc",
+          "caption": "The service catches it and throws `ProfileUnavailableException`, passing the `IOException` as its cause.",
+          "at": "service",
           "slot": "bottom",
           "token": {
-            "label": "NotFoundError",
+            "label": "ProfileUnavailable",
             "tone": "err"
           },
           "state": {
-            "svc": "error"
+            "service": "active"
           }
         },
         {
-          "caption": "The controller catches it once, at the edge, and maps it to a `404` response.",
-          "at": "ctrl",
+          "caption": "`main` catches a domain exception. It never needs to know a disk was involved.",
+          "at": "main",
           "slot": "bottom",
           "token": {
-            "label": "404 Not Found",
-            "tone": "err"
+            "label": "handled",
+            "tone": "ok"
           },
           "state": {
-            "ctrl": "done"
+            "service": "done",
+            "main": "active"
+          }
+        },
+        {
+          "caption": "`getCause()` still holds the original error, so logs keep the full story.",
+          "at": "main",
+          "slot": "bottom",
+          "token": {
+            "label": "cause kept",
+            "tone": "ok"
+          },
+          "state": {
+            "main": "done"
           }
         }
       ]
@@ -114,85 +107,111 @@
   },
   "code": [
     {
-      "file": "errors.mjs",
-      "lang": "js",
-      "title": "An error hierarchy",
-      "run": "browser",
-      "caption": "Error types carry the meaning; one table maps them to status codes. Add a `ConflictError` mapped to `409`.",
+      "file": "WithdrawDemo.java",
+      "lang": "java",
+      "title": "Fail fast, name the failure",
+      "run": "captured",
+      "caption": "One method, three outcomes: success, a business refusal, and a caller bug.",
       "walk": [
         {
           "lines": [
-            1
+            19,
+            22
           ],
-          "text": "A base class sets `name` from the subclass, so logs show the real type."
+          "text": "A base domain exception, unchecked, with a stable `code()` callers can match on."
         },
         {
           "lines": [
-            2,
-            3
+            24,
+            29
           ],
-          "text": "Each failure kind is its own empty subclass; `AppError` already sets its `name`."
+          "text": "Each subclass names one failure and builds a useful message."
         },
         {
           "lines": [
-            4,
-            5,
-            6,
-            7
+            36,
+            39
           ],
-          "text": "The finder throws at the point it detects the problem."
+          "text": "A bad argument is a caller bug: throw `IllegalArgumentException` at once."
         },
         {
           "lines": [
-            8
+            40,
+            43
           ],
-          "text": "One place maps error types to HTTP status codes."
+          "text": "Check the business rule next. The balance changes only after every check passes."
         },
         {
           "lines": [
-            9,
             10,
-            11,
-            12,
-            13,
             14
           ],
-          "text": "The edge matches with `instanceof`, so subclasses inherit a status; surprises fall back to `500`."
+          "text": "Catch the most specific types you can act on, in separate blocks."
         }
       ]
     },
     {
-      "file": "cause.mjs",
-      "lang": "js",
-      "title": "Wrap with a cause",
-      "run": "browser",
-      "caption": "The low-level `SyntaxError` is wrapped in a domain error. `cause` keeps the original for logs and debugging."
+      "file": "TranslateDemo.java",
+      "lang": "java",
+      "title": "Translate at the boundary",
+      "run": "captured",
+      "caption": "A storage failure becomes a domain exception, and the original error rides along as its cause.",
+      "walk": [
+        {
+          "lines": [
+            21,
+            24
+          ],
+          "text": "`throws IOException` forces every caller to catch it or declare it."
+        },
+        {
+          "lines": [
+            32,
+            37
+          ],
+          "text": "The service catches it and rethrows a domain exception with the cause."
+        },
+        {
+          "lines": [
+            15,
+            19
+          ],
+          "text": "Pass `cause` to the `RuntimeException` constructor; `getCause()` returns it later."
+        },
+        {
+          "lines": [
+            8,
+            10
+          ],
+          "text": "The caller handles one domain type and can still read the root cause."
+        }
+      ]
     }
   ],
   "pitfalls": [
-    "Never leave a `catch` empty; it hides the failure and the bug.",
-    "Branch on error class or code, not on `e.message` text that may change.",
-    "Do not catch in every layer; catch only where you can recover or respond."
+    "Never catch an exception and do nothing; log it, rethrow it or handle it.",
+    "Do not return `null` or `-1` for failure; throw or return `Optional`.",
+    "When you wrap an exception, pass the original as the cause."
   ],
   "quiz": {
-    "q": "What does this print?",
-    "code": "function run() {\n  try { throw new Error('boom'); }\n  catch (e) { return 'caught'; }\n  finally { console.log('cleanup'); }\n}\nconsole.log(run());",
-    "lang": "js",
+    "q": "Using the classes above, what does this print?",
+    "code": "Account account = new Account(\"A-1\", 100);\ntry {\n    account.withdraw(0);\n} catch (AccountException e) {\n    System.out.println(e.code());\n} catch (IllegalArgumentException e) {\n    System.out.println(\"caller bug\");\n}",
+    "lang": "java",
     "options": [
-      "caught",
-      "caught, then cleanup",
-      "cleanup, then caught",
-      "boom"
+      "INSUFFICIENT_FUNDS",
+      "Nothing; the balance stays 100",
+      "caller bug",
+      "A stack trace from an uncaught exception"
     ],
     "answer": 2,
-    "why": "`finally` runs before `run` actually returns, so `cleanup` prints first. The caller then logs the returned `caught`."
+    "why": "The guard `amount <= 0` runs first and throws `IllegalArgumentException`. It is not an `AccountException`, so the second `catch` block handles it."
   },
-  "takeaway": "Throw typed errors where you detect them; catch once where you respond.",
+  "takeaway": "Fail fast, throw named exceptions, and keep the cause when translating.",
   "chat": {
     "starters": [
-      "Should a service return null or throw when something is missing?",
-      "How do I handle errors from async functions in a class?",
-      "How should I design an error hierarchy in an LLD interview?"
+      "When should I choose a checked exception over an unchecked one?",
+      "Should I return Optional or throw when a lookup finds nothing?",
+      "How does try-with-resources help with error handling?"
     ]
   }
 }

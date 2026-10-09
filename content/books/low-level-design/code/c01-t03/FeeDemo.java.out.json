@@ -1,0 +1,11 @@
+{
+  "stdout": "FlatFee on 2000 = 50\nPercentFee on 2000 = 40\nCappedFee on 2000 = 30",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java FeeDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "cfbff60628799d6b",
+  "at": "2026-10-09T08:07:07.841Z"
+}

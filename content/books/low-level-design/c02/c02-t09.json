@@ -1,162 +1,210 @@
 {
   "title": "Observer and Strategy",
-  "idea": "Observer lets one object announce events to any number of subscribers; Strategy lets an object swap the algorithm behind one method at runtime.",
+  "idea": "Observer lets one object announce an event to any number of listeners it never names. Strategy lets an object delegate one decision to a swappable algorithm object.",
   "analogy": {
-    "text": "A newsletter: readers sign up, and every issue reaches them all (Observer). The editor picks a printer, local or online, without rewriting the issue (Strategy).",
-    "breaks": "Code observers run one by one, inside the publisher's call."
+    "text": "A newsletter goes to every subscriber on the list; the writer never knows who they are. A sat-nav picks fastest or cheapest route by a setting you change.",
+    "breaks": "Real subscribers read later; Java listeners run right away, in order."
   },
   "points": [
-    "The subject is the object observers subscribe to; it calls each on publish.",
-    "Subscribing returns an unsubscribe handle, so an observer can leave cleanly.",
-    "A strategy is an object with one agreed method, such as `cost(parcel)`.",
-    "The context is the object holding a strategy; swapping it changes behaviour, not code."
+    "The subject (the event source) keeps listeners in a `List` typed by one interface.",
+    "Firing an event loops over that list and calls each listener in turn.",
+    "The context (the strategy's user) holds the strategy in a `private final` field.",
+    "Strategy replaces a `switch`, Observer replaces hard-coded calls: each new behaviour is a class."
   ],
   "hero": {
     "type": "anim",
     "engine": "topology",
-    "title": "One event, many observers",
+    "title": "One event out, one rule swapped",
     "scenario": {
       "tiers": [
         [
-          "checkout"
+          "caller"
         ],
         [
-          "events"
+          "checkout",
+          "cart"
         ],
         [
           "email",
           "stock",
+          "audit",
           "ship"
         ]
       ],
       "nodes": {
+        "caller": {
+          "label": "main",
+          "kind": "client"
+        },
         "checkout": {
           "label": "Checkout",
-          "sub": "publisher",
+          "sub": "subject",
           "kind": "service"
         },
-        "events": {
-          "label": "OrderEvents",
-          "sub": "the subject",
-          "kind": "topic"
+        "cart": {
+          "label": "Cart",
+          "sub": "context",
+          "kind": "service"
         },
         "email": {
-          "label": "Email",
-          "sub": "observer",
-          "kind": "service"
+          "label": "EmailSender",
+          "sub": "listener",
+          "kind": "box"
         },
         "stock": {
-          "label": "Stock",
-          "sub": "observer",
-          "kind": "service"
+          "label": "StockKeeper",
+          "sub": "listener",
+          "kind": "box"
+        },
+        "audit": {
+          "label": "audit lambda",
+          "sub": "listener",
+          "kind": "box"
         },
         "ship": {
-          "label": "Shipping",
-          "sub": "observer + strategy",
-          "kind": "service"
+          "label": "Standard",
+          "sub": "ShippingCost",
+          "kind": "box"
         }
       },
       "links": [
         [
-          "checkout",
-          "events"
+          "caller",
+          "checkout"
         ],
         [
-          "events",
+          "checkout",
           "email"
         ],
         [
-          "events",
+          "checkout",
           "stock"
         ],
         [
-          "events",
-          "ship"
+          "checkout",
+          "audit"
+        ],
+        [
+          "caller",
+          "cart"
+        ],
+        [
+          "cart",
+          "ship",
+          {
+            "label": "holds",
+            "dashed": true
+          }
         ]
       ],
       "steps": [
         {
-          "caption": "Three observers call `subscribe` on `OrderEvents`. The subject stores them and knows nothing else about them.",
+          "caption": "`main` passed three listeners to `subscribe`. `Checkout` keeps them in a list typed `OrderListener`.",
+          "items": {
+            "checkout": [
+              "email",
+              "stock",
+              "audit"
+            ]
+          },
           "focus": [
-            "events",
-            "email",
-            "stock",
-            "ship"
+            "checkout"
           ]
         },
         {
-          "caption": "Checkout publishes one order. It talks only to the subject, never to the observers.",
+          "caption": "`main` calls `placeOrder`. `Checkout` saves the order first.",
+          "send": [
+            {
+              "from": "caller",
+              "to": "checkout",
+              "label": "placeOrder",
+              "tone": "req"
+            }
+          ],
+          "state": {
+            "checkout": "busy"
+          }
+        },
+        {
+          "caption": "It loops over the list and calls `onOrderPlaced` on each listener, in subscribe order.",
           "send": [
             {
               "from": "checkout",
-              "to": "events",
-              "label": "order 7",
-              "tone": "req"
+              "to": "email",
+              "label": "A-17",
+              "tone": "info"
+            },
+            {
+              "from": "checkout",
+              "to": "stock",
+              "label": "A-17",
+              "tone": "info"
+            },
+            {
+              "from": "checkout",
+              "to": "audit",
+              "label": "A-17",
+              "tone": "info"
             }
+          ],
+          "state": {
+            "checkout": "ok",
+            "email": "ok",
+            "stock": "ok",
+            "audit": "ok"
+          }
+        },
+        {
+          "caption": "`Checkout` never names a concrete listener. Adding SMS means one new class, no edit here.",
+          "focus": [
+            "email",
+            "stock",
+            "audit"
           ]
         },
         {
-          "caption": "The subject calls every observer in turn, each with the same order.",
+          "caption": "Strategy: `Cart` was built with a `ShippingCost`. It asks that object for the cost.",
           "send": [
             {
-              "from": "events",
-              "to": "email",
-              "label": "order 7",
-              "tone": "info"
+              "from": "caller",
+              "to": "cart",
+              "label": "total(40)",
+              "tone": "req"
             },
             {
-              "from": "events",
-              "to": "stock",
-              "label": "order 7",
-              "tone": "info"
-            },
-            {
-              "from": "events",
+              "from": "cart",
               "to": "ship",
-              "label": "order 7",
+              "label": "cost",
               "tone": "info"
             }
-          ]
-        },
-        {
-          "caption": "Shipping prices the order by delegating to its current strategy, `FlatRate`.",
-          "badge": {
-            "ship": "FlatRate"
-          },
+          ],
           "focus": [
+            "cart",
             "ship"
           ]
         },
         {
-          "caption": "Swap the strategy to `ByWeight`. Neither the subject nor the observer code changes.",
-          "badge": {
-            "ship": "ByWeight"
+          "caption": "Pass a different strategy and the rule changes. `Cart` code stays the same.",
+          "label": {
+            "ship": "Express"
           },
           "state": {
             "ship": "new"
           },
-          "focus": [
-            "ship"
+          "send": [
+            {
+              "from": "cart",
+              "to": "ship",
+              "label": "cost",
+              "tone": "ok"
+            }
           ]
         },
         {
-          "caption": "Stock calls its unsubscribe handle. The next order reaches only the observers that remain.",
-          "state": {
-            "stock": "down"
-          },
-          "send": [
-            {
-              "from": "events",
-              "to": "email",
-              "label": "order 8",
-              "tone": "info"
-            },
-            {
-              "from": "events",
-              "to": "ship",
-              "label": "order 8",
-              "tone": "info"
-            }
+          "caption": "Observer fans one event out to many. Strategy plugs one rule into one slot.",
+          "focus": [
+            "checkout",
+            "cart"
           ]
         }
       ]
@@ -164,122 +212,111 @@
   },
   "code": [
     {
-      "file": "observer.mjs",
-      "lang": "js",
+      "file": "ObserverDemo.java",
+      "lang": "java",
       "title": "Observer",
-      "run": "browser",
-      "caption": "Add a third subscriber that logs the order id, then run it again.",
+      "run": "captured",
+      "caption": "One event, three listeners. A lambda works because the listener interface has one method.",
       "walk": [
         {
           "lines": [
-            2
-          ],
-          "text": "A private `Set` holds the listeners. The same function added twice is stored once."
-        },
-        {
-          "lines": [
-            3,
-            4,
-            5,
-            6
-          ],
-          "text": "`subscribe` stores the function and returns another function that removes it."
-        },
-        {
-          "lines": [
-            7,
-            8,
-            9
-          ],
-          "text": "`publish` calls every listener with the same data, in subscription order."
-        },
-        {
-          "lines": [
-            12,
-            13,
-            14
-          ],
-          "text": "Two observers react to one event. Neither knows the other exists."
-        },
-        {
-          "lines": [
-            15,
+            14,
             16
           ],
-          "text": "After `stop()`, only the email listener runs for order 8."
+          "text": "The listener contract: one method, so a lambda can implement it."
+        },
+        {
+          "lines": [
+            19,
+            19
+          ],
+          "text": "The subject holds listeners by interface, never by concrete class."
+        },
+        {
+          "lines": [
+            21,
+            23
+          ],
+          "text": "`subscribe` adds a listener at run time."
+        },
+        {
+          "lines": [
+            25,
+            30
+          ],
+          "text": "`placeOrder` does its own job, then notifies every listener in order."
+        },
+        {
+          "lines": [
+            6,
+            10
+          ],
+          "text": "`main` wires listeners in, including an inline lambda for auditing."
         }
       ]
     },
     {
-      "file": "strategy.mjs",
-      "lang": "js",
+      "file": "StrategyDemo.java",
+      "lang": "java",
       "title": "Strategy",
-      "run": "browser",
-      "caption": "Write an `Express` strategy that doubles the flat rate, and pass it to `setStrategy`.",
+      "run": "captured",
+      "caption": "Same `Cart`, three shipping rules. The rule is chosen by what you pass in.",
       "walk": [
         {
           "lines": [
-            1,
-            2,
-            3,
-            4,
-            5,
-            6
+            14,
+            17
           ],
-          "text": "Three strategies share one method, `cost(parcel)`. That shared shape is the interface."
+          "text": "The strategy interface: one decision, `cost`, plus a name for printing."
         },
         {
           "lines": [
-            8,
-            9,
+            19,
+            34
+          ],
+          "text": "Each rule is its own small `record`. `FreeOver` carries its limit as data."
+        },
+        {
+          "lines": [
+            36,
+            44
+          ],
+          "text": "`Cart` gets its strategy through the constructor and never checks which one."
+        },
+        {
+          "lines": [
+            5,
             10
           ],
-          "text": "`Shipping` holds one strategy, set in the constructor and replaceable later."
-        },
-        {
-          "lines": [
-            11
-          ],
-          "text": "`quote` delegates. No `if` on the strategy type appears anywhere."
-        },
-        {
-          "lines": [
-            14,
-            15,
-            16,
-            17,
-            18,
-            19
-          ],
-          "text": "One context, three behaviours, chosen while the program runs."
+          "text": "`main` builds a cart per rule and prints each total."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Unsubscribe observers you no longer need, or they keep firing and leak memory.",
-    "A throwing observer stops later ones in a synchronous loop; catch errors inside each.",
-    "Skip Strategy when two fixed branches will never grow; a plain `if` reads better."
+    "Catch exceptions per listener: one that throws skips every listener after it.",
+    "Unsubscribe short-lived listeners, or the subject keeps them in memory as long as it lives.",
+    "Skip Strategy when there is one rule and no sign of a second."
   ],
   "quiz": {
-    "q": "What does this print?",
-    "code": "const subs = [];\nconst on = (fn) => {\n  subs.push(fn);\n  return () => subs.splice(subs.indexOf(fn), 1);\n};\nconst emit = (x) => subs.forEach((fn) => fn(x));\non((x) => console.log('A', x));\nconst off = on((x) => console.log('B', x));\nemit(1); off(); emit(2);",
-    "lang": "js",
+    "q": "What is the third line `StrategyDemo` prints?",
     "options": [
-      "A 1, B 1, A 2, B 2",
-      "A 1, A 2",
-      "A 1, B 1, A 2",
-      "B 1, A 2"
+      "free over 50.0 -> 40.0",
+      "free over 50.0 -> 44.0",
+      "free over 50.0 -> 49.5",
+      "free over 50 -> 44.0"
     ],
-    "answer": 2,
-    "why": "Both listeners run for `emit(1)`. Calling `off()` removes B from the list, so `emit(2)` reaches only A."
+    "answer": 1,
+    "why": "The subtotal 40.0 is below the 50.0 limit, so `FreeOver` charges 4.0. A `double` prints with `.0`.",
+    "code": "new FreeOver(50.0)  // cost: subtotal >= limit ? 0.0 : 4.0\ncart.total(40.0)    // subtotal + shipping.cost(subtotal)",
+    "lang": "java"
   },
-  "takeaway": "Observer decouples who reacts; Strategy decouples how the work gets done.",
+  "takeaway": "Observer broadcasts an event; Strategy swaps a rule. Both replace edits with classes.",
   "chat": {
     "starters": [
-      "How is Observer different from Node's EventEmitter?",
-      "When is Strategy better than passing a plain function?",
-      "Should observers run synchronously or asynchronously?"
+      "How do I stop one failing listener from breaking the others?",
+      "Is a Java lambda enough for Strategy, or do I need classes?",
+      "How is Observer different from a message queue?"
     ]
   }
 }

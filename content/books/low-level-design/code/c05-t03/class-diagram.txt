@@ -1,0 +1,22 @@
+classDiagram
+  class BookingService {
+    +searchFree(capacity, start, end) List~String~
+    +book(employeeId, roomId, start, end) Booking
+    +cancel(bookingId, employeeId)
+  }
+  class ConflictPolicy {
+    <<interface>>
+    +conflicts(candidate, existing) boolean
+  }
+  class BookingListener {
+    <<interface>>
+    +onBooked(booking)
+  }
+  BookingService --> RoomRepository
+  BookingService --> BookingRepository
+  BookingService --> ConflictPolicy
+  BookingService --> "0..*" BookingListener
+  ConflictPolicy <|.. OverlapPolicy
+  BookingListener <|.. NotificationService
+  BookingListener <|.. AuditLogger
+  Room "1" --> "0..*" Booking

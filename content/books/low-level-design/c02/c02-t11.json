@@ -1,172 +1,190 @@
 {
   "title": "Visitor, Iterator and Memento",
-  "idea": "Visitor adds operations to a class family without editing it; Iterator walks a collection without exposing its shape; Memento saves an object's state for restoring later.",
+  "idea": "Visitor adds operations to a fixed set of classes without editing them. Iterator walks a collection without exposing its structure. Memento saves an object's state for undo.",
   "points": [
-    "A visitor has one method per node class; each node calls it from `accept`.",
-    "In JavaScript, `*[Symbol.iterator]` makes an object work with `for...of` and spread.",
-    "A memento is a snapshot that, by agreement, only its creator reads.",
-    "A caretaker stores mementos for undo but never looks inside them."
+    "Visitor: each element's `accept` calls the visitor method for its own type.",
+    "A new operation is a new visitor; a new element type edits every visitor.",
+    "Iterator: implement `Iterable` so callers use for-each and never see your storage.",
+    "Memento: the object exports a snapshot; by convention, the caretaker never reads it."
   ],
   "hero": {
     "type": "table",
     "title": "Three behavioural patterns side by side",
     "head": [
       "Pattern",
-      "Use it when",
-      "JavaScript shape",
-      "Cost"
+      "Problem it solves",
+      "Java tools",
+      "Overkill when"
     ],
     "rows": [
       [
         "Visitor",
-        "Many operations over stable node classes",
-        "accept(v) calls v.visitFile(this)",
-        "A new node class edits every visitor"
+        "Many operations over a stable set of types",
+        "visitor interface, accept method",
+        "Types change more often than operations"
       ],
       [
         "Iterator",
-        "Callers need the items, not the structure",
-        "A *[Symbol.iterator]() generator",
-        "Changing the collection mid-walk is unsafe"
+        "Walk a collection without exposing its insides",
+        "Iterable, Iterator, for-each",
+        "A plain List already fits; return it read-only"
       ],
       [
         "Memento",
-        "Undo or rollback for one object",
-        "save() returns a frozen snapshot",
-        "Memory grows with every snapshot kept"
+        "Undo or roll back to an earlier state",
+        "immutable record, Deque as history",
+        "State is tiny or a command can reverse itself"
       ]
     ],
-    "caption": "Read each row as a trade: what the pattern buys, and what it costs."
+    "highlight": {
+      "col": 3
+    },
+    "caption": "Each pattern answers one question. The last column tells you when to leave it out."
   },
   "code": [
     {
-      "file": "files.mjs",
-      "lang": "js",
-      "title": "Iterator and Visitor",
-      "run": "browser",
-      "caption": "Write a `CountVisitor` that returns 1 for files and 0 for folders, then sum it.",
+      "file": "VisitorDemo.java",
+      "lang": "java",
+      "title": "Visitor",
+      "run": "captured",
+      "caption": "Two operations, tax and label, over two item types. The items never change.",
       "walk": [
         {
           "lines": [
-            3,
-            7
+            14,
+            18
           ],
-          "text": "Each node class has `accept`, which calls the visitor method for its own type."
-        },
-        {
-          "lines": [
-            8,
-            9,
-            10,
-            11,
-            12,
-            13,
-            14
-          ],
-          "text": "The generator yields the folder, then every child; `yield*` descends into subfolders."
-        },
-        {
-          "lines": [
-            16,
-            17,
-            18,
-            19
-          ],
-          "text": "`ListVisitor` formats each node. It is one operation, kept in one class."
+          "text": "The visitor has one method per element type and a generic result `R`."
         },
         {
           "lines": [
             20,
-            21,
-            22,
-            23
-          ],
-          "text": "`SizeVisitor` adds a second operation without editing `File` or `Folder`."
-        },
-        {
-          "lines": [
-            27
-          ],
-          "text": "`for...of` uses the iterator; the caller never needs to touch `items`."
-        },
-        {
-          "lines": [
-            28,
-            29,
             30
           ],
-          "text": "A fresh loop over the same root starts a new walk from the top."
+          "text": "Each `accept` calls its own type's method. The choice depends on visitor and element: double dispatch."
+        },
+        {
+          "lines": [
+            32,
+            40
+          ],
+          "text": "Each operation lives in one class, with one case per item type."
+        },
+        {
+          "lines": [
+            6,
+            10
+          ],
+          "text": "`main` runs both visitors over every item in the cart."
         }
       ]
     },
     {
-      "file": "undo.mjs",
-      "lang": "js",
-      "title": "Memento",
-      "run": "browser",
-      "caption": "Save a second memento after typing ', world', type more, then restore twice.",
+      "file": "IteratorDemo.java",
+      "lang": "java",
+      "title": "Iterator",
+      "run": "captured",
+      "caption": "Mail is stored in pages. The for-each loop sees one flat list and skips the empty page.",
       "walk": [
         {
           "lines": [
-            2
-          ],
-          "text": "The editor's text is private. Nothing outside can set it directly."
-        },
-        {
-          "lines": [
-            5,
-            6
-          ],
-          "text": "`save` returns a frozen snapshot; `restore` is the only way back in."
-        },
-        {
-          "lines": [
-            8,
-            9,
-            10,
-            11,
-            12
-          ],
-          "text": "`History` stacks mementos for undo and never reads their contents."
-        },
-        {
-          "lines": [
-            14,
-            15,
             16,
-            17,
-            18,
             19
           ],
-          "text": "Save, keep typing, then restore the saved text."
+          "text": "`Inbox` keeps its pages `private`; it implements `Iterable<String>`."
+        },
+        {
+          "lines": [
+            21,
+            24
+          ],
+          "text": "`iterator()` returns a fresh cursor, so two loops never share a position."
+        },
+        {
+          "lines": [
+            26,
+            32
+          ],
+          "text": "`hasNext` skips finished and empty pages before it answers."
+        },
+        {
+          "lines": [
+            34,
+            37
+          ],
+          "text": "`next` throws `NoSuchElementException` past the end, as the contract requires."
+        },
+        {
+          "lines": [
+            9,
+            11
+          ],
+          "text": "For-each works because `Inbox` is `Iterable`."
+        }
+      ]
+    },
+    {
+      "file": "MementoDemo.java",
+      "lang": "java",
+      "title": "Memento",
+      "run": "captured",
+      "caption": "Save before each edit, restore to undo. The caretaker is a plain `Deque`.",
+      "walk": [
+        {
+          "lines": [
+            22,
+            23
+          ],
+          "text": "The memento is an immutable `record` copy of the private fields."
+        },
+        {
+          "lines": [
+            33,
+            38
+          ],
+          "text": "By convention only `Editor` creates and reads snapshots. To enforce it, return an empty `Memento` interface."
+        },
+        {
+          "lines": [
+            7,
+            11
+          ],
+          "text": "The caretaker pushes a snapshot before each change it may want to undo."
+        },
+        {
+          "lines": [
+            13,
+            17
+          ],
+          "text": "Each `pop` restores the most recent snapshot: last saved, first undone."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Avoid Visitor when node classes change often; each new class edits every visitor.",
-    "Never add or remove items while iterating; collect the changes, then apply them.",
-    "Snapshot copies, not references; a memento holding a shared array changes later."
+    "Avoid Visitor when new element types arrive often: each one edits every visitor.",
+    "Do not change a collection inside its own for-each; `java.util` iterators usually throw `ConcurrentModificationException`.",
+    "Copy mutable fields into a memento; sharing a live `List` breaks every undo."
   ],
   "quiz": {
-    "q": "What does this print?",
-    "code": "class Range {\n  constructor(a, b) { this.a = a; this.b = b; }\n  *[Symbol.iterator]() {\n    for (let i = this.a; i < this.b; i++) yield i;\n  }\n}\nconst r = new Range(2, 5);\nconsole.log([...r].join(','), [...r].length);",
-    "lang": "js",
+    "q": "What is the last line `MementoDemo` prints?",
     "options": [
-      "2,3,4,5 4",
-      "2,3,4 0",
-      "TypeError: r is not iterable",
-      "2,3,4 3"
+      "Dear Bob, thanks",
+      "Dear Bob",
+      "Dear Bob, thanks a lot",
+      "(an empty line)"
     ],
-    "answer": 3,
-    "why": "Each spread calls `[Symbol.iterator]` again and gets a fresh generator, so the second spread is not exhausted. The loop stops before `b`."
+    "answer": 1,
+    "why": "Two snapshots were pushed. The second `pop` returns the first snapshot, saved right after typing \"Dear Bob\".",
+    "code": "editor.type(\"Dear Bob\");     undo.push(editor.save());\neditor.type(\", thanks\");     undo.push(editor.save());\neditor.type(\" a lot\");\neditor.restore(undo.pop());\neditor.restore(undo.pop());\nSystem.out.println(editor.text());",
+    "lang": "java"
   },
-  "takeaway": "Visitor adds operations, Iterator hides structure, Memento keeps undo points.",
+  "takeaway": "Visitor adds operations, Iterator hides storage, Memento saves state for undo.",
   "chat": {
     "starters": [
-      "Why does Visitor need double dispatch?",
-      "When should I write a generator instead of returning an array?",
-      "How do I keep memento memory under control for long undo histories?"
+      "Why does Visitor need double dispatch in Java?",
+      "When should I write my own Iterator instead of returning a List?",
+      "How is Memento different from the Command pattern for undo?"
     ]
   }
 }

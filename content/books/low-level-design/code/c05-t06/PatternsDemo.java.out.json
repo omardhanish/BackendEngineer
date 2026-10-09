@@ -1,0 +1,11 @@
+{
+  "stdout": "notify Booking[id=BK1, roomId=R-101, employeeId=E7, start=10.0, end=11.0]\naudit BK1\nrefused 11.0-12.0\nnotify Booking[id=BK2, roomId=R-101, employeeId=E9, start=11.5, end=12.5]\naudit BK2",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java PatternsDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "54529cf294d2240b",
+  "at": "2026-10-09T08:27:20.639Z"
+}

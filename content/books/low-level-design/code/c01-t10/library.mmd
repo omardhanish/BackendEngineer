@@ -1,0 +1,22 @@
+classDiagram
+    class FinePolicy {
+        <<interface>>
+        +fineFor(int daysLate) long
+    }
+    Book : +String isbn
+    Book : +String title
+    BookCopy : +String id
+    Member : +String id
+    Member : +int maxLoans
+    Loan : +int dueDay
+    PerDayFine : +long perDay
+    Library : +addCopy(BookCopy)
+    Library : +lend(Member, String, int) Loan
+    Library : +giveBack(Loan, int) long
+    BookCopy --> "1" Book : copy of
+    Loan --> "1" BookCopy
+    Loan --> "1" Member
+    Library o-- "*" BookCopy : owns
+    Library o-- "*" Loan : open loans
+    Library --> FinePolicy : injected
+    PerDayFine ..|> FinePolicy

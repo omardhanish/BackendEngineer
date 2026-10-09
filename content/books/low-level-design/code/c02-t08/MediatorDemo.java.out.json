@@ -1,0 +1,11 @@
+{
+  "stdout": "email changed\n  submit disabled\nterms changed\n  submit enabled\nemail changed\n  submit disabled",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java MediatorDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "69a00c823eb4ce24",
+  "at": "2026-10-09T08:13:03.503Z"
+}

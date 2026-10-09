@@ -1,196 +1,250 @@
 {
   "title": "Template Method and State",
-  "idea": "Template Method fixes the order of an algorithm's steps in a base class and lets subclasses fill them in; State gives each mode its own object.",
+  "idea": "Template Method fixes an algorithm's step order in a base class while subclasses fill the varying steps. State gives each status its own class that handles actions.",
   "analogy": {
-    "text": "A coffee machine. Every drink runs grind, brew, pour; only the brew step differs per drink. The start button's effect depends on mode: idle, brewing, or empty.",
-    "breaks": "A real machine is one box; code gives each state its own class."
+    "text": "A chain of bakeries follows one fixed recipe order, but each branch picks its own filling. A ticket gate's button opens it only after you pay.",
+    "breaks": "Branches may reorder steps; `final` forbids that. Gates are wired; Java states are swapped."
   },
   "points": [
-    "A template method calls step methods in a fixed order; subclasses override steps.",
-    "A hook is a step with a default body that subclasses may override.",
-    "In State, the context forwards every call to its current state object.",
-    "Each state decides which state comes next, so no central `switch` exists."
+    "Template Method: a `final` base method calls abstract steps in a fixed order.",
+    "Subclasses fill abstract steps and may override hooks, methods with a default body.",
+    "State: the context holds a current state object and forwards every action to it.",
+    "Each state class answers the actions it allows and returns the next state."
   ],
   "hero": {
     "type": "flow",
-    "title": "A document's life as states",
+    "title": "An order's life as state objects",
     "nodes": [
       {
-        "id": "draft",
-        "label": "Draft",
-        "sub": "approve is refused"
+        "id": "created",
+        "label": "Created",
+        "sub": "pay, cancel"
       },
       {
-        "id": "review",
-        "label": "InReview",
-        "sub": "submit is refused"
+        "id": "paid",
+        "label": "Paid",
+        "sub": "ship, cancel"
       },
       {
-        "id": "published",
-        "label": "Published",
-        "sub": "every action refused"
+        "id": "shipped",
+        "label": "Shipped",
+        "sub": "end state"
+      },
+      {
+        "id": "cancelled",
+        "label": "Cancelled",
+        "sub": "end state"
       }
     ],
     "edges": [
       {
-        "from": "draft",
-        "to": "review",
-        "label": "submit",
-        "caption": "`Draft.submit` swaps the document's state object for an `InReview`. The document class itself has no branch."
+        "from": "created",
+        "to": "paid",
+        "label": "pay"
       },
       {
-        "from": "review",
-        "to": "draft",
-        "label": "reject",
-        "back": true,
-        "caption": "`InReview.reject` sends it back. Each state knows only its own legal moves."
+        "from": "paid",
+        "to": "shipped",
+        "label": "ship"
       },
       {
-        "from": "review",
-        "to": "published",
-        "label": "approve",
-        "caption": "`InReview.approve` moves to `Published`, which refuses every later action."
+        "from": "created",
+        "to": "cancelled",
+        "label": "cancel"
+      },
+      {
+        "from": "paid",
+        "to": "cancelled",
+        "label": "cancel"
+      }
+    ],
+    "steps": [
+      {
+        "caption": "A new `Order` holds a `Created` object in its `state` field.",
+        "active": [
+          "created"
+        ],
+        "edges": []
+      },
+      {
+        "caption": "`ship()` is forwarded to `Created`. It has no `ship` override, so the default returns itself: refused.",
+        "active": [
+          "created"
+        ],
+        "edges": []
+      },
+      {
+        "caption": "`pay()` is forwarded to `Created`, which returns a new `Paid`. The order swaps its state.",
+        "active": [
+          "created",
+          "paid"
+        ],
+        "edges": [
+          0
+        ]
+      },
+      {
+        "caption": "`cancel()` now reaches `Paid`, whose override returns `Cancelled`.",
+        "active": [
+          "paid",
+          "cancelled"
+        ],
+        "edges": [
+          3
+        ]
+      },
+      {
+        "caption": "`Cancelled` overrides nothing, so every later action is refused. No `if` checks a status.",
+        "active": [
+          "cancelled"
+        ],
+        "edges": []
+      },
+      {
+        "caption": "A new status reached by existing actions is one new class plus the overrides that lead to it. `Order` keeps no status `if`.",
+        "active": [
+          "created",
+          "paid",
+          "shipped",
+          "cancelled"
+        ],
+        "edges": [
+          0,
+          1,
+          2,
+          3
+        ]
       }
     ]
   },
   "code": [
     {
-      "file": "template.mjs",
-      "lang": "js",
+      "file": "TemplateDemo.java",
+      "lang": "java",
       "title": "Template Method",
-      "run": "browser",
-      "caption": "Add a `MarkdownReport` that overrides only `header` and `row`, and render the same rows.",
+      "run": "captured",
+      "caption": "One fixed export routine, two formats. Subclasses fill the steps, never the order.",
       "walk": [
         {
           "lines": [
-            2,
-            3,
+            13,
+            21
+          ],
+          "text": "`export` is the template method. `final` stops subclasses from reordering its steps."
+        },
+        {
+          "lines": [
+            23,
+            24
+          ],
+          "text": "Abstract steps: every subclass must supply a header and a row format."
+        },
+        {
+          "lines": [
+            25,
+            25
+          ],
+          "text": "A hook: an empty default that subclasses may override if they need it."
+        },
+        {
+          "lines": [
+            28,
+            31
+          ],
+          "text": "`CsvExport` fills the two required steps and skips the hook."
+        },
+        {
+          "lines": [
+            33,
+            40
+          ],
+          "text": "`JsonExport` also overrides the hook to close the array."
+        },
+        {
+          "lines": [
             4,
-            5
-          ],
-          "text": "`render` is the template method: header, rows, footer, always in this order."
-        },
-        {
-          "lines": [
-            6,
-            7
-          ],
-          "text": "Required steps throw in the base class, so a missing override fails loudly."
-        },
-        {
-          "lines": [
             8
           ],
-          "text": "`footer` is a hook: it has a default, and overriding it is optional."
-        },
-        {
-          "lines": [
-            10,
-            11,
-            12,
-            13
-          ],
-          "text": "`CsvReport` fills the two required steps and keeps the default footer."
-        },
-        {
-          "lines": [
-            14,
-            15,
-            16,
-            17,
-            18
-          ],
-          "text": "`TextReport` also overrides the hook. Neither subclass touches `render`."
+          "text": "`main` calls the same `export` on both; the base class drives the flow."
         }
       ]
     },
     {
-      "file": "state.mjs",
-      "lang": "js",
+      "file": "StateDemo.java",
+      "lang": "java",
       "title": "State",
-      "run": "browser",
-      "caption": "Add an `archive` action that only `Published` accepts. Notice which classes you must edit.",
+      "run": "captured",
+      "caption": "Each status is a class. `Order` forwards actions and swaps to whatever state comes back.",
       "walk": [
         {
           "lines": [
-            1,
-            2,
-            3,
-            4,
-            5
-          ],
-          "text": "`Draft` accepts `submit` and moves the document on. Other actions are refused."
-        },
-        {
-          "lines": [
-            6,
-            7,
-            8,
-            9,
-            10
-          ],
-          "text": "`InReview` can approve or send the document back to `Draft`."
-        },
-        {
-          "lines": [
-            11,
             12,
-            13,
-            14,
-            15
-          ],
-          "text": "`Published` is final: every action is refused."
-        },
-        {
-          "lines": [
-            17,
             18
           ],
-          "text": "The context holds one state object; `moveTo` replaces it."
+          "text": "The state contract. Defaults return `this`, so a disallowed action is a no-op."
         },
         {
           "lines": [
             20,
-            21,
-            22
+            27
           ],
-          "text": "Each action forwards to the current state, then reports the new status."
+          "text": "Each state overrides only the actions it allows and returns the next state."
         },
         {
           "lines": [
-            24,
-            25,
-            26
+            28,
+            29
           ],
-          "text": "One document receives six actions; the output shows each refusal and move."
+          "text": "Final states override nothing: every action is refused."
+        },
+        {
+          "lines": [
+            31,
+            36
+          ],
+          "text": "`Order` is the context. It has no status `switch`; it delegates."
+        },
+        {
+          "lines": [
+            38,
+            42
+          ],
+          "text": "`move` reports the transition and stores the next state."
+        },
+        {
+          "lines": [
+            3,
+            8
+          ],
+          "text": "`main` tries a mix of allowed and refused actions."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Never let subclasses override the template method itself; that breaks the fixed order.",
-    "Deep Template Method trees turn rigid; pass steps in as objects when variations multiply.",
-    "Use State only when behaviour truly differs per mode; a status field may suffice."
+    "Do not use Template Method when steps vary independently; pass Strategy objects instead.",
+    "Mark the template method `final`, or a subclass can override it and skip steps.",
+    "Skip State for two statuses and one rule; an `enum` and a `switch` read better."
   ],
   "quiz": {
-    "q": "What does this print?",
-    "code": "class Brew {\n  make() { return [this.boil(), this.add(), this.pour()].join(' > '); }\n  boil() { return 'boil'; }\n  pour() { return 'pour'; }\n}\nclass Tea extends Brew { add() { return 'steep'; } }\nclass Iced extends Tea { pour() { return 'ice'; } }\nconsole.log(new Iced().make());",
-    "lang": "js",
+    "q": "What is the fourth line `StateDemo` prints?",
     "options": [
-      "boil > steep > pour",
-      "boil > undefined > ice",
-      "TypeError: this.add is not a function",
-      "boil > steep > ice"
+      "pay in Cancelled: -> Paid",
+      "pay in Paid: refused",
+      "pay in Cancelled: refused",
+      "cancel in Paid: -> Cancelled"
     ],
-    "answer": 3,
-    "why": "`make` is the template. `add` comes from `Tea` and `pour` from `Iced`; each step resolves on the instance's prototype chain."
+    "answer": 2,
+    "why": "The third call moved the order to `Cancelled`. It overrides no action, so `pay` falls to the default, which returns the same state.",
+    "code": "order.ship();\norder.pay();\norder.cancel();\norder.pay();",
+    "lang": "java"
   },
-  "takeaway": "Template Method varies steps by subclass; State varies behaviour as modes change.",
+  "takeaway": "Template Method fixes the steps; State swaps the object that answers actions.",
   "chat": {
     "starters": [
-      "How is State different from Strategy if both swap objects?",
-      "Can I do Template Method without inheritance in JavaScript?",
-      "Who should create the next state object in the State pattern?"
+      "How is Template Method different from Strategy?",
+      "Should each state be a singleton or a new object?",
+      "How would I add a Refunded state to this order?"
     ]
   }
 }

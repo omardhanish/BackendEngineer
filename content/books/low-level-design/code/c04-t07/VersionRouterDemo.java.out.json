@@ -1,0 +1,11 @@
+{
+  "stdout": "v1 {id=R1, capacity=8}\nv2 {id=R1, name=Orion, seats=8, hasScreen=true}\nv9 {error=UNSUPPORTED_VERSION}",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java VersionRouterDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "8d3bd617281e10ba",
+  "at": "2026-10-09T08:18:05.979Z"
+}

@@ -1,117 +1,139 @@
 {
-  "title": "Readable, clean code",
-  "idea": "Clean code is code a teammate can read once and change safely: honest names, small functions, flat control flow, and no hidden magic values.",
+  "title": "Readable, clean Java code",
+  "idea": "Clean code is code a teammate can read once and change safely: names say intent, methods do one thing, and rules live in one obvious place.",
   "points": [
-    "A name should say what a value holds or what a function returns.",
-    "Each function does one thing at one level of detail.",
-    "Guard clauses return early, so the main path stays unindented.",
-    "Named constants replace magic numbers, so a rule changes in one place."
+    "Name variables and methods for what they mean, not their type.",
+    "Replace magic numbers and strings with named constants or an `enum`.",
+    "Use guard clauses to exit early instead of nesting `if` blocks.",
+    "Extract a condition into a small method whose name explains it."
   ],
   "hero": {
     "type": "compare",
-    "title": "Same result, different cost to change",
+    "title": "Same rule, two ways to write it",
     "left": {
       "title": "Hard to read",
       "tone": "bad",
       "items": [
-        "Names like `o`, `t`, `r` hide intent",
-        "Flag `t == 1` secretly means 'is a member'",
-        "Nested `if` inside a loop inside a function",
-        "Multiplier `0.9` typed inline, maybe in many places"
+        "Names like `calc`, `n`, `t`, `c` hide meaning",
+        "Bare numbers `1000`, `250`, `40` with no reason",
+        "Strings `\"P\"` and `\"S\"` allow typos",
+        "Three levels of nested `if` and `else`",
+        "Returns `-1` to signal an error"
       ]
     },
     "right": {
-      "title": "Clean",
+      "title": "Easy to read",
       "tone": "good",
       "items": [
-        "`orderTotal(items, { isMember })` reads like the requirement",
-        "Named option replaces the mystery flag",
-        "`filter` then `reduce`: one step per line",
-        "`MEMBER_DISCOUNT` defined once, at the top"
+        "`costInPence(items, orderTotalPence, tier)` reads like a sentence",
+        "Constants such as `FREE_FROM_PENCE` name each number",
+        "`enum Tier` lets the compiler reject bad values",
+        "A guard clause, then one flat decision",
+        "Throws `IllegalArgumentException` for an empty order"
       ]
     },
-    "verdict": "Both print the same numbers. Only one survives the next requirement change."
+    "verdict": "Both price valid orders the same; only one can be changed without fear."
   },
   "code": [
     {
-      "file": "before.mjs",
-      "lang": "js",
+      "file": "MessyDemo.java",
+      "lang": "java",
       "title": "Before",
-      "run": "browser",
-      "caption": "It works, yet each reader must decode `o`, `t`, `q` and `0.9` before changing anything."
-    },
-    {
-      "file": "after.mjs",
-      "lang": "js",
-      "title": "After",
-      "run": "browser",
-      "caption": "Same output. Add an `isStaff` option with its own discount and notice how little you touch.",
+      "run": "captured",
+      "caption": "It works, but every reader must decode the letters and numbers first.",
       "walk": [
         {
           "lines": [
-            1
-          ],
-          "text": "A named constant: the business rule lives in one place."
-        },
-        {
-          "lines": [
-            3
-          ],
-          "text": "A tiny helper names one idea: the cost of a line."
-        },
-        {
-          "lines": [
-            5
-          ],
-          "text": "An options object makes call sites self-describing instead of `calc(items, 1)`."
-        },
-        {
-          "lines": [
-            6
-          ],
-          "text": "Guard clause: reject bad input first, with a clear error type."
-        },
-        {
-          "lines": [
-            7,
             8,
-            9
+            8
           ],
-          "text": "Each step reads as a sentence: keep lines with a positive quantity, then add their totals."
+          "text": "The signature tells you nothing: what are `n`, `t` and `c`?"
         },
         {
           "lines": [
-            18
+            10,
+            16
           ],
-          "text": "The call site now explains itself without a comment."
+          "text": "Nesting hides the real rule: premium or big orders ship free."
+        },
+        {
+          "lines": [
+            17,
+            19
+          ],
+          "text": "A `-1` sentinel looks like a price; callers can add it by mistake."
+        }
+      ]
+    },
+    {
+      "file": "CleanDemo.java",
+      "lang": "java",
+      "title": "After",
+      "run": "captured",
+      "caption": "Same prices for valid orders; the empty order now fails loudly instead of returning a fake price.",
+      "walk": [
+        {
+          "lines": [
+            14,
+            14
+          ],
+          "text": "An `enum` replaces the strings, so a typo no longer compiles."
+        },
+        {
+          "lines": [
+            17,
+            19
+          ],
+          "text": "Each number gets a name and a unit, in one place."
+        },
+        {
+          "lines": [
+            22,
+            24
+          ],
+          "text": "A guard clause rejects bad input first and keeps the rest flat."
+        },
+        {
+          "lines": [
+            25,
+            28
+          ],
+          "text": "The whole rule now reads as one sentence."
+        },
+        {
+          "lines": [
+            31,
+            33
+          ],
+          "text": "A tiny private method names the free-shipping condition."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Do not add comments that repeat the code; rename until the comment is redundant.",
-    "Avoid boolean flag parameters; pass a named option or split the function.",
-    "Do not shrink code into clever one-liners; optimise for the next reader."
+    "Do not abbreviate names to save typing; you read code far more than you write it.",
+    "Avoid comments that repeat the code; rename or extract a method instead.",
+    "Refactor in small steps and rerun the same inputs after each one."
   ],
   "quiz": {
-    "q": "What does this print?",
-    "code": "function label(n) {\n  if (n < 0) return 'invalid';\n  if (n === 0) return 'empty';\n  return n > 9 ? 'many' : 'few';\n}\nconsole.log(label(0), label(12));",
-    "lang": "js",
+    "q": "Using `ShippingQuote` above, what does this print?",
+    "code": "ShippingQuote quote = new ShippingQuote();\nSystem.out.println(quote.costInPence(3, 1000, Tier.STANDARD));",
+    "lang": "java",
     "options": [
-      "invalid many",
-      "few many",
-      "empty many",
-      "empty few"
+      "370",
+      "250",
+      "120",
+      "0"
     ],
-    "answer": 2,
-    "why": "Guard clauses run top to bottom. `0` stops at the second check; `12` passes both guards and is above 9."
+    "answer": 3,
+    "why": "`qualifiesForFreeShipping` uses `>=`, and 1000 equals `FREE_FROM_PENCE`, so the method returns 0 before computing a price."
   },
-  "takeaway": "Write for the next reader: clear names, small functions, early returns.",
+  "takeaway": "Write code that explains itself: clear names, flat flow, small methods.",
   "chat": {
     "starters": [
-      "How long should a function be before I split it?",
-      "When is a comment actually worth writing?",
-      "How do interviewers judge code readability in an LLD round?"
+      "How long should a method be before I split it?",
+      "When is a comment better than a clearer name?",
+      "How do I refactor messy code without breaking it?"
     ]
   }
 }

@@ -1,0 +1,11 @@
+{
+  "stdout": "UK  net 100.0 + VAT 20.0\nIN  net 100.0 + GST 18.0",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java RegionKitDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "3e79d661c29ef5be",
+  "at": "2026-10-09T08:10:12.490Z"
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "copy:     Monthly plan [Hosting, Support, Extra storage]\ntemplate: Monthly plan [Hosting, Support]\ntemplate: Monthly plan [Hosting, Support, Oops]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java PrototypeDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "55bbbb72a5b00219",
+  "at": "2026-10-09T08:12:06.231Z"
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "ok, balance 70\nINSUFFICIENT_FUNDS: A-1 wanted 500, holds 70\ncaller bug: amount must be > 0: -5",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java WithdrawDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "8fa6064848f9df75",
+  "at": "2026-10-09T08:24:16.840Z"
+}

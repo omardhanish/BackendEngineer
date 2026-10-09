@@ -1,0 +1,11 @@
+{
+  "stdout": "call at 5 -> car B\ncall at 1 -> car B\ncall at 8 -> car C",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java DispatchDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "7b4605224c57b527",
+  "at": "2026-10-09T08:15:37.424Z"
+}

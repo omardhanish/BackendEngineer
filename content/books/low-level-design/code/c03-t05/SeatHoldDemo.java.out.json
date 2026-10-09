@@ -1,0 +1,11 @@
+{
+  "stdout": "ana holds A1: true\nben holds A1: false\nben holds A1: true\nana confirms: false\nben confirms: true\nA1 is BOOKED",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java SeatHoldDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "88bc9acbabee6229",
+  "at": "2026-10-09T08:16:39.802Z"
+}

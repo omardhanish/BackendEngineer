@@ -1,0 +1,11 @@
+{
+  "stdout": "book 20.0 tax 0.0\nfood 10.0 tax 0.5",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java VisitorDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "62c589899d3061cb",
+  "at": "2026-10-09T08:11:11.184Z"
+}

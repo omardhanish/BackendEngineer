@@ -1,0 +1,11 @@
+{
+  "stdout": "stock: lamp reserved\npayments: charged 25.0\ncourier: pickup for lamp\nplaced: PAY-1 TRK-9\nstock: sofa none\nfailed: out of stock",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java FacadeDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "86e5a8e9385d62ad",
+  "at": "2026-10-09T08:11:04.039Z"
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "[standard=550, express=900, locker=250]\n[standard=1000]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ShippingDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "294f76bb84b87ad3",
+  "at": "2026-10-09T08:18:36.443Z"
+}

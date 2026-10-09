@@ -1,0 +1,11 @@
+{
+  "stdout": "hamper 9.5\n  cheese 6.0\n  snack pack 3.5\n    crisps 1.5\n    juice 2.0",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java CompositeDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "d2498e322465a727",
+  "at": "2026-10-09T08:24:57.821Z"
+}

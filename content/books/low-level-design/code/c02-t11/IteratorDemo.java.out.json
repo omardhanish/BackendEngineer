@@ -1,0 +1,11 @@
+{
+  "stdout": "hi\ninvoice\nreminder",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java IteratorDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "e8a072d0e3e39125",
+  "at": "2026-10-09T08:11:14.661Z"
+}

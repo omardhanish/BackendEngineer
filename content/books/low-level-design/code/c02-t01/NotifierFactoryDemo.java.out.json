@@ -1,0 +1,11 @@
+{
+  "stdout": "EMAIL to inbox: Order A-17 shipped\nSMS (160 max): Order A-17 shipped\nPUSH to app: Order A-17 shipped\nrejected: fax",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java NotifierFactoryDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "ea392bc023f2f5f1",
+  "at": "2026-10-09T08:32:29.035Z"
+}

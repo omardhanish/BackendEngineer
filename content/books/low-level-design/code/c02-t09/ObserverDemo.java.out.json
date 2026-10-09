@@ -1,0 +1,11 @@
+{
+  "stdout": "saved order A-17\nemail: receipt for A-17\nstock: reserve items of A-17\naudit: A-17",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ObserverDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "0e753657537238ee",
+  "at": "2026-10-09T08:06:05.285Z"
+}

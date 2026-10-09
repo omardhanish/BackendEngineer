@@ -1,222 +1,205 @@
 {
-  "title": "Designing a notification system",
-  "idea": "A notification system turns domain events into messages over channels, combining Observer, Factory, Strategy and Decorator so new channels plug in without edits.",
+  "title": "Notification system with patterns",
+  "idea": "A notification system is a good test of pattern judgement: Observer hears events, Strategy delivers per channel, Factory builds channels, and Decorator adds retries.",
   "points": [
-    "Observer: business code emits `order.shipped` and never calls a channel directly.",
-    "Strategy: every channel shares one method, `send(user, text)`.",
-    "Factory: one table maps a channel name to the object that serves it.",
-    "Decorator: `WithRetry` wraps any channel and adds retries without changing it."
+    "Observer decouples order code from notifications: it publishes events, nothing more.",
+    "Each delivery channel is a Strategy behind one `Channel` interface.",
+    "A Factory turns a stored preference, such as `SMS`, into a channel object.",
+    "A Decorator wraps any channel to add retries without editing the channel."
   ],
   "hero": {
     "type": "seq",
-    "title": "One event through four patterns",
+    "title": "One shipped order, one SMS",
     "actors": [
       {
-        "id": "order",
-        "label": "Order code"
+        "id": "orders",
+        "label": "OrderService"
       },
       {
-        "id": "bus",
-        "label": "EventEmitter"
-      },
-      {
-        "id": "svc",
+        "id": "notify",
         "label": "NotificationService"
       },
       {
-        "id": "fac",
-        "label": "makeChannel"
+        "id": "factory",
+        "label": "ChannelType"
       },
       {
-        "id": "ch",
-        "label": "WithRetry(Push)"
+        "id": "retry",
+        "label": "Retrying"
+      },
+      {
+        "id": "sms",
+        "label": "SMS channel"
       }
     ],
     "messages": [
       {
-        "from": "order",
-        "to": "bus",
-        "label": "emit('order.shipped')",
-        "note": "The order code announces what happened. It imports nothing about notifications."
+        "from": "orders",
+        "to": "notify",
+        "label": "on(SHIPPED, ada)",
+        "note": "Observer: `OrderService` calls every `OrderListener` and knows none of them by name."
       },
       {
-        "from": "bus",
-        "to": "svc",
-        "label": "notify(type, event)",
-        "note": "The subscribed listener hands the event to the service, which builds the text from a template."
+        "from": "notify",
+        "to": "factory",
+        "label": "create()",
+        "note": "Factory: Ada's stored preference `SMS` becomes a channel object."
       },
       {
-        "from": "svc",
-        "to": "fac",
-        "label": "push()",
-        "note": "First use of push: the factory builds a `PushChannel` wrapped in `WithRetry`."
-      },
-      {
-        "from": "fac",
-        "to": "svc",
-        "label": "channel",
+        "from": "factory",
+        "to": "notify",
+        "label": "sms channel",
         "dashed": true,
-        "note": "The service caches the channel and knows only its `send` method."
+        "note": "Factory returns the plain SMS strategy. The service wraps it in `Retrying`, still typed `Channel`."
       },
       {
-        "from": "svc",
-        "to": "ch",
-        "label": "send(user, text)",
-        "note": "Email has already gone out. The service now calls `send` on the push channel."
+        "from": "notify",
+        "to": "retry",
+        "label": "send(ada, text)",
+        "note": "Strategy: the service calls `send` on the interface and never checks the type."
       },
       {
-        "from": "ch",
-        "to": "svc",
-        "label": "delivered after retry",
+        "from": "retry",
+        "to": "sms",
+        "label": "send, try 1",
+        "note": "The decorator passes the call to the real channel."
+      },
+      {
+        "from": "sms",
+        "to": "retry",
+        "label": "gateway busy",
         "dashed": true,
-        "note": "The inner channel fails once; the decorator retries and returns the delivered line."
+        "note": "The channel throws. The decorator catches it instead of the service."
+      },
+      {
+        "from": "retry",
+        "to": "sms",
+        "label": "send, try 2",
+        "note": "The decorator tries again, up to its limit."
+      },
+      {
+        "from": "sms",
+        "to": "retry",
+        "label": "sent",
+        "dashed": true,
+        "note": "Delivered. Each concern lived in its own small class."
       }
     ]
   },
   "code": [
     {
-      "file": "channels.mjs",
-      "lang": "js",
-      "title": "Channels, retry, factory",
+      "file": "ChannelDemo.java",
+      "lang": "java",
+      "title": "Strategy, Factory, Decorator",
       "run": "captured",
-      "caption": "A module of building blocks. `notify.mjs` imports it, so running it alone prints nothing.",
+      "caption": "The enum builds each channel; the decorator retries the flaky one.",
       "walk": [
         {
           "lines": [
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            7
-          ],
-          "text": "Strategy: each channel is a class with the same `send(user, text)` method."
-        },
-        {
-          "lines": [
-            8,
-            9,
-            10,
-            11,
             12,
-            13,
-            14
+            13
           ],
-          "text": "`PushChannel` fails on its first call, so the retry has something to do."
+          "text": "Strategy: every channel has the same one-method contract."
         },
         {
           "lines": [
             16,
-            17,
-            18
-          ],
-          "text": "Decorator: `WithRetry` has the same `send` and holds the channel it wraps."
-        },
-        {
-          "lines": [
-            19,
-            20,
-            21,
-            22,
-            23,
             24
           ],
-          "text": "It retries until a call succeeds or the tries run out, then rethrows."
+          "text": "Factory: an `enum` method maps a type to a channel with a `switch` expression."
         },
         {
           "lines": [
-            28,
-            29,
-            30,
-            31,
+            26,
             32
           ],
-          "text": "Factory: one table names every channel. A new channel adds one line here."
+          "text": "A fake SMS channel that fails its first call, so retries show."
+        },
+        {
+          "lines": [
+            35,
+            45
+          ],
+          "text": "Decorator: a `Channel` that holds another `Channel` and retries it."
+        },
+        {
+          "lines": [
+            5,
+            8
+          ],
+          "text": "`main` builds, wraps and uses each channel through the interface only."
         }
       ]
     },
     {
-      "file": "notify.mjs",
-      "lang": "js",
-      "title": "Wiring it together",
+      "file": "NotifyDemo.java",
+      "lang": "java",
+      "title": "Observer and preferences",
       "run": "captured",
-      "caption": "Three shipped orders for two users. Watch where the retry happens, and where it does not.",
+      "caption": "Shipping fires one event; listeners react. Here channels are lambdas; in the full design each list holds `new Retrying(type.create(), 3)` built from a stored `ChannelType`.",
       "walk": [
         {
           "lines": [
-            4,
-            5,
-            6
+            7,
+            10
           ],
-          "text": "Each event type has one text builder, kept apart from delivery."
+          "text": "Channels as lambdas, and each user's preferred channels."
         },
         {
           "lines": [
-            8,
-            9,
-            10,
-            11,
-            12,
-            13,
-            14
-          ],
-          "text": "Channels come from the factory on first use and are reused afterwards."
-        },
-        {
-          "lines": [
-            15,
-            16,
-            17,
-            18,
-            19,
-            20
-          ],
-          "text": "The service loops over the user's preferred channels and calls `send` on each."
-        },
-        {
-          "lines": [
-            22,
             23,
-            24
+            32
           ],
-          "text": "Observer: the service subscribes once; the order code only emits."
+          "text": "The subject: it fires `SHIPPED` and knows only `OrderListener`."
         },
         {
           "lines": [
-            28,
-            29,
-            30
+            35,
+            38
           ],
-          "text": "Order 41 triggers the retry. Order 42 reuses the same push channel."
+          "text": "`NotificationService` is one listener; its preferences arrive by constructor."
+        },
+        {
+          "lines": [
+            40,
+            43
+          ],
+          "text": "It builds the text once and sends it on each preferred channel."
+        },
+        {
+          "lines": [
+            13,
+            13
+          ],
+          "text": "An audit lambda is a second listener; the order code is unchanged."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Keep channel names out of business code; emit events and let preferences decide.",
-    "Retry only failures that may pass later; a bad address never succeeds.",
-    "`emit` runs listeners synchronously; a channel's thrown error escapes `emit`, so catch inside the listener."
+    "Do not put channel choice inside `OrderService`; it should only publish events.",
+    "Retry only errors that may pass, like a busy gateway; never a bad phone number.",
+    "Add a pattern only for a change you expect; four patterns for one channel is overkill."
   ],
   "quiz": {
-    "q": "What does this print?",
-    "code": "class Flaky {\n  n = 0;\n  send() { if (++this.n < 3) throw new Error('busy'); return 'sent'; }\n}\nfunction retry(ch, tries) {\n  for (let i = 0; i < tries; i++) try { return ch.send(); } catch {}\n  return 'gave up';\n}\nconsole.log(retry(new Flaky(), 2), retry(new Flaky(), 3));",
-    "lang": "js",
+    "q": "What is the third line `NotifyDemo` prints?",
     "options": [
-      "sent sent",
-      "gave up sent",
-      "gave up gave up",
-      "Error: busy"
+      "email linus: order shipped",
+      "sms ada: order shipped",
+      "audit shipped",
+      "audit SHIPPED"
     ],
-    "answer": 1,
-    "why": "Each `Flaky` succeeds only on its third call. Two tries are not enough, so the first call gives up; three tries reach success."
+    "answer": 3,
+    "why": "Listeners run in subscribe order. For Ada, `NotificationService` prints two lines, then the audit lambda prints the raw event name.",
+    "code": "// prefs: ada -> [email, sms], linus -> [email]\norders.subscribe(new NotificationService(prefs));\norders.subscribe((event, user) -> System.out.println(\"audit \" + event));\norders.ship(\"ada\");\norders.ship(\"linus\");",
+    "lang": "java"
   },
-  "takeaway": "Events in, channels out: each pattern owns one axis of change.",
+  "takeaway": "One pattern per concern: hear events, deliver per channel, build channels, add retries.",
   "chat": {
     "starters": [
-      "How would I add user quiet hours to this design?",
-      "Where would a message queue fit in this notification system?",
-      "Which patterns should I name first in an LLD interview for this?"
+      "How would I add a WhatsApp channel to this design?",
+      "Where should rate limiting and quiet hours go?",
+      "How would this change if sending were asynchronous with a queue?"
     ]
   }
 }

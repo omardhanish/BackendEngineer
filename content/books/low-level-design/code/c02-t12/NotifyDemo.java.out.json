@@ -1,0 +1,11 @@
+{
+  "stdout": "email ada: order shipped\nsms ada: order shipped\naudit SHIPPED\nemail linus: order shipped\naudit SHIPPED",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java NotifyDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "ac1efa18e12727a5",
+  "at": "2026-10-09T08:12:37.976Z"
+}

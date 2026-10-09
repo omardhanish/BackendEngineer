@@ -1,0 +1,11 @@
+{
+  "stdout": "ask tea\n  catalog reads tea\ngot tea = 3.75\nask tea\ngot tea = 3.75",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java DecoratorDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "df669c5c1fac34cd",
+  "at": "2026-10-09T08:25:00.852Z"
+}

@@ -1,117 +1,177 @@
 {
   "title": "UML class diagrams",
-  "idea": "A UML class diagram shows a system's classes, their fields and methods, and how the classes relate, before you write the code.",
+  "idea": "A UML class diagram draws each class as a box of fields and methods, and each relationship as a line whose style names the link.",
   "points": [
-    "A class box has three parts: name, fields, then methods.",
-    "`+` marks public, `-` private and `#` protected members.",
-    "Line style, arrowhead and diamond tell you the kind of relationship.",
-    "Numbers like `1` or `0..*` at line ends give the multiplicity."
+    "A box has three parts: name, fields, then methods; `-` is private, `+` public.",
+    "A hollow triangle means is-a: `extends`, or a dashed line for `implements`.",
+    "A filled diamond is composition: parts live and die with their whole.",
+    "A plain arrow is association; a dashed arrow is a dependency, like a parameter."
   ],
   "hero": {
     "type": "flow",
-    "title": "A small shop as a class diagram",
+    "title": "The order model (symbols in Mermaid tab)",
     "nodes": [
-      {
-        "id": "customer",
-        "label": "Customer"
-      },
       {
         "id": "order",
         "label": "Order",
-        "sub": "+add(product, qty)"
+        "sub": "lines, customer"
       },
       {
-        "id": "item",
-        "label": "LineItem"
+        "id": "line",
+        "label": "OrderLine",
+        "sub": "item, qty, price"
       },
       {
-        "id": "product",
-        "label": "Product"
+        "id": "customer",
+        "label": "Customer",
+        "sub": "name"
       },
       {
-        "id": "pay",
-        "label": "PaymentMethod",
-        "sub": "«interface»"
+        "id": "payment",
+        "label": "Payment",
+        "sub": "interface"
       },
       {
         "id": "card",
-        "label": "CardPayment"
+        "label": "CardPayment",
+        "sub": "class"
       }
     ],
     "edges": [
       {
-        "from": "customer",
-        "to": "order",
-        "label": "places 0..*",
-        "caption": "Association, a plain arrow: a `Customer` knows its orders. `0..*` means zero or more."
+        "from": "order",
+        "to": "line",
+        "label": "owns 0..*",
+        "caption": "Composition: real UML puts a filled diamond at the `Order` end. Its lines live and die with it."
       },
       {
         "from": "order",
-        "to": "item",
-        "label": "◆ owns 1..*",
-        "caption": "Composition: real UML puts a filled diamond on the `Order` end. The order creates its line items; they die with it."
-      },
-      {
-        "from": "item",
-        "to": "product",
-        "label": "refers to",
-        "caption": "Association: many line items point at one `Product`, which lives on its own."
+        "to": "customer",
+        "label": "placed by",
+        "caption": "Association, plain arrow: `Order` keeps a field that points to a `Customer` that lives on its own."
       },
       {
         "from": "order",
-        "to": "pay",
+        "to": "payment",
         "label": "uses",
         "dashed": true,
-        "caption": "Dependency, a dashed arrow: `Order` only uses a `PaymentMethod` it is given to pay."
+        "caption": "Dependency, dashed arrow: `Payment` is only a parameter of `pay`, never stored."
       },
       {
         "from": "card",
-        "to": "pay",
+        "to": "payment",
         "label": "implements",
         "dashed": true,
-        "caption": "Realisation: `CardPayment` implements the interface. Real UML ends this dashed line in a hollow triangle, not an arrow."
+        "caption": "Realization, dashed line with hollow triangle: `CardPayment` implements the `Payment` interface."
       }
     ]
   },
   "code": [
     {
-      "file": "diagram.mmd",
+      "file": "order.mmd.txt",
       "lang": "text",
-      "title": "The diagram as text",
+      "title": "Diagram as Mermaid text",
       "run": "static",
       "illustrative": true,
-      "caption": "Class diagrams show structure; sequence diagrams show calls over time. Here, Mermaid `classDiagram`: `*--` composition, `..>` dependency, `<|..` realisation."
+      "caption": "Mermaid draws this text as a class diagram. Each arrow style is one relationship kind.",
+      "walk": [
+        {
+          "lines": [
+            2,
+            8
+          ],
+          "text": "One class box: fields with `-`, methods with `+` and a return type."
+        },
+        {
+          "lines": [
+            17,
+            20
+          ],
+          "text": "`<<interface>>` marks a contract rather than a class."
+        },
+        {
+          "lines": [
+            21,
+            22
+          ],
+          "text": "`*--` is composition and `-->` is association; quoted numbers are multiplicity."
+        },
+        {
+          "lines": [
+            23,
+            24
+          ],
+          "text": "`..>` is a dependency; `<|..` is realization of an interface."
+        }
+      ]
     },
     {
-      "file": "order.mjs",
-      "lang": "js",
-      "title": "The diagram in code",
-      "run": "browser",
-      "caption": "How two relationships look in JavaScript. `Order` builds its own `LineItem` objects; `Product` is created outside and shared."
+      "file": "OrderDemo.java",
+      "lang": "java",
+      "title": "The same model in Java",
+      "run": "captured",
+      "caption": "Every line in the diagram maps to a field, a parameter or an `implements`.",
+      "walk": [
+        {
+          "lines": [
+            19,
+            21
+          ],
+          "text": "Realization: the class implements the interface."
+        },
+        {
+          "lines": [
+            24,
+            24
+          ],
+          "text": "Composition: the list is private and only `Order` adds to it."
+        },
+        {
+          "lines": [
+            25,
+            27
+          ],
+          "text": "Association: a `Customer` made elsewhere is passed in and kept."
+        },
+        {
+          "lines": [
+            29,
+            31
+          ],
+          "text": "`Order` builds each `OrderLine` and never shares it, so the diamond is filled."
+        },
+        {
+          "lines": [
+            41,
+            43
+          ],
+          "text": "Dependency: `Payment` is used during the call, then forgotten."
+        }
+      ]
     }
   ],
   "pitfalls": [
-    "In UML `#` means protected, not JavaScript's `#private`; use `-` for private fields.",
-    "Draw a filled diamond only when the whole truly owns the part's lifetime.",
-    "Draw only the classes and members the discussion needs, not every getter."
+    "Do not draw every getter; show the fields and methods that explain the design.",
+    "Use a hollow diamond (aggregation) when a part can outlive its whole.",
+    "Add multiplicity like `1..*` on links; interviewers ask about it."
   ],
   "quiz": {
-    "q": "`Invoice` creates its `Line` objects itself and no one else holds them. Which relationship is that?",
+    "q": "`Order.pay(Payment payment)` uses `Payment` but never stores it. Which UML line fits?",
     "options": [
-      "Aggregation, hollow diamond",
-      "Inheritance, hollow triangle",
-      "Composition, filled diamond",
-      "Dependency, dashed arrow"
+      "A filled diamond: composition",
+      "A solid line with a hollow triangle",
+      "A dashed arrow: dependency",
+      "A plain solid arrow: association"
     ],
     "answer": 2,
-    "why": "The lines are created by the invoice and cannot outlive it. A part whose lifetime the whole controls is composition."
+    "why": "A type used only as a parameter or local variable is a dependency. Association needs a field that keeps the reference."
   },
-  "takeaway": "Boxes show classes; line style shows how strongly they are tied.",
+  "takeaway": "Boxes show classes; the line style tells is-a, owns, knows or uses.",
   "chat": {
     "starters": [
-      "When should I draw aggregation instead of composition?",
-      "How much detail should a class diagram have in an LLD interview?",
-      "When is a sequence diagram more useful than a class diagram?"
+      "What is the difference between aggregation and composition?",
+      "When should I draw a sequence diagram instead of a class diagram?",
+      "How much UML detail do interviewers expect on a whiteboard?"
     ]
   }
 }

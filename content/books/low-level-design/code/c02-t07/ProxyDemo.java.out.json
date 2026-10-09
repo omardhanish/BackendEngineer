@@ -1,0 +1,11 @@
+{
+  "stdout": "denied for intern\n  (opening the report archive)\nreport: payroll\nreport: sales",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ProxyDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "de102e41eacbebf3",
+  "at": "2026-10-09T08:11:47.366Z"
+}

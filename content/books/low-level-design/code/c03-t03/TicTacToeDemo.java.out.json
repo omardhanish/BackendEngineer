@@ -1,0 +1,11 @@
+{
+  "stdout": "X at 0,0 -> PLAYING\nO at 1,1 -> PLAYING\nX at 0,1 -> PLAYING\nO at 2,2 -> PLAYING\nrejected: taken\nX at 0,2 -> X_WON\nrejected: over",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java TicTacToeDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "2ce17f179aa24cc9",
+  "at": "2026-10-09T08:25:34.405Z"
+}

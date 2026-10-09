@@ -1,387 +1,79 @@
 {
-  "title": "OOP in modern JavaScript",
-  "idea": "Object-oriented programming groups data with the methods that act on it, using encapsulation, abstraction, inheritance and polymorphism, plus composition for flexibility.",
+  "title": "The four pillars of OOP",
+  "idea": "Object-oriented programming builds a program from objects that pair data with the behaviour that guards it, shaped by four ideas: encapsulation, abstraction, inheritance and polymorphism.",
   "points": [
-    "Encapsulation: a `#private` field cannot be read from outside the class.",
-    "Inheritance: `extends` reuses a parent; subclass constructors call `super()` before using `this`.",
-    "Polymorphism: one call, `area()`, runs the method of the object's own class.",
-    "Composition: a class holds other objects and delegates work to them."
+    "Encapsulation keeps fields `private` and lets only methods change them.",
+    "Abstraction exposes a contract, an `interface`, and hides how it works.",
+    "Inheritance lets a subclass reuse a parent through an is-a link.",
+    "Polymorphism picks the method to run from the object's real class."
   ],
   "hero": {
-    "type": "anim",
-    "engine": "memory",
-    "title": "Objects, fields and the prototype",
-    "scenario": {
-      "code": [
-        "class Shape {",
-        "  area() { return 0; }",
-        "}",
-        "class Rect extends Shape {",
-        "  constructor(w, h) { super(); this.w = w; this.h = h; }",
-        "  area() { return this.w * this.h; }",
-        "}",
-        "const r = new Rect(2, 3);",
-        "console.log(r.area());"
-      ],
-      "steps": [
-        {
-          "caption": "Each class is a function whose `prototype` object holds its methods. `Rect.prototype` links to `Shape.prototype`; instances do not copy methods.",
-          "line": 6,
-          "stack": [
-            {
-              "name": "Global",
-              "vars": {
-                "Shape": {
-                  "ref": "sc"
-                },
-                "Rect": {
-                  "ref": "rcc"
-                },
-                "r": "<uninitialized>"
-              }
-            }
-          ],
-          "heap": [
-            {
-              "id": "sc",
-              "label": "class Shape (function)",
-              "props": {
-                "prototype": {
-                  "ref": "s"
-                }
-              }
-            },
-            {
-              "id": "rcc",
-              "label": "class Rect (function)",
-              "props": {
-                "prototype": {
-                  "ref": "rc"
-                }
-              }
-            },
-            {
-              "id": "s",
-              "label": "Shape.prototype",
-              "props": {
-                "area": "ƒ area()"
-              }
-            },
-            {
-              "id": "rc",
-              "label": "Rect.prototype",
-              "props": {
-                "area": "ƒ area()",
-                "[[Prototype]]": {
-                  "ref": "s"
-                }
-              }
-            }
-          ]
-        },
-        {
-          "caption": "`new Rect(2, 3)` runs `Rect`'s constructor. `super()` lets `Shape` create the object, and only then are `w` and `h` set on `this`.",
-          "line": 4,
-          "stack": [
-            {
-              "name": "Global",
-              "vars": {
-                "Shape": {
-                  "ref": "sc"
-                },
-                "Rect": {
-                  "ref": "rcc"
-                },
-                "r": "<uninitialized>"
-              }
-            },
-            {
-              "name": "constructor(2, 3)",
-              "vars": {
-                "w": "2",
-                "h": "3",
-                "this": {
-                  "ref": "o"
-                }
-              }
-            }
-          ],
-          "heap": [
-            {
-              "id": "sc",
-              "label": "class Shape (function)",
-              "props": {
-                "prototype": {
-                  "ref": "s"
-                }
-              }
-            },
-            {
-              "id": "rcc",
-              "label": "class Rect (function)",
-              "props": {
-                "prototype": {
-                  "ref": "rc"
-                }
-              }
-            },
-            {
-              "id": "s",
-              "label": "Shape.prototype",
-              "props": {
-                "area": "ƒ area()"
-              }
-            },
-            {
-              "id": "rc",
-              "label": "Rect.prototype",
-              "props": {
-                "area": "ƒ area()",
-                "[[Prototype]]": {
-                  "ref": "s"
-                }
-              }
-            },
-            {
-              "id": "o",
-              "label": "Rect instance",
-              "props": {
-                "w": "2",
-                "h": "3",
-                "[[Prototype]]": {
-                  "ref": "rc"
-                }
-              }
-            }
-          ]
-        },
-        {
-          "caption": "`r` points at the instance. It holds only its own data: `w` and `h`.",
-          "line": 7,
-          "stack": [
-            {
-              "name": "Global",
-              "vars": {
-                "Shape": {
-                  "ref": "sc"
-                },
-                "Rect": {
-                  "ref": "rcc"
-                },
-                "r": {
-                  "ref": "o"
-                }
-              }
-            }
-          ],
-          "heap": [
-            {
-              "id": "sc",
-              "label": "class Shape (function)",
-              "props": {
-                "prototype": {
-                  "ref": "s"
-                }
-              }
-            },
-            {
-              "id": "rcc",
-              "label": "class Rect (function)",
-              "props": {
-                "prototype": {
-                  "ref": "rc"
-                }
-              }
-            },
-            {
-              "id": "s",
-              "label": "Shape.prototype",
-              "props": {
-                "area": "ƒ area()"
-              }
-            },
-            {
-              "id": "rc",
-              "label": "Rect.prototype",
-              "props": {
-                "area": "ƒ area()",
-                "[[Prototype]]": {
-                  "ref": "s"
-                }
-              }
-            },
-            {
-              "id": "o",
-              "label": "Rect instance",
-              "props": {
-                "w": "2",
-                "h": "3",
-                "[[Prototype]]": {
-                  "ref": "rc"
-                }
-              }
-            }
-          ]
-        },
-        {
-          "caption": "`r.area()` looks up the chain and finds `Rect`'s method first. That lookup is polymorphism.",
-          "line": 8,
-          "stack": [
-            {
-              "name": "Global",
-              "vars": {
-                "Shape": {
-                  "ref": "sc"
-                },
-                "Rect": {
-                  "ref": "rcc"
-                },
-                "r": {
-                  "ref": "o"
-                }
-              }
-            },
-            {
-              "name": "area()",
-              "vars": {
-                "this": {
-                  "ref": "o"
-                },
-                "return": "6"
-              }
-            }
-          ],
-          "heap": [
-            {
-              "id": "sc",
-              "label": "class Shape (function)",
-              "props": {
-                "prototype": {
-                  "ref": "s"
-                }
-              }
-            },
-            {
-              "id": "rcc",
-              "label": "class Rect (function)",
-              "props": {
-                "prototype": {
-                  "ref": "rc"
-                }
-              }
-            },
-            {
-              "id": "s",
-              "label": "Shape.prototype",
-              "props": {
-                "area": "ƒ area()"
-              }
-            },
-            {
-              "id": "rc",
-              "label": "Rect.prototype",
-              "props": {
-                "area": "ƒ area()",
-                "[[Prototype]]": {
-                  "ref": "s"
-                }
-              }
-            },
-            {
-              "id": "o",
-              "label": "Rect instance",
-              "props": {
-                "w": "2",
-                "h": "3",
-                "[[Prototype]]": {
-                  "ref": "rc"
-                }
-              }
-            }
-          ]
-        }
-      ]
-    }
+    "type": "table",
+    "title": "Four pillars, four Java tools",
+    "head": ["Pillar", "Java tool", "What it buys you", "In this page"],
+    "rows": [
+      ["Encapsulation", "private fields, guarded methods", "Invalid state cannot be set from outside", "Wallet balance"],
+      ["Abstraction", "interface, abstract class", "Callers depend on what, not how", "Fee interface"],
+      ["Inheritance", "extends, super", "Reuse of a parent that it truly is", "CappedFee extends PercentFee"],
+      ["Polymorphism", "@Override, dynamic dispatch", "One call site, many behaviours", "fee.on(2000) in the loop"]
+    ],
+    "highlight": { "col": 1 },
+    "caption": "Each pillar maps to a Java keyword you already use; LLD is choosing which one fits."
   },
   "code": [
     {
-      "file": "shapes.mjs",
-      "lang": "js",
-      "title": "Three pillars in code",
-      "run": "browser",
-      "caption": "Private state, inheritance and polymorphism. Add a `Triangle` that extends `Shape` and run it.",
+      "file": "FeeDemo.java",
+      "lang": "java",
+      "title": "Abstraction and polymorphism",
+      "run": "captured",
+      "caption": "Three fee rules behind one interface. The loop never asks which class it holds.",
       "walk": [
-        {
-          "lines": [
-            2,
-            3
-          ],
-          "text": "`#name` is private. Only code inside `Shape` can read it."
-        },
-        {
-          "lines": [
-            5
-          ],
-          "text": "Abstraction: callers use `describe()` without knowing how `area` is computed."
-        },
-        {
-          "lines": [
-            7,
-            8,
-            9,
-            10
-          ],
-          "text": "`Rect` extends `Shape`. `super('rect')` must run before `this` is used."
-        },
-        {
-          "lines": [
-            11,
-            12,
-            13,
-            14
-          ],
-          "text": "`Circle` overrides `area` with its own formula."
-        },
-        {
-          "lines": [
-            15
-          ],
-          "text": "One loop, one call, two behaviours: polymorphism."
-        }
+        { "lines": [13, 19], "text": "`Fee` is the contract: one method to compute, one default method for a name." },
+        { "lines": [21, 23], "text": "A `record` implements the interface: a small immutable value with behaviour." },
+        { "lines": [25, 31], "text": "`PercentFee` keeps its rate `private final`: set once, never changed." },
+        { "lines": [33, 38], "text": "`CappedFee` extends `PercentFee` via `super`; whether it truly is-a percent fee is a Liskov question for later." },
+        { "lines": [41, 44], "text": "The override reuses the parent's result with `super.on`, then applies the cap." },
+        { "lines": [5, 9], "text": "The list holds `Fee`; each `fee.on` call runs the real class's method." }
       ]
     },
     {
-      "file": "compose.mjs",
-      "lang": "js",
-      "title": "Composition",
-      "run": "browser",
-      "caption": "`Car` has an `Engine` and hides it. Swap in a different engine class without touching `Car`. `car.engine` prints `undefined`: the engine is kept in the private `#engine`."
+      "file": "WalletDemo.java",
+      "lang": "java",
+      "title": "Encapsulation",
+      "run": "captured",
+      "caption": "The balance can change only through `pay`, which refuses bad amounts.",
+      "walk": [
+        { "lines": [15, 16], "text": "The field is `private` with no setter, so no caller can write it." },
+        { "lines": [18, 23], "text": "The constructor rejects a bad opening value: objects start valid." },
+        { "lines": [29, 37], "text": "`pay` rejects a bad argument, then a bad state, before it changes anything." },
+        { "lines": [6, 10], "text": "The caller sees the refusal as an exception; the balance is untouched." }
+      ]
     }
   ],
   "pitfalls": [
-    "Use `extends` only for a true is-a relation; prefer composition for has-a.",
-    "Read `this` only after `super()` in a subclass constructor, or it throws.",
-    "An underscore like `_balance` is only a convention; use `#balance` for real privacy."
+    "Do not extend a class only to reuse code; without a true is-a, use composition.",
+    "Avoid public fields and blind setters; they let any caller break your rules.",
+    "Add `@Override` to every override, so a typo or overload fails to compile."
   ],
   "quiz": {
     "q": "What does this print?",
-    "code": "class Animal { speak() { return 'generic'; }\n  intro() { return this.speak(); } }\nclass Dog extends Animal { speak() { return 'woof'; } }\nconsole.log(new Dog().intro());",
-    "lang": "js",
     "options": [
-      "generic",
-      "undefined",
-      "woof",
-      "TypeError"
+      "PercentFee on 2000 = 40",
+      "CappedFee on 2000 = 40",
+      "CappedFee on 2000 = 30",
+      "PercentFee on 2000 = 30"
     ],
     "answer": 2,
-    "why": "`intro` runs on a `Dog`, so `this.speak()` finds `Dog`'s override first on the prototype chain."
+    "why": "Dynamic dispatch uses the runtime class. `getClass()` names `CappedFee`, and its override caps the parent's 40 at 30.",
+    "code": "Fee fee = new CappedFee(2, 30);\nSystem.out.println(fee.name() + \" on 2000 = \" + fee.on(2000));",
+    "lang": "java"
   },
-  "takeaway": "Hide state, share behaviour through polymorphism, and prefer composition to inheritance.",
+  "takeaway": "Hide state, code to contracts, inherit only for is-a, let dispatch choose.",
   "chat": {
     "starters": [
-      "When should I use inheritance instead of composition?",
-      "How do JavaScript classes relate to prototypes?",
-      "Are #private fields really private at runtime?"
+      "When should I use an abstract class instead of an interface?",
+      "What is the difference between overloading and overriding?",
+      "Why do people say composition over inheritance?"
     ]
   }
 }

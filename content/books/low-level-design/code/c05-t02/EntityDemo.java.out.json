@@ -1,0 +1,11 @@
+{
+  "stdout": "Booking[id=BK1, roomId=R-101, employeeId=E7, start=10.0, end=11.5]\nrejected: slot 14.0-13.0 is not valid\nrejected: capacity must be >= 1",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java EntityDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "90663d5d257aed4b",
+  "at": "2026-10-09T08:17:44.180Z"
+}

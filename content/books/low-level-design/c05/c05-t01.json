@@ -1,82 +1,101 @@
 {
-  "title": "Capstone kickoff: room booking",
-  "idea": "The capstone is one Meeting Room Booking System you take from requirements to a tested, documented design you can present and defend.",
+  "title": "Meeting room booking capstone",
+  "idea": "The capstone is one system you design end to end, a meeting room booking service, grown page by page from requirements to a design you defend.",
   "points": [
-    "Fix the scope first: must-have requirements now, stretch goals later.",
-    "Write the public API of `BookingService` before any logic.",
-    "Each page of this chapter adds one layer to the same classes.",
-    "Keep the class names stable so every later step builds on them."
+    "You build one system across the chapter: the Meeting Room Booking System.",
+    "The must-haves: search free rooms, book, cancel, no double booking, notify attendees.",
+    "Each must-have gets one owning class, so scope and design stay traceable.",
+    "Recurring bookings are a stretch goal; finish the must-haves before touching them."
   ],
   "hero": {
     "type": "timeline",
-    "title": "The capstone, step by step",
+    "title": "The capstone, stage by stage",
     "items": [
       {
-        "label": "Scope",
-        "text": "Must-haves: search, book, cancel, no double booking, notify. Recurring bookings wait."
+        "label": "Requirements",
+        "text": "Turn the brief into use cases and entities: Room, Booking, Employee, Building."
       },
       {
-        "label": "Model",
-        "text": "Turn requirements into use cases and entities such as `Room`, `Booking` and `Employee`."
+        "label": "Class design",
+        "text": "Draw the class diagram and fix the interfaces before writing any logic."
       },
       {
-        "label": "Diagram",
-        "text": "Draw the class diagram and the interfaces, such as `ConflictPolicy` and the repositories."
+        "label": "Core build",
+        "text": "Implement BookingService on top of two repositories and a ConflictPolicy."
       },
       {
-        "label": "Build",
-        "text": "Write `BookingService` and in-memory repositories, then run every use case as a script."
+        "label": "Hardening",
+        "text": "Add error codes, logs and counters, then patterns and tests."
       },
       {
-        "label": "Harden",
-        "text": "Add typed errors, `AuditLogger`, metrics, patterns and tests."
-      },
-      {
-        "label": "Present",
-        "text": "Document with UML, then explain each trade-off in a review."
+        "label": "Review and present",
+        "text": "Refine after peer review, document with UML, and defend each choice."
       }
     ]
   },
   "code": [
     {
-      "file": "scope.mjs",
-      "lang": "js",
-      "title": "Scope as data",
-      "run": "browser",
-      "caption": "Requirements get ids so classes and tests can point back to them. Mark `R6` as must-have and run again."
-    },
-    {
-      "file": "contract.mjs",
-      "lang": "js",
-      "title": "API before logic",
-      "run": "browser",
-      "caption": "The three public methods are the use cases. Every body throws until a later page fills it in."
+      "file": "ScopeDemo.java",
+      "lang": "java",
+      "title": "Scope with owners",
+      "run": "captured",
+      "caption": "The brief as data: every requirement has a priority and an owning class.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            17
+          ],
+          "text": "Each requirement names its owner: the class that will answer for it."
+        },
+        {
+          "lines": [
+            27,
+            27
+          ],
+          "text": "An `enum` makes priority a closed set: must-have or stretch."
+        },
+        {
+          "lines": [
+            29,
+            35
+          ],
+          "text": "A `record` holds one requirement; its `toString` prints one tidy line."
+        },
+        {
+          "lines": [
+            18,
+            23
+          ],
+          "text": "Looping over `Priority.values()` lists the must-haves first and the stretch goal last."
+        }
+      ]
     }
   ],
   "pitfalls": [
-    "Agree the scope before coding; adding features mid-design hides the core trade-offs.",
-    "Do not start with recurring bookings; finish the must-have use cases first.",
-    "Avoid renaming core classes later; diagrams, tests and code drift apart."
+    "Do not write classes before the must-have requirements are written down and agreed.",
+    "Avoid starting recurring bookings early; they reshape the overlap rules everything uses.",
+    "Keep the core class names fixed; renaming midway breaks every later step."
   ],
   "quiz": {
     "q": "What does this print?",
-    "code": "class BookingService {\n  book() { throw new Error('not implemented'); }\n}\nconst names = Object.getOwnPropertyNames(BookingService.prototype);\nconsole.log(names.length);",
-    "lang": "js",
+    "code": "var r = new Requirement(\"R4\", \"no double booking\",\n    Priority.MUST, \"ConflictPolicy\");\nSystem.out.println(r);",
+    "lang": "java",
     "options": [
-      "1",
-      "0",
-      "2",
-      "Error: not implemented"
+      "MUST R4 no double booking",
+      "R4 no double booking -> ConflictPolicy",
+      "Requirement[id=R4, text=no double booking, priority=MUST, owner=ConflictPolicy]",
+      "R4 -> ConflictPolicy"
     ],
-    "answer": 2,
-    "why": "A class prototype always owns `constructor` as well as each declared method. Nothing calls `book()`, so no error is thrown."
+    "answer": 1,
+    "why": "The record overrides `toString`, so `println` uses that method instead of the generated `Requirement[...]` form."
   },
-  "takeaway": "Fix the scope and the public API before writing any logic.",
+  "takeaway": "One system, fixed names, must-haves first, each requirement owned by a class.",
   "chat": {
     "starters": [
-      "How do I decide what is in scope for an LLD interview?",
-      "Why write the public API before the implementation?",
-      "Which requirements would you cut if time runs short?"
+      "Why does every requirement need an owning class?",
+      "How do I decide what is a must-have and what is a stretch goal?",
+      "What should I ask the interviewer before I start designing?"
     ]
   }
 }

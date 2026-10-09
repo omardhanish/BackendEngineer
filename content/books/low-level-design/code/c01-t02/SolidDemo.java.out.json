@@ -1,0 +1,11 @@
+{
+  "stdout": "card 1200: paid\nwallet 450: paid\nwallet 900: declined",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java SolidDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "ccff0e9dd9f0f5c2",
+  "at": "2026-10-09T08:11:04.152Z"
+}

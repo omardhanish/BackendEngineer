@@ -1,0 +1,11 @@
+{
+  "stdout": "ship in Created: refused\npay in Created: -> Paid\ncancel in Paid: -> Cancelled\npay in Cancelled: refused\nship in Cancelled: refused",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java StateDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "cba95bf9e2e71a76",
+  "at": "2026-10-09T08:10:07.124Z"
+}

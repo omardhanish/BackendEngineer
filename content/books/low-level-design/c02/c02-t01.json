@@ -1,119 +1,297 @@
 {
   "title": "Factory and Abstract Factory",
-  "idea": "A Factory pattern puts object creation behind one method, so callers ask for a kind and get a ready object. Abstract Factory creates whole families of matching objects.",
+  "idea": "A Factory pattern moves `new` behind one method that returns an interface. An Abstract Factory returns a whole family of related objects that must match.",
   "analogy": {
-    "text": "A coffee counter. You ask for a flat white; the barista picks the beans, milk and cup. A franchise kit ships every matching cup and lid together.",
-    "breaks": "A barista improvises; a factory only builds kinds it knows."
+    "text": "You order a coffee by name; the counter decides which machine makes it. A hotel room kit hands you towels, slippers and soap that all match.",
+    "breaks": "Java does not check that a kit's items match; the kit's author must."
   },
   "points": [
-    "Callers depend on what an object does, never on its concrete class.",
-    "A simple factory maps kinds to classes, keeping `new` in one place.",
-    "Gang of Four Factory Method: subclasses override one `create` method to pick the product.",
-    "Abstract Factory swaps a whole family at once, so parts never mismatch."
+    "Callers depend on the interface the factory returns, never on a concrete class.",
+    "Only the factory names concrete classes, so a new type edits one place.",
+    "An Abstract Factory is an interface with one creation method per product.",
+    "Each concrete factory builds one family, so one kit never mixes products."
   ],
   "hero": {
-    "type": "anim",
-    "engine": "pipeline",
-    "title": "One request through a factory",
-    "scenario": {
-      "token": { "label": "'sms'", "tone": "req" },
-      "stages": [
-        { "id": "caller", "label": "Caller", "sub": "`create('sms')`" },
-        { "id": "factory", "label": "NotifierFactory", "sub": "static `create`" },
-        { "id": "registry", "label": "#makers", "sub": "kind → class" },
-        { "id": "product", "label": "SmsNotifier", "sub": "concrete product", "kind": "end" }
-      ],
-      "steps": [
-        {
-          "caption": "The caller asks for a notifier by kind. It never names a concrete class.",
-          "at": "caller",
-          "slot": "top",
-          "state": { "caller": "active" }
-        },
-        {
-          "caption": "`create` receives the kind. Every construction decision lives here, in one place.",
-          "at": "factory",
-          "slot": "top",
-          "state": { "caller": "done", "factory": "active" }
-        },
-        {
-          "caption": "The factory looks the kind up in its private registry map.",
-          "at": "registry",
-          "slot": "top",
-          "state": { "caller": "done", "factory": "done", "registry": "active" }
-        },
-        {
-          "caption": "The map returns `SmsNotifier`, and the factory runs `new` on it.",
-          "at": "product",
-          "slot": "top",
-          "state": { "caller": "done", "factory": "done", "registry": "done", "product": "active" }
-        },
-        {
-          "caption": "The object travels back and the caller calls `send('ada')`. It only knows the method exists.",
-          "at": "caller",
-          "slot": "bottom",
-          "token": { "label": "notifier", "tone": "ok" },
-          "state": { "caller": "active", "factory": "done", "registry": "done", "product": "done" },
-          "out": ["sms to ada"]
-        },
-        {
-          "caption": "An unknown kind such as `'fax'` fails fast with a clear error, not a silent `undefined`.",
-          "at": "registry",
-          "slot": "top",
-          "token": { "label": "'fax'", "tone": "err" },
-          "state": { "caller": "done", "factory": "done", "registry": "error" },
-          "out": ["unknown notifier: fax"]
-        }
-      ]
-    }
+    "type": "flow",
+    "title": "One kit, one matching family",
+    "nodes": [
+      {
+        "id": "main",
+        "label": "main",
+        "sub": "chooses the kit once"
+      },
+      {
+        "id": "kit",
+        "label": "RegionKit",
+        "sub": "abstract factory"
+      },
+      {
+        "id": "uk",
+        "label": "UkKit",
+        "sub": "VAT family"
+      },
+      {
+        "id": "in",
+        "label": "IndiaKit",
+        "sub": "GST family"
+      },
+      {
+        "id": "co",
+        "label": "checkout(kit, net)",
+        "sub": "sees interfaces only"
+      },
+      {
+        "id": "tax",
+        "label": "TaxRule",
+        "sub": "product one"
+      },
+      {
+        "id": "rec",
+        "label": "Receipt",
+        "sub": "product two"
+      }
+    ],
+    "edges": [
+      {
+        "from": "uk",
+        "to": "kit",
+        "label": "implements",
+        "dashed": true
+      },
+      {
+        "from": "in",
+        "to": "kit",
+        "label": "implements",
+        "dashed": true
+      },
+      {
+        "from": "main",
+        "to": "co",
+        "label": "new UkKit()"
+      },
+      {
+        "from": "co",
+        "to": "kit",
+        "label": "asks"
+      },
+      {
+        "from": "kit",
+        "to": "tax",
+        "label": "taxRule()"
+      },
+      {
+        "from": "kit",
+        "to": "rec",
+        "label": "receipt()"
+      }
+    ],
+    "steps": [
+      {
+        "caption": "`RegionKit` declares one method per product. `UkKit` and `IndiaKit` each implement all of them.",
+        "active": [
+          "kit",
+          "uk",
+          "in"
+        ],
+        "edges": [
+          0,
+          1
+        ]
+      },
+      {
+        "caption": "`main` is the only place that names a concrete kit. It passes it to `checkout`.",
+        "active": [
+          "main",
+          "co"
+        ],
+        "edges": [
+          2
+        ]
+      },
+      {
+        "caption": "`checkout` holds a `RegionKit`. It cannot tell whether the kit is UK or India.",
+        "active": [
+          "co",
+          "kit"
+        ],
+        "edges": [
+          3
+        ]
+      },
+      {
+        "caption": "It asks the kit for a `TaxRule` and a `Receipt`. Both come from the same family.",
+        "active": [
+          "kit",
+          "tax",
+          "rec"
+        ],
+        "edges": [
+          4,
+          5
+        ]
+      },
+      {
+        "caption": "One kit builds the whole set, so its tax rule and receipt always match.",
+        "active": [
+          "uk",
+          "tax",
+          "rec"
+        ],
+        "edges": [
+          0,
+          4,
+          5
+        ]
+      },
+      {
+        "caption": "A new region is one new kit class. `checkout` and the products' interfaces stay unchanged.",
+        "active": [
+          "kit",
+          "co"
+        ],
+        "edges": [
+          0,
+          1,
+          3
+        ]
+      }
+    ]
   },
   "code": [
     {
-      "file": "factory.mjs",
-      "lang": "js",
-      "title": "Simple factory with a registry",
-      "run": "browser",
-      "caption": "Add a `PushNotifier` class, register it as `'push'`, and create one. `create` never changes.",
+      "file": "NotifierFactoryDemo.java",
+      "lang": "java",
+      "title": "Factory",
+      "run": "captured",
+      "caption": "The chapter 1 example used a `switch`; a registry `Map<String, Supplier<Notifier>>` adds types without editing the factory. GoF Factory Method instead lets subclasses override creation.",
       "walk": [
-        { "lines": [1, 2], "text": "Two products share one shape: a `send(to)` method." },
-        { "lines": [5], "text": "The registry maps each kind to its class." },
-        { "lines": [6], "text": "`register` adds kinds from outside, so the factory stays closed for edits." },
-        { "lines": [7, 8, 9, 10], "text": "`create` looks up, validates, then builds. It is the only `new` callers need." },
-        { "lines": [13, 14], "text": "Callers pass a string and get an object, or a clear error." }
+        {
+          "lines": [
+            19,
+            21
+          ],
+          "text": "The product interface: what every notifier can do."
+        },
+        {
+          "lines": [
+            23,
+            33
+          ],
+          "text": "Three concrete products. Only registrations refer to them by name."
+        },
+        {
+          "lines": [
+            35,
+            41
+          ],
+          "text": "The registry maps a channel name to a `Supplier` that builds a fresh notifier."
+        },
+        {
+          "lines": [
+            44,
+            46
+          ],
+          "text": "`register` adds a type at start-up; the factory's code stays unchanged."
+        },
+        {
+          "lines": [
+            48,
+            52
+          ],
+          "text": "`create` looks up the supplier and rejects unknown channels."
+        },
+        {
+          "lines": [
+            5,
+            10
+          ],
+          "text": "`main` registers push, then works with `Notifier` only."
+        },
+        {
+          "lines": [
+            11,
+            15
+          ],
+          "text": "An unsupported channel fails fast with a clear message."
+        }
       ]
     },
     {
-      "file": "kits.mjs",
-      "lang": "js",
-      "title": "Abstract Factory: families",
-      "run": "browser",
-      "caption": "Each kit builds a matching charger and refunder. `settle` cannot mix a fake charger with a live refunder.",
+      "file": "RegionKitDemo.java",
+      "lang": "java",
+      "title": "Abstract Factory",
+      "run": "captured",
+      "caption": "Each kit builds a tax rule and a receipt that belong together.",
       "walk": [
-        { "lines": [1, 2, 3, 4], "text": "Two families of products: live and fake, each with a charger and a refunder." },
-        { "lines": [6, 7, 8, 9], "text": "Each kit is a factory with one method per product in the family." },
-        { "lines": [11, 12, 13], "text": "`settle` takes a kit, so tests pass `FakePayments` and production passes `LivePayments`." }
+        {
+          "lines": [
+            14,
+            16
+          ],
+          "text": "Two product interfaces. Each has one method, so lambdas can implement them."
+        },
+        {
+          "lines": [
+            18,
+            21
+          ],
+          "text": "The abstract factory: one creation method per product in the family."
+        },
+        {
+          "lines": [
+            23,
+            28
+          ],
+          "text": "`UkKit` returns the UK tax rule and the matching UK receipt."
+        },
+        {
+          "lines": [
+            30,
+            35
+          ],
+          "text": "`IndiaKit` is a second family with the same shape."
+        },
+        {
+          "lines": [
+            7,
+            11
+          ],
+          "text": "`checkout` depends on `RegionKit` only and gets a matching pair."
+        },
+        {
+          "lines": [
+            2,
+            4
+          ],
+          "text": "The choice of family happens once, at the edge of the program."
+        }
       ]
     }
   ],
   "pitfalls": [
-    "Skip the factory when only one class exists and none is planned; `new` is fine.",
-    "Avoid a `switch` on kind inside `create`; a registry map stays open for extension.",
-    "Throw on an unknown kind instead of returning `null` or a silent default."
+    "Do not add a factory for a class with one implementation and no second coming.",
+    "Throw on unknown input in the factory; returning `null` moves the crash to the caller.",
+    "Adding a product to an Abstract Factory edits every concrete factory; keep families small."
   ],
   "quiz": {
-    "q": "What does this print?",
-    "code": "class A { name() { return 'A'; } }\nclass B { name() { return 'B'; } }\nconst makers = { a: A, b: B };\nconst create = (k) => new (makers[k] ?? A)();\nconsole.log(create('b').name() + create('z').name());",
-    "lang": "js",
-    "options": ["BB", "BA", "Bundefined", "TypeError"],
+    "q": "What is the last line `NotifierFactoryDemo` prints?",
+    "options": [
+      "PUSH to app: Order A-17 shipped",
+      "rejected: fax",
+      "rejected: null",
+      "Exception in thread \"main\" IllegalArgumentException"
+    ],
     "answer": 1,
-    "why": "`makers['z']` is `undefined`, so `??` falls back to `A`. That silent default is exactly what hides typos in real factories."
+    "why": "Nothing registered `fax`, so `create` throws `IllegalArgumentException` with the channel as its message. `main` catches it and prints that message.",
+    "code": "if (maker == null) throw new IllegalArgumentException(channel);\n// in main:\ntry { NotifierFactory.create(\"fax\"); }\ncatch (IllegalArgumentException e) {\n    System.out.println(\"rejected: \" + e.getMessage());\n}",
+    "lang": "java"
   },
-  "takeaway": "Ask a factory for a kind; let one place decide which class to build.",
+  "takeaway": "A factory hides which class you get; an Abstract Factory keeps families matched.",
   "chat": {
     "starters": [
-      "What is the difference between Factory Method and a simple factory?",
-      "When does Abstract Factory beat passing several separate factories?",
-      "How do I explain the Factory pattern in an LLD interview?"
+      "How is the Factory Method pattern different from a static factory?",
+      "When does an Abstract Factory become overkill?",
+      "Should the registry be static, or an object I inject?"
     ]
   }
 }

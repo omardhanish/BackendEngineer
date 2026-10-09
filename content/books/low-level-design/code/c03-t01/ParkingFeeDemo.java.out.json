@@ -1,0 +1,11 @@
+{
+  "stdout": "Hourly: 3h=60 9h=180\nFirstHourFree: 3h=40 9h=160\nCappedHourly: 3h=60 9h=100",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ParkingFeeDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "bd4519f2df0ee67f",
+  "at": "2026-10-09T08:25:31.521Z"
+}

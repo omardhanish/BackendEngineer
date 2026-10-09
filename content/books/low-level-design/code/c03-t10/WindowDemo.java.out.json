@@ -1,0 +1,11 @@
+{
+  "stdout": "t=900 fixed:true sliding:true\nt=950 fixed:true sliding:true\nt=1000 fixed:true sliding:false\nt=1050 fixed:true sliding:false\nt=1950 fixed:false sliding:true\nu2 sliding:true",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java WindowDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "4488bde237f230ac",
+  "at": "2026-10-09T08:19:45.633Z"
+}

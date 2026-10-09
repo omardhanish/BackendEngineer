@@ -1,0 +1,11 @@
+{
+  "stdout": "winners: 1\nseats held: 2",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java SeatRaceDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "ebce40781d1e17fb",
+  "at": "2026-10-09T08:16:43.315Z"
+}

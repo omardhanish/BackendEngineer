@@ -1,0 +1,14 @@
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
+
+public class BookingServiceJUnitTest {
+    private final BookingService svc =
+        new BookingService(booking -> { });     // no-op listener
+    @Test
+    void overlapIsRefused() {
+        svc.book("E7", "R-101", 10, 11);
+        var e = assertThrows(RoomTakenException.class,
+            () -> svc.book("E9", "R-101", 10.5, 11.5));
+        assertEquals("ROOM_TAKEN", e.code());
+    }
+}

@@ -1,245 +1,320 @@
 {
   "title": "Elevator system design",
-  "idea": "An elevator design separates two jobs: each car serves its own stops in a sweeping order, and a dispatcher chooses which car answers a hall call.",
+  "idea": "An elevator design keeps pending stops per direction, serves them in one sweep before turning, and lets a dispatcher pick which car answers a call.",
   "analogy": {
-    "text": "A shuttle bus on one long street picks up everyone along its way before turning round, instead of driving to stops in the order people waved.",
-    "breaks": "Lift riders press buttons at any time, not at fixed stops."
+    "text": "A delivery van heading north drops every parcel on its northbound streets first, then turns round and serves the southbound ones.",
+    "breaks": "Van routes are planned ahead; elevator stops arrive while it moves."
   },
   "points": [
-    "A car keeps a set of stops, its floor and its direction.",
-    "The LOOK rule: keep going while stops lie ahead, then reverse.",
-    "A stop behind the car waits until the car turns, so nobody starves.",
-    "A `Dispatcher` scores each car per hall call; the scoring rule is a strategy."
+    "A request above the car joins `upStops`; a request below joins `downStops`.",
+    "Both sets are sorted `TreeSet`s, so the next stop is first or last.",
+    "The car keeps its direction while stops remain ahead, then turns.",
+    "A `DispatchStrategy` picks which car takes a hall call; swap it to change policy."
   ],
   "hero": {
     "type": "anim",
-    "engine": "pipeline",
-    "title": "One car sweeping up, then down",
+    "engine": "lanes",
+    "title": "One car, two sorted stop sets",
     "scenario": {
-      "token": {
-        "label": "Car",
-        "tone": "req"
-      },
-      "stages": [
+      "code": [
+        "Elevator car = new Elevator(0);",
+        "car.request(5);",
+        "car.request(2);",
+        "car.step();",
+        "car.request(1);",
+        "car.request(8);",
+        "while (car.hasWork()) car.step();"
+      ],
+      "lanes": [
         {
-          "id": "f0",
-          "label": "Floor 0",
-          "kind": "end"
+          "id": "up",
+          "label": "upStops",
+          "kind": "queue",
+          "hint": "above the car, lowest first"
         },
         {
-          "id": "f1",
-          "label": "Floor 1"
+          "id": "car",
+          "label": "Car",
+          "kind": "area",
+          "hint": "floor and direction"
         },
         {
-          "id": "f2",
-          "label": "Floor 2"
-        },
-        {
-          "id": "f3",
-          "label": "Floor 3"
-        },
-        {
-          "id": "f4",
-          "label": "Floor 4"
-        },
-        {
-          "id": "f5",
-          "label": "Floor 5",
-          "kind": "end"
+          "id": "down",
+          "label": "downStops",
+          "kind": "queue",
+          "hint": "below the car, highest first"
         }
       ],
+      "tokens": {
+        "c0": {
+          "label": "floor 0 · IDLE",
+          "tone": "neutral"
+        },
+        "c2": {
+          "label": "floor 2 · UP",
+          "tone": "sync"
+        },
+        "c5": {
+          "label": "floor 5 · UP",
+          "tone": "sync"
+        },
+        "c8": {
+          "label": "floor 8 · UP",
+          "tone": "sync"
+        },
+        "c1": {
+          "label": "floor 1 · DOWN",
+          "tone": "macro"
+        },
+        "s2": {
+          "label": "2",
+          "tone": "io"
+        },
+        "s5": {
+          "label": "5",
+          "tone": "io"
+        },
+        "s8": {
+          "label": "8",
+          "tone": "io"
+        },
+        "s1": {
+          "label": "1",
+          "tone": "timer"
+        }
+      },
       "steps": [
         {
-          "caption": "The car is idle at floor 0. Requests for 5 and 2 arrive (marked floors), so it picks direction up.",
-          "at": "f0",
-          "slot": "top",
-          "state": {
-            "f0": "active",
-            "f2": "blocked",
-            "f5": "blocked"
+          "caption": "The car rests at floor 0. Both stop sets are empty.",
+          "line": 0,
+          "at": {
+            "car": [
+              "c0"
+            ]
           }
         },
         {
-          "caption": "Floor 2 lies on the way up, so the car stops there first, before 5.",
-          "at": "f2",
-          "slot": "top",
-          "state": {
-            "f0": "done",
-            "f2": "done",
-            "f5": "blocked"
-          }
+          "caption": "Calls for 5 and 2 are above the car, so both join `upStops`, kept sorted.",
+          "line": 2,
+          "at": {
+            "up": [
+              "s2",
+              "s5"
+            ],
+            "car": [
+              "c0"
+            ]
+          },
+          "active": "s2"
         },
         {
-          "caption": "At floor 3 someone presses 1. It is behind the car, so it waits for the turn.",
-          "at": "f3",
-          "slot": "top",
-          "state": {
-            "f1": "blocked",
-            "f3": "active",
-            "f5": "blocked"
-          }
+          "caption": "`step` takes the lowest up stop. The car moves up to floor 2.",
+          "line": 3,
+          "at": {
+            "up": [
+              "s5"
+            ],
+            "car": [
+              "c2"
+            ]
+          },
+          "active": "c2"
         },
         {
-          "caption": "Floor 5 is served. No stops remain above, so LOOK reverses here.",
-          "at": "f5",
-          "slot": "bottom",
-          "state": {
-            "f3": "done",
-            "f5": "done",
-            "f1": "blocked"
-          }
+          "caption": "A call for 1 arrives. It is below the car, so it waits in `downStops`.",
+          "line": 4,
+          "at": {
+            "up": [
+              "s5"
+            ],
+            "car": [
+              "c2"
+            ],
+            "down": [
+              "s1"
+            ]
+          },
+          "active": "s1"
         },
         {
-          "caption": "Going down, the car passes 4, 3 and 2 without stopping. None of them asked.",
-          "at": "f2",
-          "slot": "bottom",
-          "state": {
-            "f1": "blocked"
-          }
+          "caption": "A call for 8 is above the car, so it joins the current upward sweep.",
+          "line": 5,
+          "at": {
+            "up": [
+              "s5",
+              "s8"
+            ],
+            "car": [
+              "c2"
+            ],
+            "down": [
+              "s1"
+            ]
+          },
+          "active": "s8"
         },
         {
-          "caption": "The car stops at 1. The stop set is empty, so the direction becomes `idle`.",
-          "at": "f1",
-          "slot": "bottom",
-          "state": {
-            "f1": "done"
-          }
+          "caption": "Stops remain ahead, so the car keeps going up to 5.",
+          "line": 6,
+          "at": {
+            "up": [
+              "s8"
+            ],
+            "car": [
+              "c5"
+            ],
+            "down": [
+              "s1"
+            ]
+          },
+          "active": "c5"
+        },
+        {
+          "caption": "Then 8. Now no stops remain above the car.",
+          "line": 6,
+          "at": {
+            "car": [
+              "c8"
+            ],
+            "down": [
+              "s1"
+            ]
+          },
+          "active": "c8"
+        },
+        {
+          "caption": "Only now does it turn and serve floor 1 going down.",
+          "line": 6,
+          "at": {
+            "car": [
+              "c1"
+            ]
+          },
+          "active": "c1"
         }
       ]
     }
   },
   "code": [
     {
-      "file": "elevator.mjs",
-      "lang": "js",
-      "title": "One car, LOOK order",
-      "run": "browser",
-      "caption": "Each `tick()` moves one floor. Change the request on line 28 and predict the new stop order.",
+      "file": "ElevatorDemo.java",
+      "lang": "java",
+      "title": "One car sweeps",
+      "run": "captured",
+      "caption": "The scenario from the animation. Each `step` prints where the car stops and its direction.",
       "walk": [
         {
           "lines": [
-            2,
-            3
-          ],
-          "text": "State is small: floor, direction, and a `Set` of pending stops."
-        },
-        {
-          "lines": [
-            4,
-            5,
-            6,
-            7
-          ],
-          "text": "A call at the car's current floor is served at once; others are queued."
-        },
-        {
-          "lines": [
-            8,
-            9,
-            10,
-            11,
-            12
-          ],
-          "text": "The car looks for pending stops above and below its floor."
-        },
-        {
-          "lines": [
-            13,
-            14,
+            15,
             15
           ],
-          "text": "Keep the current direction while work lies ahead; otherwise turn."
+          "text": "An `enum` names the only three directions a car can have."
         },
         {
           "lines": [
-            17,
             18,
-            19,
-            20,
-            21,
-            22
+            21
           ],
-          "text": "Move one floor, and stop only if that floor is in the set."
+          "text": "Two sorted sets of pending stops, plus the car's floor and direction."
         },
         {
           "lines": [
-            27,
-            28,
-            29,
-            30
+            25,
+            28
           ],
-          "text": "A new request arrives mid-trip, as a real rider would press it."
+          "text": "A request lands in the set on its side of the car's current floor."
+        },
+        {
+          "lines": [
+            33,
+            37
+          ],
+          "text": "Keep the current direction while it has stops; otherwise turn."
+        },
+        {
+          "lines": [
+            37,
+            37
+          ],
+          "text": "`pollFirst` gives the nearest stop above; `pollLast` the nearest below."
+        },
+        {
+          "lines": [
+            5,
+            11
+          ],
+          "text": "Calls for 1 and 8 arrive after the car has left floor 0."
         }
       ]
     },
     {
-      "file": "dispatch.mjs",
-      "lang": "js",
-      "title": "Choosing a car",
-      "run": "browser",
-      "caption": "The dispatcher picks the lowest-cost car per hall call. Replace `cost` with your own rule and compare.",
+      "file": "DispatchDemo.java",
+      "lang": "java",
+      "title": "Pick a car",
+      "run": "captured",
+      "caption": "Three cars, three hall calls. The strategy prefers the nearest car already heading that way.",
       "walk": [
         {
           "lines": [
-            4,
-            5,
-            6
-          ],
-          "text": "An idle car costs only the distance to the caller's floor."
-        },
-        {
-          "lines": [
-            7,
-            8
-          ],
-          "text": "A moving car is cheap only if the call is ahead and wants the same direction."
-        },
-        {
-          "lines": [
-            11,
-            12,
-            13,
-            14
-          ],
-          "text": "The dispatcher keeps the cheapest car; on a tie the earlier car wins."
-        },
-        {
-          "lines": [
-            17,
-            18,
             19,
-            20,
-            21
+            25
           ],
-          "text": "Three hall calls, three winners. At floor 3, A and C tie, so A wins."
+          "text": "A car is approaching if it is idle or the call lies ahead of it."
+        },
+        {
+          "lines": [
+            28,
+            30
+          ],
+          "text": "The dispatch contract: given the cars and a floor, return one car."
+        },
+        {
+          "lines": [
+            33,
+            37
+          ],
+          "text": "Pick the car with the lowest cost."
+        },
+        {
+          "lines": [
+            40,
+            43
+          ],
+          "text": "A car moving away gets a large penalty instead of being excluded."
+        },
+        {
+          "lines": [
+            9,
+            13
+          ],
+          "text": "`main` sends three calls through the same strategy."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Do not serve stops in arrival order; riders on the way get skipped.",
-    "Keep scheduling out of the `Elevator` class so the dispatch rule can change alone.",
-    "Model direction as a field with clear states, not scattered booleans."
+    "Do not serve calls in arrival order; the car zigzags and riders wait longer.",
+    "Guard `request` and `step` with one lock when buttons and the motor run concurrently.",
+    "Model doors and motion as `enum` states so a moving car never opens doors."
   ],
   "quiz": {
-    "q": "What does this print?",
-    "code": "const stops = [7, 2, 9];\nconst floor = 4; // the car is heading down\nconst down = stops.filter((f) => f < floor).sort((a, b) => b - a);\nconst up = stops.filter((f) => f > floor).sort((a, b) => a - b);\nconsole.log([...down, ...up].join(' '));",
-    "lang": "js",
+    "q": "What does `DispatchDemo` print for the call at floor 1?",
     "options": [
-      "7 2 9",
-      "9 7 2",
-      "2 7 9",
-      "2 9 7"
+      "call at 1 -> car A",
+      "call at 1 -> car B",
+      "call at 1 -> car C"
     ],
-    "answer": 2,
-    "why": "The car heading down serves 2 first. Then it turns and visits the upper stops in ascending order: 7, then 9."
+    "answer": 1,
+    "why": "A climbs away from floor 1, so it pays the penalty. B descends from 6 toward 1, cost 5, beating idle C at cost 8.",
+    "code": "// A at 2 going UP, B at 6 going DOWN, C at 9 IDLE\n// cost = distance, + 1000 if the car moves away\nstrategy.pick(cars, 1).id()",
+    "lang": "java"
   },
-  "takeaway": "Cars sweep their own stops; a dispatcher strategy decides which car answers.",
+  "takeaway": "Sort stops per direction, sweep before turning, and dispatch through a strategy.",
   "chat": {
     "starters": [
-      "How would I model elevator states with the State pattern?",
-      "What changes when I add a second or third car?",
-      "How do I handle an emergency stop or overweight alarm?"
+      "How would I add a State pattern for doors open, moving and maintenance?",
+      "What changes when the building has eight cars instead of three?",
+      "How do I make the elevator thread-safe with real button presses?"
     ]
   }
 }

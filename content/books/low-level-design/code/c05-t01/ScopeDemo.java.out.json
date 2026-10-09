@@ -1,0 +1,11 @@
+{
+  "stdout": "MUST:\n  R1 search free rooms -> BookingService\n  R2 book a room -> BookingService\n  R3 cancel own booking -> BookingService\n  R4 no double booking -> ConflictPolicy\n  R5 notify attendees -> NotificationService\nSTRETCH:\n  R6 recurring bookings -> later",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ScopeDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "433a88596f9a385e",
+  "at": "2026-10-09T08:17:41.009Z"
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "free: [R-101, R-201]\nbooked: BK1\nrefused: R-101 is taken\nrefused: E9 does not own it\nafter cancel: [R-101, R-201]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java BookingCoreDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "8ed822fe14b8b197",
+  "at": "2026-10-09T08:31:19.480Z"
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "winners for 101: 1\nstored for 101: 1\n102 same nights: true",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java RaceDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "5f241ab608bbcf84",
+  "at": "2026-10-09T08:17:55.755Z"
+}

@@ -1,122 +1,108 @@
 {
-  "title": "Refining the booking design",
-  "idea": "Refinement is improving a working design in small steps, with tests passing after each step, and optimising only where a measured cost appears.",
+  "title": "Refining the booking service",
+  "idea": "Refinement means improving a working design in small, tested steps: clearer classes first, then faster code where a measurement shows a real cost.",
   "points": [
-    "Refactor first for clarity: remove duplication, sharpen names, shrink long methods.",
-    "Measure before optimising; count the work done by code that runs on every booking.",
-    "Keep the interface fixed, so `BookingService` and its tests do not change.",
-    "Here, indexing by room means each overlap check reads only that room's bookings."
+    "Fix review findings and naming before you touch performance.",
+    "Optimise only a path you have measured or can count, like overlap checks.",
+    "Hide the change behind an existing class so callers stay untouched.",
+    "Re-run every test after each step, then write down the trade-off."
   ],
   "hero": {
-    "type": "compare",
-    "title": "Before and after one refinement",
-    "left": {
-      "title": "List repository",
-      "tone": "bad",
-      "items": [
-        "Stores every booking in one array",
-        "Each overlap check reads all bookings",
-        "Work grows with total bookings in the building"
-      ]
-    },
-    "right": {
-      "title": "Indexed repository",
-      "tone": "good",
-      "items": [
-        "Stores bookings in a `Map` keyed by room",
-        "Each check reads only that room's bookings",
-        "Same `save` and `forRoom` methods, same tests"
-      ]
-    },
-    "verdict": "Swap the repository behind its interface; the service never notices."
+    "type": "timeline",
+    "title": "One refinement loop",
+    "items": [
+      {
+        "label": "Measure",
+        "text": "Count the work: each overlap check scans every booking for the room."
+      },
+      {
+        "label": "Pick one",
+        "text": "Choose the single hottest spot. Leave the rest of the design alone."
+      },
+      {
+        "label": "Change inside",
+        "text": "Sort bookings by start inside the repository. The service API stays the same."
+      },
+      {
+        "label": "Re-test",
+        "text": "Run the boundary tests again: back-to-back, overlap, reversed slot."
+      },
+      {
+        "label": "Record",
+        "text": "Write the trade-off down: faster checks, but the index assumes saved bookings never overlap."
+      }
+    ]
   },
   "code": [
     {
-      "file": "index.mjs",
-      "lang": "js",
-      "title": "Measure, then index",
-      "run": "browser",
-      "caption": "Both repositories answer the same question. Compare how many bookings each one reads.",
+      "file": "IndexedRepoDemo.java",
+      "lang": "java",
+      "title": "Scan versus sorted lookup",
+      "run": "captured",
+      "caption": "One room, fully booked in half-hour slots. Both stores answer the same question; count how many bookings each one examines. Think of both classes as two versions of the inside of `BookingRepository`: the service calls the same method either way.",
       "walk": [
         {
           "lines": [
-            1
-          ],
-          "text": "A counter records how many bookings each lookup touches."
-        },
-        {
-          "lines": [
-            5,
-            6,
             7,
-            8
+            11
           ],
-          "text": "The list version filters the whole array on every lookup."
+          "text": "Sixteen back-to-back bookings go into both stores."
         },
         {
           "lines": [
-            11,
-            12,
-            13,
-            14,
-            15
+            21,
+            32
           ],
-          "text": "The indexed version groups bookings by `roomId` when they are saved."
+          "text": "Before: a list scan that compares the slot with bookings one by one."
         },
         {
           "lines": [
-            16,
-            17,
-            18,
-            19,
-            20
+            34,
+            37
           ],
-          "text": "A lookup reads only one room's list, or an empty one."
+          "text": "After: a `TreeMap` keyed by start time keeps bookings sorted."
         },
         {
           "lines": [
-            22,
-            23,
-            24,
-            25
+            39,
+            40
           ],
-          "text": "Load the same bookings, spread across many rooms, into each repository."
+          "text": "Two lookups find the neighbours; each walks the tree in O(log n) steps, not every booking."
         },
         {
           "lines": [
-            26,
-            27,
-            28
+            42,
+            43
           ],
-          "text": "Reset the counter, then measure a single lookup."
+          "text": "Overlap if the earlier one runs past our start, or the next begins before our end."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Do not optimise code you have not measured; clarity usually matters more.",
-    "Run the full test suite after every refactor step, not only at the end.",
-    "Keep the index in step with cancellations, or stale bookings will block rooms."
+    "Do not optimise before tests exist; you cannot prove the faster code is still right.",
+    "The neighbour check assumes stored bookings never overlap; a policy allowing overlaps breaks it.",
+    "Two bookings with the same start overwrite each other in one `TreeMap` key."
   ],
   "quiz": {
-    "q": "What does this print?",
-    "code": "const repo = new IndexedBookingRepository();\nrepo.save({ roomId: 'R1', start: 9, end: 10 });\nrepo.save({ roomId: 'R2', start: 9, end: 10 });\nreads = 0;\nrepo.forRoom('R3');\nconsole.log(reads);",
-    "lang": "js",
+    "q": "What does the `tree` line print?",
+    "code": "// 16 back-to-back half-hour bookings, 8.0 to 16.0\nSystem.out.println(\"tree taken=\" + tree.overlaps(15.25, 15.75)\n    + \" checks=\" + tree.checks);",
+    "lang": "java",
     "options": [
-      "2",
-      "0",
-      "undefined",
-      "1"
+      "tree taken=true checks=16",
+      "tree taken=false checks=2",
+      "tree taken=true checks=2",
+      "tree taken=true checks=15"
     ],
-    "answer": 1,
-    "why": "Room `R3` has no entry in the `Map`, so `forRoom` falls back to an empty list and reads nothing."
+    "answer": 2,
+    "why": "`floorEntry` finds the 15.0 booking, which ends at 15.5, past 15.25. The tree looks at exactly two neighbours."
   },
-  "takeaway": "Refine in small, tested steps, and optimise only what you measured.",
+  "takeaway": "Refine in small tested steps, and optimise only what you measured.",
   "chat": {
     "starters": [
-      "What other parts of BookingService are worth refactoring?",
-      "How would I index bookings by time as well as by room?",
-      "How do I explain a trade-off like this in an LLD interview?"
+      "How would I keep the TreeMap index safe with a ConflictPolicy?",
+      "Is the list scan ever good enough for a real office?",
+      "What should a refinement section in my design doc say?"
     ]
   }
 }

@@ -1,42 +1,41 @@
 {
   "title": "Your system design roadmap",
-  "idea": "A system design roadmap is the order you grow skills in: clean classes first, then services and data, then trade-offs at scale.",
+  "idea": "Your next step is practising low-level design (LLD) on fresh problems, then widen to high-level design (HLD), where whole services, data stores and networks are the parts.",
   "points": [
-    "You now design classes with SOLID principles, patterns and a full capstone.",
-    "Next, practise one low-level design (LLD) problem a week, timed, and explain it aloud.",
-    "Then study high-level design (HLD): services, databases, caches and queues.",
-    "At work, review designs and write short design notes before large changes."
+    "You can now apply SOLID, pick patterns for real needs, and build booking systems.",
+    "LLD shapes classes inside one service; HLD shapes services inside one system.",
+    "The same habits carry over: clarify, model, choose trade-offs, explain.",
+    "Practise one timed problem a week, and seek design reviews at work."
   ],
   "hero": {
-    "type": "table",
-    "title": "From classes to systems",
-    "head": ["Stage", "Focus", "Practice"],
-    "rows": [
-      ["Now: LLD", "Classes, SOLID, patterns", "Timed problems, mock interviews"],
-      ["Next: HLD", "Services, storage, caching", "Design a feed or a URL shortener"],
-      ["Then: scale", "Consistency, failure, cost", "Read postmortems, run load tests"],
-      ["Ongoing: craft", "Reviews and design notes", "Write one note per big change"]
+    "type": "flow",
+    "title": "From this book to system design",
+    "dir": "TB",
+    "nodes": [
+      { "id": "lld", "label": "LLD foundations", "sub": "SOLID, patterns, capstone" },
+      { "id": "practice", "label": "Timed practice problems", "sub": "one a week, reviewed" },
+      { "id": "hld", "label": "HLD fundamentals", "sub": "caching, queues, databases" },
+      { "id": "dist", "label": "Distributed trade-offs", "sub": "consistency, failure, scale" },
+      { "id": "work", "label": "Design reviews at work", "sub": "write, defend, revise" }
     ],
-    "highlight": { "row": 0 },
-    "caption": "Each stage builds on the one before. LLD habits carry into every HLD box."
+    "edges": [
+      { "from": "lld", "to": "practice", "caption": "Turn what you learned into speed: solve unseen problems against the clock." },
+      { "from": "practice", "to": "hld", "caption": "Zoom out: the service you designed class by class becomes one box in a larger system." },
+      { "from": "hld", "to": "dist", "caption": "Learn what breaks across machines: partial failure, stale data, uneven load." },
+      { "from": "dist", "to": "work", "caption": "Apply it on real features: short design notes, reviewed by peers." },
+      { "from": "work", "to": "practice", "caption": "Feedback from reviews tells you which problems to practise next.", "back": true, "dashed": true }
+    ]
   },
-  "quiz": {
-    "q": "What should usually come right after solid LLD practice?",
-    "options": [
-      "Memorising every Gang of Four pattern by heart",
-      "Learning high-level design: services, storage and caching",
-      "Skipping design and only grinding algorithm puzzles",
-      "Rewriting the capstone in a new language"
-    ],
-    "answer": 1,
-    "why": "HLD applies the same skill, splitting responsibilities, at the level of services and data stores. It is the natural next layer."
-  },
-  "takeaway": "Master the classes, then the services, then the trade-offs between them.",
+  "pitfalls": [
+    "Do not jump to HLD while your class designs still need many rewrites.",
+    "Avoid only reading solutions; solve first, then compare and note the gaps."
+  ],
+  "takeaway": "Design small things well, then design bigger things the same way.",
   "chat": {
     "starters": [
-      "How do LLD skills carry over into HLD interviews?",
-      "Which HLD problems should I study first?",
-      "How can I practise design at my current job?"
+      "What should I study first for high-level design interviews?",
+      "How do I practise LLD without someone to review my answers?",
+      "How is a senior engineer's design work different from an interview?"
     ]
   }
 }

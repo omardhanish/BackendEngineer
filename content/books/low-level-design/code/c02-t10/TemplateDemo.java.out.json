@@ -1,0 +1,11 @@
+{
+  "stdout": "name\nAda\nLinus\n[\n  \"Ada\",\n  \"Linus\"\n]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java TemplateDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "6ee40f7b7432960d",
+  "at": "2026-10-09T08:10:04.081Z"
+}

@@ -1,166 +1,164 @@
 {
   "title": "GRASP responsibility patterns",
-  "idea": "GRASP (General Responsibility Assignment Software Patterns) is nine guidelines for choosing which class owns each job; Low Coupling and High Cohesion are two of them.",
+  "idea": "GRASP is a set of nine guidelines for deciding which class owns each responsibility, such as Information Expert, Creator, Controller and Pure Fabrication.",
   "points": [
-    "Information Expert: give a job to the class holding the data it needs.",
-    "Creator: a class creates objects it contains or closely uses.",
-    "Controller: one object receives a system event and delegates the work.",
-    "Pure Fabrication invents a helper; Indirection puts it between callers and a varying part."
+    "Information Expert: give a job to the class that holds the data.",
+    "Creator: class A creates B when A contains or aggregates B.",
+    "Controller: one non-UI class receives each system event and delegates.",
+    "Low Coupling and High Cohesion, from the last page, are GRASP guidelines too."
   ],
   "hero": {
     "type": "flow",
-    "title": "Who does what in an order",
+    "title": "Who owns each job at checkout",
     "nodes": [
       {
-        "id": "route",
-        "label": "HTTP route",
-        "sub": "UI layer"
+        "id": "ui",
+        "label": "UI or main",
+        "sub": "system event"
       },
       {
         "id": "ctl",
-        "label": "OrderController",
+        "label": "CheckoutController",
         "sub": "Controller"
       },
       {
         "id": "order",
         "label": "Order",
-        "sub": "Expert, Creator"
+        "sub": "Creator, Expert"
       },
       {
         "id": "line",
-        "label": "LineItem",
+        "label": "OrderLine",
         "sub": "Expert"
       },
       {
-        "id": "tax",
-        "label": "TaxService",
-        "sub": "Pure Fabrication"
+        "id": "orders",
+        "label": "Orders interface",
+        "sub": "Indirection"
       },
       {
-        "id": "rule",
-        "label": "Tax rule",
-        "sub": "Polymorphism"
+        "id": "mem",
+        "label": "InMemoryOrders",
+        "sub": "Pure Fabrication"
       }
     ],
     "edges": [
       {
-        "from": "route",
+        "from": "ui",
         "to": "ctl",
-        "label": "addItem",
-        "caption": "The route hands the system event to a controller, keeping business rules out of the UI."
+        "label": "checkout",
+        "caption": "Controller: the UI hands the system event to one class that is not UI code."
       },
       {
         "from": "ctl",
         "to": "order",
-        "label": "addLine",
-        "caption": "The controller delegates. It decides nothing about prices itself."
+        "label": "new, add",
+        "caption": "The controller starts an `Order` and hands it the item; it does no maths itself."
       },
       {
         "from": "order",
         "to": "line",
-        "label": "new",
-        "caption": "`Order` contains lines, so it is the Creator of each `LineItem`."
-      },
-      {
-        "from": "line",
-        "to": "order",
-        "label": "subtotal",
-        "back": true,
-        "caption": "Each line knows price and quantity, so it is the Expert for its subtotal."
+        "label": "creates",
+        "caption": "Creator: `Order` contains its lines, so `Order` creates each `OrderLine`."
       },
       {
         "from": "ctl",
-        "to": "tax",
-        "label": "taxFor",
-        "caption": "`TaxService` is invented, not a domain noun: a Pure Fabrication that keeps `Order` cohesive."
+        "to": "orders",
+        "label": "save",
+        "caption": "Indirection: the controller talks to the `Orders` interface, not to a storage class."
       },
       {
-        "from": "tax",
-        "to": "rule",
-        "label": "calc",
-        "caption": "Rules share one `calc` shape. New regions add a class: Protected Variations through Polymorphism."
+        "from": "orders",
+        "to": "mem",
+        "label": "implements",
+        "dashed": true,
+        "caption": "Pure Fabrication: storage is not a domain idea, so an invented class does it."
+      },
+      {
+        "from": "mem",
+        "to": "order",
+        "label": "asks total",
+        "caption": "Information Expert: `Order` holds the lines, so it computes the total."
       }
     ]
   },
   "code": [
     {
-      "file": "grasp.mjs",
-      "lang": "js",
-      "title": "Expert, Creator, Controller",
-      "run": "browser",
-      "caption": "Add a `discount` to `LineItem.subtotal`. Only the Expert changes.",
+      "file": "GraspDemo.java",
+      "lang": "java",
+      "title": "GRASP at checkout",
+      "run": "captured",
+      "caption": "Every class got its job by asking one GRASP question: who has the data, who contains it, who receives the event?",
       "walk": [
         {
           "lines": [
-            1,
-            2,
-            3,
-            4
-          ],
-          "text": "`LineItem` holds price and quantity, so it computes its own subtotal."
-        },
-        {
-          "lines": [
-            7
-          ],
-          "text": "`Order` aggregates lines, so it creates them."
-        },
-        {
-          "lines": [
-            8
-          ],
-          "text": "`Order` is the Expert for the total: it asks each line."
-        },
-        {
-          "lines": [
-            10,
             11,
-            12,
-            13,
-            14
+            19
           ],
-          "text": "The controller receives events and delegates; no pricing logic lives here."
+          "text": "Controller: receives `checkout`, delegates every step, and does no arithmetic itself."
         },
         {
           "lines": [
-            15,
-            16,
-            17
+            26,
+            28
           ],
-          "text": "Two events, then read the total."
+          "text": "Creator: `Order` contains the lines, so it is the one that builds them."
+        },
+        {
+          "lines": [
+            29,
+            31
+          ],
+          "text": "Information Expert: `Order` holds the lines, so it sums them."
+        },
+        {
+          "lines": [
+            33,
+            35
+          ],
+          "text": "Each `OrderLine` is the expert on its own price times quantity."
+        },
+        {
+          "lines": [
+            36,
+            36
+          ],
+          "text": "Indirection: the controller depends on this interface, not on a storage class."
+        },
+        {
+          "lines": [
+            38,
+            45
+          ],
+          "text": "Pure Fabrication: an invented storage class. A database version could replace it (Polymorphism)."
         }
       ]
-    },
-    {
-      "file": "tax.mjs",
-      "lang": "js",
-      "title": "Fabrication and variation",
-      "run": "browser",
-      "caption": "Add a `HalfTax` rule for a new region. `TaxService` stays the same."
     }
   ],
   "pitfalls": [
-    "Do not let one controller grow business rules; it should only delegate.",
-    "Avoid fabricating helpers for data a domain class already owns.",
-    "Protect only points likely to vary; every extra layer costs reading time."
+    "Do not put business rules in the controller; it should only receive and delegate.",
+    "Avoid one bloated controller that handles every system event; split controllers by use case.",
+    "Add a Pure Fabrication only for a clear job, not as a dumping ground."
   ],
   "quiz": {
-    "q": "An `Invoice` holds its lines and their prices. Which class should compute the invoice total?",
+    "q": "After the two calls in `main`, this runs. What does it print?",
+    "code": "controller.checkout(\"li\", \"pad\", 340, 2);",
+    "lang": "java",
     "options": [
-      "A new `InvoiceTotalCalculator` class",
-      "The controller that handles the request",
-      "The `Invoice` itself",
-      "The repository that loads the invoice"
+      "saved #1 li total 680",
+      "saved #3 li total 680",
+      "saved #3 li total 340",
+      "saved #2 li total 680"
     ],
-    "answer": 2,
-    "why": "Information Expert: `Invoice` already has the lines and prices, so computing there needs no extra coupling."
+    "answer": 1,
+    "why": "`InMemoryOrders` keeps one list across calls, so this is the third save. `Order.total` asks each line: 340 times 2 is 680."
   },
-  "takeaway": "Give each job to the class that already knows enough to do it.",
+  "takeaway": "Give each job to the class that has the data it needs.",
   "chat": {
     "starters": [
-      "How does GRASP differ from SOLID?",
-      "When is a Pure Fabrication better than a domain class?",
-      "Which GRASP ideas matter most in an LLD interview?"
+      "What are all nine GRASP principles?",
+      "How is GRASP different from SOLID?",
+      "When does Information Expert give a bad answer?"
     ]
   }
 }

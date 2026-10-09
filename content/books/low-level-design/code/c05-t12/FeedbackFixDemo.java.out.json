@@ -1,0 +1,11 @@
+{
+  "stdout": "-- before the fix\nFAIL back-to-back is allowed\nPASS overlap is refused\n-- after the fix\nPASS back-to-back is allowed\nPASS overlap is refused\nfailed after the fix: 0",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java FeedbackFixDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "37d2d1e064f8daf3",
+  "at": "2026-10-09T08:24:45.339Z"
+}

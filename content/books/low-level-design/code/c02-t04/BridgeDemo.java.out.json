@@ -1,0 +1,11 @@
+{
+  "stdout": "email: [info] disk 80% full\nemail: [URGENT] DISK 99% FULL, reply ACK\nsms:   [info] disk 80% full\nsms:   [URGENT] DISK 99% FULL, reply ACK",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java BridgeDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "d7df3d83d2b42dba",
+  "at": "2026-10-09T08:13:05.750Z"
+}

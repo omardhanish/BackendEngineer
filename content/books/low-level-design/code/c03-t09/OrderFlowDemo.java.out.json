@@ -1,0 +1,11 @@
+{
+  "stdout": "app: A-42 ACCEPTED\nrefused: PARTNER cannot set READY\napp: A-42 READY\nrider: collect A-42\napp: A-42 PICKED_UP\napp: A-42 DELIVERED\nrefused: A-42 is already delivered",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java OrderFlowDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "18154aefa6056f7c",
+  "at": "2026-10-09T08:26:07.148Z"
+}

@@ -1,134 +1,268 @@
 {
   "title": "The SOLID principles",
-  "idea": "SOLID is five rules for classes that keep change cheap: one reason to change, extend without editing, honest subtypes, small interfaces, and depending on abstractions.",
+  "idea": "SOLID is five rules for classes: one reason to change, extend without editing, honour the parent's contract, keep interfaces small, depend on abstractions.",
   "analogy": {
-    "text": "A kitchen with standard sockets. Each appliance does one thing, and you plug in a new one without rewiring the wall.",
-    "breaks": "Code has no physical socket; you design the interface yourself."
+    "text": "A wall socket: the kettle needs only the socket's shape, any plug that fits works, and a new appliance never needs rewiring the house.",
+    "breaks": "Sockets never change; real interfaces do, so design them with care."
   },
   "points": [
-    "Each principle answers one question: what breaks when a requirement changes?",
-    "New behaviour should arrive as a new class, not an edit to working code.",
-    "A subclass must work anywhere its parent works, with no surprises.",
-    "High-level code depends on an abstraction; concrete helpers are passed in from outside."
+    "Single responsibility (SRP): a class has one reason to change.",
+    "Open/closed (OCP): add behaviour with a new class, not by editing old ones.",
+    "Liskov substitution (LSP): a subtype must keep every promise its parent type makes.",
+    "Interface segregation (ISP) keeps interfaces small; dependency inversion (DIP) makes callers depend on them."
   ],
   "hero": {
-    "type": "table",
-    "title": "Five rules, five smells",
-    "head": [
-      "Principle",
-      "Rule",
-      "Smell it fixes"
-    ],
-    "rows": [
-      [
-        "S · Single responsibility",
-        "One reason to change per class",
-        "Invoice class that also emails and saves"
+    "type": "anim",
+    "engine": "topology",
+    "title": "Five principles in one checkout",
+    "scenario": {
+      "tiers": [
+        [
+          "main"
+        ],
+        [
+          "checkout"
+        ],
+        [
+          "receipt",
+          "card",
+          "wallet"
+        ]
       ],
-      [
-        "O · Open/closed",
-        "Add behaviour by adding code",
-        "A growing switch on type"
+      "nodes": {
+        "main": {
+          "label": "main",
+          "kind": "client"
+        },
+        "checkout": {
+          "label": "Checkout",
+          "sub": "runs a payment",
+          "kind": "service"
+        },
+        "receipt": {
+          "label": "ConsoleReceipt",
+          "sub": "Receipt",
+          "kind": "box"
+        },
+        "card": {
+          "label": "CardPayment",
+          "sub": "PaymentMethod",
+          "kind": "box"
+        },
+        "wallet": {
+          "label": "WalletPayment",
+          "sub": "PaymentMethod",
+          "kind": "box"
+        }
+      },
+      "links": [
+        [
+          "main",
+          "checkout"
+        ],
+        [
+          "checkout",
+          "receipt",
+          {
+            "label": "prints",
+            "dashed": true
+          }
+        ],
+        [
+          "checkout",
+          "card"
+        ],
+        [
+          "checkout",
+          "wallet"
+        ]
       ],
-      [
-        "L · Liskov substitution",
-        "Subtypes keep the parent's promises",
-        "Override that throws or does nothing"
-      ],
-      [
-        "I · Interface segregation",
-        "Small, focused interfaces",
-        "Classes stubbing methods they never use"
-      ],
-      [
-        "D · Dependency inversion",
-        "Depend on abstractions, injected",
-        "new MySqlClient() inside business logic"
+      "steps": [
+        {
+          "caption": "SRP: `Checkout` only runs a payment. Printing the result is the job of a separate `Receipt`.",
+          "focus": [
+            "checkout",
+            "receipt"
+          ]
+        },
+        {
+          "caption": "DIP: `Checkout` depends only on the `Receipt` interface. `main` injects a `ConsoleReceipt` through the constructor.",
+          "send": [
+            {
+              "from": "main",
+              "to": "checkout",
+              "label": "receipt",
+              "tone": "info"
+            }
+          ],
+          "state": {
+            "checkout": "ok"
+          }
+        },
+        {
+          "caption": "`pay(1200, card)` asks the `PaymentMethod` to charge. `Checkout` never checks which class it got.",
+          "send": [
+            {
+              "from": "checkout",
+              "to": "card",
+              "label": "charge",
+              "tone": "req"
+            }
+          ],
+          "state": {
+            "card": "ok"
+          }
+        },
+        {
+          "caption": "OCP: `WalletPayment` came later as a new class. Not one line of `Checkout` changed.",
+          "state": {
+            "wallet": "new"
+          },
+          "badge": {
+            "wallet": "added"
+          },
+          "focus": [
+            "wallet"
+          ]
+        },
+        {
+          "caption": "LSP: the wallet declines 900 by returning `false`, as the contract allows. It never throws a surprise.",
+          "send": [
+            {
+              "from": "checkout",
+              "to": "wallet",
+              "label": "charge",
+              "tone": "warn"
+            }
+          ],
+          "badge": {
+            "wallet": "declined"
+          }
+        },
+        {
+          "caption": "ISP: `Receipt` has one method. A class that only prints never has to fake payment methods.",
+          "send": [
+            {
+              "from": "checkout",
+              "to": "receipt",
+              "label": "print",
+              "tone": "ok"
+            }
+          ],
+          "focus": [
+            "receipt"
+          ]
+        }
       ]
-    ],
-    "caption": "Read each row as: if you smell this, apply that rule."
+    }
   },
   "code": [
     {
-      "file": "checkout.mjs",
-      "lang": "js",
-      "title": "S, O, I, D together",
-      "run": "browser",
-      "caption": "Add a `Cap` rule that limits the total to 50, and pass it in. `Checkout` never changes.",
+      "file": "SolidDemo.java",
+      "lang": "java",
+      "title": "S, O, I and D",
+      "run": "captured",
+      "caption": "A checkout built on two small interfaces. New payment methods arrive as new classes.",
       "walk": [
         {
           "lines": [
-            1,
-            2,
-            3,
-            4
+            10,
+            13
           ],
-          "text": "Each discount is its own class with one job: S."
+          "text": "DIP: the abstraction `Checkout` depends on. `false` is a normal answer, not an error."
         },
         {
           "lines": [
-            2,
-            4
+            15,
+            23
           ],
-          "text": "Both expose one method, `apply(total)`. In JS, that method shape is the interface: I."
+          "text": "OCP: each method is its own class. Adding one never edits `Checkout`."
+        },
+        {
+          "lines": [
+            25,
+            31
+          ],
+          "text": "ISP: `Receipt` asks for one method, so any printer fits easily."
+        },
+        {
+          "lines": [
+            33,
+            36
+          ],
+          "text": "SRP: one job. DIP: it holds a `Receipt`, injected through the constructor."
+        },
+        {
+          "lines": [
+            38,
+            41
+          ],
+          "text": "`pay` calls the interface only. It works for any `PaymentMethod`."
+        }
+      ]
+    },
+    {
+      "file": "LspDemo.java",
+      "lang": "java",
+      "title": "L, broken",
+      "run": "captured",
+      "caption": "`FrozenSettings` compiles as a `Settings`, yet it breaks code that trusts `put`.",
+      "walk": [
+        {
+          "lines": [
+            20,
+            23
+          ],
+          "text": "The interface promises both reading and writing."
+        },
+        {
+          "lines": [
+            32,
+            37
+          ],
+          "text": "This subtype refuses `put`: it type-checks but breaks the promise."
+        },
+        {
+          "lines": [
+            10,
+            17
+          ],
+          "text": "`rename` was written for any `Settings` and now fails on one."
         },
         {
           "lines": [
             6,
             7
           ],
-          "text": "`Checkout` depends only on the `apply` shape; concrete rules are injected: D."
-        },
-        {
-          "lines": [
-            8,
-            9,
-            10
-          ],
-          "text": "It only knows `apply`, so new rules need no edit here: O."
-        },
-        {
-          "lines": [
-            12,
-            13,
-            14
-          ],
-          "text": "Compose rules at the edge of the program, then run."
+          "text": "Same call, two subtypes, one broken promise. The fix is ISP: split read from write."
         }
       ]
-    },
-    {
-      "file": "lsp.mjs",
-      "lang": "js",
-      "title": "Breaking Liskov",
-      "run": "browser",
-      "caption": "`LockedDeposit` is an `Account` by syntax, but not by behaviour. Callers pay the price."
     }
   ],
   "pitfalls": [
-    "Split a class only when its parts change for different reasons.",
-    "An override that throws `not supported` signals a wrong inheritance tree.",
-    "Injection helps only if the receiving class calls the method and never checks `instanceof`."
+    "Do not throw `UnsupportedOperationException` from an override; split the interface instead.",
+    "Do not split classes by method count; split them by who asks for changes.",
+    "Add an interface where you need to swap or fake a class, not by reflex."
   ],
   "quiz": {
-    "q": "What does this print?",
-    "code": "class Flat { constructor(off) { this.off = off; }\n  apply(t) { return Math.max(0, t - this.off); } }\nclass Checkout { constructor(rules) { this.rules = rules; }\n  total(a) { return this.rules.reduce((s, rule) => rule.apply(s), a); } }\nconsole.log(new Checkout([new Flat(30), new Flat(30)]).total(50));",
-    "lang": "js",
+    "q": "What is the second line `LspDemo` prints?",
     "options": [
-      "-10",
-      "0",
-      "20",
-      "50"
+      "saved default",
+      "saved shop",
+      "broke: frozen",
+      "broke: null"
     ],
-    "answer": 1,
-    "why": "The first rule turns 50 into 20. The second floors 20 minus 30 at zero with `Math.max`."
+    "answer": 2,
+    "why": "`FrozenSettings.put` throws `UnsupportedOperationException` with the message `frozen`. `rename` catches it and returns that message, so substitution failed.",
+    "code": "rename(new FrozenSettings());\n// rename: s.put(\"name\", \"shop\") ... catch -> \"broke: \" + message",
+    "lang": "java"
   },
-  "takeaway": "SOLID keeps change local: small jobs, honest subtypes, injected abstractions.",
+  "takeaway": "Small classes, small interfaces, kept promises: add features by adding classes.",
   "chat": {
     "starters": [
-      "How do I spot a Single Responsibility violation in my code?",
-      "Is Liskov substitution only about inheritance?",
-      "How strictly should I apply SOLID in an interview?"
+      "How do I explain SRP without saying 'does one thing'?",
+      "Is the Square extends Rectangle problem really an LSP violation?",
+      "What is the difference between dependency inversion and dependency injection?"
     ]
   }
 }

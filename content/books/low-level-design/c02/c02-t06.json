@@ -1,72 +1,178 @@
 {
   "title": "Facade and Flyweight",
-  "idea": "Facade gives a busy subsystem one simple entry point. Flyweight shares one object for state that repeats, so thousands of uses cost little memory.",
+  "idea": "Facade gives a busy subsystem one simple front door. Flyweight shares one immutable object among many users, so look-alikes store only what differs.",
   "points": [
-    "A facade exposes one method that calls several subsystem classes in order.",
-    "Callers depend on the facade, so subsystem changes stay behind it.",
-    "Flyweight splits state: shared intrinsic data and per-use extrinsic data.",
-    "A factory hands out the shared object, creating each kind only once."
+    "A facade class holds the subsystem parts and calls them in the right order.",
+    "Callers depend on the facade only, so the parts can change behind it.",
+    "Shared intrinsic state, like an icon, stays apart from per-object extrinsic state, like position.",
+    "A factory caches flyweights by key and hands back the same instance each time."
   ],
   "hero": {
-    "type": "flow",
-    "title": "One call behind a facade",
-    "nodes": [
-      { "id": "api", "label": "Order route", "sub": "the caller" },
-      { "id": "facade", "label": "CheckoutFacade", "sub": "placeOrder()" },
-      { "id": "stock", "label": "Stock", "sub": "reserve()" },
-      { "id": "pay", "label": "Payments", "sub": "charge()" },
-      { "id": "ship", "label": "Shipping", "sub": "label()" }
+    "type": "seq",
+    "title": "One call, three subsystems",
+    "actors": [
+      {
+        "id": "main",
+        "label": "main"
+      },
+      {
+        "id": "checkout",
+        "label": "Checkout (facade)"
+      },
+      {
+        "id": "stock",
+        "label": "Stock"
+      },
+      {
+        "id": "pay",
+        "label": "Payments"
+      },
+      {
+        "id": "courier",
+        "label": "Courier"
+      }
     ],
-    "edges": [
-      { "from": "api", "to": "facade", "label": "placeOrder", "caption": "The route makes one call. It does not know which classes sit behind the facade." },
-      { "from": "facade", "to": "stock", "label": "1", "caption": "The facade reserves stock first, because charging for missing stock is wrong." },
-      { "from": "facade", "to": "pay", "label": "2", "caption": "Then it charges the payment. The order of steps lives in one place." },
-      { "from": "facade", "to": "ship", "label": "3", "caption": "Finally it creates a shipping label. Swap `Shipping` and the route never changes." }
+    "messages": [
+      {
+        "from": "main",
+        "to": "checkout",
+        "label": "placeOrder(\"lamp\", 25.0)",
+        "note": "The caller makes one call. It knows nothing about the three parts."
+      },
+      {
+        "from": "checkout",
+        "to": "stock",
+        "label": "reserve(\"lamp\")",
+        "note": "The facade checks stock first, because charging for missing goods is wrong."
+      },
+      {
+        "from": "stock",
+        "to": "checkout",
+        "label": "true",
+        "dashed": true,
+        "note": "Stock says yes, so the facade may go on."
+      },
+      {
+        "from": "checkout",
+        "to": "pay",
+        "label": "charge(25.0)",
+        "note": "Next it charges the customer and keeps the payment id."
+      },
+      {
+        "from": "checkout",
+        "to": "courier",
+        "label": "book(\"lamp\")",
+        "note": "Then it books a pickup and gets a tracking id."
+      },
+      {
+        "from": "checkout",
+        "to": "main",
+        "label": "\"placed: …\"",
+        "dashed": true,
+        "note": "The caller gets one result. The order of steps lives in one place."
+      }
     ]
   },
   "code": [
     {
-      "file": "checkout.mjs",
-      "lang": "js",
-      "title": "Facade: checkout",
-      "run": "browser",
-      "caption": "Three subsystems behind one method. Add a `Receipts` class and call it in `placeOrder`; line 14 stays the same."
+      "file": "FacadeDemo.java",
+      "lang": "java",
+      "title": "Facade",
+      "run": "captured",
+      "caption": "`Checkout` hides three classes and their order behind one method.",
+      "walk": [
+        {
+          "lines": [
+            10,
+            30
+          ],
+          "text": "Three subsystem classes, each with its own small job and its own method."
+        },
+        {
+          "lines": [
+            32,
+            38
+          ],
+          "text": "The facade receives the parts through its constructor and keeps them `private final`."
+        },
+        {
+          "lines": [
+            40,
+            44
+          ],
+          "text": "`placeOrder` owns the sequence and stops early when stock is missing."
+        },
+        {
+          "lines": [
+            3,
+            6
+          ],
+          "text": "`main` wires the parts once, then only ever talks to `Checkout`."
+        }
+      ]
     },
     {
-      "file": "markers.mjs",
-      "lang": "js",
-      "title": "Flyweight: map pins",
-      "run": "browser",
-      "caption": "Four pins share two `Icon` objects. Add more `cafe` pins and watch the icon count.",
+      "file": "FlyweightDemo.java",
+      "lang": "java",
+      "title": "Flyweight",
+      "run": "captured",
+      "caption": "Four map markers share two `Style` objects. Only the position is stored per marker.",
       "walk": [
-        { "lines": [1, 2, 3, 4, 5], "text": "`Icon` holds the heavy, shared part, frozen so no user can change it." },
-        { "lines": [4], "text": "Position is extrinsic: passed into `draw`, never stored." },
-        { "lines": [6, 7, 8, 9, 10, 11], "text": "The factory creates an icon per kind once, then reuses it." },
-        { "lines": [14], "text": "One factory serves every pin." },
-        { "lines": [15], "text": "Each pin is a small tuple: kind plus coordinates." },
-        { "lines": [16, 17], "text": "Draw every pin, then compare pins with icons actually created." }
+        {
+          "lines": [
+            21,
+            22
+          ],
+          "text": "`Style` is the flyweight: immutable, so sharing it is safe."
+        },
+        {
+          "lines": [
+            24,
+            29
+          ],
+          "text": "`Marker` keeps its own position and a reference to a shared style."
+        },
+        {
+          "lines": [
+            31,
+            40
+          ],
+          "text": "`StyleCache` builds a style once per key and returns the cached one after."
+        },
+        {
+          "lines": [
+            7,
+            17
+          ],
+          "text": "`main` asks for `cafe` three times and compares two styles with `==`."
+        }
       ]
     }
   ],
   "pitfalls": [
-    "Keep a facade thin; business rules in it turn it into a god class.",
-    "Do not block direct subsystem access when an advanced caller needs it.",
-    "Never mutate a flyweight's shared state; every user of it would change."
+    "Keep the facade thin: it orders calls, it should not absorb the subsystem's rules.",
+    "Never put mutable state in a flyweight; one change would alter every user.",
+    "Skip Flyweight until you have many objects and measured memory pressure."
   ],
   "quiz": {
-    "q": "What does this print?",
-    "code": "const pool = new Map();\nconst get = (k) => {\n  if (!pool.has(k)) pool.set(k, { k });\n  return pool.get(k);\n};\nconst a = get('x'), b = get('x');\nconsole.log(a === b, pool.size);",
-    "lang": "js",
-    "options": ["false 2", "false 1", "true 2", "true 1"],
-    "answer": 3,
-    "why": "The second `get('x')` finds the key and returns the same object, so both names point to one entry."
+    "q": "What does the last line print?",
+    "options": [
+      "styles: 4",
+      "styles: 3",
+      "styles: 2",
+      "styles: 1"
+    ],
+    "answer": 1,
+    "why": "The cache keys on icon and colour. `cafe/brown`, `cafe/red` and `park/green` are three distinct keys; the repeat reuses one.",
+    "code": "StyleCache styles = new StyleCache();\nstyles.get(\"cafe\", \"brown\");\nstyles.get(\"cafe\", \"red\");\nstyles.get(\"park\", \"green\");\nstyles.get(\"cafe\", \"brown\");\nSystem.out.println(\"styles: \" + styles.size());",
+    "lang": "java"
   },
-  "takeaway": "Facade simplifies access; Flyweight shares repeated state to save memory.",
+  "takeaway": "Facade simplifies access to many parts; Flyweight shares state to save memory.",
   "chat": {
     "starters": [
-      "How is a Facade different from an Adapter?",
-      "When is Flyweight worth it in a Node backend?",
-      "Can a facade call another facade?"
+      "Is a service class in Spring just a facade?",
+      "Is Java's string pool an example of Flyweight?",
+      "How do I stop a facade from becoming a god class?"
     ]
   }
 }

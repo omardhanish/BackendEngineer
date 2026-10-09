@@ -1,83 +1,191 @@
 {
   "title": "Proxy and Chain of Responsibility",
-  "idea": "Proxy stands in for an object with the same interface and controls access to it. Chain of Responsibility passes a request along handlers until one deals with it.",
+  "idea": "Proxy is a stand-in with the same interface that controls access to the real object. Chain of Responsibility passes a request along handlers until one deals with it.",
   "points": [
-    "A proxy can check permissions, cache results or create the real object lazily.",
-    "Unlike a decorator, a proxy often creates or guards the real object itself.",
-    "In a chain, each handler either answers the request or passes it on.",
-    "Handlers know only the next link, so you reorder them without edits."
+    "A proxy implements the real object's interface, so callers cannot tell them apart.",
+    "Unlike a decorator, it controls access and often creates the real object itself.",
+    "In a chain, each handler either answers the request or forwards it to `next`.",
+    "The sender knows only the first handler; the chain's order sets the outcome."
   ],
   "hero": {
-    "type": "seq",
-    "title": "A protection proxy at work",
-    "actors": [
-      { "id": "admin", "label": "Admin caller" },
-      { "id": "guest", "label": "Guest caller" },
-      { "id": "proxy", "label": "ReportProxy" },
-      { "id": "real", "label": "Reports" }
+    "type": "flow",
+    "title": "A refund request walks the chain",
+    "nodes": [
+      {
+        "id": "req",
+        "label": "handle(150.0)",
+        "sub": "caller"
+      },
+      {
+        "id": "auto",
+        "label": "AutoRefund",
+        "sub": "up to 20"
+      },
+      {
+        "id": "agent",
+        "label": "AgentRefund",
+        "sub": "up to 200"
+      },
+      {
+        "id": "mgr",
+        "label": "ManagerReview",
+        "sub": "anything left"
+      },
+      {
+        "id": "done",
+        "label": "Answer",
+        "sub": "back to caller"
+      }
     ],
-    "messages": [
-      { "from": "admin", "to": "proxy", "label": "build('q3')", "note": "The admin calls `build` on what looks like the real service." },
-      { "from": "proxy", "to": "real", "label": "new Reports()", "note": "The role check passes. The proxy creates `Reports` now, on first use." },
-      { "from": "proxy", "to": "real", "label": "build('q3')", "note": "It forwards the same call with the same argument." },
-      { "from": "real", "to": "proxy", "label": "'report q3'", "dashed": true, "note": "The real object does the costly work and returns." },
-      { "from": "proxy", "to": "admin", "label": "'report q3'", "dashed": true, "note": "The proxy hands the result back unchanged." },
-      { "from": "guest", "to": "proxy", "label": "build('q3')", "note": "A guest makes the same call through its own `ReportProxy`." },
-      { "from": "proxy", "to": "guest", "label": "Error: forbidden", "dashed": true, "note": "The check fails, so `Reports` is never created or called." }
+    "edges": [
+      {
+        "from": "req",
+        "to": "auto",
+        "label": "start",
+        "caption": "The caller hands the request to the first handler only."
+      },
+      {
+        "from": "auto",
+        "to": "agent",
+        "label": "too big",
+        "caption": "150.0 is over the automatic limit, so `AutoRefund` forwards it."
+      },
+      {
+        "from": "agent",
+        "to": "done",
+        "label": "handled",
+        "caption": "`AgentRefund` can approve up to 200, so it answers and the chain stops."
+      },
+      {
+        "from": "agent",
+        "to": "mgr",
+        "label": "too big",
+        "dashed": true,
+        "caption": "A larger amount would travel on to `ManagerReview`, the catch-all."
+      },
+      {
+        "from": "mgr",
+        "to": "done",
+        "label": "handled",
+        "dashed": true,
+        "caption": "The last handler always answers, so no request falls off the end."
+      }
     ]
   },
   "code": [
     {
-      "file": "proxy.mjs",
-      "lang": "js",
-      "title": "Proxy: guard and lazy load",
-      "run": "browser",
-      "caption": "Same method name, extra control. Change the guest's role to `admin` and run it.",
+      "file": "ProxyDemo.java",
+      "lang": "java",
+      "title": "Proxy",
+      "run": "captured",
+      "caption": "A protection proxy that also opens the costly real object only when needed.",
       "walk": [
-        { "lines": [1, 2, 3], "text": "The real subject: costly to build, no security of its own." },
-        { "lines": [4, 5, 6], "text": "The proxy holds the user and, later, the real object." },
-        { "lines": [8], "text": "Access control runs before any real work." },
-        { "lines": [9], "text": "`??=` creates `Reports` only on the first allowed call." },
-        { "lines": [10], "text": "Then it forwards the call unchanged." },
-        { "lines": [13, 14, 15], "text": "An admin gets a report; a guest gets an error." }
+        {
+          "lines": [
+            11,
+            13
+          ],
+          "text": "The interface both the real object and the proxy implement."
+        },
+        {
+          "lines": [
+            15,
+            21
+          ],
+          "text": "`ArchiveReports` is costly to build; its constructor prints so you see when."
+        },
+        {
+          "lines": [
+            23,
+            27
+          ],
+          "text": "The proxy keeps the caller's role and a `real` field that starts empty."
+        },
+        {
+          "lines": [
+            29,
+            33
+          ],
+          "text": "It refuses the wrong role, builds the real object once, then delegates."
+        },
+        {
+          "lines": [
+            3,
+            7
+          ],
+          "text": "`main` uses two proxies; only the analyst's ever opens the archive."
+        }
       ]
     },
     {
-      "file": "chain.mjs",
-      "lang": "js",
-      "title": "Chain: request checks",
-      "run": "browser",
-      "caption": "Three requests, three different handlers answer. Build the chain as `Limit`, `Auth`, `Route` on lines 13–14 and watch `/b`.",
+      "file": "ChainDemo.java",
+      "lang": "java",
+      "title": "Chain of Responsibility",
+      "run": "captured",
+      "caption": "Three handlers, each with its own limit. The chain is built once in `main`.",
       "walk": [
-        { "lines": [1, 2, 3], "text": "The base class stores the next handler; `setNext` returns it for chaining." },
-        { "lines": [4], "text": "Default: pass the request on, or report that nobody took it." },
-        { "lines": [6, 7, 8], "text": "`Auth` answers with 401 or calls `super.handle` to pass along." },
-        { "lines": [9, 10, 11], "text": "`Limit` stops busy callers; otherwise it passes along." },
-        { "lines": [12], "text": "`Route` ends the chain and always answers." },
-        { "lines": [13, 14], "text": "Build the chain once: `Auth`, then `Limit`, then `Route`." },
-        { "lines": [15, 16, 17], "text": "Each request stops at the first handler that answers." }
+        {
+          "lines": [
+            11,
+            19
+          ],
+          "text": "The base class stores `next` and forwards by default."
+        },
+        {
+          "lines": [
+            21,
+            27
+          ],
+          "text": "`AutoRefund` answers small amounts, otherwise calls `super.handle` to forward."
+        },
+        {
+          "lines": [
+            29,
+            35
+          ],
+          "text": "`AgentRefund` follows the same shape with a higher limit."
+        },
+        {
+          "lines": [
+            37,
+            43
+          ],
+          "text": "`ManagerReview` ends the chain and always answers."
+        },
+        {
+          "lines": [
+            3,
+            7
+          ],
+          "text": "`main` links the handlers and sends three amounts to the first one."
+        }
       ]
     }
   ],
   "pitfalls": [
-    "Keep the proxy's methods identical to the real object's, or callers break on swap.",
-    "End every chain with a default handler so no request disappears unanswered.",
-    "Order chain handlers on purpose: put cheap checks that reject many requests first."
+    "End every chain with a catch-all, or check the null `next` case explicitly.",
+    "Do not build a lazy proxy's real object in the constructor; that defeats it.",
+    "Keep a proxy's interface identical to the real one, or callers must know about it."
   ],
   "quiz": {
     "q": "What does this print?",
-    "code": "const chain = [\n  (n) => (n < 0 ? 'negative' : null),\n  (n) => (n % 2 === 0 ? 'even' : null),\n  () => 'odd',\n];\nconst run = (n) => {\n  for (const h of chain) { const r = h(n); if (r !== null) return r; }\n};\nconsole.log(run(-4));",
-    "lang": "js",
-    "options": ["even", "odd", "null", "negative"],
-    "answer": 3,
-    "why": "The loop stops at the first handler that answers. The first handler already returns `negative` for -4, so the others never run."
+    "options": [
+      "auto refund",
+      "agent refund",
+      "manager review",
+      "rejected"
+    ],
+    "answer": 0,
+    "why": "`AutoRefund` tests `amount <= 20`. Exactly 20.0 passes that test, so the first handler answers and nothing is forwarded.",
+    "code": "RefundHandler chain =\n    new AutoRefund(new AgentRefund(new ManagerReview()));\nSystem.out.println(chain.handle(20.0));",
+    "lang": "java"
   },
-  "takeaway": "A proxy controls access to one object; a chain finds who handles a request.",
+  "takeaway": "A proxy guards one object; a chain lets many handlers take turns.",
   "chat": {
     "starters": [
-      "How does a Proxy differ from a Decorator?",
-      "Is Express middleware a Chain of Responsibility?",
-      "When would I use JavaScript's built-in Proxy object instead?"
+      "How is a Proxy different from a Decorator if both wrap?",
+      "Are servlet filters an example of Chain of Responsibility?",
+      "What is a dynamic proxy in Java and when would I use one?"
     ]
   }
 }

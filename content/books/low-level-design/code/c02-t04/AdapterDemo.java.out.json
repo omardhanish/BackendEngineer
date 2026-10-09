@@ -1,0 +1,11 @@
+{
+  "stdout": "bank: 1250 GBP for A-17\nPAID A-17\nDECLINED A-18",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java AdapterDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "a729f507a185af38",
+  "at": "2026-10-09T08:24:39.825Z"
+}

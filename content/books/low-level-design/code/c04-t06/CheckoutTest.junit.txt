@@ -1,0 +1,22 @@
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+import org.junit.jupiter.api.Test;
+
+class CheckoutTest {
+    PaymentGateway gateway = mock(PaymentGateway.class);
+    Checkout checkout = new Checkout(gateway);
+
+    @Test
+    void chargesTheCartTotal() {
+        when(gateway.charge("c1", 1200)).thenReturn(true);
+        assertTrue(checkout.pay("c1", 1200));
+        verify(gateway).charge("c1", 1200);
+    }
+
+    @Test
+    void emptyCartNeverReachesTheGateway() {
+        assertThrows(IllegalArgumentException.class,
+                () -> checkout.pay("c3", 0));
+        verifyNoInteractions(gateway);
+    }
+}

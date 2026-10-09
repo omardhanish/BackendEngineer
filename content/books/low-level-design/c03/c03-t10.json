@@ -1,33 +1,41 @@
 {
   "title": "Rate limiter design",
-  "idea": "A rate limiter decides, per client key, whether a request may run now, and refuses the rest so one caller cannot flood a service.",
+  "idea": "A rate limiter decides, per client, whether one more request is allowed now, so no client can send more than a set number in a period.",
   "analogy": {
-    "text": "An arcade coin jar. A tap drips one coin in each second, the jar holds three, and every game costs one coin.",
-    "breaks": "Real tokens are only a number, recomputed when a request arrives."
+    "text": "An arcade card holds at most three game credits and gains one each minute. Each game spends a credit. No credit, no game until the next one arrives.",
+    "breaks": "A card can be topped up with money; a bucket refills only with time."
   },
   "points": [
-    "Every limiter answers one question: may this key make a request now?",
-    "Token bucket: tokens refill at a steady rate, and each request spends one.",
-    "Sliding window log: keep recent request times and refuse once the window is full.",
-    "Algorithms share one `RateLimiter` interface, so callers swap them without edits."
+    "Callers depend on one `RateLimiter` interface; each algorithm is a separate class.",
+    "Token bucket allows short bursts up to capacity, then a steady refill rate.",
+    "Fixed windows are cheap, but allow a double burst across a window boundary.",
+    "Inject the clock as a `TimeSource`, and make `tryAcquire` atomic with `synchronized`."
   ],
   "hero": {
     "type": "anim",
     "engine": "lanes",
     "title": "Token bucket, capacity three",
     "scenario": {
+      "code": [
+        "synchronized boolean tryAcquire() {",
+        "  refill();  // add earned tokens, cap at 3",
+        "  if (tokens == 0) return false;",
+        "  tokens--;",
+        "  return true;",
+        "}"
+      ],
       "lanes": [
         {
           "id": "in",
           "label": "Incoming",
           "kind": "queue",
-          "hint": "requests from ip-1"
+          "hint": "requests from one client"
         },
         {
           "id": "bucket",
           "label": "Bucket",
           "kind": "area",
-          "hint": "max 3 tokens, +1 per second"
+          "hint": "at most 3 tokens"
         },
         {
           "id": "ok",
@@ -38,50 +46,62 @@
           "id": "no",
           "label": "Rejected",
           "kind": "area",
-          "hint": "HTTP 429"
+          "hint": "429 Too Many Requests"
         }
       ],
       "tokens": {
-        "t1": {
-          "label": "token",
-          "tone": "timer"
-        },
-        "t2": {
-          "label": "token",
-          "tone": "timer"
-        },
-        "t3": {
-          "label": "token",
-          "tone": "timer"
-        },
-        "t4": {
-          "label": "token",
-          "tone": "timer"
-        },
         "r1": {
           "label": "req 1",
-          "tone": "io"
+          "tone": "sync"
         },
         "r2": {
           "label": "req 2",
-          "tone": "io"
+          "tone": "sync"
         },
         "r3": {
           "label": "req 3",
-          "tone": "io"
+          "tone": "sync"
         },
         "r4": {
           "label": "req 4",
-          "tone": "io"
+          "tone": "sync"
         },
         "r5": {
           "label": "req 5",
-          "tone": "io"
+          "tone": "sync"
+        },
+        "k1": {
+          "label": "token",
+          "tone": "micro"
+        },
+        "k2": {
+          "label": "token",
+          "tone": "micro"
+        },
+        "k3": {
+          "label": "token",
+          "tone": "micro"
+        },
+        "k4": {
+          "label": "token",
+          "tone": "micro"
+        },
+        "k5": {
+          "label": "token",
+          "tone": "micro"
+        },
+        "k6": {
+          "label": "token",
+          "tone": "micro"
+        },
+        "k7": {
+          "label": "token",
+          "tone": "micro"
         }
       },
       "steps": [
         {
-          "caption": "A new key starts with a full bucket of three tokens. Four requests arrive almost together.",
+          "caption": "The bucket starts full with three tokens. Four requests arrive at the same instant.",
           "at": {
             "in": [
               "r1",
@@ -90,16 +110,17 @@
               "r4"
             ],
             "bucket": [
-              "t1",
-              "t2",
-              "t3"
+              "k1",
+              "k2",
+              "k3"
             ],
             "ok": [],
             "no": []
           }
         },
         {
-          "caption": "Request 1 spends a token and goes through.",
+          "caption": "Request 1 finds a token, spends it and is allowed.",
+          "line": 3,
           "at": {
             "in": [
               "r2",
@@ -107,8 +128,8 @@
               "r4"
             ],
             "bucket": [
-              "t2",
-              "t3"
+              "k2",
+              "k3"
             ],
             "ok": [
               "r1"
@@ -118,7 +139,8 @@
           "active": "r1"
         },
         {
-          "caption": "Requests 2 and 3 spend the last two tokens. The burst capacity is used up.",
+          "caption": "Requests 2 and 3 spend the last two tokens. A burst of three is fine.",
+          "line": 3,
           "at": {
             "in": [
               "r4"
@@ -134,7 +156,8 @@
           "active": "r3"
         },
         {
-          "caption": "Request 4 finds the bucket empty and is refused at once. It is not queued.",
+          "caption": "Request 4 finds the bucket empty. `tryAcquire` returns `false` and nothing changes.",
+          "line": 2,
           "at": {
             "in": [],
             "bucket": [],
@@ -150,13 +173,14 @@
           "active": "r4"
         },
         {
-          "caption": "A second passes. The refill adds one token, computed from elapsed time on the next call.",
+          "caption": "One second later, the next call to `refill` adds one earned token.",
+          "line": 1,
           "at": {
             "in": [
               "r5"
             ],
             "bucket": [
-              "t4"
+              "k4"
             ],
             "ok": [
               "r1",
@@ -167,10 +191,11 @@
               "r4"
             ]
           },
-          "active": "t4"
+          "active": "k4"
         },
         {
-          "caption": "Request 5 spends the fresh token. Long-run rate: one per second, bursts up to three.",
+          "caption": "Request 5 spends it. After a burst, the steady rate is one per second.",
+          "line": 3,
           "at": {
             "in": [],
             "bucket": [],
@@ -185,136 +210,145 @@
             ]
           },
           "active": "r5"
+        },
+        {
+          "caption": "After a long quiet spell, refill stops at capacity. Idle time never buys a bigger burst.",
+          "line": 1,
+          "at": {
+            "in": [],
+            "bucket": [
+              "k5",
+              "k6",
+              "k7"
+            ],
+            "ok": [
+              "r1",
+              "r2",
+              "r3",
+              "r5"
+            ],
+            "no": [
+              "r4"
+            ]
+          }
         }
       ]
     }
   },
   "code": [
     {
-      "file": "bucket.mjs",
-      "lang": "js",
+      "file": "TokenBucketDemo.java",
+      "lang": "java",
       "title": "Token bucket",
-      "run": "browser",
-      "caption": "Time is passed in as milliseconds, so the run is repeatable. Change the bucket to `new TokenBucket(1, 2)` and predict the output.",
+      "run": "captured",
+      "caption": "A manual clock drives the bucket, so every run prints the same decisions.",
       "walk": [
         {
           "lines": [
-            1,
-            2,
-            3,
-            4
-          ],
-          "text": "The interface: one method, `allow(key, nowMs)`, returning `true` or `false`."
-        },
-        {
-          "lines": [
-            6
-          ],
-          "text": "One bucket per key, so each client has its own allowance."
-        },
-        {
-          "lines": [
-            11,
-            12,
-            13,
-            14
-          ],
-          "text": "No timer runs. Tokens are topped up from elapsed time, capped at capacity."
-        },
-        {
-          "lines": [
             16,
-            17,
-            18
+            21
           ],
-          "text": "Below one token, refuse. Otherwise spend one and allow."
+          "text": "Time is a dependency. A `ManualClock` lets tests and demos move it by hand."
         },
         {
           "lines": [
-            21,
-            22,
             23,
-            24
+            23
           ],
-          "text": "Three pass, the fourth fails. A different key has its own full bucket."
+          "text": "The contract callers see. Swapping the algorithm changes no caller."
         },
         {
           "lines": [
-            25
+            31,
+            35
           ],
-          "text": "One second after the burst, one token has refilled: one passes, the next fails."
+          "text": "The bucket starts full and remembers when it last refilled."
         },
         {
           "lines": [
-            26
+            37,
+            41
           ],
-          "text": "After a long idle gap the bucket is full again, but never above three."
+          "text": "Whole tokens earned since the last refill are added, capped at capacity."
+        },
+        {
+          "lines": [
+            42,
+            44
+          ],
+          "text": "Spend one token or refuse. `synchronized` makes refill and spend one step."
+        },
+        {
+          "lines": [
+            5,
+            12
+          ],
+          "text": "Four at time 0, then later calls. At 9000 the bucket holds only three."
         }
       ]
     },
     {
-      "file": "window.mjs",
-      "lang": "js",
-      "title": "Sliding window log",
-      "run": "browser",
-      "caption": "Same `allow(key, nowMs)` method as the `RateLimiter` interface, a different rule: at most two requests in any rolling second.",
+      "file": "WindowDemo.java",
+      "lang": "java",
+      "title": "Fixed vs sliding window",
+      "run": "captured",
+      "caption": "Same limit, two per second, same requests. Watch what happens around the 1000 ms boundary.",
       "walk": [
         {
           "lines": [
-            2
+            15,
+            15
           ],
-          "text": "Each key keeps a list of the times it was allowed."
+          "text": "A per-client contract: the caller passes client id and time. A token bucket needs one bucket per id."
+        },
+        {
+          "lines": [
+            24,
+            31
+          ],
+          "text": "Fixed window: round time down to the window start, reset the count when it changes."
+        },
+        {
+          "lines": [
+            41,
+            48
+          ],
+          "text": "Sliding log: drop timestamps older than one window, then count what remains."
         },
         {
           "lines": [
             7,
-            8
+            11
           ],
-          "text": "Drop times older than the window. What is left is recent traffic."
-        },
-        {
-          "lines": [
-            9,
-            10,
-            11,
-            12
-          ],
-          "text": "Allow only if the window holds fewer than the limit, and record it."
-        },
-        {
-          "lines": [
-            16,
-            17
-          ],
-          "text": "At 1000 the request at 0 has left the window, so there is room again."
+          "text": "Count what each allows between 900 and 1050. Client u2 has its own log."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Limit per user or API key, not with one global counter for everyone.",
-    "A fixed window resets each clock second, so two full bursts can land 1 ms apart.",
-    "An in-process `Map` limits one server only; several servers need a shared store."
+    "Do not call `System.currentTimeMillis()` inside the limiter; inject a clock so tests are exact.",
+    "Make refill, check and spend one atomic step, or concurrent calls overspend tokens.",
+    "Evict state for idle clients; one entry per client id grows without bound otherwise."
   ],
   "quiz": {
-    "q": "What does this print?",
-    "code": "const windowOf = (ms) => Math.floor(ms / 1000);\nconsole.log(windowOf(999), windowOf(1000));",
-    "lang": "js",
+    "q": "What does `WindowDemo` print for `t=1000`?",
+    "code": "// limit 2 per 1000 ms; u1 was allowed at 900 and 950\nfixed.allow(\"u1\", 1000)    // window starts at 1000\nsliding.allow(\"u1\", 1000)  // keeps entries newer than 0",
+    "lang": "java",
     "options": [
-      "1 1",
-      "0 0",
-      "0 1",
-      "1 0"
+      "t=1000 fixed:false sliding:false",
+      "t=1000 fixed:true sliding:true",
+      "t=1000 fixed:false sliding:true",
+      "t=1000 fixed:true sliding:false"
     ],
-    "answer": 2,
-    "why": "A fixed window counts per clock second. 999 ms and 1000 ms fall in different windows, so a client can spend a full limit in each."
+    "answer": 3,
+    "why": "Fixed window resets its count at 1000, so it allows. The sliding log still holds 900 and 950, two requests within one second, so it refuses."
   },
-  "takeaway": "Hide the algorithm behind `allow(key, now)` and keep one allowance per key.",
+  "takeaway": "One limiter interface, an injected clock, and an atomic check-and-spend.",
   "chat": {
     "starters": [
-      "When should I choose token bucket over sliding window?",
-      "How would I build this rate limiter on Redis for many servers?",
-      "How do I stop the per-key map from growing forever?"
+      "Which rate limiting algorithm should I pick in an interview, and why?",
+      "How would this work across many servers sharing one limit?",
+      "How does a sliding window counter save memory compared with a log?"
     ]
   }
 }

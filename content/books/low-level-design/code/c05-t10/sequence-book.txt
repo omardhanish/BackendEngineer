@@ -1,0 +1,14 @@
+sequenceDiagram
+  actor E as Employee
+  participant S as BookingService
+  participant R as BookingRepository
+  participant P as ConflictPolicy
+  participant L as BookingListener
+  E->>S: book("E7", "R-101", 10, 11)
+  S->>R: forRoom("R-101")
+  R-->>S: existing bookings
+  S->>P: conflicts(candidate, existing)
+  P-->>S: false
+  S->>R: save(booking)
+  S->>L: onBooked(booking)
+  S-->>E: Booking BK1

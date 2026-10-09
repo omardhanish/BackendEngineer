@@ -1,0 +1,11 @@
+{
+  "stdout": "standard -> 44.0\nexpress -> 49.5\nfree over 50.0 -> 44.0",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java StrategyDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "a47b3ec074a27027",
+  "at": "2026-10-09T08:06:08.211Z"
+}

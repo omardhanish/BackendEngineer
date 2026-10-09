@@ -1,0 +1,11 @@
+{
+  "stdout": "cy pays ana 4000\nben pays ana 1000\nben pays dev 1000",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java SettleDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "89a22cb8f298866c",
+  "at": "2026-10-09T08:16:35.318Z"
+}

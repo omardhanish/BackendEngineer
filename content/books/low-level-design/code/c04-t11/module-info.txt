@@ -1,0 +1,14 @@
+// core/module-info.java: owns the contract, looks plugins up
+module app.core {
+    exports app.spi;               // Plugin and HostApi live here
+    uses app.spi.Plugin;
+}
+
+// csv/module-info.java: a separate jar, compiled on its own
+module app.csv {
+    requires app.core;
+    provides app.spi.Plugin with app.csv.CsvExport;
+}
+
+// in the host, find every plugin jar on the module path:
+// for (Plugin p : ServiceLoader.load(Plugin.class)) p.start(this);

@@ -1,225 +1,163 @@
 {
-  "title": "Errors, audit logs and metrics",
-  "idea": "Good error handling throws typed domain errors with stable codes, logs each business event once in a structured form, and counts outcomes so you can monitor them.",
+  "title": "Errors, logs and metrics",
+  "idea": "Error handling turns each expected failure into a typed exception with a stable code; logging records what happened; monitoring counts outcomes so trends become visible.",
   "points": [
-    "Domain errors extend one base class and carry a stable `code` field.",
-    "Only the edge, such as an HTTP handler, maps codes to status codes.",
-    "`AuditLogger` writes one structured line per business event through an injected sink.",
-    "Counters for created and rejected bookings feed dashboards and alerts."
+    "Expected failures are unchecked `BookingException` subclasses with a stable `code()`.",
+    "Callers branch on `code()`, never on the message text, which may change.",
+    "Log one line per event with `key=value` fields, so tools can search them.",
+    "A counter per outcome shows trends a single log line cannot, like rising refusals."
   ],
   "hero": {
-    "type": "anim",
-    "engine": "pipeline",
-    "title": "A rejected booking, traced",
-    "scenario": {
-      "token": {
-        "label": "book r2 9:30",
-        "tone": "req"
+    "type": "seq",
+    "title": "Two refusals, logged and counted",
+    "actors": [
+      {
+        "id": "caller",
+        "label": "Caller"
       },
-      "stages": [
-        {
-          "id": "edge",
-          "label": "HTTP handler",
-          "sub": "maps errors",
-          "kind": "end"
-        },
-        {
-          "id": "svc",
-          "label": "BookingService",
-          "sub": "logs and counts"
-        },
-        {
-          "id": "policy",
-          "label": "ConflictPolicy",
-          "sub": "overlap rule"
-        },
-        {
-          "id": "repo",
-          "label": "BookingRepository",
-          "sub": "save",
-          "kind": "end"
-        }
-      ],
-      "steps": [
-        {
-          "caption": "A request to book `r2` at 9:30 reaches the handler, which calls `service.book()`.",
-          "at": "edge",
-          "slot": "top",
-          "state": {
-            "edge": "active"
-          }
-        },
-        {
-          "caption": "The service loads the room's bookings and asks the policy about the slot.",
-          "at": "svc",
-          "slot": "top",
-          "state": {
-            "edge": "done",
-            "svc": "active"
-          }
-        },
-        {
-          "caption": "The slot overlaps a 9 to 10 booking. The policy answers true, so `save` is never called.",
-          "at": "policy",
-          "slot": "top",
-          "state": {
-            "edge": "done",
-            "svc": "done",
-            "policy": "blocked"
-          }
-        },
-        {
-          "caption": "The service counts the conflict, and `AuditLogger` records `booking.rejected` with the reason.",
-          "at": "svc",
-          "slot": "bottom",
-          "token": {
-            "label": "conflict",
-            "tone": "err"
-          },
-          "state": {
-            "edge": "done",
-            "svc": "active",
-            "policy": "blocked"
-          }
-        },
-        {
-          "caption": "Then the service throws `RoomTakenError` with code `ROOM_TAKEN`.",
-          "at": "svc",
-          "slot": "bottom",
-          "token": {
-            "label": "ROOM_TAKEN",
-            "tone": "err"
-          },
-          "state": {
-            "edge": "done",
-            "svc": "error",
-            "policy": "blocked"
-          }
-        },
-        {
-          "caption": "The handler maps `ROOM_TAKEN` to 409. An unknown error becomes 500 with no internal details.",
-          "at": "edge",
-          "slot": "bottom",
-          "token": {
-            "label": "409 Conflict",
-            "tone": "err"
-          },
-          "state": {
-            "edge": "active",
-            "svc": "error",
-            "policy": "blocked"
-          }
-        }
-      ]
-    }
+      {
+        "id": "svc",
+        "label": "BookingService"
+      },
+      {
+        "id": "log",
+        "label": "Log"
+      },
+      {
+        "id": "metrics",
+        "label": "Metrics"
+      }
+    ],
+    "messages": [
+      {
+        "from": "caller",
+        "to": "svc",
+        "label": "book(R-101, 10.5-12)",
+        "note": "The request overlaps a booking that already exists."
+      },
+      {
+        "from": "svc",
+        "to": "caller",
+        "label": "RoomTakenException",
+        "dashed": true,
+        "note": "The service throws a typed exception whose `code()` is `ROOM_TAKEN`."
+      },
+      {
+        "from": "caller",
+        "to": "log",
+        "label": "WARN event=refused code=ROOM_TAKEN",
+        "note": "The caller logs once, at the boundary, with structured fields."
+      },
+      {
+        "from": "caller",
+        "to": "metrics",
+        "label": "inc(ROOM_TAKEN)",
+        "note": "One counter per code shows how often each failure happens."
+      },
+      {
+        "from": "caller",
+        "to": "svc",
+        "label": "book(R-101, 15-14)",
+        "note": "Next, a slot that ends before it starts."
+      },
+      {
+        "from": "svc",
+        "to": "caller",
+        "label": "InvalidSlotException",
+        "dashed": true,
+        "note": "Validation fails with `INVALID_SLOT` before any conflict check runs."
+      },
+      {
+        "from": "caller",
+        "to": "log",
+        "label": "WARN event=refused code=INVALID_SLOT",
+        "note": "Same boundary, same line shape, a different code."
+      },
+      {
+        "from": "caller",
+        "to": "metrics",
+        "label": "inc(INVALID_SLOT)",
+        "note": "Each code gets its own counter."
+      }
+    ]
   },
   "code": [
     {
-      "file": "errors.mjs",
-      "lang": "js",
-      "title": "Typed domain errors",
-      "run": "browser",
-      "caption": "Callers branch on `code` and `instanceof`, never on message text. Add a `RoomNotFoundError` mapped to 404.",
+      "file": "ErrorHandlingDemo.java",
+      "lang": "java",
+      "title": "Codes, log lines, counters",
+      "run": "captured",
+      "caption": "The service is trimmed from the last page so the error handling stands out. Teams log through SLF4J with Logback.",
       "walk": [
         {
           "lines": [
-            1,
-            7
+            26,
+            29
           ],
-          "text": "One base class sets `name` from `new.target`, so each subclass names itself."
+          "text": "The base exception is unchecked and forces every subclass to supply a `code()`."
         },
         {
           "lines": [
-            8,
-            13
+            30,
+            39
           ],
-          "text": "Each failure the requirements allow gets its own class and stable code."
+          "text": "Each failure type keeps a fixed code; the message is for humans only."
         },
         {
           "lines": [
-            15,
-            22
+            46,
+            49
           ],
-          "text": "The edge maps codes to HTTP status; anything unexpected becomes a plain 500."
+          "text": "Validate the slot first, then check overlaps in the same room; each failure throws its own type."
         },
         {
           "lines": [
-            24,
-            27
+            10,
+            17
           ],
-          "text": "Two domain errors, one programming bug, and the name the base class set."
-        }
-      ]
-    },
-    {
-      "file": "audit.mjs",
-      "lang": "js",
-      "title": "Audit log and counters",
-      "run": "browser",
-      "caption": "The sink is injected, so a test can collect lines in an array. Replace `console.log` on line 28 with `() => {}`: the audit lines vanish, but the counts still print.",
-      "walk": [
-        {
-          "lines": [
-            1,
-            5
-          ],
-          "text": "`AuditLogger` turns an event and its fields into one JSON line for its sink."
-        },
-        {
-          "lines": [
-            6,
-            10
-          ],
-          "text": "`Metrics` counts named outcomes; a monitoring system would read the snapshot."
-        },
-        {
-          "lines": [
-            14,
-            20
-          ],
-          "text": "On a conflict: count it, log it once with a reason, then throw."
+          "text": "The caller catches the base type once, logs it and counts it by code."
         },
         {
           "lines": [
             21,
             23
           ],
-          "text": "On success: save, count and log the business event."
+          "text": "One line per event: level, event name, then `key=value` fields."
         },
         {
           "lines": [
-            27,
-            33
+            4,
+            4
           ],
-          "text": "Two bookings succeed and one is rejected; the caller sees only the code."
+          "text": "A `TreeMap` keeps counter names sorted, so the summary prints the same every run."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Never leave an empty `catch`; handle the error or let it travel up.",
-    "Log an error once, where it is handled, not at every layer it passes.",
-    "Keep personal data and tokens out of audit lines; log ids instead."
+    "Do not catch and log the same exception at every layer; log once at the boundary.",
+    "Never branch on `getMessage()` text; branch on `code()`, which you promise to keep.",
+    "Keep personal data out of logs; log ids such as `E7`, not names or emails."
   ],
   "quiz": {
-    "q": "What does this print?",
-    "code": "class BookingError extends Error {\n  constructor(code) { super(code); this.code = code; }\n}\nclass RoomTakenError extends BookingError {\n  constructor() { super('ROOM_TAKEN'); }\n}\nconst e = new RoomTakenError();\nconsole.log(e instanceof BookingError, e.name);",
-    "lang": "js",
+    "q": "What does the last line print?",
+    "code": "double[][] asks = { {9, 10}, {9.5, 11}, {12, 12}, {9, 9.5} };\n// each ask: book R-101; count \"booked\" or e.code()\nSystem.out.println(\"metrics \" + metrics); // TreeMap inside",
+    "lang": "java",
     "options": [
-      "true RoomTakenError",
-      "true Error",
-      "false Error",
-      "false RoomTakenError"
+      "metrics {booked=1, INVALID_SLOT=1, ROOM_TAKEN=2}",
+      "metrics {ROOM_TAKEN=3, booked=1}",
+      "metrics {INVALID_SLOT=1, ROOM_TAKEN=2, booked=1}",
+      "metrics {INVALID_SLOT=1, ROOM_TAKEN=1, booked=2}"
     ],
-    "answer": 1,
-    "why": "Subclassing keeps `instanceof` working, but `name` is inherited from `Error.prototype` unless a constructor sets it."
+    "answer": 2,
+    "why": "Only 9-10 books. 9.5-11 and 9-9.5 overlap it; 12-12 ends where it starts. `TreeMap` sorts upper-case keys before lower-case ones."
   },
-  "takeaway": "Throw typed errors, log each event once, and count every outcome.",
+  "takeaway": "Typed exceptions with codes, one structured log line, a counter per outcome.",
   "chat": {
     "starters": [
-      "Should BookingService return a result object instead of throwing?",
-      "What belongs in an audit log versus a debug log?",
-      "Which metrics would you alert on for a booking system?"
+      "Should BookingException be checked or unchecked, and why?",
+      "How would these error codes map to HTTP status codes in a REST API?",
+      "What should I put in an alert, and what only in a dashboard?"
     ]
   }
 }

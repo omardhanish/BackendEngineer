@@ -1,0 +1,11 @@
+{
+  "stdout": "Mail: room 4 is free\nSMS: [urgent] room 4 needs a projector",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java PatternDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "ce6703509ffcd4ae",
+  "at": "2026-10-09T08:24:01.601Z"
+}

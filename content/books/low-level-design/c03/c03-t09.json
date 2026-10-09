@@ -1,121 +1,198 @@
 {
-  "title": "Food delivery system design",
-  "idea": "A food delivery design models the order as a state machine, and lets the customer app, restaurant and dispatcher subscribe to its status changes.",
+  "title": "Food delivery order lifecycle",
+  "idea": "A food delivery design is one order moving through a fixed chain of statuses, where each status may be set only by the actor who owns that step.",
   "points": [
-    "Core classes: `Customer`, `Restaurant`, `MenuItem`, `Order`, `DeliveryAgent` and `Dispatcher`.",
-    "`Order` moves through fixed states and only ever one step forward.",
-    "Each status change notifies subscribers: the Observer pattern.",
-    "The dispatcher claims an agent while food cooks, and frees them on delivery."
+    "Core entities: `Customer`, `Restaurant`, `MenuItem`, `DeliveryPartner`, `FoodOrder` and its `Status`.",
+    "Three actors drive one order: customer places, restaurant cooks, partner delivers.",
+    "Each `Status` records which `Actor` may move the order into it.",
+    "Status changes are events: listeners notify the app and dispatch a rider."
   ],
   "hero": {
     "type": "anim",
-    "engine": "pipeline",
-    "title": "One order, three parties",
+    "engine": "topology",
+    "title": "One order, three actors",
     "scenario": {
-      "token": {
-        "label": "Order O7",
-        "tone": "req"
-      },
-      "stages": [
-        {
-          "id": "app",
-          "label": "Customer app",
-          "sub": "PLACED",
-          "kind": "end"
+      "tiers": [
+        [
+          "customer"
+        ],
+        [
+          "orders"
+        ],
+        [
+          "restaurant",
+          "assigner",
+          "partner"
+        ]
+      ],
+      "nodes": {
+        "customer": {
+          "label": "Customer",
+          "sub": "app",
+          "kind": "user"
         },
-        {
-          "id": "rest",
+        "orders": {
+          "label": "FoodOrder",
+          "sub": "status owner",
+          "kind": "service"
+        },
+        "restaurant": {
           "label": "Restaurant",
-          "sub": "ACCEPTED"
+          "kind": "box"
         },
-        {
-          "id": "kitchen",
-          "label": "Kitchen",
-          "sub": "PREPARING"
+        "assigner": {
+          "label": "PartnerAssigner",
+          "sub": "listener",
+          "kind": "service"
         },
-        {
-          "id": "agent",
-          "label": "Agent",
-          "sub": "PICKED_UP"
-        },
-        {
-          "id": "door",
-          "label": "Doorstep",
-          "sub": "DELIVERED",
-          "kind": "end"
+        "partner": {
+          "label": "DeliveryPartner",
+          "kind": "user"
         }
+      },
+      "links": [
+        [
+          "customer",
+          "orders"
+        ],
+        [
+          "orders",
+          "restaurant"
+        ],
+        [
+          "orders",
+          "assigner",
+          {
+            "label": "on READY",
+            "dashed": true
+          }
+        ],
+        [
+          "assigner",
+          "partner"
+        ],
+        [
+          "partner",
+          "orders"
+        ]
       ],
       "steps": [
         {
-          "caption": "The customer places the order. `Order` starts in `PLACED` and holds the item list.",
-          "at": "app",
-          "slot": "top",
-          "state": {
-            "app": "active"
+          "caption": "The customer places order A-42 from one restaurant's menu. It starts as `PLACED`.",
+          "send": [
+            {
+              "from": "customer",
+              "to": "orders",
+              "label": "place",
+              "tone": "req"
+            }
+          ],
+          "badge": {
+            "orders": "PLACED"
           }
         },
         {
-          "caption": "The restaurant accepts. Every subscriber is told, so the app shows the new status.",
-          "at": "rest",
-          "slot": "top",
-          "state": {
-            "app": "done",
-            "rest": "active"
-          }
-        },
-        {
-          "caption": "Cooking starts. The dispatcher hears `PREPARING` and claims a free agent now, not after cooking.",
-          "at": "kitchen",
-          "slot": "top",
-          "state": {
-            "app": "done",
-            "rest": "done",
-            "kitchen": "active"
-          }
-        },
-        {
-          "caption": "No agent free? The order still cooks; the dispatcher must retry or queue it.",
-          "at": "kitchen",
-          "slot": "top",
-          "token": {
-            "label": "no agent yet",
-            "tone": "err"
+          "caption": "The restaurant accepts. Only `RESTAURANT` may set `ACCEPTED`, so the move is allowed.",
+          "send": [
+            {
+              "from": "restaurant",
+              "to": "orders",
+              "label": "accept",
+              "tone": "ok"
+            }
+          ],
+          "badge": {
+            "orders": "ACCEPTED"
           },
           "state": {
-            "app": "done",
-            "rest": "done",
-            "kitchen": "blocked"
+            "restaurant": "busy"
           }
         },
         {
-          "caption": "The agent picks the food up. Status moves to `PICKED_UP` and the customer can track it.",
-          "at": "agent",
-          "slot": "top",
-          "token": {
-            "label": "Order O7",
-            "tone": "req"
+          "caption": "The status change fires an event. The customer's app listener shows the new status.",
+          "send": [
+            {
+              "from": "orders",
+              "to": "customer",
+              "label": "ACCEPTED",
+              "tone": "info"
+            }
+          ]
+        },
+        {
+          "caption": "The partner tries to mark the food ready. `READY` belongs to the restaurant, so it is refused.",
+          "send": [
+            {
+              "from": "partner",
+              "to": "orders",
+              "label": "ready?",
+              "tone": "err"
+            }
+          ],
+          "focus": [
+            "partner",
+            "orders"
+          ]
+        },
+        {
+          "caption": "The restaurant marks it `READY`. A listener reacts by asking the assigner for a rider.",
+          "send": [
+            {
+              "from": "restaurant",
+              "to": "orders",
+              "label": "ready",
+              "tone": "ok"
+            },
+            {
+              "from": "orders",
+              "to": "assigner",
+              "label": "READY",
+              "tone": "info"
+            }
+          ],
+          "badge": {
+            "orders": "READY"
           },
           "state": {
-            "app": "done",
-            "rest": "done",
-            "kitchen": "done",
-            "agent": "active"
+            "restaurant": "ok"
           }
         },
         {
-          "caption": "Delivered. The dispatcher returns the agent to the pool. Further `advance` calls throw.",
-          "at": "door",
-          "slot": "top",
-          "token": {
-            "label": "Order O7",
-            "tone": "ok"
+          "caption": "The assigner picks a free partner and sends the pickup. `FoodOrder` never knows the assigner exists.",
+          "send": [
+            {
+              "from": "assigner",
+              "to": "partner",
+              "label": "collect",
+              "tone": "req"
+            }
+          ],
+          "state": {
+            "partner": "busy"
+          }
+        },
+        {
+          "caption": "The partner sets `PICKED_UP`, then `DELIVERED`. Each change notifies the customer.",
+          "send": [
+            {
+              "from": "partner",
+              "to": "orders",
+              "label": "delivered",
+              "tone": "ok"
+            },
+            {
+              "from": "orders",
+              "to": "customer",
+              "label": "DELIVERED",
+              "tone": "info"
+            }
+          ],
+          "badge": {
+            "orders": "DELIVERED"
           },
           "state": {
-            "app": "done",
-            "rest": "done",
-            "kitchen": "done",
-            "agent": "done",
-            "door": "active"
+            "partner": "ok",
+            "orders": "ok"
           }
         }
       ]
@@ -123,94 +200,81 @@
   },
   "code": [
     {
-      "file": "delivery.mjs",
-      "lang": "js",
-      "title": "Order states and observers",
-      "run": "browser",
-      "caption": "One agent, one order. Subscribe a `restaurant` watcher that logs only `PICKED_UP`, and run it again.",
+      "file": "OrderFlowDemo.java",
+      "lang": "java",
+      "title": "Who may move the order",
+      "run": "captured",
+      "caption": "Six attempts by three actors. Wrong actors, and any move after `DELIVERED`, are refused; accepted changes reach the listeners.",
       "walk": [
         {
           "lines": [
-            1
+            23,
+            23
           ],
-          "text": "The legal path is one ordered list, so states cannot be skipped or reversed."
+          "text": "Three actors. Each one calls `advance` for its own step."
+        },
+        {
+          "lines": [
+            25,
+            31
+          ],
+          "text": "The enum lists statuses in order and stores who may set each one."
+        },
+        {
+          "lines": [
+            33,
+            33
+          ],
+          "text": "The listener contract: one method, so lambdas can implement it."
+        },
+        {
+          "lines": [
+            41,
+            46
+          ],
+          "text": "`advance` finds the next status and refuses an actor who does not own it."
+        },
+        {
+          "lines": [
+            47,
+            48
+          ],
+          "text": "Only after the change does the order notify every listener. Real code often notifies after releasing the lock."
         },
         {
           "lines": [
             7,
-            8,
-            9,
-            10,
-            11
+            10
           ],
-          "text": "`advance` moves one step, then calls every subscriber with the order."
-        },
-        {
-          "lines": [
-            13,
-            14,
-            15,
-            16,
-            17,
-            18
-          ],
-          "text": "The pool hands out free agents and takes them back. Empty means `null`."
-        },
-        {
-          "lines": [
-            19,
-            20,
-            21,
-            22,
-            23,
-            24,
-            25,
-            26,
-            27
-          ],
-          "text": "The dispatcher is just another observer. `onChange` is an arrow field so `this` survives being passed."
-        },
-        {
-          "lines": [
-            30,
-            31
-          ],
-          "text": "Two subscribers: the customer view and the dispatcher."
-        },
-        {
-          "lines": [
-            35,
-            36
-          ],
-          "text": "A finished order refuses to move, and Kim is back in the pool."
+          "text": "The app hears every change; the rider listener reacts only to `READY`."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Do not call SMS or dispatch code inside `Order`; publish a change and let observers act.",
-    "Handle `assign()` returning `null`; peak hours run out of agents.",
-    "Do not let any caller set `status` directly; one method must guard transitions."
+    "Never let any caller set any status; tie each transition to its owning actor.",
+    "Notify listeners only after the status change succeeds, never before the check.",
+    "Keep partner assignment outside `FoodOrder`; the order should not know how riders are chosen."
   ],
   "quiz": {
-    "q": "What does this print?",
-    "code": "const log = [];\nconst watchers = [(s) => log.push('sms:' + s),\n  (s) => log.push('app:' + s)];\nfor (const w of watchers) w('READY');\nconsole.log(log.join(' '));",
-    "lang": "js",
+    "q": "What is the first line `OrderFlowDemo` prints after `app: A-42 ACCEPTED`?",
+    "code": "// moves: RESTAURANT, PARTNER, RESTAURANT, ...\n// order is now ACCEPTED; next status is READY",
+    "lang": "java",
     "options": [
-      "sms:READY app:READY",
-      "app:READY sms:READY",
-      "sms:READY",
-      "READY READY"
+      "app: A-42 READY",
+      "refused: PARTNER cannot set READY",
+      "rider: collect A-42",
+      "refused: PARTNER cannot set PICKED_UP"
     ],
-    "answer": 0,
-    "why": "The loop calls each watcher in the order it was added, and both push. Observers run in subscription order."
+    "answer": 1,
+    "why": "The second move is by `PARTNER`. The next status, `READY`, is owned by `RESTAURANT`, so `advance` throws before anything changes."
   },
-  "takeaway": "The order owns its states; everyone else subscribes and reacts.",
+  "takeaway": "One order, an ordered status enum, each step owned by one actor.",
   "chat": {
     "starters": [
-      "How would I add order cancellation and refunds to this state machine?",
-      "Which strategy should pick the delivery agent for an order?",
-      "Should observers run synchronously or through a message queue?"
+      "How should the system pick which delivery partner gets the order?",
+      "Where would a cancellation with a refund fit in this design?",
+      "Why not use the State pattern with one class per status?"
     ]
   }
 }

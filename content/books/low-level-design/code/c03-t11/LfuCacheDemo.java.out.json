@@ -1,0 +1,11 @@
+{
+  "stdout": "evict b\na -> 1\nb -> null",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java LfuCacheDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "c1ab72080bf73767",
+  "at": "2026-10-09T08:16:26.128Z"
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "sms to ada: Room booked\nsms to ada: [!] Room booked\nemail to ada (NORMAL): Room booked\nemail to ada (HIGH): Room booked",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ApiEvolutionDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "508478c70064501f",
+  "at": "2026-10-09T08:18:02.897Z"
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "p1 -> L1\np2 -> L3\np3 -> L2\np4 -> no locker",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java LockerDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "cfa77bb4f53d43e2",
+  "at": "2026-10-09T08:19:11.385Z"
+}

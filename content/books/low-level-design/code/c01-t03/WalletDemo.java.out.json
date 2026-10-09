@@ -1,0 +1,11 @@
+{
+  "stdout": "balance 2960\nrefused: cannot pay 9000\nbalance 2960",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java WalletDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "afde3b5540ab9615",
+  "at": "2026-10-09T08:07:10.266Z"
+}

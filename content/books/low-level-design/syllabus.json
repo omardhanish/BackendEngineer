@@ -33,7 +33,7 @@
       "tagline": "The creational, structural and behavioural patterns, each with code that runs.",
       "outcomes": [
         "Pick the right pattern for a problem",
-        "Implement each pattern in JavaScript",
+        "Implement each pattern in Java",
         "Spot when a pattern is overkill",
         "Combine patterns in one system"
       ],

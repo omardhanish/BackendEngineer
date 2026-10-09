@@ -1,286 +1,358 @@
 {
   "title": "LRU and LFU caches",
-  "idea": "An LRU or LFU cache is a fixed-size key-value store that, when full, evicts the least recently used or least frequently used entry.",
+  "idea": "A cache keeps a bounded set of key-value pairs. When full, it evicts the least recently used (LRU) or least frequently used (LFU) key.",
   "analogy": {
-    "text": "Your desk holds three open books. To open a fourth, you shelve the one you have not touched for the longest. That is LRU.",
-    "breaks": "The desk does not count how often each book was used, which LFU needs."
+    "text": "Your desk holds two open books. LRU shelves the one you touched longest ago. LFU shelves the one you have opened least often.",
+    "breaks": "A desk never has to find a book in constant time."
   },
   "points": [
-    "A cache stores values by key and evicts one entry when it is full.",
-    "The eviction rule is a strategy: `LRUPolicy` or `LFUPolicy` behind one interface.",
-    "LRU drops the key unused for the longest time; LFU drops the least-used key.",
-    "A JavaScript `Map` keeps insertion order, so it can double as a recency list."
+    "A `HashMap` gives O(1) lookup; a second structure remembers who to evict.",
+    "LRU keeps a doubly linked list: hits move to the front; the tail leaves.",
+    "LFU groups keys by use count and evicts the oldest in the lowest group.",
+    "In real code, put both behind one `Cache<K, V>` interface to swap policies."
   ],
   "hero": {
     "type": "anim",
     "engine": "lanes",
-    "title": "An LRU cache of size three",
+    "title": "Same calls, two different victims",
     "scenario": {
       "code": [
-        "put('A')",
-        "put('B')",
-        "put('C')",
-        "get('A')",
-        "put('D')",
-        "get('B')"
+        "cache.put(\"a\", 1);",
+        "cache.put(\"b\", 2);",
+        "cache.get(\"a\");",
+        "cache.get(\"a\");",
+        "cache.get(\"b\");",
+        "cache.put(\"c\", 3);"
       ],
       "lanes": [
         {
-          "id": "cache",
-          "label": "Cache: oldest → newest",
+          "id": "lru",
+          "label": "LRU list",
           "kind": "queue",
-          "hint": "capacity 3"
+          "hint": "newest first, tail is evicted"
         },
         {
-          "id": "out",
-          "label": "Evicted",
-          "kind": "area",
-          "hint": "gone from the cache"
+          "id": "lruOut",
+          "label": "LRU evicted",
+          "kind": "area"
+        },
+        {
+          "id": "lfu",
+          "label": "LFU groups",
+          "kind": "queue",
+          "hint": "lowest count first, then oldest"
+        },
+        {
+          "id": "lfuOut",
+          "label": "LFU evicted",
+          "kind": "area"
         }
       ],
       "tokens": {
-        "A": {
-          "label": "A",
+        "la": {
+          "label": "a",
           "tone": "sync"
         },
-        "B": {
-          "label": "B",
-          "tone": "timer"
+        "lb": {
+          "label": "b",
+          "tone": "io"
         },
-        "C": {
-          "label": "C",
+        "lc": {
+          "label": "c",
           "tone": "micro"
         },
-        "D": {
-          "label": "D",
+        "fa1": {
+          "label": "a ×1",
+          "tone": "sync"
+        },
+        "fa2": {
+          "label": "a ×2",
+          "tone": "sync"
+        },
+        "fa3": {
+          "label": "a ×3",
+          "tone": "sync"
+        },
+        "fb1": {
+          "label": "b ×1",
           "tone": "io"
+        },
+        "fb2": {
+          "label": "b ×2",
+          "tone": "io"
+        },
+        "fc1": {
+          "label": "c ×1",
+          "tone": "micro"
         }
       },
       "steps": [
         {
-          "caption": "`put('A')` adds A at the newest end. The cache has room for three keys.",
+          "caption": "Both caches have capacity 2. `put(\"a\")` adds `a`: front of the LRU list, count 1 in LFU.",
           "line": 0,
           "at": {
-            "cache": [
-              "A"
-            ]
+            "lru": [
+              "la"
+            ],
+            "lruOut": [],
+            "lfu": [
+              "fa1"
+            ],
+            "lfuOut": []
           },
-          "active": "A",
-          "out": []
+          "active": "la"
         },
         {
-          "caption": "`put('B')` joins behind A. Order means recency, not value.",
+          "caption": "`put(\"b\")` puts `b` in front for LRU. In LFU it ties with `a` at count 1.",
           "line": 1,
           "at": {
-            "cache": [
-              "A",
-              "B"
-            ]
+            "lru": [
+              "lb",
+              "la"
+            ],
+            "lruOut": [],
+            "lfu": [
+              "fa1",
+              "fb1"
+            ],
+            "lfuOut": []
           },
-          "active": "B",
-          "out": []
+          "active": "lb"
         },
         {
-          "caption": "`put('C')` fills the cache. A is now the oldest key.",
+          "caption": "`get(\"a\")` is a hit. LRU moves `a` to the front; LFU raises its count to 2.",
           "line": 2,
           "at": {
-            "cache": [
-              "A",
-              "B",
-              "C"
-            ]
+            "lru": [
+              "la",
+              "lb"
+            ],
+            "lruOut": [],
+            "lfu": [
+              "fb1",
+              "fa2"
+            ],
+            "lfuOut": []
           },
-          "active": "C",
-          "out": []
+          "active": "la"
         },
         {
-          "caption": "`get('A')` is a hit. A moves to the newest end, so B becomes the oldest.",
+          "caption": "A second `get(\"a\")`. LRU order does not change; LFU count rises to 3.",
           "line": 3,
           "at": {
-            "cache": [
-              "B",
-              "C",
-              "A"
-            ]
+            "lru": [
+              "la",
+              "lb"
+            ],
+            "lruOut": [],
+            "lfu": [
+              "fb1",
+              "fa3"
+            ],
+            "lfuOut": []
           },
-          "active": "A",
-          "out": [
-            "get A: hit"
-          ]
+          "active": "fa3"
         },
         {
-          "caption": "`put('D')` finds the cache full. The oldest key, B, is evicted before D goes in.",
+          "caption": "`get(\"b\")` makes `b` the newest for LRU, and gives it count 2 in LFU.",
           "line": 4,
           "at": {
-            "cache": [
-              "C",
-              "A",
-              "D"
+            "lru": [
+              "lb",
+              "la"
             ],
-            "out": [
-              "B"
-            ]
+            "lruOut": [],
+            "lfu": [
+              "fb2",
+              "fa3"
+            ],
+            "lfuOut": []
           },
-          "active": "D",
-          "out": [
-            "get A: hit",
-            "evict B"
-          ]
+          "active": "lb"
         },
         {
-          "caption": "`get('B')` is a miss. The caller must load B from the slow source again.",
+          "caption": "`put(\"c\")` finds both caches full. LRU evicts its tail: `a`, touched longest ago.",
           "line": 5,
           "at": {
-            "cache": [
-              "C",
-              "A",
-              "D"
+            "lru": [
+              "lc",
+              "lb"
             ],
-            "out": [
-              "B"
-            ]
+            "lruOut": [
+              "la"
+            ],
+            "lfu": [
+              "fb2",
+              "fa3"
+            ],
+            "lfuOut": []
           },
-          "active": "B",
-          "out": [
-            "get A: hit",
-            "evict B",
-            "get B: miss"
-          ]
+          "active": "la"
         },
         {
-          "caption": "At step five, LFU counts uses instead: A has two, B and C one each. The tie goes to the older key, B.",
+          "caption": "LFU evicts the lowest count: `b`, used twice against three for `a`.",
+          "line": 5,
           "at": {
-            "cache": [
-              "C",
-              "A",
-              "D"
+            "lru": [
+              "lc",
+              "lb"
             ],
-            "out": [
-              "B"
+            "lruOut": [
+              "la"
+            ],
+            "lfu": [
+              "fc1",
+              "fa3"
+            ],
+            "lfuOut": [
+              "fb2"
             ]
           },
-          "out": [
-            "get A: hit",
-            "evict B",
-            "get B: miss"
-          ]
+          "active": "fb2"
+        },
+        {
+          "caption": "Same calls, different victims. LRU bets on recent use; LFU bets on long-run popularity.",
+          "at": {
+            "lru": [
+              "lc",
+              "lb"
+            ],
+            "lruOut": [
+              "la"
+            ],
+            "lfu": [
+              "fc1",
+              "fa3"
+            ],
+            "lfuOut": [
+              "fb2"
+            ]
+          }
         }
       ]
     }
   },
   "code": [
     {
-      "file": "lru-map.mjs",
-      "lang": "js",
-      "title": "Map as a recency list",
-      "run": "browser",
-      "caption": "Delete and set again to move a key to the newest end. Remove the read of `a` and run: a different key goes."
-    },
-    {
-      "file": "cache.mjs",
-      "lang": "js",
-      "title": "Cache with pluggable eviction",
-      "run": "browser",
-      "caption": "One `Cache` class, two policies, the same calls. Write a `FIFOPolicy` whose `touch` records a key only the first time, and pass it in.",
+      "file": "LruCacheDemo.java",
+      "lang": "java",
+      "title": "LRU from scratch",
+      "run": "captured",
+      "caption": "A `HashMap` plus a doubly linked list with sentinels. Every operation is O(1).",
       "walk": [
         {
           "lines": [
-            1
-          ],
-          "text": "The policy interface: record a use, forget a key, and name the next victim."
-        },
-        {
-          "lines": [
-            2,
-            3,
-            4,
-            5,
-            6,
-            7
-          ],
-          "text": "LRU: `touch` moves the key to the end, so the first key is the victim."
-        },
-        {
-          "lines": [
-            8,
-            9,
-            10,
-            11,
-            12,
-            13
-          ],
-          "text": "LFU: count uses. Re-inserting keeps ties ordered by recency."
-        },
-        {
-          "lines": [
-            15,
-            16,
             17,
-            18,
-            19
+            20
           ],
-          "text": "The victim is the lowest count; the first such key wins ties."
+          "text": "Each node carries its key, so eviction can also remove it from the map."
         },
         {
           "lines": [
-            21,
-            22,
-            23
+            27,
+            33
           ],
-          "text": "`Cache` owns the data and receives its policy, so it never knows the rule."
+          "text": "`get` returns `null` on a miss; a hit moves the node to the front."
         },
         {
           "lines": [
-            29,
-            30,
-            31,
-            32,
-            33,
             34,
-            35,
-            36
+            42
           ],
-          "text": "Evict only when a new key arrives and the cache is full."
+          "text": "A new key on a full cache evicts `tail.prev`, the least recent node."
         },
         {
           "lines": [
-            39,
-            40,
-            41,
-            42,
             43,
-            44,
             45
           ],
-          "text": "A has three uses (one put, two gets); B has one. LRU drops A; LFU drops B."
+          "text": "New or updated, the node ends at the front with its new value."
+        },
+        {
+          "lines": [
+            47,
+            50
+          ],
+          "text": "Sentinels mean no null checks: unlink is two pointer writes, push is four."
+        },
+        {
+          "lines": [
+            5,
+            11
+          ],
+          "text": "`main` replays the access pattern from the animation."
+        }
+      ]
+    },
+    {
+      "file": "LfuCacheDemo.java",
+      "lang": "java",
+      "title": "LFU with count groups",
+      "run": "captured",
+      "caption": "Same calls as the LRU demo. A different key is evicted.",
+      "walk": [
+        {
+          "lines": [
+            17,
+            21
+          ],
+          "text": "Values, counts, and keys grouped by count. `minCount` points at the rarest group."
+        },
+        {
+          "lines": [
+            49,
+            54
+          ],
+          "text": "`bump` moves a key up one group and advances `minCount` if its group emptied."
+        },
+        {
+          "lines": [
+            37,
+            43
+          ],
+          "text": "The victim is the first key in the `minCount` group: rarest, then oldest."
+        },
+        {
+          "lines": [
+            44,
+            47
+          ],
+          "text": "A new key starts at count 1, so `minCount` resets to 1."
+        },
+        {
+          "lines": [
+            5,
+            11
+          ],
+          "text": "`main` makes the same calls as `LruCacheDemo`."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Calling `set` on an existing `Map` key does not refresh its recency; delete it first.",
-    "Check capacity only for new keys, or updating a value evicts an entry for nothing.",
-    "This `LFUPolicy` scans every key to evict; use frequency buckets when O(1) matters."
+    "Never scan the whole map to pick a victim; that makes every `put` O(n).",
+    "Guard shared caches with a lock; these classes are not thread-safe.",
+    "Treat `put` on an existing key as a use: update recency or count too."
   ],
   "quiz": {
-    "q": "What does this print?",
-    "code": "const m = new Map([['x', 1], ['y', 2]]);\nm.set('x', 9);\nm.set('z', 3);\nconsole.log([...m.keys()].join(' '));",
-    "lang": "js",
+    "q": "What is the first line `LfuCacheDemo` prints?",
     "options": [
-      "y x z",
-      "x y z",
-      "y z x",
-      "z y x"
+      "evict a",
+      "a -> null",
+      "evict b",
+      "b -> 2"
     ],
-    "answer": 1,
-    "why": "Setting an existing key updates its value in place. A `Map` keeps the key's original position, so `x` stays first."
+    "answer": 2,
+    "why": "`a` was used three times and `b` twice. LFU evicts the lowest count, so `b` leaves; LRU would evict `a`.",
+    "code": "cache.put(\"a\", 1);\ncache.put(\"b\", 2);\nfor (String k : List.of(\"a\", \"a\", \"b\")) cache.get(k);\ncache.put(\"c\", 3);   // capacity is 2",
+    "lang": "java"
   },
-  "takeaway": "Store data in one place and make the eviction rule a swappable policy.",
+  "takeaway": "A map for lookup plus an order structure for eviction: that is every cache.",
   "chat": {
     "starters": [
-      "How do I build an O(1) LFU cache with frequency buckets?",
-      "Why do interviewers ask for a doubly linked list instead of a Map?",
-      "How would I make this cache safe for concurrent async callers?"
+      "Can I build an LRU cache with LinkedHashMap instead?",
+      "How would I make this cache thread-safe without one big lock?",
+      "When is LFU a worse choice than LRU?"
     ]
   }
 }

@@ -1,0 +1,11 @@
+{
+  "stdout": "Good morning, Ada\none shared Greeter: true",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ContainerDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "d5aabcd1d8565e39",
+  "at": "2026-10-09T08:24:19.984Z"
+}

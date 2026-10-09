@@ -1,163 +1,231 @@
 {
-  "title": "The booking core in code",
-  "idea": "Building the core means writing `BookingService` and its repositories so search, book and cancel run end to end in memory, before any database or HTTP.",
+  "title": "The booking service core",
+  "idea": "The core modules are the entities, the repositories that store them, and `BookingService`, which runs each use case by combining them through constructor injection.",
   "points": [
-    "Build inside out: repositories and policy first, then the service that uses them.",
-    "In-memory repositories with `Map` stand in for a database behind the same methods.",
-    "The service orchestrates: it asks, decides and saves, but stores nothing itself.",
-    "Constructor injection hands in every collaborator, so tests can swap any of them."
+    "Repositories hide storage and reach `BookingService` through its constructor.",
+    "`searchFree` keeps rooms that are big enough, then drops any room that clashes.",
+    "`book` asks the policy first and saves only when the slot is free.",
+    "`cancel` finds the booking and refuses anyone who is not its owner."
   ],
   "hero": {
-    "type": "seq",
-    "title": "One booking, end to end",
-    "actors": [
-      {
-        "id": "emp",
-        "label": "Caller"
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "One booking through the core",
+    "scenario": {
+      "token": {
+        "label": "book R-101 10-11",
+        "tone": "req"
       },
-      {
-        "id": "svc",
-        "label": "BookingService"
-      },
-      {
-        "id": "repo",
-        "label": "BookingRepository"
-      },
-      {
-        "id": "policy",
-        "label": "ConflictPolicy"
-      }
-    ],
-    "messages": [
-      {
-        "from": "emp",
-        "to": "svc",
-        "label": "book('e1', 'r2', 9, 10)",
-        "note": "An employee asks for room `r2` from 9 to 10."
-      },
-      {
-        "from": "svc",
-        "to": "repo",
-        "label": "forRoom('r2')",
-        "note": "The service loads only that room's bookings, not every booking."
-      },
-      {
-        "from": "repo",
-        "to": "svc",
-        "label": "existing bookings",
-        "dashed": true,
-        "note": "The repository returns a list; the service does not know how it is stored."
-      },
-      {
-        "from": "svc",
-        "to": "policy",
-        "label": "conflicts(slot, existing)",
-        "note": "The overlap decision is delegated to the injected policy."
-      },
-      {
-        "from": "policy",
-        "to": "svc",
-        "label": "false",
-        "dashed": true,
-        "note": "No clash, so the booking can go ahead."
-      },
-      {
-        "from": "svc",
-        "to": "repo",
-        "label": "save(booking)",
-        "note": "Only now does the service create an id and save the booking."
-      },
-      {
-        "from": "svc",
-        "to": "emp",
-        "label": "booking",
-        "dashed": true,
-        "note": "The caller gets the saved booking back, with its id for a later cancel."
-      }
-    ]
+      "stages": [
+        {
+          "id": "caller",
+          "label": "Caller",
+          "sub": "employee E7",
+          "kind": "end"
+        },
+        {
+          "id": "svc",
+          "label": "BookingService",
+          "sub": "book()"
+        },
+        {
+          "id": "policy",
+          "label": "ConflictPolicy",
+          "sub": "conflicts()"
+        },
+        {
+          "id": "repo",
+          "label": "BookingRepository",
+          "sub": "save()",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "Employee E7 asks for room `R-101` from 10 to 11.",
+          "at": "caller",
+          "slot": "top",
+          "state": {
+            "caller": "active"
+          }
+        },
+        {
+          "caption": "`BookingService` builds a candidate `Booking` and loads the room's bookings with `forRoom`.",
+          "at": "svc",
+          "slot": "top",
+          "state": {
+            "caller": "done",
+            "svc": "active"
+          }
+        },
+        {
+          "caption": "`ConflictPolicy` finds no overlap, so the candidate may go ahead.",
+          "at": "policy",
+          "slot": "top",
+          "state": {
+            "caller": "done",
+            "svc": "done",
+            "policy": "active"
+          }
+        },
+        {
+          "caption": "`BookingRepository` saves it. Only now does the id counter move on.",
+          "at": "repo",
+          "slot": "top",
+          "state": {
+            "caller": "done",
+            "svc": "done",
+            "policy": "done",
+            "repo": "active"
+          }
+        },
+        {
+          "caption": "The saved `Booking` returns to the caller.",
+          "at": "caller",
+          "slot": "bottom",
+          "state": {
+            "caller": "active",
+            "svc": "done",
+            "policy": "done",
+            "repo": "done"
+          },
+          "token": {
+            "label": "BK1",
+            "tone": "ok"
+          }
+        },
+        {
+          "caption": "A second request asks for the same room from 10:30 to 12:00.",
+          "at": "svc",
+          "slot": "top",
+          "state": {
+            "caller": "done",
+            "svc": "active",
+            "policy": "done",
+            "repo": "done"
+          },
+          "token": {
+            "label": "book R-101 10.5-12",
+            "tone": "req"
+          }
+        },
+        {
+          "caption": "This time `ConflictPolicy` finds an overlap with the first booking.",
+          "at": "policy",
+          "slot": "top",
+          "state": {
+            "caller": "done",
+            "svc": "done",
+            "policy": "error",
+            "repo": "done"
+          },
+          "token": {
+            "label": "book R-101 10.5-12",
+            "tone": "req"
+          }
+        },
+        {
+          "caption": "The service throws before saving, so the repository never sees the clash.",
+          "at": "caller",
+          "slot": "bottom",
+          "state": {
+            "caller": "active",
+            "svc": "done",
+            "policy": "error",
+            "repo": "blocked"
+          },
+          "token": {
+            "label": "refused",
+            "tone": "err"
+          }
+        }
+      ]
+    }
   },
   "code": [
     {
-      "file": "booking.mjs",
-      "lang": "js",
-      "title": "Core modules, in memory",
-      "run": "browser",
-      "caption": "All three use cases run with no database. Book `r1` for 9 to 10 too, and run again.",
+      "file": "BookingCoreDemo.java",
+      "lang": "java",
+      "title": "Service and repositories",
+      "run": "captured",
+      "caption": "The core in one file: search, book, cancel, repository interfaces with in-memory versions, and an injected policy.",
       "walk": [
         {
           "lines": [
-            1,
-            5
-          ],
-          "text": "`InMemoryRoomRepository` keeps rooms in a private `Map` and lists them."
-        },
-        {
-          "lines": [
-            6,
-            14
-          ],
-          "text": "`InMemoryBookingRepository` saves, finds, removes, and lists one room's bookings."
-        },
-        {
-          "lines": [
-            15,
-            19
-          ],
-          "text": "`StrictOverlapPolicy` implements `ConflictPolicy`: half-open slots, so back-to-back is allowed."
-        },
-        {
-          "lines": [
-            20,
-            28
-          ],
-          "text": "The service receives its collaborators. `searchFree` filters by capacity, then asks the policy."
-        },
-        {
-          "lines": [
             29,
-            37
+            35
           ],
-          "text": "`book` checks first and creates an id only for a booking that is saved."
+          "text": "Dependencies arrive through the constructor as interfaces and stay `private final`."
         },
         {
           "lines": [
-            38,
-            42
+            36,
+            40
           ],
-          "text": "`cancel` lets only the employee who booked remove the booking."
+          "text": "Search keeps rooms big enough, then drops rooms that `clash`, the helper `book` also uses."
         },
         {
           "lines": [
-            44,
-            55
+            41,
+            47
           ],
-          "text": "Wire the parts by hand and run each use case, including two failures."
+          "text": "Book checks first, then takes the id and saves; a refusal changes nothing."
+        },
+        {
+          "lines": [
+            48,
+            54
+          ],
+          "text": "Cancel finds the booking, refuses anyone but its owner, then removes it."
+        },
+        {
+          "lines": [
+            65,
+            82
+          ],
+          "text": "Repositories are interfaces; `main` picks in-memory ones, so a database version needs no service change."
+        },
+        {
+          "lines": [
+            5,
+            10
+          ],
+          "text": "`main` wires the parts by hand; the overlap rule is a lambda."
+        },
+        {
+          "lines": [
+            13,
+            24
+          ],
+          "text": "Refusals are an `IllegalStateException` for now; the next page gives errors their own types."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Do not put `Map` storage inside `BookingService`; keep storage behind a repository.",
-    "Check for conflicts before generating ids or side effects, not after.",
-    "Avoid `new` for collaborators inside the service; inject them through the constructor."
+    "Do not let `BookingService` create its repositories; inject them so tests can swap them.",
+    "Never save before checking conflicts; a refused booking must leave storage unchanged.",
+    "Do not advance the id counter before the check passes, or refusals waste ids."
   ],
   "quiz": {
-    "q": "Why does `BookingService` take its repositories and policy as constructor arguments?",
+    "q": "After `BK1` (R-101, 10 to 11) is saved, what does this print?",
+    "code": "// R-101 seats 6, R-201 seats 12, R-301 seats 4\nSystem.out.println(\"free: \" + svc.searchFree(5, 11, 12));",
+    "lang": "java",
     "options": [
-      "Because JavaScript classes cannot use `new` inside methods",
-      "So a test can pass in fakes or another policy",
-      "So the service can store bookings itself",
-      "To make `book` run faster"
+      "free: [R-201]",
+      "free: [R-101, R-201]",
+      "free: [R-101, R-201, R-301]",
+      "free: []"
     ],
     "answer": 1,
-    "why": "Injected collaborators can be swapped without editing the service, so tests and new rules plug in from outside."
+    "why": "`R-301` seats only 4. `BK1` ends at 11, and `11 < 11` is false, so a back-to-back slot does not clash."
   },
-  "takeaway": "Make every use case run in memory before adding storage or HTTP.",
+  "takeaway": "Inject the parts, check before you save, keep storage behind a repository.",
   "chat": {
     "starters": [
-      "Why use in-memory repositories before a real database?",
-      "How would two concurrent bookings for the same room be handled?",
-      "Should searchFree live in BookingService or RoomRepository?"
+      "Should cancel delete the booking or mark it as cancelled?",
+      "Why does searchFree return room ids instead of Room objects here?",
+      "What changes when BookingRepository is backed by a real database?"
     ]
   }
 }

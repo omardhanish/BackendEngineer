@@ -1,0 +1,11 @@
+{
+  "stdout": "to=ada@example.com cc=[ops@example.com] subject=Invoice 42\nrefused: no subject",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java BuilderDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "0d170ffa5ae02a9c",
+  "at": "2026-10-09T08:11:15.568Z"
+}

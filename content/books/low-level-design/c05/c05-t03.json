@@ -1,172 +1,209 @@
 {
-  "title": "Class diagram and interfaces",
-  "idea": "A class diagram shows each class, its public methods and how classes relate; interfaces mark the seams where one part can be swapped for another.",
+  "title": "Booking class diagram",
+  "idea": "A class diagram shows the classes, their key methods and how they relate; interfaces mark the seams where one part can be swapped for another.",
   "points": [
-    "In an interview diagram, a box shows the class name, key fields and methods.",
-    "Arrows say how classes relate: has-a, uses, creates or implements.",
-    "`BookingService` depends on interfaces, never on a concrete database or rule.",
-    "JavaScript has no interfaces; a base class whose methods throw stands in."
+    "`BookingService` holds the use cases and depends on interfaces and repositories.",
+    "`ConflictPolicy` is a strategy: the overlap rule changes without touching the service.",
+    "`BookingListener` lets notification and auditing react without the service knowing them.",
+    "A dashed line with a hollow triangle means a class implements an interface."
   ],
   "hero": {
     "type": "flow",
-    "title": "The booking system's class diagram",
+    "title": "Who depends on whom",
+    "dir": "TB",
     "nodes": [
       {
         "id": "svc",
         "label": "BookingService",
-        "sub": "searchFree, book, cancel"
+        "sub": "the use cases"
+      },
+      {
+        "id": "rooms",
+        "label": "RoomRepository"
+      },
+      {
+        "id": "bookings",
+        "label": "BookingRepository"
       },
       {
         "id": "policy",
         "label": "ConflictPolicy",
-        "sub": "interface: conflicts()"
+        "sub": "interface"
       },
       {
-        "id": "brepo",
-        "label": "BookingRepository",
-        "sub": "interface: save, forRoom"
+        "id": "listener",
+        "label": "BookingListener",
+        "sub": "interface"
       },
       {
-        "id": "rrepo",
-        "label": "RoomRepository",
-        "sub": "interface: all()"
+        "id": "overlap",
+        "label": "OverlapPolicy"
       },
       {
         "id": "notify",
-        "label": "NotificationService",
-        "sub": "notify attendees"
+        "label": "NotificationService"
       },
       {
-        "id": "booking",
-        "label": "Booking",
-        "sub": "room, employee, slot"
-      },
-      {
-        "id": "building",
-        "label": "Building",
-        "sub": "has rooms"
-      },
-      {
-        "id": "room",
-        "label": "Room",
-        "sub": "capacity, fits()"
+        "id": "audit",
+        "label": "AuditLogger"
       }
     ],
     "edges": [
       {
         "from": "svc",
+        "to": "rooms",
+        "label": "uses",
+        "caption": "The service reads rooms through `RoomRepository`, never through a raw list."
+      },
+      {
+        "from": "svc",
+        "to": "bookings",
+        "label": "uses",
+        "caption": "`BookingRepository` saves bookings and returns one room's bookings with `forRoom`."
+      },
+      {
+        "from": "svc",
         "to": "policy",
-        "label": "uses",
-        "caption": "The service asks the policy whether a slot clashes. It never knows which rule is plugged in."
+        "label": "asks",
+        "caption": "Before saving, the service asks `ConflictPolicy` whether the new slot clashes."
+      },
+      {
+        "from": "overlap",
+        "to": "policy",
+        "label": "implements",
+        "dashed": true,
+        "caption": "`OverlapPolicy` is today's rule; a policy with buffer time could replace it."
       },
       {
         "from": "svc",
-        "to": "brepo",
-        "label": "uses",
-        "caption": "Bookings are read and saved through an interface, so memory or a database both fit."
+        "to": "listener",
+        "label": "notifies",
+        "caption": "After a booking, the service calls each `BookingListener` in turn."
       },
       {
-        "from": "svc",
-        "to": "rrepo",
-        "label": "uses",
-        "caption": "Room lookups go through their own repository: one interface per kind of data."
+        "from": "notify",
+        "to": "listener",
+        "label": "implements",
+        "dashed": true,
+        "caption": "`NotificationService` reacts by telling the attendees."
       },
       {
-        "from": "svc",
-        "to": "notify",
-        "label": "uses",
-        "caption": "Telling attendees is a separate job, so the service only calls the notifier."
-      },
-      {
-        "from": "svc",
-        "to": "booking",
-        "label": "creates",
-        "caption": "The service creates a `Booking` only after the policy says the slot is free."
-      },
-      {
-        "from": "building",
-        "to": "room",
-        "label": "has many",
-        "caption": "Composition: a `Building` owns its rooms. A room does not exist outside one."
-      },
-      {
-        "from": "booking",
-        "to": "room",
-        "label": "refers to",
-        "caption": "A booking stores the room id, not a copy of the room."
+        "from": "audit",
+        "to": "listener",
+        "label": "implements",
+        "dashed": true,
+        "caption": "`AuditLogger` reacts by recording who booked what; the service knows neither class."
       }
     ]
   },
   "code": [
     {
-      "file": "policy.mjs",
-      "lang": "js",
-      "title": "Two policies, one interface",
-      "run": "browser",
-      "caption": "Both classes honour the same contract, so `BookingService` can take either. Set the strict gap on line 9 to `0.25` and run again.",
+      "file": "class-diagram.txt",
+      "lang": "text",
+      "title": "Mermaid class diagram",
+      "run": "static",
+      "illustrative": true,
+      "caption": "The same design as Mermaid text, which lives next to the code and diffs cleanly.",
       "walk": [
         {
           "lines": [
-            1,
-            4
-          ],
-          "text": "The interface: a base class whose method throws until a subclass overrides it."
-        },
-        {
-          "lines": [
-            6,
+            2,
             6
           ],
-          "text": "One overlap test with an optional gap, shared by both policies."
+          "text": "A class box lists the public methods, with types kept short."
         },
         {
           "lines": [
-            8,
-            13
+            7,
+            10
           ],
-          "text": "Two strategies. The buffer one adds a quarter hour between meetings for cleaning."
+          "text": "`<<interface>>` marks a contract that has no state."
         },
         {
           "lines": [
             15,
-            19
+            18
           ],
-          "text": "The same back-to-back request gets a different answer from each policy."
+          "text": "Plain arrows are associations: the service keeps each one in a field."
+        },
+        {
+          "lines": [
+            19,
+            21
+          ],
+          "text": "`<|..` is realization: the class on the right implements the interface."
+        },
+        {
+          "lines": [
+            22,
+            22
+          ],
+          "text": "Multiplicity: one room has zero or more bookings."
         }
       ]
     },
     {
-      "file": "repo.mjs",
-      "lang": "js",
-      "title": "A missing method fails loudly",
-      "run": "browser",
-      "caption": "The subclass forgot `forRoom`. The base class turns that gap into a clear error, not `undefined`."
+      "file": "PolicyDemo.java",
+      "lang": "java",
+      "title": "The ConflictPolicy contract",
+      "run": "captured",
+      "caption": "One interface, one implementation, three candidate slots against one booking.",
+      "walk": [
+        {
+          "lines": [
+            17,
+            18
+          ],
+          "text": "`Booking` is a value: a record with the room, the owner and the slot."
+        },
+        {
+          "lines": [
+            20,
+            22
+          ],
+          "text": "The whole contract: a candidate, the existing bookings, a yes or no."
+        },
+        {
+          "lines": [
+            24,
+            32
+          ],
+          "text": "Same room, and each slot starts before the other ends: that is an overlap."
+        },
+        {
+          "lines": [
+            5,
+            13
+          ],
+          "text": "The caller holds the interface type, so another policy drops in unchanged."
+        }
+      ]
     }
   ],
   "pitfalls": [
-    "Do not draw every private field; show the public methods others call.",
-    "Avoid an arrow from `BookingService` to a concrete class like an in-memory repository.",
-    "Keep interfaces small; split one that forces classes to stub unused methods."
+    "Do not bury the overlap rule inside `BookingService`; put it behind `ConflictPolicy`.",
+    "Avoid drawing every getter; show roles, key methods and relations.",
+    "Name interfaces for their role, like `ConflictPolicy`, never `IConflictPolicy`."
   ],
   "quiz": {
     "q": "What does this print?",
-    "code": "class ConflictPolicy {\n  conflicts() { throw new Error('not implemented'); }\n}\nclass LenientPolicy extends ConflictPolicy {}\ntry { console.log(new LenientPolicy().conflicts()); }\ncatch (e) { console.log(e.message); }",
-    "lang": "js",
+    "code": "List<Booking> existing = List.of(\n    new Booking(\"BK1\", \"R-101\", \"E7\", 10, 11));\nBooking c = new Booking(\"x\", \"R-202\", \"E9\", 10, 11);\nSystem.out.println(new OverlapPolicy().conflicts(c, existing));",
+    "lang": "java",
     "options": [
-      "undefined",
+      "true",
       "false",
-      "TypeError: conflicts is not a function",
-      "not implemented"
+      "R-101 conflicts",
+      "It does not compile"
     ],
-    "answer": 3,
-    "why": "`LenientPolicy` does not override `conflicts`, so the call finds the base method on the prototype chain, and it throws."
+    "answer": 1,
+    "why": "`OverlapPolicy` compares room ids first. The only booking is in `R-101`, so `anyMatch` finds nothing for `R-202` and returns `false`."
   },
-  "takeaway": "Draw classes with public methods; depend on interfaces at every seam.",
+  "takeaway": "Draw the seams first: services depend on interfaces, details implement them.",
   "chat": {
     "starters": [
-      "How do I draw composition versus aggregation in UML?",
-      "Why is ConflictPolicy an interface and not an if statement?",
-      "How detailed should a class diagram be in an interview?"
+      "When should an arrow in a class diagram be composition instead of association?",
+      "Why is ConflictPolicy an interface and not a method on Room?",
+      "How much detail should a class diagram have in an interview?"
     ]
   }
 }

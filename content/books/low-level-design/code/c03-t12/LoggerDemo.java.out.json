@@ -1,0 +1,11 @@
+{
+  "stdout": "[INFO] checkout: order A-17 placed\n[ERROR] checkout: payment declined for A-18\nmemory holds 2",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java LoggerDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "eb41a6cec5e2aae0",
+  "at": "2026-10-09T08:16:29.541Z"
+}

@@ -1,134 +1,144 @@
 {
-  "title": "Hotel booking and double bookings",
-  "idea": "A hotel booking design stores bookings as date ranges per room, and makes the overlap check and the save one step, so no night is sold twice.",
+  "title": "Hotel booking and date overlaps",
+  "idea": "A hotel booking design finds a room of the requested type whose existing stays do not overlap the new dates, then claims it in one locked step.",
   "points": [
-    "Core classes: `Hotel`, `Room`, `Guest`, `Booking`, `BookingRepository` and `BookingService`.",
-    "A stay is a half-open range `[from, to)`; checkout day stays free.",
-    "Two ranges clash when each one starts before the other ends.",
-    "Checking then saving with an `await` between them lets a second request slip in."
+    "Core entities: `Room`, a room `Type`, a `Stay` date range, `Reservation` and `ReservationService`.",
+    "A `Stay` is half-open: the check-out day is free for the next guest.",
+    "Two stays overlap when each one starts before the other ends.",
+    "The overlap check and the insert must run under one lock, ideally per room."
   ],
   "hero": {
-    "type": "timeline",
-    "title": "Two guests, one room, one night",
-    "items": [
-      {
-        "label": "Ann reads",
-        "text": "Ann's request reads room 101's bookings. There are none, so her check passes."
-      },
-      {
-        "label": "Bo reads",
-        "text": "Before Ann's save lands, Bo reads the same empty list. His check passes too."
-      },
-      {
-        "label": "Both save",
-        "text": "Ann's booking is written, then Bo's. Night 4 now has two guests."
-      },
-      {
-        "label": "Add a lock",
-        "text": "A per-room lock queues Bo's check-and-save behind Ann's. Other rooms carry on."
-      },
-      {
-        "label": "Bo runs next",
-        "text": "Bo's queued check runs after Ann's save. He sees her booking and is refused."
-      }
-    ]
+    "type": "compare",
+    "title": "Two guests, one last room",
+    "left": {
+      "title": "Check, then book (racy)",
+      "tone": "bad",
+      "items": [
+        "Thread A sees room 101 free for 10 to 13 March",
+        "Thread B checks before A saves, and also sees it free",
+        "Both add a reservation: the room is double booked",
+        "Tests usually pass because the bad timing is rare"
+      ]
+    },
+    "right": {
+      "title": "Check and book as one step",
+      "tone": "good",
+      "items": [
+        "Each room has its own lock object",
+        "Overlap check and insert run inside that lock",
+        "B waits for the lock, then sees A's stay and is refused",
+        "Bookings for other rooms never wait on room 101"
+      ]
+    },
+    "verdict": "Correctness comes from making check-and-insert atomic; a lock per room keeps it fast."
   },
   "code": [
     {
-      "file": "hotel.mjs",
-      "lang": "js",
-      "title": "Race, then lock",
-      "run": "browser",
-      "caption": "The repository fakes a database with a timer. Three guests ask for room 101 at once, first without a lock, then with one.",
+      "file": "HotelDemo.java",
+      "lang": "java",
+      "title": "Searching by type and dates",
+      "run": "captured",
+      "caption": "Four guests ask for a double room. Back-to-back stays share a room; overlapping ones do not.",
       "walk": [
         {
           "lines": [
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            7,
-            8
-          ],
-          "text": "Each repository call waits a tick, like a real database round trip."
-        },
-        {
-          "lines": [
-            9
-          ],
-          "text": "Half-open ranges: a stay ending on day 5 does not clash with one starting on 5."
-        },
-        {
-          "lines": [
-            10,
-            11,
-            12,
-            13,
-            14,
-            15,
-            16,
-            17
-          ],
-          "text": "`KeyedLock` chains tasks per key, so tasks for one room run one at a time."
-        },
-        {
-          "lines": [
-            22,
-            23,
-            24,
-            25,
             26,
-            27,
-            28
+            34
           ],
-          "text": "The check and the save form one task: the critical section."
+          "text": "`Stay` rejects empty ranges in its compact constructor and owns the overlap rule."
         },
         {
           "lines": [
-            29
+            41,
+            45
           ],
-          "text": "Without a lock the task runs at once and can interleave with others."
+          "text": "Pick rooms of the type, then drop any room with an overlapping reservation."
         },
         {
           "lines": [
-            32,
-            33,
-            34,
+            46,
+            49
+          ],
+          "text": "Take and record the first free room. One `synchronized` method is simple but global; `RaceDemo` locks per room."
+        },
+        {
+          "lines": [
+            9,
+            12
+          ],
+          "text": "Ana leaves on the 13th, so Cy can arrive that day. Dee overlaps both rooms."
+        }
+      ]
+    },
+    {
+      "file": "RaceDemo.java",
+      "lang": "java",
+      "title": "Eight threads, one room",
+      "run": "captured",
+      "caption": "A latch releases eight threads at once. The per-room lock lets exactly one win.",
+      "walk": [
+        {
+          "lines": [
+            9,
+            19
+          ],
+          "text": "Every task waits on the latch, so all eight try to book together."
+        },
+        {
+          "lines": [
+            20,
+            22
+          ],
+          "text": "Open the latch, then wait for the pool to finish before printing."
+        },
+        {
+          "lines": [
             35,
-            36,
-            37
+            38
           ],
-          "text": "Ann and Bo overlap on night 4. Cy starts on Ann's checkout day."
+          "text": "One list per room, created safely by `ConcurrentHashMap.computeIfAbsent`."
+        },
+        {
+          "lines": [
+            39,
+            46
+          ],
+          "text": "The room's list is its lock. Checking and adding happen in one block."
+        },
+        {
+          "lines": [
+            25,
+            26
+          ],
+          "text": "Room 102 has its own list and lock, so the race on 101 left it free."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Never check availability and save in separate steps with an `await` between them.",
-    "An in-memory lock covers one process only; with several servers use a database constraint.",
-    "Store stays as `[from, to)`; inclusive end dates make back-to-back stays clash."
+    "Do not treat the check-out date as booked; use half-open ranges or back-to-back stays fail.",
+    "Never check availability and insert in separate steps without a lock or database constraint.",
+    "Avoid one global lock for the whole hotel when a lock per room is enough."
   ],
   "quiz": {
-    "q": "What does this print?",
-    "code": "const overlaps = (a, b) => a.from < b.to && b.from < a.to;\nconsole.log(\n  overlaps({ from: 3, to: 5 }, { from: 5, to: 7 }),\n  overlaps({ from: 1, to: 9 }, { from: 4, to: 6 }));",
-    "lang": "js",
+    "q": "What does `HotelDemo` print for dee?",
+    "code": "// rooms 101 and 102 are DOUBLE\n// 101: ana 10-13 Mar, cy 13-15 Mar; 102: ben 11-12 Mar\nbook(hotel, \"dee\", 1, 4); // 11-14 Mar",
+    "lang": "java",
     "options": [
-      "true true",
-      "false false",
-      "true false",
-      "false true"
+      "dee -> 101",
+      "dee -> 102",
+      "dee -> no room",
+      "dee -> 201"
     ],
-    "answer": 3,
-    "why": "The first pair only touch on day 5, and `5 < 5` is false. The second range sits inside the first, so both comparisons hold."
+    "answer": 2,
+    "why": "Dee's 11 to 14 March overlaps Ana in 101 and Ben in 102. Room 201 is a suite, so it is filtered out by type."
   },
-  "takeaway": "Overlap check and save must be one atomic step per room.",
+  "takeaway": "Half-open date ranges for overlap; one lock per room for check-and-insert.",
   "chat": {
     "starters": [
-      "How would a database unique or exclusion constraint prevent double booking?",
-      "Should I use optimistic or pessimistic locking for hotel rooms?",
-      "How do I search for any free room of a given type?"
+      "How would this work with a database instead of in-memory lists?",
+      "How do I hold a room for ten minutes while the guest pays?",
+      "Should I store availability per night instead of a list of stays?"
     ]
   }
 }

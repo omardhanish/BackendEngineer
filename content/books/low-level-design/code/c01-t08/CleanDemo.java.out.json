@@ -1,0 +1,11 @@
+{
+  "stdout": "0\n450\nrejected: order has no items",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java CleanDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "cd69623a2fc6ea33",
+  "at": "2026-10-09T08:11:48.503Z"
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "PASS back-to-back is allowed\nPASS overlap is refused\nPASS end before start is refused\nPASS listener hears only successes\n4 passed, 0 failed",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java BookingServiceTest.java",
+  "tool": "Java 17.0.11",
+  "hash": "56b9a19b9bd43017",
+  "at": "2026-10-09T08:27:41.588Z"
+}

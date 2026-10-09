@@ -1,0 +1,11 @@
+{
+  "stdout": "Asha: 2 lines, 200\npaid true",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java OrderDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "753f1a8f16ab994e",
+  "at": "2026-10-09T08:24:04.546Z"
+}

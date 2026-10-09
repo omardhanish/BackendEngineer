@@ -1,339 +1,293 @@
 {
-  "title": "Concurrency-safe class design",
-  "idea": "Designing for concurrency means making every check-then-act on shared state happen as one unit, so overlapping requests cannot both pass the check.",
+  "title": "Thread-safe class design",
+  "idea": "Designing for concurrency means deciding, for every mutable field, which class owns it and how threads may reach it without corrupting it.",
   "analogy": {
-    "text": "Two shop assistants both see one mug left on the stock list, go to the back room, and both promise it to a customer.",
-    "breaks": "In Node the trip to the back room is an `await`, not a thread."
+    "text": "An office whiteboard. Printed notices need no rules. A tally that anyone may edit needs one marker, passed from hand to hand.",
+    "breaks": "Threads may miss each other's writes without a shared lock, volatile or atomic."
   },
   "points": [
-    "Node runs JavaScript on one thread, but `await` lets other requests run between lines.",
-    "A check made before an `await` can be stale when you act.",
-    "Let the store enforce the rule with a unique key or a version check.",
-    "Prefer immutable values and fewer shared fields: less shared state means fewer races."
+    "A race needs shared mutable state, a writer, and no synchronization between threads.",
+    "`count++` is three steps: read, add, write. Another thread can slip between.",
+    "Immutable objects and thread-confined state need no locks at all.",
+    "Shared mutable state should hide its locking inside the one class that owns it."
   ],
   "hero": {
     "type": "anim",
     "engine": "lanes",
-    "title": "Two orders, one mug",
+    "title": "How count++ loses an update",
     "scenario": {
       "code": [
-        "async function buy(who) {",
-        "  await db();                     // read",
-        "  if (stock < 1) return 'sold out';",
-        "  await db();                     // write",
-        "  stock = stock - 1;",
-        "  return 'sold';",
-        "}",
-        "Promise.all([buy('A'), buy('B')]);"
+        "// two threads run count++ on one field",
+        "int tmp = count;   // 1. read",
+        "tmp = tmp + 1;     // 2. add",
+        "count = tmp;       // 3. write"
       ],
       "lanes": [
         {
-          "id": "stack",
-          "label": "Running now",
-          "kind": "stack"
-        },
-        {
-          "id": "wait",
-          "label": "Awaiting the store",
+          "id": "a",
+          "label": "Thread A",
           "kind": "area",
-          "hint": "parked at an await"
+          "hint": "its own local tmp"
         },
         {
-          "id": "ready",
-          "label": "Ready to resume",
-          "kind": "queue"
-        },
-        {
-          "id": "store",
-          "label": "Stock store",
+          "id": "shared",
+          "label": "Shared field",
           "kind": "area",
-          "hint": "shared state"
+          "hint": "one count for everyone"
+        },
+        {
+          "id": "b",
+          "label": "Thread B",
+          "kind": "area",
+          "hint": "its own local tmp"
         }
       ],
       "tokens": {
-        "ann": {
-          "label": "buy(A)",
-          "tone": "sync"
-        },
-        "bo": {
-          "label": "buy(B)",
-          "tone": "io"
-        },
-        "free": {
-          "label": "mug: 1",
+        "c5": {
+          "label": "count = 5",
           "tone": "neutral"
         },
-        "rAnn": {
-          "label": "mug: 0",
-          "tone": "micro"
+        "c6": {
+          "label": "count = 6",
+          "tone": "neutral"
         },
-        "rBo": {
-          "label": "mug: -1",
-          "tone": "timer"
+        "c7": {
+          "label": "count = 7",
+          "tone": "neutral"
+        },
+        "aRead": {
+          "label": "tmp = 5",
+          "tone": "sync"
+        },
+        "aAdd": {
+          "label": "tmp = 6",
+          "tone": "sync"
+        },
+        "bRead": {
+          "label": "tmp = 5",
+          "tone": "io"
+        },
+        "bAdd": {
+          "label": "tmp = 6",
+          "tone": "io"
         }
       },
       "steps": [
         {
-          "caption": "Order A starts. One mug is left in the shared stock store.",
-          "line": 7,
+          "caption": "The field holds 5. Both threads are about to run `count++` once.",
           "at": {
-            "stack": [
-              "ann"
-            ],
-            "wait": [],
-            "ready": [],
-            "store": [
-              "free"
+            "shared": [
+              "c5"
             ]
-          },
-          "active": "ann",
-          "out": []
+          }
         },
         {
-          "caption": "A reaches `await db()` and parks. The thread is now free for other work.",
+          "caption": "Thread A reads 5 into its own local copy.",
           "line": 1,
           "at": {
-            "stack": [],
-            "wait": [
-              "ann"
+            "a": [
+              "aRead"
             ],
-            "ready": [],
-            "store": [
-              "free"
+            "shared": [
+              "c5"
             ]
           },
-          "active": "ann",
-          "out": []
+          "active": "aRead"
         },
         {
-          "caption": "Order B runs in that gap and parks at the same `await`.",
+          "caption": "The scheduler switches threads. B also reads 5, because A has not written anything back yet.",
           "line": 1,
           "at": {
-            "stack": [],
-            "wait": [
-              "ann",
-              "bo"
+            "a": [
+              "aRead"
             ],
-            "ready": [],
-            "store": [
-              "free"
+            "shared": [
+              "c5"
+            ],
+            "b": [
+              "bRead"
             ]
           },
-          "active": "bo",
-          "out": []
+          "active": "bRead"
         },
         {
-          "caption": "A's read finishes first; B is still waiting on its read.",
-          "line": 1,
-          "at": {
-            "stack": [],
-            "wait": [
-              "bo"
-            ],
-            "ready": [
-              "ann"
-            ],
-            "store": [
-              "free"
-            ]
-          },
-          "out": []
-        },
-        {
-          "caption": "A's check passes: one mug left. A starts its write and parks again.",
+          "caption": "A adds one to its copy and gets 6.",
           "line": 2,
           "at": {
-            "stack": [
-              "ann"
+            "a": [
+              "aAdd"
             ],
-            "wait": [
-              "bo"
+            "shared": [
+              "c5"
             ],
-            "ready": [],
-            "store": [
-              "free"
+            "b": [
+              "bRead"
             ]
           },
-          "active": "ann",
-          "out": []
+          "active": "aAdd"
         },
         {
-          "caption": "B's check also passes: A has not written yet. Both hold a stale count.",
-          "line": 2,
-          "at": {
-            "stack": [
-              "bo"
-            ],
-            "wait": [
-              "ann"
-            ],
-            "ready": [],
-            "store": [
-              "free"
-            ]
-          },
-          "active": "bo",
-          "out": []
-        },
-        {
-          "caption": "A's write lands. A is told the mug is sold.",
-          "line": 4,
-          "at": {
-            "stack": [
-              "ann"
-            ],
-            "wait": [
-              "bo"
-            ],
-            "ready": [],
-            "store": [
-              "rAnn"
-            ]
-          },
-          "active": "ann",
-          "out": [
-            "A: sold"
-          ]
-        },
-        {
-          "caption": "B's write lands too. Both were told 'sold': the stock is now -1.",
-          "line": 4,
-          "at": {
-            "stack": [
-              "bo"
-            ],
-            "wait": [],
-            "ready": [],
-            "store": [
-              "rBo"
-            ]
-          },
-          "active": "bo",
-          "out": [
-            "A: sold",
-            "B: sold"
-          ]
-        },
-        {
-          "caption": "The fix: the store rejects B's write because the version changed. B rereads and sees sold out.",
+          "caption": "A writes 6 back to the shared field.",
           "line": 3,
           "at": {
-            "stack": [
-              "bo"
+            "shared": [
+              "c6"
             ],
-            "wait": [],
-            "ready": [],
-            "store": [
-              "rAnn"
+            "b": [
+              "bRead"
             ]
           },
-          "active": "bo",
-          "out": [
-            "A: sold",
-            "B: sold out"
-          ]
+          "active": "c6"
+        },
+        {
+          "caption": "B adds one to its stale 5 and also gets 6.",
+          "line": 2,
+          "at": {
+            "shared": [
+              "c6"
+            ],
+            "b": [
+              "bAdd"
+            ]
+          },
+          "active": "bAdd"
+        },
+        {
+          "caption": "B writes 6 over A's 6. Two increments ran, but one is lost.",
+          "line": 3,
+          "at": {
+            "shared": [
+              "c6"
+            ]
+          },
+          "active": "c6"
+        },
+        {
+          "caption": "Fix: make the three steps one atomic step with a lock or `AtomicInteger`. B then waits or retries, and count ends at 7.",
+          "at": {
+            "shared": [
+              "c7"
+            ]
+          },
+          "active": "c7"
         }
       ]
     }
   },
   "code": [
     {
-      "file": "version.mjs",
-      "lang": "js",
-      "title": "Store-enforced rule",
-      "run": "browser",
-      "caption": "You met this race and the `KeyedLock` in the booking case studies (c03-t05, c03-t08). Here the store refuses a stale write instead.",
+      "file": "HitCounterDemo.java",
+      "lang": "java",
+      "title": "Thread-safe counter",
+      "run": "captured",
+      "caption": "Four threads share one `HitCounter`. The class owns its locking, so callers never think about it.",
       "walk": [
         {
           "lines": [
-            2
-          ],
-          "text": "Each row carries a `version` that changes on every write."
-        },
-        {
-          "lines": [
-            4,
-            5,
-            6,
-            7,
-            8
-          ],
-          "text": "`update` writes only if the version is still the one the caller read."
-        },
-        {
-          "lines": [
-            13,
-            14,
-            15,
-            16
-          ],
-          "text": "A refused write means someone else won: read again and recheck."
-        },
-        {
-          "lines": [
-            17,
+            11,
             18
           ],
-          "text": "Cap the retries so a busy item cannot loop forever."
+          "text": "Four pool threads each record 1000 hits, split between two paths."
+        },
+        {
+          "lines": [
+            19,
+            21
+          ],
+          "text": "Wait for every task to finish, and fail loudly if they time out."
+        },
+        {
+          "lines": [
+            28,
+            28
+          ],
+          "text": "The map is `private final`: no caller can reach it without going through the class."
+        },
+        {
+          "lines": [
+            31,
+            31
+          ],
+          "text": "`merge` reads, adds and writes as one atomic step per key."
+        },
+        {
+          "lines": [
+            34,
+            36
+          ],
+          "text": "Return a sorted copy, never the live map, so readers cannot break the invariant."
         }
       ]
     },
     {
-      "file": "short.mjs",
-      "lang": "js",
-      "title": "Short, synchronous section",
-      "run": "browser",
-      "caption": "Do slow work first. Then check and write with no `await` between them.",
+      "file": "TransferDemo.java",
+      "lang": "java",
+      "title": "Lock ordering",
+      "run": "captured",
+      "caption": "Two threads move money in opposite directions. A fixed lock order prevents deadlock. It finishes and prints a=1000 b=1000: no deadlock, and no money lost.",
       "walk": [
         {
           "lines": [
-            4,
-            5,
-            6,
-            7
+            7,
+            10
           ],
-          "text": "No `await` inside `reserve`, so no other request can run between check and write."
+          "text": "Thread 1 sends a to b, thread 2 sends b to a, at the same time."
         },
         {
           "lines": [
-            8
+            21,
+            22
           ],
-          "text": "Callers get a frozen value, not a handle on shared state."
+          "text": "Each account carries its own lock; the field comment names what it guards."
         },
         {
           "lines": [
-            13,
-            14
+            21,
+            29
           ],
-          "text": "The slow price lookup happens before the short section, not inside it."
+          "text": "Neither object alone can guard a two-account move, so only Bank takes the package-private lock."
+        },
+        {
+          "lines": [
+            35,
+            36
+          ],
+          "text": "Pick the lock order by id, not by argument order."
+        },
+        {
+          "lines": [
+            37,
+            42
+          ],
+          "text": "Take both locks, update both balances, then release in reverse order inside `finally`."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Never check, then `await`, then act on the check without a lock or a constraint.",
-    "Do not retry a refused version check forever; cap retries and report the conflict.",
-    "Keep locked sections short and never `await` another lock inside one, or you risk deadlock."
+    "`map.put(k, map.get(k) + 1)` loses updates even on `ConcurrentHashMap`; use `merge`.",
+    "Taking two locks in argument order can deadlock; order them by a stable key.",
+    "Returning an internal mutable collection leaks it past your lock; return a copy."
   ],
   "quiz": {
-    "q": "What does this print?",
-    "code": "let n = 0;\nasync function inc() { const v = n; await null; n = v + 1; }\nPromise.all([inc(), inc(), inc()]).then(() => console.log(n));",
-    "lang": "js",
+    "q": "What does `HitCounterDemo` print?",
     "options": [
-      "3",
-      "0",
-      "2",
-      "1"
+      "{/home=2000, /cart=2000}",
+      "{/cart=2000, /home=2000}",
+      "{/cart=4000}",
+      "A different count on each run"
     ],
-    "answer": 3,
-    "why": "All three calls read `n` as 0 before any of them resumes after `await`. Each then writes 0 + 1: a lost update."
+    "answer": 1,
+    "why": "Each of four threads adds 500 hits per path. `merge` is atomic, so none are lost, and `TreeMap` sorts the keys.",
+    "code": "for (int t = 0; t < 4; t++)\n    pool.submit(() -> {\n        for (int i = 0; i < 1000; i++)\n            counter.hit(i % 2 == 0 ? \"/home\" : \"/cart\");\n    });\n// shutdown, awaitTermination, then:\nSystem.out.println(counter.snapshot());",
+    "lang": "java"
   },
-  "takeaway": "Make check-then-act one unit: a lock, a transaction, or a constraint.",
+  "takeaway": "Give each mutable field one owner, and guard it inside that class.",
   "chat": {
     "starters": [
-      "If Node is single-threaded, how can it have race conditions?",
-      "How would I stop overselling when the service runs on several servers?",
-      "When should I use optimistic locking with a version field instead of a lock?"
+      "When should I pick AtomicInteger over synchronized?",
+      "Why is an immutable record automatically thread-safe?",
+      "How would I spot a possible deadlock in a class diagram?"
     ]
   }
 }

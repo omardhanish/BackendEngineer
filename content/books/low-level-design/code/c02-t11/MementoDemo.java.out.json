@@ -1,0 +1,11 @@
+{
+  "stdout": "Dear Bob, thanks a lot\nDear Bob, thanks\nDear Bob",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java MementoDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "5a7d3c17aa898ee4",
+  "at": "2026-10-09T08:11:18.299Z"
+}

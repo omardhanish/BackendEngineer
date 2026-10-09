@@ -1,157 +1,67 @@
 {
-  "title": "Submitting the capstone",
-  "idea": "A final submission is a package a reviewer can check without you: the requirements, the diagrams, the running code, and tests that prove each requirement.",
+  "title": "The final submission package",
+  "idea": "A final submission is the complete, self-checking package of your design: requirements, diagrams, runnable code with passing checks, and a short record of decisions.",
   "points": [
-    "A short README says what the system does and how to run it.",
-    "Number each requirement and link it to the test that proves it.",
-    "Diagrams must match the code; update them after every late change.",
-    "A design notes section lists trade-offs, known limits and next steps."
+    "Each artefact proves one thing a reviewer would otherwise have to ask.",
+    "The code must run from a clean folder with one command.",
+    "Diagrams must match the code: same class names, same method signatures.",
+    "The Key decisions section of DESIGN.md says why, so reviewers need not guess."
   ],
   "hero": {
     "type": "table",
-    "title": "What goes in the package",
+    "title": "What goes in, and what it proves",
     "head": [
-      "Item",
+      "Artefact",
       "What it proves",
-      "Ready when"
+      "Check before you submit"
     ],
     "rows": [
       [
-        "README",
-        "The reviewer can run it",
-        "One command runs the demo and tests"
-      ],
-      [
-        "Use cases",
-        "You understood the problem",
-        "Every requirement has a number"
+        "Requirements and use cases",
+        "You built the right thing",
+        "Every use case maps to a method"
       ],
       [
         "Class diagram",
-        "Responsibilities are clear",
-        "Class names match the code exactly"
+        "The structure is clear",
+        "Names match the code exactly"
       ],
       [
-        "Sequence diagram",
-        "Objects collaborate as claimed",
-        "It traces the book-a-room flow"
+        "Sequence diagram for booking",
+        "The main flow is sound",
+        "Policy check happens before save"
       ],
       [
-        "Code and tests",
-        "The design works",
-        "Each requirement has a passing check"
+        "Runnable code and checks",
+        "It works, including the edge cases",
+        "All checks pass from a clean run"
       ],
       [
-        "Design notes",
-        "You chose on purpose",
-        "Trade-offs and open limits are listed"
+        "Key decisions in DESIGN.md",
+        "Choices were deliberate",
+        "Each entry names a rejected option"
+      ],
+      [
+        "README",
+        "Anyone can run it",
+        "One command, expected output shown"
       ]
     ],
     "highlight": {
-      "row": 4
+      "col": 2
     },
-    "caption": "Recurring bookings were a stretch goal: if you skipped them, say so in the design notes."
+    "caption": "Read the last column as your final checklist: a reviewer will test each line."
   },
-  "code": [
-    {
-      "file": "acceptance.mjs",
-      "lang": "js",
-      "title": "Requirements as checks",
-      "run": "browser",
-      "caption": "Each check is named after a numbered requirement, so the run reads like a sign-off sheet. Add an R5 check (notify attendees) of your own.",
-      "walk": [
-        {
-          "lines": [
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            7,
-            8,
-            9,
-            10,
-            11,
-            12,
-            13,
-            14,
-            15,
-            16,
-            17,
-            18
-          ],
-          "text": "`Room` has a `capacity`; the repository and `StrictOverlapPolicy` are the c05-t04 classes."
-        },
-        {
-          "lines": [
-            19,
-            20,
-            21,
-            22,
-            23,
-            24,
-            25,
-            26,
-            27,
-            28,
-            29,
-            30,
-            31,
-            32,
-            33,
-            34,
-            35,
-            36,
-            37,
-            38,
-            39,
-            40,
-            41,
-            42,
-            43
-          ],
-          "text": "A trimmed `BookingService` with the frozen c05-t01 API: `searchFree`, `book` and `cancel`, times in hours."
-        },
-        {
-          "lines": [
-            44,
-            45,
-            46,
-            47,
-            48,
-            49,
-            50,
-            51,
-            52,
-            53,
-            54,
-            55,
-            56,
-            57,
-            58,
-            59
-          ],
-          "text": "Each key names a requirement; each value asserts it holds."
-        },
-        {
-          "lines": [
-            60,
-            61,
-            62,
-            63
-          ],
-          "text": "The loop prints one pass line per requirement; a failed assert stops the run."
-        }
-      ]
-    }
+  "pitfalls": [
+    "Update the diagrams after the last refactor, or they will contradict the code.",
+    "Run the submission from a fresh copy, not from the folder you worked in."
   ],
-  "takeaway": "Submit what a stranger can run, read and verify alone.",
+  "takeaway": "Submit only what a stranger can run, read and verify alone.",
   "chat": {
     "starters": [
-      "What should my README contain for an LLD project?",
-      "How do I map requirements to tests?",
-      "Is it fine to submit without the stretch goal?"
+      "What should a decision log entry look like?",
+      "How long should the README of a design project be?",
+      "Should I include the stretch goal if it is only half done?"
     ]
   }
 }

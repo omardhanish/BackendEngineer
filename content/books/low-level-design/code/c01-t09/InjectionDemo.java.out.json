@@ -1,0 +1,11 @@
+{
+  "stdout": "to ada@example.com: order A-17 placed\nfake recorded [lin@example.com]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java InjectionDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "50d9c4f42e8a75cb",
+  "at": "2026-10-09T08:12:13.530Z"
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "on csv\noff broken\nskip pdf\na,b,c\nno command print",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java PluginHostDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "1bb282e935e952aa",
+  "at": "2026-10-09T08:19:52.758Z"
+}

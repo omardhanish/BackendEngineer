@@ -1,0 +1,11 @@
+{
+  "stdout": "subtotal: 1800\nBuyNGetOne[sku=PEN, n=3] -150 = 1650\nPercentOff[percent=10] -165 = 1485",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java CartDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "0f4de98f577fbab0",
+  "at": "2026-10-09T08:16:38.975Z"
+}

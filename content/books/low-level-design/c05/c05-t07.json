@@ -1,174 +1,141 @@
 {
-  "title": "Unit tests for BookingService",
-  "idea": "A test case calls one public method with known inputs and checks the result, so you can prove the booking rules still hold after every change.",
+  "title": "Testing the booking service",
+  "idea": "A test case runs one small scenario against your code and checks one expected result, so a change that breaks a rule fails loudly.",
   "points": [
-    "Each test follows arrange, act, assert: set up, call once, check the outcome.",
-    "Inject an in-memory `BookingRepository` so tests need no database.",
-    "Test the boundaries: back-to-back slots, exact overlaps and empty slots.",
-    "Assert on public results and error codes, never on private fields."
+    "Each test follows arrange, act, assert: set up state, call once, check.",
+    "Test the boundaries: back-to-back slots, reversed times, an exact overlap.",
+    "Assert on the stable error `code()`, not on the message text.",
+    "Replace listeners with a test double that records what it heard."
   ],
   "hero": {
-    "type": "seq",
-    "title": "One test, one booking",
-    "actors": [
-      {
-        "id": "test",
-        "label": "Test case"
-      },
-      {
-        "id": "svc",
-        "label": "BookingService"
-      },
-      {
-        "id": "repo",
-        "label": "In-memory repository"
-      }
+    "type": "table",
+    "title": "Cases worth a test",
+    "head": [
+      "Case",
+      "Already booked",
+      "Request",
+      "Expect"
     ],
-    "messages": [
-      {
-        "from": "test",
-        "to": "svc",
-        "label": "new BookingService(repo)",
-        "note": "Arrange: the test builds the service with a fake repository it controls."
-      },
-      {
-        "from": "test",
-        "to": "svc",
-        "label": "book('e1', 'R1', 9, 10)",
-        "note": "Act: the test makes exactly one call through the public method."
-      },
-      {
-        "from": "svc",
-        "to": "repo",
-        "label": "forRoom('R1')",
-        "note": "The service asks for existing bookings of that room, as it would in production."
-      },
-      {
-        "from": "repo",
-        "to": "svc",
-        "label": "[ ]",
-        "dashed": true,
-        "note": "The fake returns an empty list, so there is nothing to clash with."
-      },
-      {
-        "from": "svc",
-        "to": "repo",
-        "label": "save(booking)",
-        "note": "No clash, so the service stores the new booking."
-      },
-      {
-        "from": "svc",
-        "to": "test",
-        "label": "booking",
-        "dashed": true,
-        "note": "Assert: the test compares the returned booking with the one it expects."
-      }
-    ]
+    "rows": [
+      [
+        "Free slot",
+        "nothing",
+        "R-101, 10 to 11",
+        "Booking BK1 (set-up)"
+      ],
+      [
+        "Back-to-back",
+        "R-101, 10 to 11",
+        "R-101, 11 to 12",
+        "Booking BK2"
+      ],
+      [
+        "Overlap",
+        "R-101, 10 to 11",
+        "R-101, 10.5 to 11.5",
+        "ROOM_TAKEN"
+      ],
+      [
+        "Reversed slot",
+        "nothing",
+        "R-201, 15 to 14",
+        "INVALID_SLOT"
+      ],
+      [
+        "Listener",
+        "BK1, BK2 saved",
+        "two refused requests",
+        "heard BK1, BK2 only"
+      ]
+    ],
+    "highlight": {
+      "row": 1
+    },
+    "caption": "The back-to-back row guards the boundary: one meeting ending at 11 must not block one starting at 11."
   },
   "code": [
     {
-      "file": "booking.test.mjs",
-      "lang": "js",
-      "title": "Four focused tests",
-      "run": "browser",
-      "caption": "A tiny `check` helper keeps the output stable. Add a test that the same slot in room `R2` is allowed.",
+      "file": "BookingServiceTest.java",
+      "lang": "java",
+      "title": "Hand-made test runner",
+      "run": "captured",
+      "caption": "JUnit is not available here, so a tiny `check` method plays its role. To stay short, these checks share one service and build on each other; JUnit gives each `@Test` a fresh instance, as the next tab shows.",
       "walk": [
         {
           "lines": [
-            11,
-            12,
-            13,
+            5,
+            7
+          ],
+          "text": "Arrange: a recording test double (a spy), a fresh service and one booking."
+        },
+        {
+          "lines": [
+            8,
+            9
+          ],
+          "text": "The boundary case: a slot starting exactly when the last one ends."
+        },
+        {
+          "lines": [
+            10,
+            13
+          ],
+          "text": "Error cases assert the stable `code()`, never the wording of the message."
+        },
+        {
+          "lines": [
             14,
             15
           ],
-          "text": "The fake has only the two methods `book` needs, `save` and `forRoom`, named as in the real one."
+          "text": "The spy proves refused bookings never reach the listeners."
         },
         {
           "lines": [
-            2,
-            3,
-            4,
-            5,
-            6,
-            7,
-            8,
-            9,
-            10,
-            20,
-            23
+            18,
+            25
           ],
-          "text": "Each error is a c05-t05 class carrying a stable `code`, so tests never match message text."
+          "text": "`check` counts and prints; `errorOf` turns a thrown exception into its code."
         },
         {
           "lines": [
-            29,
-            30,
-            31,
-            32
+            27,
+            30
           ],
-          "text": "`check` runs one test and prints `ok` or `FAIL` with the reason."
-        },
-        {
-          "lines": [
-            33
-          ],
-          "text": "Every test gets a fresh service, so no state leaks between tests."
-        },
-        {
-          "lines": [
-            35,
-            36,
-            37,
-            38,
-            39,
-            40
-          ],
-          "text": "Arrange, act and assert, one line each, for the happy path."
-        },
-        {
-          "lines": [
-            47,
-            48,
-            49,
-            50,
-            51
-          ],
-          "text": "Back-to-back slots share an edge; the strict `<` check must allow them."
-        },
-        {
-          "lines": [
-            52,
-            53,
-            54,
-            55
-          ],
-          "text": "An empty slot is invalid input, caught before any lookup."
+          "text": "A test double: a real `BookingListener` that only records ids."
         }
       ]
+    },
+    {
+      "file": "BookingServiceTest.junit.txt",
+      "lang": "java",
+      "title": "The same test in JUnit 5",
+      "run": "static",
+      "illustrative": true,
+      "caption": "JUnit creates a new test object per `@Test`, so `svc` starts empty each time. Mockito could replace the lambda listener with a mock you verify."
     }
   ],
   "pitfalls": [
-    "Do not share one service across tests; earlier bookings will break later tests.",
-    "Test the edge where one slot ends as the next begins.",
-    "Avoid asserting on log lines or private state; they change during refactors."
+    "Never keep the service in a `static` field; tests then leak bookings into each other.",
+    "Test only the happy path and an off-by-one overlap bug ships unnoticed.",
+    "Asserting on exception messages breaks tests whenever someone rewords them."
   ],
   "quiz": {
-    "q": "Which test would catch both `<` in the overlap check becoming `<=`?",
+    "q": "What is the last line `BookingServiceTest` prints?",
     "options": [
-      "Booking a free room returns a booking",
-      "Booking 10–11 after 9–10 in the same room succeeds",
-      "Booking 9–10 twice in the same room fails",
-      "An empty slot throws `INVALID_SLOT`"
+      "4 passed, 0 failed",
+      "3 passed, 1 failed",
+      "5 passed, 0 failed",
+      "It stops at RoomTakenException"
     ],
-    "answer": 1,
-    "why": "With `<=`, a slot ending at 10 and one starting at 10 count as clashing. Only the back-to-back test notices."
+    "answer": 0,
+    "why": "Four `check` calls run and all hold. `errorOf` catches each `BookingException`, so no exception escapes `main`."
   },
-  "takeaway": "Test through the public method, with fakes, at the boundaries.",
+  "takeaway": "One scenario per test, boundaries included, asserted on stable codes.",
   "chat": {
     "starters": [
-      "Should I use node:test or a library like Jest for these tests?",
-      "How do I test that NotificationService was called after a booking?",
-      "How many test cases are enough in an LLD interview?"
+      "When should I use a mock instead of a hand-written fake?",
+      "How do I test the ConflictPolicy on its own?",
+      "How many tests are enough in an LLD interview?"
     ]
   }
 }

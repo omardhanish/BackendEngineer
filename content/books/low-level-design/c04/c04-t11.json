@@ -1,210 +1,309 @@
 {
-  "title": "Plugin architecture",
-  "idea": "A pluggable design is a small, stable core that exposes extension points, so new features arrive as separate modules the core never names.",
+  "title": "Plugin and modular architecture",
+  "idea": "A pluggable, modular architecture splits a system into a stable core and independent plugins that the core discovers, starts and isolates through one published contract.",
   "points": [
-    "The core defines a contract: what a plugin must provide and when it runs.",
-    "Plugins register with the core through hooks; the core calls them without knowing them.",
-    "Unlike c04-t08's one extension point, a host offers many hooks; config picks modules.",
-    "Each plugin is its own module exporting one object; the host keeps `#hooks` private."
+    "A plugin is a separate unit the host finds and starts at run time.",
+    "Plugins reach the host only through a small host API, never its internals.",
+    "Config, not code, decides which plugins are on; the core is not recompiled.",
+    "Unlike one extension point, plugins have a lifecycle, and the host contains their throws."
   ],
   "hero": {
-    "type": "flow",
-    "title": "Core, contract and plugins",
-    "nodes": [
-      {
-        "id": "cfg",
-        "label": "Config",
-        "sub": "plugins: [tenOff, vat]"
+    "type": "anim",
+    "engine": "topology",
+    "title": "A host loading three plugins",
+    "scenario": {
+      "tiers": [
+        [
+          "user",
+          "cfg"
+        ],
+        [
+          "host"
+        ],
+        [
+          "api"
+        ],
+        [
+          "csv",
+          "broken",
+          "pdf"
+        ]
+      ],
+      "nodes": {
+        "user": {
+          "label": "User",
+          "kind": "user"
+        },
+        "cfg": {
+          "label": "Config",
+          "sub": "enabled ids",
+          "kind": "box"
+        },
+        "host": {
+          "label": "Host",
+          "sub": "stable core",
+          "kind": "service"
+        },
+        "api": {
+          "label": "HostApi",
+          "sub": "the only door",
+          "kind": "gateway"
+        },
+        "csv": {
+          "label": "CsvExport",
+          "sub": "plugin",
+          "kind": "box"
+        },
+        "broken": {
+          "label": "Broken",
+          "sub": "plugin",
+          "kind": "box"
+        },
+        "pdf": {
+          "label": "PdfExport",
+          "sub": "plugin",
+          "kind": "box"
+        }
       },
-      {
-        "id": "host",
-        "label": "Core host",
-        "sub": "use(), on(), run()"
-      },
-      {
-        "id": "contract",
-        "label": "Plugin contract",
-        "sub": "name + setup(host)"
-      },
-      {
-        "id": "p1",
-        "label": "tenOff plugin",
-        "sub": "price - 10"
-      },
-      {
-        "id": "p2",
-        "label": "vat plugin",
-        "sub": "price * 1.2"
-      },
-      {
-        "id": "caller",
-        "label": "Checkout code",
-        "sub": "run('price', 100)"
-      }
-    ],
-    "edges": [
-      {
-        "from": "cfg",
-        "to": "host",
-        "label": "chooses plugins",
-        "caption": "Config lists which plugins to load and their order. The core's source never changes."
-      },
-      {
-        "from": "p1",
-        "to": "contract",
-        "label": "implements",
-        "dashed": true,
-        "caption": "Every plugin meets one contract: a `name` and a `setup(host)` function."
-      },
-      {
-        "from": "p2",
-        "to": "contract",
-        "label": "implements",
-        "dashed": true,
-        "caption": "A new plugin is a new module. Nothing else is edited."
-      },
-      {
-        "from": "host",
-        "to": "p1",
-        "label": "setup(host)",
-        "caption": "`use()` calls `setup`, and the plugin registers a handler with `on('price', …)`."
-      },
-      {
-        "from": "caller",
-        "to": "host",
-        "label": "run hook",
-        "caption": "Core code fires the hook. Each registered handler runs in order, passing the value along."
-      }
-    ]
+      "links": [
+        [
+          "user",
+          "host"
+        ],
+        [
+          "cfg",
+          "host",
+          {
+            "dashed": true
+          }
+        ],
+        [
+          "host",
+          "api"
+        ],
+        [
+          "api",
+          "csv"
+        ],
+        [
+          "api",
+          "broken"
+        ],
+        [
+          "api",
+          "pdf",
+          {
+            "dashed": true
+          }
+        ]
+      ],
+      "groups": [
+        {
+          "label": "Plugins",
+          "nodes": [
+            "csv",
+            "broken",
+            "pdf"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "caption": "The host starts and reads which plugin ids are enabled. It knows plugins only by id.",
+          "send": [
+            {
+              "from": "cfg",
+              "to": "host",
+              "label": "ids",
+              "tone": "info"
+            }
+          ],
+          "focus": [
+            "host"
+          ]
+        },
+        {
+          "caption": "`csv` is known, so the host creates it and calls `start`, passing only the narrow `HostApi`.",
+          "send": [
+            {
+              "from": "host",
+              "to": "api",
+              "label": "start",
+              "tone": "req"
+            },
+            {
+              "from": "api",
+              "to": "csv",
+              "label": "start",
+              "tone": "req"
+            }
+          ],
+          "state": {
+            "csv": "up"
+          },
+          "badge": {
+            "csv": "on"
+          }
+        },
+        {
+          "caption": "`CsvExport` registers an `export` command through the API. It never touches the host's fields.",
+          "send": [
+            {
+              "from": "csv",
+              "to": "api",
+              "label": "export",
+              "tone": "ok"
+            }
+          ],
+          "items": {
+            "api": [
+              "export"
+            ]
+          }
+        },
+        {
+          "caption": "`Broken` throws inside `start`. The host catches it, turns it off and keeps loading.",
+          "send": [
+            {
+              "from": "api",
+              "to": "broken",
+              "label": "start",
+              "tone": "err"
+            }
+          ],
+          "state": {
+            "broken": "down"
+          },
+          "badge": {
+            "broken": "off"
+          }
+        },
+        {
+          "caption": "Nothing is installed for `pdf`, so the host skips that id instead of crashing.",
+          "state": {
+            "pdf": "stale"
+          },
+          "badge": {
+            "pdf": "skipped"
+          },
+          "focus": [
+            "pdf"
+          ]
+        },
+        {
+          "caption": "A user runs `export`. The host routes it to whichever plugin registered that command.",
+          "send": [
+            {
+              "from": "user",
+              "to": "host",
+              "label": "export",
+              "tone": "req"
+            },
+            {
+              "from": "api",
+              "to": "csv",
+              "label": "run",
+              "tone": "req"
+            }
+          ]
+        },
+        {
+          "caption": "Later, a PDF plugin ships as its own jar. The config already names `pdf`, so the host loads it without any code edit.",
+          "state": {
+            "pdf": "new"
+          },
+          "badge": {
+            "pdf": "on"
+          }
+        }
+      ]
+    }
   },
   "code": [
     {
-      "file": "plugins.mjs",
-      "lang": "js",
-      "title": "A hook-based host",
-      "run": "browser",
-      "caption": "Swap the two `use` calls and predict the price before you run it.",
+      "file": "PluginHostDemo.java",
+      "lang": "java",
+      "title": "A tiny plugin host",
+      "run": "captured",
+      "caption": "The host loads plugins by id from a config list. A missing or failing plugin does not stop it.",
       "walk": [
         {
           "lines": [
-            1
-          ],
-          "text": "The contract, written as a JSDoc interface: a name and a `setup` function."
-        },
-        {
-          "lines": [
-            4,
-            5,
-            6,
-            7,
-            8,
-            9
-          ],
-          "text": "`use` rejects anything that breaks the contract, then lets the plugin register itself."
-        },
-        {
-          "lines": [
-            11,
-            12,
-            13
-          ],
-          "text": "`on` is the extension point: plugins attach handlers to a named hook."
-        },
-        {
-          "lines": [
             15,
-            16
+            18
           ],
-          "text": "`run` passes a value through every handler, in registration order."
+          "text": "Two contracts: what a plugin implements, and the small API the host offers back."
         },
         {
           "lines": [
-            19,
-            20
+            6,
+            7
           ],
-          "text": "Each plugin is a plain object; it knows the host, not the other plugins."
+          "text": "A registry maps ids to factories; in production, discovery fills it."
         },
         {
           "lines": [
-            22,
-            23,
-            24
+            27,
+            28
           ],
-          "text": "With or without plugins, the core runs. Plugins add behaviour, not requirements."
+          "text": "An enabled id with no installed plugin is skipped, not fatal."
+        },
+        {
+          "lines": [
+            29,
+            30
+          ],
+          "text": "A plugin that throws in `start` is turned off; the others still load."
+        },
+        {
+          "lines": [
+            33,
+            35
+          ],
+          "text": "Commands route by name, so the host never names a plugin class."
+        },
+        {
+          "lines": [
+            38,
+            44
+          ],
+          "text": "Plugins are typed against `HostApi` only; a host can pass an adapter so a cast cannot reach `Host`."
         }
       ]
     },
     {
-      "file": "registry.mjs",
-      "lang": "js",
-      "title": "Loading by config",
-      "run": "browser",
-      "caption": "Same contract as before; a config object now picks the plugins and their order.",
-      "walk": [
-        {
-          "lines": [
-            3,
-            4,
-            5
-          ],
-          "text": "Each plugin meets the same contract: a `name` and a `setup` that calls `on`."
-        },
-        {
-          "lines": [
-            9
-          ],
-          "text": "This host offers only `on`, the one extension point plugins need."
-        },
-        {
-          "lines": [
-            10,
-            11,
-            12,
-            13,
-            14
-          ],
-          "text": "Config picks the plugins and their order; unknown names fail at load time."
-        },
-        {
-          "lines": [
-            17,
-            18
-          ],
-          "text": "One core, two configs, two different pipelines."
-        },
-        {
-          "lines": [
-            19
-          ],
-          "text": "A typo in the config fails loudly with a clear message."
-        }
-      ]
+      "file": "module-info.txt",
+      "lang": "java",
+      "title": "Real discovery with modules",
+      "run": "static",
+      "illustrative": true,
+      "caption": "With the Java module system, each plugin jar declares what it provides, and `ServiceLoader` finds it on the module path."
     }
   ],
   "pitfalls": [
-    "Do not let plugins import each other; share data only through the host's hooks.",
-    "Validate each plugin against the contract at load time, not on first use.",
-    "Document hook order when handlers transform values; order changes results."
+    "Do not let plugins import core internals; export only the contract package.",
+    "Catch plugin exceptions at the boundary; in-process plugins can still hang or exhaust memory.",
+    "Change the plugin contract rarely and additively; every plugin depends on it."
   ],
   "quiz": {
-    "q": "Using the `Host` from the example, what does this print?",
-    "code": "const shop = new Host().use(vat).use(tenOff);\nconsole.log(shop.run('price', 100));",
-    "lang": "js",
+    "q": "After this load, what does `host.run(\"export\")` print?",
     "options": [
-      "108",
-      "110",
-      "120",
-      "90"
+      "no command export",
+      "a,b,c",
+      "Nothing: the host crashes on broken",
+      "off broken"
     ],
     "answer": 1,
-    "why": "Handlers run in registration order: `vat` makes 100 into 120, then `tenOff` subtracts 10, giving 110."
+    "why": "The host catches the exception from `Broken.start` and moves on. `csv` still starts and registers `export`, so the command runs.",
+    "code": "host.load(List.of(\"broken\", \"csv\"));",
+    "lang": "java"
   },
-  "takeaway": "Keep the core small and stable; let features plug in through contracts.",
+  "takeaway": "A stable core, a narrow contract, and plugin failures caught at the boundary.",
   "chat": {
     "starters": [
-      "How is a plugin system different from the Strategy pattern?",
-      "How do I version a plugin contract without breaking old plugins?",
-      "Should plugins be loaded with dynamic import() in Node?"
+      "How does ServiceLoader find plugins without the core naming them?",
+      "When is a plugin architecture overkill for a small service?",
+      "How should a host handle two versions of the plugin contract?"
     ]
   }
 }

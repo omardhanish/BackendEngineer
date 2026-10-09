@@ -1,0 +1,11 @@
+{
+  "stdout": "[Hello world]\n[Hello]\n[Hello world]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java CommandDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "148bf44d73330bac",
+  "at": "2026-10-09T08:13:00.539Z"
+}

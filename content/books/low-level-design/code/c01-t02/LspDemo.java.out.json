@@ -1,0 +1,11 @@
+{
+  "stdout": "saved shop\nbroke: frozen",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java LspDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "b099c86b94b44b22",
+  "at": "2026-10-09T08:11:07.563Z"
+}

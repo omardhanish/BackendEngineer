@@ -1,109 +1,116 @@
 {
-  "title": "What design patterns are",
-  "idea": "A design pattern is a named, proven solution shape for a problem that keeps coming back in object-oriented code.",
+  "title": "Design patterns at a glance",
+  "idea": "A design pattern is a named, reusable shape of classes that solves a problem which keeps coming back, such as hiding which class gets created.",
   "points": [
-    "The Gang of Four book named 23 classic patterns in three families.",
-    "Creational patterns control how objects are made.",
-    "Structural patterns control how objects are wired together.",
-    "Behavioural patterns control how objects split up work and talk."
+    "A pattern is a structure you adapt, not a library you import.",
+    "The Gang of Four book groups its patterns: creational, structural, behavioural.",
+    "A pattern name lets you say a design in one word to a reviewer.",
+    "Most patterns lean on an `interface` so a new class can plug in."
   ],
   "hero": {
     "type": "table",
-    "title": "The three Gang of Four families",
+    "title": "Three families of patterns",
     "head": [
       "Family",
       "Question it answers",
-      "Patterns in this book"
+      "Examples",
+      "Signal you need one"
     ],
     "rows": [
       [
         "Creational",
-        "Who builds this object, and how?",
-        "Factory pattern, Builder, Singleton"
+        "Who builds the object, and how?",
+        "Factory pattern, Builder, Singleton",
+        "Constructor calls inside if-chains, spread everywhere"
       ],
       [
         "Structural",
-        "How do these objects fit together?",
-        "Adapter, Decorator, Facade"
+        "How do objects fit together?",
+        "Adapter, Decorator, Facade",
+        "Wrong interface, or extras bolted on by subclassing"
       ],
       [
         "Behavioural",
-        "Who does which part of the work?",
-        "Strategy, Observer, Command"
+        "Who does what, and who tells whom?",
+        "Strategy, Observer, Chain of Responsibility",
+        "A long switch on a type or rule"
       ]
     ],
-    "caption": "Each pattern has a name, a problem, a solution and trade-offs. Name the family first to narrow the choice."
+    "highlight": {
+      "col": 1
+    },
+    "caption": "Name the problem first; the family narrows the pattern list to a few."
   },
   "code": [
     {
-      "file": "before.mjs",
-      "lang": "js",
-      "title": "Before: one growing function",
-      "run": "browser",
-      "caption": "Every new channel adds a branch here. Try adding `push` and notice you must edit working code."
-    },
-    {
-      "file": "strategy.mjs",
-      "lang": "js",
-      "title": "After: Strategy pattern",
-      "run": "browser",
-      "caption": "Each channel is a class with `send()`. Add a `PushSender` class without touching `Notifier`.",
+      "file": "PatternDemo.java",
+      "lang": "java",
+      "title": "Factory and Decorator",
+      "run": "captured",
+      "caption": "A factory picks the notifier; a decorator adds a tag without touching it.",
       "walk": [
         {
           "lines": [
-            2,
-            3
+            12,
+            13
           ],
-          "text": "Two interchangeable strategies share one method name: `send(to, msg)`."
+          "text": "The shared contract both patterns rely on."
         },
         {
           "lines": [
-            5,
-            6,
-            7
+            15,
+            21
           ],
-          "text": "`Notifier` holds a sender in `#sender` and never checks which kind it is."
+          "text": "Factory pattern: callers ask by name and never see which implementation they get."
         },
         {
           "lines": [
+            24,
+            31
+          ],
+          "text": "Decorator: it is a `Notifier` and also has one inside."
+        },
+        {
+          "lines": [
+            33,
+            36
+          ],
+          "text": "It adds its tag, then forwards the call to the wrapped object."
+        },
+        {
+          "lines": [
+            3,
             8
           ],
-          "text": "It delegates the varying part to the strategy."
-        },
-        {
-          "lines": [
-            11,
-            12
-          ],
-          "text": "The caller picks the strategy; `Notifier` stays closed for modification."
+          "text": "`main` mixes plain and decorated notifiers behind one type."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Do not add a pattern before the problem it solves actually shows up.",
-    "Learn the problem each pattern solves, not only its class diagram.",
-    "In JavaScript a plain function can replace a small pattern; prefer the simpler shape."
+    "Do not start from a pattern and hunt for a problem; start from the problem.",
+    "Avoid stacking patterns for a feature that a plain method solves.",
+    "Name the pattern in the class or a comment so readers spot it."
   ],
   "quiz": {
     "q": "What does this print?",
-    "code": "class Upper { format(s) { return s.toUpperCase(); } }\nclass Lower { format(s) { return s.toLowerCase(); } }\nclass Printer {\n  constructor(f) { this.f = f; }\n  print(s) { console.log(this.f.format(s)); }\n}\nconst p = new Printer(new Lower());\np.f = new Upper();\np.print('Hi');",
-    "lang": "js",
     "options": [
-      "hi",
-      "Hi",
-      "TypeError",
-      "HI"
+      "SMS: [a] [b] hi",
+      "SMS: [b] [a] hi",
+      "[a] [b] SMS: hi",
+      "SMS: [a] hi"
     ],
-    "answer": 3,
-    "why": "`print` asks whatever strategy `this.f` holds at call time. It was swapped to `Upper` before the call."
+    "answer": 1,
+    "why": "The outer decorator adds `[a] ` and forwards. The inner one then puts `[b] ` in front of that text before the SMS notifier prints it.",
+    "code": "Notifier n = new Tagged(\"[a] \",\n        new Tagged(\"[b] \", Notifier.of(\"sms\")));\nn.send(\"hi\");",
+    "lang": "java"
   },
-  "takeaway": "A pattern is a named fix for a recurring design problem.",
+  "takeaway": "Patterns are named answers to recurring problems; start from the problem.",
   "chat": {
     "starters": [
-      "How do I know which pattern fits a problem in an interview?",
-      "Are design patterns still useful in JavaScript with first-class functions?",
-      "What is the difference between Strategy and a simple if/else?"
+      "Which design patterns come up most in LLD interviews?",
+      "How do I tell Decorator apart from Adapter?",
+      "When is a pattern overkill for a small codebase?"
     ]
   }
 }

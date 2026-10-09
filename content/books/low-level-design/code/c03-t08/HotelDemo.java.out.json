@@ -1,0 +1,11 @@
+{
+  "stdout": "ana -> 101\nben -> 102\ncy -> 101\ndee -> no room",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java HotelDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "02798d136851ba1a",
+  "at": "2026-10-09T08:17:52.638Z"
+}

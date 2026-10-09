@@ -1,217 +1,156 @@
 {
-  "title": "Extension points and maintainable code",
-  "idea": "An extensible design adds features by plugging in new classes at a planned extension point; a maintainable one keeps each change small, local and easy to read.",
+  "title": "Extension points and maintainable classes",
+  "idea": "An extensible design adds a feature by writing new code at a planned extension point; a maintainable one keeps each change small, local and easy to read.",
   "points": [
-    "Extension points are small interfaces where new classes plug in, often via a registry.",
-    "New behaviour arrives as a new class, registered at startup, with no core edits.",
-    "Maintainability comes from small classes, clear names and one place per decision.",
-    "Add an extension point only where change has already happened or is promised."
+    "Find the axis that keeps changing, like pricing rules, and put an interface there.",
+    "The core depends on that interface and never names a concrete rule.",
+    "A new rule is a new class plus one line of wiring.",
+    "Small classes with one reason to change are cheaper to read, test and fix."
   ],
   "hero": {
     "type": "flow",
-    "title": "Adding a format without touching the core",
+    "title": "Adding a rule without touching the core",
     "nodes": [
       {
-        "id": "caller",
-        "label": "Report job",
-        "sub": "export('csv', rows)"
+        "id": "main",
+        "label": "main",
+        "sub": "wires the rules"
       },
       {
-        "id": "reg",
-        "label": "ExporterRegistry",
-        "sub": "Map of format to exporter"
+        "id": "core",
+        "label": "Shipping",
+        "sub": "core, never edited"
       },
       {
-        "id": "csv",
-        "label": "CsvExporter",
-        "sub": "render(rows)"
+        "id": "port",
+        "label": "ShippingRule",
+        "sub": "extension point"
       },
       {
-        "id": "json",
-        "label": "JsonExporter",
-        "sub": "render(rows)"
+        "id": "std",
+        "label": "StandardRule"
       },
       {
-        "id": "tsv",
-        "label": "TsvExporter",
-        "sub": "new, added later"
+        "id": "exp",
+        "label": "ExpressRule"
       },
       {
-        "id": "boot",
-        "label": "Startup wiring",
-        "sub": "register(...)"
+        "id": "lock",
+        "label": "LockerRule",
+        "sub": "added later"
       }
     ],
     "edges": [
       {
-        "from": "boot",
-        "to": "reg",
-        "label": "register"
+        "from": "main",
+        "to": "core",
+        "label": "List of rules",
+        "caption": "`main` builds the rule list and hands it to `Shipping` through the constructor."
       },
       {
-        "from": "caller",
-        "to": "reg",
-        "label": "export(format)"
+        "from": "core",
+        "to": "port",
+        "label": "calls",
+        "caption": "`Shipping` loops over `ShippingRule` objects. It knows the interface, never a concrete class."
       },
       {
-        "from": "reg",
-        "to": "csv",
-        "label": "csv"
+        "from": "std",
+        "to": "port",
+        "label": "implements",
+        "caption": "Each existing rule implements the interface and holds its own pricing logic."
       },
       {
-        "from": "reg",
-        "to": "json",
-        "label": "json"
+        "from": "exp",
+        "to": "port",
+        "label": "implements",
+        "caption": "Express adds an `appliesTo` check, so it drops out for heavy parcels."
       },
       {
-        "from": "reg",
-        "to": "tsv",
-        "label": "tsv",
-        "dashed": true
-      }
-    ],
-    "steps": [
-      {
-        "caption": "At startup, wiring code registers each exporter under a format name.",
-        "active": [
-          "boot",
-          "reg"
-        ],
-        "edges": [
-          0
-        ]
-      },
-      {
-        "caption": "A caller asks the registry for a format. It never names a concrete class.",
-        "active": [
-          "caller",
-          "reg"
-        ],
-        "edges": [
-          1
-        ]
-      },
-      {
-        "caption": "The registry looks up the format and calls `render(rows)` on the match.",
-        "active": [
-          "reg",
-          "csv"
-        ],
-        "edges": [
-          2
-        ]
-      },
-      {
-        "caption": "Every exporter shares one method, `render`. That shared shape is the extension point.",
-        "active": [
-          "csv",
-          "json"
-        ],
-        "edges": [
-          2,
-          3
-        ]
-      },
-      {
-        "caption": "A new format is one new class plus one `register` line. The registry and callers stay unchanged.",
-        "active": [
-          "tsv",
-          "boot",
-          "reg"
-        ],
-        "edges": [
-          0,
-          4
-        ]
+        "from": "lock",
+        "to": "port",
+        "label": "implements",
+        "dashed": true,
+        "caption": "A new delivery option: one new class and one line in `main`. `Shipping` is not edited or retested."
       }
     ]
   },
   "code": [
     {
-      "file": "exporters.mjs",
-      "lang": "js",
-      "title": "A registry of exporters",
-      "run": "browser",
-      "caption": "Add a `TsvExporter` that joins values with `'\\t'`, register it as `'tsv'`, and export again.",
+      "file": "ShippingDemo.java",
+      "lang": "java",
+      "title": "One extension point",
+      "run": "captured",
+      "caption": "Three delivery rules behind one interface. `LockerRule` arrived later and needed no edit to `Shipping`.",
       "walk": [
         {
           "lines": [
-            2
+            13,
+            17
           ],
-          "text": "The registry owns one decision: which exporter handles which format."
+          "text": "The extension point: a name, a price, and an optional `appliesTo` filter."
         },
         {
           "lines": [
-            3,
-            4,
-            5,
-            6,
-            7
-          ],
-          "text": "Duplicate names fail loudly instead of silently replacing an exporter."
-        },
-        {
-          "lines": [
-            8,
-            9,
-            10,
-            11,
-            12
-          ],
-          "text": "No `switch` on format. Lookup replaces the branch that would grow forever."
-        },
-        {
-          "lines": [
-            14,
             15,
-            16,
-            17,
-            18,
-            19
+            15
           ],
-          "text": "Each exporter is a small class with one method, `render`."
+          "text": "A `default` method gives rules a sensible answer, so a rule that always applies can skip it."
         },
         {
           "lines": [
-            21,
-            22,
-            23
+            19,
+            28
           ],
-          "text": "Wiring lives in one place. A new format adds one class and one line here."
+          "text": "The core filters and prices through the interface; it holds a copied, unmodifiable list."
         },
         {
           "lines": [
-            27
+            30,
+            39
           ],
-          "text": "An unknown format fails with a clear message."
+          "text": "Each rule is a few lines and has one reason to change."
+        },
+        {
+          "lines": [
+            41,
+            45
+          ],
+          "text": "The new feature is a new class; existing code stays as it was."
+        },
+        {
+          "lines": [
+            5,
+            6
+          ],
+          "text": "Wiring is the only shared line that changed."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Do not add plugin hooks for changes nobody has asked for; it is speculative complexity.",
-    "A growing `switch` on a type string is the signal to introduce a registry.",
-    "Keep the extension interface small; every extra method burdens each new implementation."
+    "Do not add extension points for changes nobody expects; each one costs reading time.",
+    "A growing `switch` on a type code is a missing extension point; replace it.",
+    "Keep wiring in one place, so adding a rule does not scatter edits."
   ],
   "quiz": {
-    "q": "What does this print?",
-    "code": "const reg = new Map();\nreg.set('a', { render: () => 'A' });\nreg.set('b', { render: () => 'B' });\nreg.set('a', { render: () => 'A2' });\nconsole.log(reg.size, reg.get('a').render());",
-    "lang": "js",
+    "q": "What does this print, using the same three rules?",
     "options": [
-      "3 A",
-      "2 A",
-      "2 A2",
-      "3 A2"
+      "[standard=700, locker=250]",
+      "[locker=250]",
+      "[standard=700, express=900, locker=250]",
+      "[standard=700, express=900]"
     ],
     "answer": 2,
-    "why": "A `Map` keeps one entry per key. The second `set('a')` replaces the first, which is why the registry guards against duplicates."
+    "why": "Standard always applies: 300 + 4.0 × 100 = 700. Express allows up to 5 kg, and `toLocker` is true. The list keeps wiring order.",
+    "code": "System.out.println(shipping.quote(new Parcel(4.0, true)));",
+    "lang": "java"
   },
-  "takeaway": "Plan one small extension point; let new features arrive as new classes.",
+  "takeaway": "Put one interface where change keeps coming, and keep everything else small.",
   "chat": {
     "starters": [
-      "How do I know where a design needs an extension point?",
-      "Is a registry the same as the Strategy pattern?",
-      "What makes code hard to maintain, beyond long functions?"
+      "How do I spot the right place for an extension point?",
+      "Is adding a default method to an interface a maintenance risk?",
+      "How do I explain extensibility trade-offs in an LLD interview?"
     ]
   }
 }

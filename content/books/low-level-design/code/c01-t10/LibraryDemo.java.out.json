@@ -1,0 +1,11 @@
+{
+  "stdout": "M1 borrows C1\nrefused: no free Dune\nfine 60\nM2 borrows C1",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java LibraryDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "cb0e5a1050f769ea",
+  "at": "2026-10-09T08:12:47.867Z"
+}

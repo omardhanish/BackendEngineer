@@ -1,0 +1,11 @@
+{
+  "stdout": "cafe at 1,2\ncafe at 5,8\npark at 3,3\ncafe at 9,4\nmarkers: 4\nstyles: 2\nsame object: true",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java FlyweightDemo.java",
+  "tool": "Java 17.0.11",
+  "hash": "cbe144ee8102a9cf",
+  "at": "2026-10-09T08:11:07.717Z"
+}

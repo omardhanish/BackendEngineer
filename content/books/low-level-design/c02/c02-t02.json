@@ -1,138 +1,83 @@
 {
   "title": "Singleton and Builder",
-  "idea": "Singleton guarantees one shared instance of a class with one access point. Builder assembles a complex object step by step, then checks and freezes it.",
+  "idea": "Singleton guarantees a class has exactly one instance with one access point. Builder assembles a complex, immutable object step by step, then validates it once in `build()`.",
   "points": [
-    "A Singleton creates its instance on first request and returns it ever after.",
-    "A module exporting one instance acts as a Singleton: Node loads each file once.",
-    "A Builder collects options through chained methods that each return `this`.",
-    "`build()` validates required parts once, then returns a finished, frozen object."
+    "A Singleton hides its constructor and hands out one shared instance.",
+    "The holder idiom and the `enum` form are thread-safe without explicit locking.",
+    "A Builder collects optional values in a mutable helper, then creates the object.",
+    "`build()` checks the rules once, so every built object starts valid."
   ],
   "hero": {
-    "type": "anim",
-    "engine": "memory",
-    "title": "Two calls, one object",
-    "scenario": {
-      "code": [
-        "class Config {",
-        "  static #instance = null;",
-        "  static get() {",
-        "    if (!Config.#instance) Config.#instance = new Config();",
-        "    return Config.#instance;",
-        "  }",
-        "}",
-        "const a = Config.get();",
-        "const b = Config.get();",
-        "console.log(a === b);"
-      ],
-      "steps": [
-        {
-          "caption": "The class exists, but its private static `#instance` is still `null`. No object has been made.",
-          "line": 6,
-          "stack": [
-            { "name": "Global", "vars": { "Config": { "ref": "cls" }, "a": "<uninitialized>", "b": "<uninitialized>" } }
-          ],
-          "heap": [
-            { "id": "cls", "label": "class Config", "props": { "#instance": "null" } }
-          ]
-        },
-        {
-          "caption": "The first `get()` finds `#instance` empty, so it creates the one `Config` object and stores it.",
-          "line": 3,
-          "stack": [
-            { "name": "Global", "vars": { "Config": { "ref": "cls" }, "a": "<uninitialized>", "b": "<uninitialized>" } },
-            { "name": "get()", "vars": {} }
-          ],
-          "heap": [
-            { "id": "cls", "label": "class Config", "props": { "#instance": { "ref": "inst" } } },
-            { "id": "inst", "label": "Config instance" }
-          ]
-        },
-        {
-          "caption": "`a` now points at that instance.",
-          "line": 7,
-          "stack": [
-            { "name": "Global", "vars": { "Config": { "ref": "cls" }, "a": { "ref": "inst" }, "b": "<uninitialized>" } }
-          ],
-          "heap": [
-            { "id": "cls", "label": "class Config", "props": { "#instance": { "ref": "inst" } } },
-            { "id": "inst", "label": "Config instance" }
-          ]
-        },
-        {
-          "caption": "The second `get()` skips creation and returns the stored object.",
-          "line": 4,
-          "stack": [
-            { "name": "Global", "vars": { "Config": { "ref": "cls" }, "a": { "ref": "inst" }, "b": "<uninitialized>" } },
-            { "name": "get()", "vars": { "return": { "ref": "inst" } } }
-          ],
-          "heap": [
-            { "id": "cls", "label": "class Config", "props": { "#instance": { "ref": "inst" } } },
-            { "id": "inst", "label": "Config instance" }
-          ]
-        },
-        {
-          "caption": "`a` and `b` hold the same reference, so `a === b` is `true`.",
-          "line": 9,
-          "stack": [
-            { "name": "Global", "vars": { "Config": { "ref": "cls" }, "a": { "ref": "inst" }, "b": { "ref": "inst" } } }
-          ],
-          "heap": [
-            { "id": "cls", "label": "class Config", "props": { "#instance": { "ref": "inst" } } },
-            { "id": "inst", "label": "Config instance" }
-          ]
-        }
-      ]
-    }
+    "type": "table",
+    "title": "Two creational patterns side by side",
+    "head": ["Question", "Singleton", "Builder"],
+    "rows": [
+      ["Problem it solves", "One shared instance for the whole program", "Many optional fields make constructors unreadable"],
+      ["Java shape", "private constructor plus holder class, or an enum", "static nested Builder class, build() at the end"],
+      ["Thread safety", "JVM class initialisation runs once, safely", "Builder is local to one thread; result is immutable"],
+      ["What you get", "Global access, often to shared state", "A valid object with final fields"],
+      ["Overkill when", "A DI container can share one instance for you", "The class has two or three required fields"],
+      ["Testing cost", "Hard to swap for a fake", "Easy to build varied test data"]
+    ],
+    "highlight": { "row": 4 },
+    "caption": "Singleton controls how many objects exist; Builder controls how one object is assembled."
   },
   "code": [
     {
-      "file": "counter.mjs",
-      "lang": "js",
-      "title": "A guarded Singleton",
-      "run": "browser",
-      "caption": "Every `Counter.get()` returns the same object, so hits add up. A direct `new` after the first `get()` is refused; one that runs earlier would still slip through.",
+      "file": "SingletonDemo.java",
+      "lang": "java",
+      "title": "Singleton",
+      "run": "captured",
+      "caption": "Two common Java singletons: a lazy holder class and a one-constant `enum`.",
       "walk": [
-        { "lines": [2, 3], "text": "One private static slot for the instance, and private state inside it." },
-        { "lines": [4, 5, 6], "text": "The constructor refuses a second object once the first exists." },
-        { "lines": [7], "text": "`??=` creates the instance only on the first call." },
-        { "lines": [10, 11, 12], "text": "Two calls share one counter; `new Counter()` now throws." }
+        { "lines": [19, 19], "text": "A `private` constructor stops any other class from calling `new`." },
+        { "lines": [21, 23], "text": "The nested holder loads on first use; the JVM creates the instance once." },
+        { "lines": [25, 25], "text": "`get` is the single access point. No `synchronized` is needed here." },
+        { "lines": [27, 27], "text": "Shared mutable state still needs guarding, so `next` is `synchronized`." },
+        { "lines": [30, 31], "text": "A one-constant `enum` is also a singleton. Unlike the holder, reflection and deserialization cannot copy it." },
+        { "lines": [6, 9], "text": "Both references point at one object, so the counter is shared." }
       ]
     },
     {
-      "file": "builder.mjs",
-      "lang": "js",
-      "title": "A fluent Builder",
-      "run": "browser",
-      "caption": "Add a `note(text)` step to the builder. The `Order` class does not change.",
+      "file": "BuilderDemo.java",
+      "lang": "java",
+      "title": "Builder",
+      "run": "captured",
+      "caption": "Named steps replace a long constructor. `build()` refuses an email without a subject.",
       "walk": [
-        { "lines": [1, 2, 3], "text": "`Order` is the product. `Object.freeze` is shallow, so `build()` also freezes the items array." },
-        { "lines": [5], "text": "The builder keeps parts in a private draft with safe defaults." },
-        { "lines": [6, 7, 8], "text": "Each step sets one part and returns `this`, so calls chain." },
-        { "lines": [9, 10, 11], "text": "`build()` checks required parts once, then copies and freezes the array, so the builder cannot leak edits." },
-        { "lines": [14, 15, 16], "text": "Readable construction: each call names what it sets." },
-        { "lines": [17, 18], "text": "A missing customer fails at build time with a clear message." }
+        { "lines": [19, 22], "text": "The product has only `private final` fields: immutable once built." },
+        { "lines": [23, 25], "text": "Its constructor is `private` and copies from the builder, including a safe list copy." },
+        { "lines": [26, 26], "text": "A static entry point takes the required field up front." },
+        { "lines": [32, 39], "text": "The builder holds draft values; each setter returns `this` to allow chaining." },
+        { "lines": [40, 43], "text": "`build()` validates, then creates the product in one step." },
+        { "lines": [5, 16], "text": "`main` builds one valid email and sees a missing subject refused." }
       ]
     }
   ],
   "pitfalls": [
-    "A Singleton is global state; inject it into classes so tests can pass a fake.",
-    "Skip the Builder when an options object with defaults reads clearly enough.",
-    "Validate in `build()`, not in each step, or the order of calls starts to matter."
+    "Do not use a Singleton as a hidden global; pass dependencies through constructors instead.",
+    "Avoid lazy `if (instance == null)` without locking; two threads can create two instances.",
+    "Validate in `build()`, not in setters, so rules that span fields hold."
   ],
   "quiz": {
-    "q": "What does this print?",
-    "code": "const make = () => ({ n: 0 });\nlet inst;\nconst get = () => (inst ??= make());\nget().n++;\nget().n++;\nconsole.log(get().n, make().n);",
-    "lang": "js",
-    "options": ["1 0", "2 2", "2 0", "0 0"],
-    "answer": 2,
-    "why": "`get` builds the object once and returns it every time, so both increments hit it. `make()` builds a fresh object with `n` at 0."
+    "q": "What is the second line `SingletonDemo` prints?",
+    "options": [
+      "1, 1, 2",
+      "1, 2, 3",
+      "1, 1, 1",
+      "same object: true"
+    ],
+    "answer": 1,
+    "why": "`a` and `b` are the same `Sequence`, so all three `next()` calls bump one shared counter: 1, then 2, then 3.",
+    "code": "Sequence a = Sequence.get();\nSequence b = Sequence.get();\nSystem.out.println(\"same object: \" + (a == b));\nSystem.out.println(a.next() + \", \" + b.next() + \", \" + a.next());",
+    "lang": "java"
   },
-  "takeaway": "Singleton shares one object; Builder assembles one carefully, then freezes it.",
+  "takeaway": "Singleton limits how many exist; Builder makes one valid object readably.",
   "chat": {
     "starters": [
       "Why do people call Singleton an anti-pattern?",
-      "Is an exported module instance really a Singleton in Node?",
-      "When is a Builder better than an options object?"
+      "Should I use a Java record instead of a Builder?",
+      "How does double-checked locking work, and why does it need volatile?"
     ]
   }
 }
