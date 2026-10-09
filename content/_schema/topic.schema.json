@@ -79,24 +79,8 @@
             "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
           },
           "lang": {
-            "enum": [
-              "js",
-              "javascript",
-              "json",
-              "bash",
-              "sh",
-              "sql",
-              "yaml",
-              "yml",
-              "docker",
-              "dockerfile",
-              "http",
-              "html",
-              "ejs",
-              "ts",
-              "diff",
-              "css"
-            ]
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9+#-]{0,15}$"
           },
           "title": {
             "type": "string",

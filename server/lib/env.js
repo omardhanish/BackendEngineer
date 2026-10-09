@@ -23,7 +23,8 @@ export function loadConfig(env = process.env, overrides = {}) {
     host: '127.0.0.1', // loopback only: nothing else on the network can reach this server
     port: int(env.PORT, 4000),
     publicDir: join(ROOT, 'public'),
-    contentDir: join(ROOT, 'content'),
+    booksDir: env.BOOKS_DIR ? resolve(ROOT, env.BOOKS_DIR) : join(ROOT, 'content', 'books'), // one folder per book
+    defaultBook: /^[a-z0-9][a-z0-9-]{0,39}$/.test(env.DEFAULT_BOOK || '') ? env.DEFAULT_BOOK : 'backend-engineer', // where the original /api/* and /read/* URLs point (a slug, never a path)
     dataDir: resolve(ROOT, env.DATA_DIR || 'data'),
     deepseek: {
       key: env.DEEPSEEK_API_KEY || '',

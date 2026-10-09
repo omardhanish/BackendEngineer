@@ -2,13 +2,15 @@
 // escaped), only http/https/mailto links survive, images become plain text (no beacon exfiltration),
 // and every link opens with rel=noopener. Output is still only ever assigned via innerHTML from here.
 import { escapeHtml } from './ui.js';
+import { LANGUAGES } from './languages.js';
 
-const ALIAS = {
-  js: 'javascript', node: 'javascript', mjs: 'javascript', cjs: 'javascript', jsx: 'javascript',
-  ts: 'typescript', tsx: 'typescript', sh: 'bash', shell: 'bash', zsh: 'bash', console: 'bash',
-  yml: 'yaml', dockerfile: 'docker', html: 'markup', xml: 'markup', ejs: 'markup', svg: 'markup',
-  jsonc: 'json', json5: 'json', psql: 'sql', postgres: 'sql', mongodb: 'javascript',
-};
+// name an author or the model might write -> the Prism grammar. Built from the one language list, plus a few extras.
+const ALIAS = { tsx: 'typescript', json5: 'json', mongodb: 'javascript' };
+for (const [id, l] of Object.entries(LANGUAGES)) {
+  if (!l.prism) continue;
+  ALIAS[id] = l.prism;
+  for (const a of l.aliases) ALIAS[a] = l.prism;
+}
 
 export function normLang(lang = '') {
   const l = String(lang).toLowerCase().trim();

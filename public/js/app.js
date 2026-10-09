@@ -1,13 +1,16 @@
 // App shell: contents, top bar, tutor dock, theme/motion, global shortcuts, routes.
 import { api } from './api.js';
-import { state, pref, on, chapterOf, topicMeta } from './state.js';
+import { state, pref, chapterOf, topicMeta, rememberHue } from './state.js';
+import { paths } from './paths.js';
+import { flushProgress } from './progress.js';
 import { h, $, icon, applyHue, isTyping, pad2 } from './ui.js';
-import { route, fallback, start, navigate, onRoute, currentView } from './router.js';
+import { route, fallback, onFailure, start, navigate, onRoute, currentView } from './router.js';
 import { shell } from './shell.js';
 import { createToc } from './toc.js';
 import { createDock } from './chat.js';
 import { createPalette } from './palette.js';
 import { createHelp } from './help.js';
+import { libraryView } from './views/library.js';
 import { homeView } from './views/home.js';
 import { chapterView } from './views/chapter.js';
 import { topicView } from './views/topic.js';
@@ -25,6 +28,7 @@ let help;
 let themeBtn;
 let dockBtn;
 let crumbsEl;
+let brandEl;
 
 // ------------------------------------------------------------------ theme & motion
 function applyTheme() {
@@ -67,7 +71,8 @@ function closeOverlays() {
 }
 
 // ------------------------------------------------------------------ top bar
-function setCrumbs(parts) {
+function setCrumbs(all) {
+  const parts = all[0]?.label === 'Library' ? all : [{ label: 'Library', href: paths.library() }, ...all];
   crumbsEl.replaceChildren(...parts.flatMap((p, i) => [
     i ? h('span', { class: 'crumb-sep', 'aria-hidden': 'true' }, '/') : null,
     p.href ? h('a', { class: 'crumb', href: p.href }, p.label) : h('span', { class: 'crumb is-here', 'aria-current': 'page' }, p.label),
@@ -81,7 +86,7 @@ function buildTopbar() {
   const searchBtn = h('button', { class: 'tb-search', type: 'button', onclick: () => palette.open(), 'aria-label': 'Search (⌘K)' }, icon('search', 15), h('span', null, 'Search'), h('kbd', null, '⌘K'));
   const topbar = h('header', { class: 'topbar' },
     h('button', { class: 'btn-icon tb-menu', type: 'button', 'aria-label': 'Open contents', onclick: () => setToc(true) }, icon('menu', 18)),
-    h('a', { class: 'tb-brand', href: '/', 'aria-label': 'Bookshelf' }, 'BE'),
+    (brandEl = h('a', { class: 'tb-brand', href: '/', 'aria-label': 'Library' }, 'L')),
     crumbsEl,
     h('div', { class: 'tb-actions' }, searchBtn, h('button', { class: 'btn-icon', type: 'button', 'aria-label': 'Shortcuts (?)', title: 'Shortcuts (?)', onclick: () => help.open() }, icon('help', 18)), themeBtn, dockBtn));
   shell.page = h('main', { class: 'page', id: 'page' }, (shell.stage = h('div', { id: 'stage', class: 'stage', tabindex: '-1' })));
@@ -127,14 +132,23 @@ function setupKeys() {
     else if (e.key === 't' || e.key === 'T') { e.preventDefault(); setToc(appEl.dataset.toc !== 'open'); }
     else if (e.key === 'c' || e.key === 'C') { e.preventDefault(); toggleDock(true); }
     else if (e.key === 'n' || e.key === 'N') { e.preventDefault(); setDock(true, { remember: false }); dock.showTab('notes', true); }
+    else if (e.key === 'b' || e.key === 'B') { e.preventDefault(); setToc(true); toc.openSwitcher(); }
   });
 }
 
 // ------------------------------------------------------------------ views that live in the shell
-function notFoundView() {
+function notFoundView(what = 'That page is not in the library') {
+  toc.showLibrary(); // there is no book to show chapters of: list the books instead
   applyHue(250);
-  shell.setCrumbs([{ label: 'Bookshelf', href: '/' }, { label: 'Not found' }]);
-  shell.stage.replaceChildren(h('div', { class: 'empty-state' }, h('h1', null, 'That page is not in the book'), h('p', null, 'The link may be old.'), h('a', { class: 'btn btn-primary', href: '/' }, 'Back to the bookshelf')));
+  shell.setCrumbs([{ label: 'Library', href: '/' }, { label: 'Not found' }]);
+  shell.stage.replaceChildren(h('div', { class: 'empty-state' }, h('h1', null, what), h('p', null, 'The link may be old, or the book may have been removed.'), h('a', { class: 'btn btn-primary', href: '/' }, 'Back to the library')));
+  return {};
+}
+
+function errorView(e) {
+  applyHue(250);
+  shell.setCrumbs([{ label: 'Library', href: '/' }, { label: 'Error' }]);
+  shell.stage.replaceChildren(h('div', { class: 'empty-state' }, h('h1', null, 'That page could not load'), h('p', { class: 'muted' }, e?.message || 'Unknown error'), h('button', { class: 'btn btn-primary', type: 'button', onclick: () => location.reload() }, 'Try again')));
   return {};
 }
 
@@ -142,21 +156,76 @@ function fatal(e) {
   document.body.append(h('div', { class: 'fatal' }, h('h1', null, 'The book could not load'), h('p', null, e.message || 'Unknown error'), h('button', { class: 'btn btn-primary', type: 'button', onclick: () => location.reload() }, 'Try again')));
 }
 
+// ------------------------------------------------------------------ books
+/** Make `slug` the current book: load its manifest and progress, rebuild the contents. False if there is no such book. */
+async function ensureBook(slug, rc) {
+  if (state.slug === slug && state.book) {
+    if (toc.mode() !== 'book') toc.build();
+    return true;
+  }
+  if (!state.library.some((b) => b.slug === slug)) {
+    // a book may have been added while this tab was open: look again before giving up
+    try {
+      const lib = await api.library();
+      state.library = lib.books; state.defaultSlug = lib.default;
+    } catch { /* offline: fall through to not-found */ }
+    if (!state.library.some((b) => b.slug === slug)) return false;
+  }
+  let book;
+  let progress;
+  try {
+    [book, progress] = await Promise.all([api.book(slug), api.progress(slug).catch(() => null)]);
+  } catch (e) {
+    if (e.status === 404) return false;
+    throw e;
+  }
+  if (rc?.stale()) return false;
+  // leaving the previous book: save its notes and progress while "current book" still means that book
+  if (state.slug) { dock.setTopic(null); flushProgress(); }
+  state.slug = slug;
+  state.book = book;
+  state.progress = progress || { topics: {}, last: null };
+  const meta = state.library.find((b) => b.slug === slug);
+  if (meta) rememberHue(slug, meta.hue);
+  toc.build();
+  return true;
+}
+
+/** Route wrapper: the page belongs to a book, so that book must be loaded first. */
+const inBook = (view) => async (p, q, rc) => {
+  if (!(await ensureBook(p.book, rc))) return rc.stale() ? {} : notFoundView('No such book');
+  if (rc.stale()) return {};
+  return view(p, q, rc);
+};
+
+/** The original /c/…, /read/… and /chats URLs belong to the default book. */
+const legacy = (to) => (p, q) => {
+  const slug = state.defaultSlug || state.library[0]?.slug;
+  if (!slug) return notFoundView();
+  navigate(to(p, q, slug), { replace: true });
+  return {};
+};
+
+function paintBrand() {
+  const here = toc.mode() === 'book' ? state.library.find((b) => b.slug === state.slug) : null;
+  brandEl.textContent = here?.monogram || 'L';
+  brandEl.href = here ? paths.book() : paths.library();
+  brandEl.setAttribute('aria-label', here ? here.title : 'Library');
+}
+
 // ------------------------------------------------------------------ boot
 async function boot() {
   applyMotion();
-  let book;
   try {
-    const [b, progress, health] = await Promise.all([api.book(), api.progress().catch(() => null), api.health().catch(() => null)]);
-    book = b;
-    state.progress = progress || state.progress;
+    const [lib, health] = await Promise.all([api.library(), api.health().catch(() => null)]);
+    state.library = lib.books;
+    state.defaultSlug = lib.default;
     state.health = health;
+    for (const b of lib.books) rememberHue(b.slug, b.hue);
   } catch (e) { return fatal(e); }
-  state.book = book;
 
   toc = createToc({ onClose: () => setToc(false) });
   $('#toc').append(toc.el);
-  toc.build();
   shell.toc = toc;
 
   help = createHelp({
@@ -164,11 +233,16 @@ async function boot() {
     onMotion: (on_) => { pref('motion', on_ ? 'reduce' : 'system'); applyMotion(); },
   });
   palette = createPalette({
+    inLibrary: () => toc.mode() === 'library',
     actions: () => [
-      { label: 'Go to the bookshelf', icon: 'home', run: () => navigate('/'), keywords: 'home start' },
-      { label: 'Saved chats', icon: 'history', run: () => navigate('/chats'), keywords: 'history conversations' },
-      { label: 'Ask the tutor', icon: 'chat', hint: 'C', run: () => setDock(true, { focus: true }) },
-      { label: 'My notes for this page', icon: 'note', hint: 'N', run: () => { setDock(true); dock.showTab('notes', true); } },
+      { label: 'Go to the library', icon: 'home', run: () => navigate(paths.library()), keywords: 'home start books shelf' },
+      { label: 'Switch book', icon: 'book', hint: 'B', run: () => { setToc(true); toc.openSwitcher(); }, keywords: 'change library books' },
+      ...(toc.mode() === 'book' ? [
+        { label: 'Go to this book’s chapters', icon: 'book', run: () => navigate(paths.book()), keywords: 'contents bookshelf' },
+        { label: 'Saved chats', icon: 'history', run: () => navigate(paths.chats()), keywords: 'history conversations' },
+        { label: 'Ask the tutor', icon: 'chat', hint: 'C', run: () => setDock(true, { focus: true }) },
+        { label: 'My notes for this page', icon: 'note', hint: 'N', run: () => { setDock(true); dock.showTab('notes', true); } },
+      ] : []),
       { label: 'Change theme', icon: 'sun', run: cycleTheme, keywords: 'dark light' },
       { label: 'Keyboard shortcuts', icon: 'help', hint: '?', run: () => help.open() },
     ],
@@ -193,22 +267,32 @@ async function boot() {
   setupKeys();
   setupSelectionAsk();
 
-  route('/', () => homeView());
-  route('/c/:ch', (p) => chapterView(p.ch));
-  route('/read/:id/:frame?', (p, q, rc) => topicView(p.id, p.frame, rc));
-  route('/chats', (p, q) => historyView(q));
+  route('/', (p, q, rc) => { toc.showLibrary(); return libraryView(rc); });
+  route('/b/:book', inBook(() => homeView()));
+  route('/b/:book/c/:ch', inBook((p) => chapterView(p.ch)));
+  route('/b/:book/read/:id/:frame?', inBook((p, q, rc) => topicView(p.id, p.frame, rc)));
+  route('/b/:book/chats', inBook((p, q) => historyView(q)));
+  route('/c/:ch', legacy((p, q, slug) => paths.chapter(p.ch, slug)));
+  route('/read/:id/:frame?', legacy((p, q, slug) => paths.read(p.id, p.frame, slug)));
+  route('/chats', legacy((p, q, slug) => paths.chats(q.toString(), slug)));
   fallback(() => notFoundView());
+  onFailure(errorView);
 
-  onRoute(({ path, params }) => {
+  onRoute(({ path }) => {
     appEl.dataset.toc = 'closed';
     if (!wide.matches) setDock(false, { remember: false });
-    const m = /^\/read\/(c\d\d-[a-z0-9]+)/.exec(path);
-    const c = /^\/c\/(c\d\d)/.exec(path);
-    const topic = m ? topicMeta(m[1]) : null;
+    toc.closeSwitcher();
+    const book = /^\/b\/[^/]+/.test(path);
+    const m = /^\/b\/[^/]+\/read\/(c\d\d-[a-z0-9]+)/.exec(path);
+    const c = /^\/b\/[^/]+\/c\/(c\d\d)/.exec(path);
+    const loaded = toc.mode() === 'book' && !!state.book;
+    const topic = m && loaded ? topicMeta(m[1]) : null;
     toc.setCurrent({ topicId: topic?.id ?? null, chapterId: topic?.chapter ?? c?.[1] ?? null });
-    const ch = topic ? chapterOf(topic.chapter) : c ? chapterOf(c[1]) : null;
-    document.title = topic ? `${topic.title} · BackendEngineer` : ch ? `${ch.title} · BackendEngineer` : 'BackendEngineer — a living book';
+    const ch = topic ? chapterOf(topic.chapter) : c && loaded ? chapterOf(c[1]) : null;
+    const title = book && loaded ? state.book.book?.title || state.slug : null;
+    document.title = topic ? `${topic.title} · ${title}` : ch ? `${ch.title} · ${title}` : title ? `${title} · Living library` : 'Living library';
     if (!m) dock.setTopic(null);
+    paintBrand();
     window.scrollTo(0, 0);
   });
 

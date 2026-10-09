@@ -4,7 +4,7 @@ import { pref } from './state.js';
 
 const KEYS = [
   ['Reading', [['→ / Space', 'Step the animation, then the next frame'], ['←', 'Step back'], ['PgUp / PgDn', 'Previous / next frame'], ['[  ]', 'Previous / next page'], ['P', 'Play or pause the animation'], ['1–4', 'Pick a quiz answer']]],
-  ['Around the book', [['⌘K  /  Ctrl K', 'Search pages and saved chats'], ['T', 'Contents'], ['C', 'Ask the tutor'], ['N', 'Your notes'], ['?', 'This help']]],
+  ['Around the book', [['⌘K  /  Ctrl K', 'Search pages and saved chats'], ['T', 'Contents'], ['B', 'Switch book'], ['C', 'Ask the tutor'], ['N', 'Your notes'], ['?', 'This help']]],
   ['In code and chat', [['⌘↵  /  Ctrl ↵', 'Run the code'], ['Esc', 'Leave the editor or chat, back to the page'], ['Enter', 'Send a chat message (Shift+Enter for a new line)']]],
 ];
 

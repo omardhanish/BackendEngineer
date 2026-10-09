@@ -3,6 +3,7 @@ import { h, icon, pad2, debounce, relTime } from './ui.js';
 import { state } from './state.js';
 import { api } from './api.js';
 import { navigate } from './router.js';
+import { paths } from './paths.js';
 
 function score(query, hay) {
   const tokens = query.toLowerCase().split(/\s+/).filter(Boolean);
@@ -16,14 +17,14 @@ function score(query, hay) {
   return total - hay.length * 0.002;
 }
 
-export function createPalette({ actions }) {
+export function createPalette({ actions, inLibrary = () => false }) {
   let items = [];
   let shown = [];
   let active = 0;
   let chatHits = [];
   let seq = 0;
 
-  const input = h('input', { type: 'text', class: 'pal-input', placeholder: 'Search pages, chapters, saved chats…', 'aria-label': 'Search', role: 'combobox', 'aria-expanded': 'true', 'aria-controls': 'pal-list', autocomplete: 'off', spellcheck: 'false' });
+  const input = h('input', { type: 'text', class: 'pal-input', placeholder: 'Search books, pages, chapters, saved chats…', 'aria-label': 'Search', role: 'combobox', 'aria-expanded': 'true', 'aria-controls': 'pal-list', autocomplete: 'off', spellcheck: 'false' });
   const list = h('ul', { class: 'pal-list', id: 'pal-list', role: 'listbox' });
   const dlg = h('dialog', { class: 'palette', 'aria-label': 'Search' },
     h('div', { class: 'pal-top' }, icon('search', 18), input, h('kbd', null, 'esc')),
@@ -33,13 +34,18 @@ export function createPalette({ actions }) {
   function collect() {
     const out = [];
     for (const a of actions()) out.push({ kind: 'action', label: a.label, sub: a.hint || 'Action', icon: a.icon, hay: `${a.label} ${a.keywords || ''}`, run: a.run });
+    for (const b of state.library) {
+      if (b.slug === state.slug && !inLibrary()) continue;
+      out.push({ kind: 'book', label: b.title, sub: b.tagline || 'Book', hue: b.hue, icon: 'book', hay: `book ${b.title} ${b.tagline || ''} ${b.slug}`, run: () => navigate(paths.book(b.slug)) });
+    }
+    if (inLibrary() || !state.book) return out;
     for (const c of state.book.chapters) {
-      out.push({ kind: 'chapter', label: `${pad2(c.n)} · ${c.title}`, sub: c.tagline, hue: c.hue, icon: 'book', hay: `chapter ${c.n} ${c.title} ${c.tagline}`, run: () => navigate(`/c/${c.id}`) });
+      out.push({ kind: 'chapter', label: `${pad2(c.n)} · ${c.title}`, sub: c.tagline, hue: c.hue, icon: 'book', hay: `chapter ${c.n} ${c.title} ${c.tagline}`, run: () => navigate(paths.chapter(c.id)) });
     }
     const ch = new Map(state.book.chapters.map((c) => [c.id, c]));
     for (const t of state.book.topics) {
       const c = ch.get(t.chapter);
-      out.push({ kind: 'page', label: t.title, sub: `${pad2(c.n)} ${c.title}${t.authored ? '' : ' · soon'}`, hue: c.hue, icon: 'dot', hay: `${t.title} ${c.title} ${t.id}`, run: () => navigate(`/read/${t.id}`) });
+      out.push({ kind: 'page', label: t.title, sub: `${pad2(c.n)} ${c.title}${t.authored ? '' : ' · soon'}`, hue: c.hue, icon: 'dot', hay: `${t.title} ${c.title} ${t.id}`, run: () => navigate(paths.read(t.id)) });
     }
     return out;
   }
@@ -47,7 +53,7 @@ export function createPalette({ actions }) {
   function render() {
     const q = input.value.trim();
     shown = (q ? items.map((it) => ({ it, sc: score(q, it.hay) })).filter((x) => x.sc >= 0).sort((a, b) => b.sc - a.sc).map((x) => x.it)
-      : items.filter((i) => i.kind === 'action' || i.kind === 'chapter')).slice(0, 40);
+      : items.filter((i) => i.kind === 'action' || i.kind === 'chapter' || i.kind === 'book')).slice(0, 40);
     shown = shown.concat(chatHits.slice(0, 5));
     active = Math.min(active, Math.max(0, shown.length - 1));
     list.replaceChildren(...(shown.length ? shown.map((it, i) => h('li', {
@@ -74,13 +80,13 @@ export function createPalette({ actions }) {
   const searchChats = debounce(async () => {
     const q = input.value.trim();
     const my = ++seq;
-    if (q.length < 3) { chatHits = []; render(); return; }
+    if (q.length < 3 || inLibrary() || !state.slug) { chatHits = []; render(); return; }
     try {
       const { threads } = await api.searchChats(q);
       if (my !== seq) return;
       chatHits = threads.map((t) => ({
         kind: 'chat', label: t.title, sub: `Saved chat · ${relTime(t.updatedAt)}`, icon: 'chat', hay: '',
-        run: () => navigate(`/chats?topic=${t.topicId}&thread=${t.threadId}`),
+        run: () => navigate(paths.chats(`topic=${t.topicId}&thread=${t.threadId}`)),
       }));
       render();
     } catch { /* offline: ignore */ }

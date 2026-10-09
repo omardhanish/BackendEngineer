@@ -4,11 +4,14 @@
 import { h, icon, reducedMotion, rich } from './ui.js';
 import { patchProgress } from './progress.js';
 import { navigate } from './router.js';
+import { paths } from './paths.js';
+import { state } from './state.js';
 
 const KIND = { roleplay: 'Role-play', challenge: 'Challenge', bonus: 'Bonus' };
 const short = (s, n = 34) => (s.length > n ? `${s.slice(0, n - 1).trimEnd()}…` : s);
 
 export function createDeck({ topic, frames, startAt = 0, ctx }) {
+  const slug = state.slug; // progress made here belongs to this book even if the reader has moved on
   const root = document.documentElement;
   let i = -1;
   let cur = null;
@@ -36,8 +39,8 @@ export function createDeck({ topic, frames, startAt = 0, ctx }) {
       h('h2', { class: 'end-title' }, topic.title),
       topic.takeaway ? h('p', { class: 'end-take' }, h('b', null, 'Remember: '), rich(topic.takeaway)) : null,
       h('div', { class: 'end-actions' },
-        nx ? h('a', { class: 'btn btn-primary btn-lg', href: `/read/${nx.id}` }, h('span', null, 'Next: ', short(nx.title, 44)), icon('arrow-right', 18)) : h('a', { class: 'btn btn-primary btn-lg', href: '/' }, 'Back to the bookshelf'),
-        h('a', { class: 'btn', href: `/c/${topic.chapter.id}` }, 'Chapter overview'),
+        nx ? h('a', { class: 'btn btn-primary btn-lg', href: paths.read(nx.id) }, h('span', null, 'Next: ', short(nx.title, 44)), icon('arrow-right', 18)) : h('a', { class: 'btn btn-primary btn-lg', href: paths.book() }, 'Back to the book'),
+        h('a', { class: 'btn', href: paths.chapter(topic.chapter.id) }, 'Chapter overview'),
         h('button', { class: 'btn btn-quiet', type: 'button', onclick: () => ctx.openChat() }, icon('chat', 16), 'Ask the tutor')));
     return { el: card };
   }
@@ -91,11 +94,11 @@ export function createDeck({ topic, frames, startAt = 0, ctx }) {
     paint();
     ctx.setLive({ error: '' });
     ctx.refresh = paint;
-    patchProgress(topic.id, { frame: Math.min(k, frames.length - 1), ...(k === frames.length ? { done: true } : {}) });
-    history.replaceState({}, '', k === 0 ? `/read/${topic.id}` : `/read/${topic.id}/${k + 1}`);
+    patchProgress(topic.id, { frame: Math.min(k, frames.length - 1), ...(k === frames.length ? { done: true } : {}) }, slug);
+    history.replaceState({}, '', paths.read(topic.id, k === 0 ? undefined : k + 1));
   }
 
-  const goTopic = (t) => { if (t) navigate(`/read/${t.id}`); else navigate('/'); return true; };
+  const goTopic = (t) => { navigate(t ? paths.read(t.id) : paths.book()); return true; };
 
   function next() {
     if (cur?.stepper?.next()) return true;

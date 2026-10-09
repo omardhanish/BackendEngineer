@@ -1,10 +1,10 @@
 {
-  "note": "Versions that example code is verified against. They are NEWER than most training data: trust only what you have run. Libraries live in content/code/node_modules (npm run examples:install); express lives in the project root.",
+  "note": "Versions that example code is verified against. They are NEWER than most training data: trust only what you have run. Libraries live in content/books/node_modules, shared by every book (npm run examples:install); express lives in the project root.",
   "node": "20.20",
   "npm": "10",
   "express": "5.2",
   "examples": {
-    "express": "5.2.1 (a second copy in content/code so view engines such as ejs resolve)",
+    "express": "5.2.1 (a second copy in content/books so view engines such as ejs resolve)",
     "ejs": "7.0.1 (ESM: `import ejs from 'ejs'`; `import * as ejs` has only `default`)",
     "zod": "4.6.5",
     "jsonwebtoken": "9.0.3",

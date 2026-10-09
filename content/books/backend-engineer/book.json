@@ -1,0 +1,22 @@
+{
+  "slug": "backend-engineer",
+  "title": "Backend Engineering",
+  "tagline": "From JavaScript basics to production backends.",
+  "audience": "an adult who knows basic programming but is new to backend work",
+  "hue": 25,
+  "order": 10,
+  "profile": "js",
+  "locale": "en",
+  "monogram": "BE",
+  "tutor": {
+    "name": "BackendEngineer",
+    "about": "a short, crisp, book-style course that takes a learner from JavaScript fundamentals to production backends (Node.js, Express, SQL/Postgres/Drizzle, MongoDB, authentication, Docker, AWS, system design, Git)",
+    "examples": "Node.js, Express, SQL",
+    "learnerRole": "engineer",
+    "mentorRole": "a senior engineer"
+  },
+  "runtime": {
+    "bannedApis": ["Object.groupBy", "Map.groupBy", "Promise.withResolvers", "Array.fromAsync", "fs.glob", "new WebSocket"],
+    "banHint": "missing from Node 20"
+  }
+}

@@ -19,7 +19,7 @@ const { ringState } = await import(`${engines}/topology.js`);
 // ------------------------------------------------------------------ JWT
 test('jwt: the in-page HS256 signer produces exactly the bytes jsonwebtoken produces', async (t) => {
   let jsonwebtoken;
-  try { jsonwebtoken = createRequire(join(root, 'content/code/package.json'))('jsonwebtoken'); } catch { t.skip('run `npm run examples:install` to compare with jsonwebtoken'); return; }
+  try { jsonwebtoken = createRequire(join(root, 'content/books/package.json'))('jsonwebtoken'); } catch { t.skip('run `npm run examples:install` to compare with jsonwebtoken'); return; }
   for (const [payload, secret] of [
     [{ sub: '42', role: 'user', exp: 1893456000 }, 'demo-secret'],
     [{ sub: 'ünï-çødé ✓', admin: false, n: 1.5 }, 'ключ'],

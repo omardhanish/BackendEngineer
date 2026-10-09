@@ -1,13 +1,15 @@
 // A tiny durable JSON store: atomic writes, per-file queues, corruption recovery, daily backups.
 // Single-user, single-process by design (guarded by data/.lock). Plain files you can read and back up.
 import { promises as fs } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
-async function copyDir(src, dst) {
+export async function copyDir(src, dst) {
+  let entries;
+  try { entries = await fs.readdir(src, { withFileTypes: true }); } catch (e) { if (e.code === 'ENOENT') return; throw e; }
   await fs.mkdir(dst, { recursive: true, mode: 0o700 });
-  for (const ent of await fs.readdir(src, { withFileTypes: true })) {
+  for (const ent of entries) {
     const s = join(src, ent.name);
     const d = join(dst, ent.name);
     if (ent.isDirectory()) await copyDir(s, d);
@@ -27,7 +29,7 @@ export class Store {
 
   async init({ backups = 7 } = {}) {
     await fs.mkdir(this.dir, { recursive: true, mode: 0o700 });
-    for (const sub of ['chats', 'notes']) await fs.mkdir(join(this.dir, sub), { recursive: true, mode: 0o700 });
+    await fs.mkdir(join(this.dir, 'books'), { recursive: true, mode: 0o700 }); // data/books/<slug>/{chats,notes,progress.json}
     await this.#lock();
     await this.#backup(backups);
   }
@@ -38,7 +40,7 @@ export class Store {
       if (pid && pid !== process.pid) {
         let alive = true;
         try { process.kill(pid, 0); } catch (e) { alive = e.code === 'EPERM'; }
-        if (alive) throw new Error(`Another BackendEngineer server (pid ${pid}) is already using ${this.dir}. Stop it first.`);
+        if (alive) throw new Error(`Another copy of this server (pid ${pid}) is already using ${this.dir}. Stop it first.`);
       }
     } catch (e) {
       if (e.message.startsWith('Another')) throw e;
@@ -61,7 +63,8 @@ export class Store {
     try { await fs.access(dest); return; } catch { /* not yet today */ }
     try {
       await fs.mkdir(dest, { recursive: true, mode: 0o700 });
-      for (const name of ['chats', 'notes']) await copyDir(join(this.dir, name), join(dest, name));
+      // every book's chats, notes and progress, plus the global usage counter (and any pre-library files not yet migrated)
+      for (const name of ['books', 'chats', 'notes']) await copyDir(join(this.dir, name), join(dest, name));
       for (const f of ['progress.json', 'usage.json']) await fs.copyFile(join(this.dir, f), join(dest, f)).catch(() => {});
       const all = (await fs.readdir(root)).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
       for (const old of all.slice(0, Math.max(0, all.length - keep))) await fs.rm(join(root, old), { recursive: true, force: true });
@@ -92,6 +95,7 @@ export class Store {
 
   async #write(rel, obj) {
     const file = this.#path(rel);
+    await fs.mkdir(dirname(file), { recursive: true, mode: 0o700 }); // a book's folders are created on first write
     const tmp = `${file}.tmp-${process.pid}-${++this.seq}`;
     const fh = await fs.open(tmp, 'w', 0o600);
     try {

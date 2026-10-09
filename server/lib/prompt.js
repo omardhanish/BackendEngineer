@@ -2,13 +2,15 @@
 // on the same page share a cacheable prefix; live state (frame, edited code, last error) goes in the
 // final user turn. The quiz answer is included but the rules say to hint before revealing it.
 
+import { DEFAULT_TUTOR } from './book-meta.js';
+
 export const PROMPT_VERSION = 2;
 
-const RULES = `You are the in-page tutor of "BackendEngineer", a short, crisp, book-style course that takes a learner from JavaScript fundamentals to production backends (Node.js, Express, SQL/Postgres/Drizzle, MongoDB, authentication, Docker, AWS, system design, Git).
+const rulesFor = (tu) => `You are the in-page tutor of "${tu.name}", ${tu.about}.
 The learner is reading ONE page of the book, given in <page>. Treat it as the source of truth for what they have just seen. Build on it; if you spot a real error in it, say so plainly.
 Rules:
 - Answer first, in as few words as fully answer the question (usually 180 words or fewer). No preamble, no restating the question.
-- Prefer one concrete example (Node.js, Express, SQL) over abstract prose. Use short fenced code blocks with a language tag.
+- Prefer one concrete example${tu.examples ? ` (${tu.examples})` : ''} over abstract prose. Use short fenced code blocks with a language tag.
 - Match the page's vocabulary. If the question needs a concept from a later chapter, give a one-line pointer instead of a deep dive.
 - If you are unsure about a detail (versions, flags, API names, numbers), say so. Never invent APIs, flags or numbers.
 - If the learner is stuck on the page's quiz or a coding challenge, hint first; reveal the answer or reference solution only if they ask for it after trying, or the <state> says they already revealed it.
@@ -66,8 +68,8 @@ function nearbyText(t) {
   return bits.join('\n');
 }
 
-function roleplaySystem(t, key) {
-  return `You are playing a character in a hands-on role-play exercise inside the course "BackendEngineer". Stay in character. The learner is the engineer; you are NOT their tutor in this mode.
+function roleplaySystem(t, key, tu) {
+  return `You are playing a character in a hands-on role-play exercise inside the course "${tu.name}". Stay in character. The learner is the ${tu.learnerRole}; you are NOT their tutor in this mode.
 <persona>
 ${key.persona}
 </persona>
@@ -80,9 +82,9 @@ ${topicToText(t, 12_000)}
 Rules: keep every reply under 120 words; speak as the character (first person); do not invent evidence beyond what the page and the facts above provide; if the learner asks for something the scenario does not contain, say you do not have it. Use Markdown sparingly.`;
 }
 
-function debriefSystem(t, key) {
+function debriefSystem(t, key, tu) {
   const rubric = (key.rubric || t.scenario?.rubric || []).map((r, i) => `${i + 1}. ${r.criterion || r.label || r}${r.levels ? ` — 0: ${r.levels[0]} | 1: ${r.levels[1]} | 2: ${r.levels[2]}` : ''}`).join('\n');
-  return `You are a senior engineer mentoring a learner after a role-play exercise in the course "BackendEngineer". The role-play transcript is in the conversation. Grade the LEARNER's performance only from what they actually said or found.
+  return `You are ${tu.mentorRole} mentoring a learner after a role-play exercise in the course "${tu.name}". The role-play transcript is in the conversation. Grade the LEARNER's performance only from what they actually said or found.
 <rubric>
 ${rubric}
 </rubric>
@@ -96,11 +98,12 @@ ${key.flaws?.length ? `<answer_key>\n${key.flaws.map((f) => `- ${f}`).join('\n')
 /**
  * @returns {{messages: Array, temperature: number, maxTokens: number}}
  */
-export function buildMessages({ topic, mode, history, userText, quote, live, limits, key }) {
+export function buildMessages({ topic, mode, history, userText, quote, live, limits, key, book }) {
+  const tutor = book?.tutor ?? DEFAULT_TUTOR;
   let system;
-  if (mode === 'roleplay' && key) system = roleplaySystem(topic, key);
-  else if (mode === 'debrief' && key) system = debriefSystem(topic, key);
-  else system = `${RULES}\n\n<page id="${topic.id}">\n${topicToText(topic, limits.pageChars)}\n</page>\n\n<nearby>\n${nearbyText(topic)}\n</nearby>`;
+  if (mode === 'roleplay' && key) system = roleplaySystem(topic, key, tutor);
+  else if (mode === 'debrief' && key) system = debriefSystem(topic, key, tutor);
+  else system = `${rulesFor(tutor)}\n\n<page id="${topic.id}">\n${topicToText(topic, limits.pageChars)}\n</page>\n\n<nearby>\n${nearbyText(topic)}\n</nearby>`;
 
   // History: never lead with an assistant turn; trim oldest-first in chunks so the prefix stays stable.
   let past = history.slice();

@@ -13,7 +13,7 @@
     "build:vendor": "node tools/build-vendor.mjs",
     "validate": "node tools/validate.mjs",
     "capture": "node tools/capture.mjs",
-    "examples:install": "npm install --prefix content/code --no-audit --no-fund",
+    "examples:install": "npm install --prefix content/books --no-audit --no-fund",
     "qa:shots": "node tools/qa-shots.mjs",
     "smoke:chat": "node tools/smoke-chat.mjs",
     "test": "node --test test/*.test.mjs",
@@ -21,7 +21,11 @@
     "e2e:challenges": "node tools/e2e-challenges.mjs",
     "scan": "bash tools/scan-secrets.sh",
     "publish:github": "bash tools/publish.sh",
-    "contrast": "node tools/check-contrast.mjs"
+    "contrast": "node tools/check-contrast.mjs",
+    "e2e:library": "node tools/e2e-library.mjs",
+    "book:new": "node tools/createbook/new-book.mjs",
+    "book:plan": "node tools/createbook/plan.mjs",
+    "skill:install": "node tools/createbook/install-skill.mjs"
   },
   "dependencies": {
     "express": "^5.2.1"

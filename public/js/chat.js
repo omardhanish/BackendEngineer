@@ -4,6 +4,7 @@ import { h, icon, uid, relTime, debounce, copyText, toast } from './ui.js';
 import { api, streamChat } from './api.js';
 import { renderMarkdown } from './markdown.js';
 import { state } from './state.js';
+import { paths } from './paths.js';
 import { shell } from './shell.js';
 
 const DEFAULT_STARTERS = ['Explain this more simply', 'Give me a real-world example', 'What mistakes do beginners make here?', 'Quiz me on this page', 'How would I use this in a real project?'];
@@ -66,7 +67,8 @@ function createNotes() {
 
 // ------------------------------------------------------------------ dock
 export function createDock({ getLive }) {
-  const S = { topic: null, doc: null, thread: null, mode: 'ask', streaming: false, ac: null, fresh: false, quote: '', token: 0, last: null };
+  let emptyLink;
+  const S = { topic: null, slug: null, doc: null, thread: null, mode: 'ask', streaming: false, ac: null, fresh: false, quote: '', token: 0, last: null };
 
   // ---- skeleton
   const tabTutor = h('button', { class: 'dock-tab is-on', type: 'button', role: 'tab', id: 'tab-tutor', 'aria-selected': 'true', 'aria-controls': 'pane-tutor', onclick: () => showTab('tutor') }, icon('chat', 15), 'Tutor');
@@ -82,7 +84,7 @@ export function createDock({ getLive }) {
   const threadBtn = h('button', { class: 'thread-btn', type: 'button', 'aria-haspopup': 'listbox', 'aria-expanded': 'false', onclick: () => toggleMenu() });
   const threadMenu = h('ul', { class: 'thread-menu', role: 'listbox', hidden: true });
   const newBtn = h('button', { class: 'btn-icon', type: 'button', title: 'Start a new chat', 'aria-label': 'Start a new chat', onclick: () => newChat() }, icon('plus', 17));
-  const histLink = h('a', { class: 'btn-icon', href: '/chats', title: 'All saved chats', 'aria-label': 'All saved chats' }, icon('history', 17));
+  const histLink = h('a', { class: 'btn-icon', href: paths.chats(), title: 'All saved chats', 'aria-label': 'All saved chats' }, icon('history', 17));
   const bar = h('div', { class: 'thread-bar' }, h('div', { class: 'thread-pick' }, threadBtn, threadMenu), newBtn, histLink);
 
   const msgs = h('div', { class: 'msgs', role: 'log', 'aria-live': 'polite', 'aria-label': 'Conversation' });
@@ -95,7 +97,7 @@ export function createDock({ getLive }) {
   const paneTutor = h('section', { class: 'pane pane-tutor', role: 'tabpanel', id: 'pane-tutor', 'aria-labelledby': 'tab-tutor' }, ctxChip, modeBar, bar, msgs, starters, composer);
   const notes = createNotes();
   const paneNotes = h('section', { class: 'pane pane-notes', role: 'tabpanel', id: 'pane-notes', 'aria-labelledby': 'tab-notes', hidden: true }, notes.el);
-  const empty = h('div', { class: 'dock-empty', hidden: true }, icon('chat', 28), h('p', null, 'Open any page and the tutor will already know what you are looking at.'), h('a', { class: 'btn', href: '/' }, 'Browse the book'));
+  const empty = h('div', { class: 'dock-empty', hidden: true }, icon('chat', 28), h('p', null, 'Open any page and the tutor will already know what you are looking at.'), (emptyLink = h('a', { class: 'btn', href: '/' }, 'Browse the book')));
   const el = h('div', { class: 'dock-inner' }, head, paneTutor, paneNotes, empty);
 
   // ---- helpers
@@ -328,17 +330,20 @@ export function createDock({ getLive }) {
     showTab,
     focusComposer: () => { showTab('tutor'); input.focus(); },
     async setTopic(topic) {
-      const same = S.topic?.id === topic?.id;
+      const same = S.topic?.id === topic?.id && S.slug === state.slug;
       if (same && topic) return;
       S.ac?.abort();
       S.topic = topic;
+      S.slug = state.slug;
       S.thread = null; S.doc = null; S.last = null;
+      histLink.href = paths.chats();
+      emptyLink.href = state.slug ? paths.book() : '/';
       paneTutor.hidden = !topic || !tabTutor.classList.contains('is-on');
       paneNotes.hidden = !topic || !tabNotes.classList.contains('is-on');
       empty.hidden = !!topic;
       head.querySelector('.dock-tabs').hidden = !topic;
       notes.setTopic(topic);
-      if (!topic) { S.token++; return; }
+      if (!topic) { S.token++; ctxChip.replaceChildren(); msgs.replaceChildren(); return; }
       ctxChip.replaceChildren(icon('book', 13), h('span', null, 'Knows this page: ', h('b', null, clip(topic.title, 48))));
       paintStarters();
       msgs.replaceChildren(); paintThreadBar(); paintComposer();

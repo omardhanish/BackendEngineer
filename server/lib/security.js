@@ -2,6 +2,8 @@
 
 /** Ids from the URL/body are never trusted: lowercase letters, digits and dashes only. */
 export const ID_RE = /^[a-z0-9-]{1,80}$/;
+/** A book slug names a folder under content/books/ and data/books/: no dots, slashes or leading dash, so it can never escape them. */
+export const BOOK_RE = /^[a-z0-9][a-z0-9-]{0,39}$/;
 export const THREAD_RE = /^t_[a-z0-9]{6,16}$/;
 export const MSG_ID_RE = /^[A-Za-z0-9_-]{6,64}$/;
 

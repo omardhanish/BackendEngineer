@@ -1,4 +1,4 @@
-// BackendEngineer — a living book on localhost. `npm start` → http://localhost:4000
+// A library of living books on localhost. `npm start` → http://localhost:4000
 import { config } from './lib/env.js';
 import { createContext, createApp } from './app.js';
 
@@ -18,10 +18,12 @@ async function main() {
   });
 
   server.once('listening', async () => {
-    const m = await ctx.content.manifest();
-    console.log(`\n  ${bold('BackendEngineer')} ${dim('— a living book')}`);
+    const cards = await ctx.library.list();
+    console.log(`\n  ${bold('Living library')} ${dim('— books you can read, run and ask')}`);
     console.log(`  → ${bold(`http://localhost:${config.port}`)}`);
-    console.log(dim(`  ${m.topics.length} pages (${m.authored} written) · data in ${config.dataDir}\n`));
+    for (const c of cards) console.log(dim(`  · ${c.title}: ${c.pages} pages (${c.authored} written)`));
+    for (const [slug, why] of ctx.library.problems) console.warn(`  \x1b[33m! book "${slug}" is not shown:\x1b[0m ${why}`);
+    console.log(dim(`  data in ${config.dataDir}\n`));
     // Verify the tutor in the background; the book itself works without it.
     const check = await ctx.deepseek.checkModels();
     ctx.health.modelOk = check.ok;

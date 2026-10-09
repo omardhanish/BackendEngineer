@@ -5,11 +5,12 @@
 // A `walk` adds a step-through: highlighted lines + one sentence per step.
 import { h, icon, sleep, copyText, toast, rich } from '../ui.js';
 import { highlightLines } from '../markdown.js';
+import { LANGUAGES, LANGUAGE_ID } from '../languages.js';
 import { createEditor } from '../editor.js';
 import { runCode } from '../runner-host.js';
 import { createStepper } from '../player.js';
 
-const LANG_LABEL = { js: 'JavaScript', javascript: 'JavaScript', mjs: 'JavaScript', json: 'JSON', bash: 'Shell', sh: 'Shell', sql: 'SQL', yaml: 'YAML', yml: 'YAML', docker: 'Dockerfile', dockerfile: 'Dockerfile', http: 'HTTP', html: 'HTML', ejs: 'EJS', ts: 'TypeScript' };
+const langLabel = (lang) => LANGUAGES[LANGUAGE_ID(lang)]?.label || lang;
 
 // "· Node 20.20.2 · PostgreSQL 18.4" for a script, "· git 2.47.0" for a shell transcript
 function realLabel(sn) {
@@ -81,7 +82,7 @@ export function codeBlock(sn, ctx = {}) {
     h('div', { class: 'cw-bar' },
       h('span', { class: 'cw-dots', 'aria-hidden': 'true' }, h('i'), h('i'), h('i')),
       h('span', { class: 'cw-file' }, sn.file),
-      h('span', { class: 'cw-lang' }, LANG_LABEL[lang] || lang),
+      h('span', { class: 'cw-lang' }, langLabel(lang)),
       badge,
       h('span', { class: 'cw-spacer' }), resetBtn, copyBtn,
       editable || sn.run === 'captured' ? runBtn : null),
@@ -118,7 +119,7 @@ export function codeBlock(sn, ctx = {}) {
     if (!cap) { out.note('Output has not been captured for this example yet.'); return; }
     handle = true;
     runBtn.disabled = true;
-    if (!/\.sh$/.test(sn.file)) out.add(`$ node ${sn.file}`, 'cmd'); // a shell transcript already contains its own "$ command" lines
+    if (!/\.sh$/.test(sn.file)) out.add(`$ ${cap.command || `node ${sn.file}`}`, 'cmd'); // a shell transcript already contains its own "$ command" lines
     for (const line of (cap.stdout || '').replace(/\n$/, '').split('\n')) { if (line === '' && !cap.stdout) break; await sleep(65); out.add(line, line.startsWith('$ ') ? 'cmd' : 'log'); }
     for (const line of (cap.stderr || '').replace(/\n$/, '').split('\n').filter(Boolean)) { await sleep(65); out.add(line, 'error'); }
     handle = null;

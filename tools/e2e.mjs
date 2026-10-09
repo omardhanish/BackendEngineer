@@ -35,7 +35,9 @@ const pageErrors = [];
 page.on('pageerror', (e) => pageErrors.push(e.message));
 page.on('console', (m) => { if (m.type() === 'error' && !/api\/chat/.test(m.text())) pageErrors.push(m.text()); });
 const text = (sel) => page.$eval(sel, (e) => e.textContent.trim()).catch(() => null);
-const go = async (path, ready = '.stage-body .frame, .home, .cover') => { await page.goto(`${BASE}${path}`, { waitUntil: 'networkidle0' }); await page.waitForSelector(ready, { timeout: 8000 }); await sleep(250); };
+const BOOK = '/b/backend-engineer'; // this script tests the default book
+const bk = (p) => (p === '/' ? BOOK : `${BOOK}${p}`);
+const go = async (path, ready = '.stage-body .frame, .home, .cover') => { await page.goto(`${BASE}${bk(path)}`, { waitUntil: 'networkidle0' }); await page.waitForSelector(ready, { timeout: 8000 }); await sleep(250); };
 const press = async (k, n = 1) => { for (let i = 0; i < n; i++) { await page.keyboard.press(k); await sleep(140); } await sleep(300); };
 
 try {
@@ -103,9 +105,9 @@ try {
   check('Number key answers the quiz', !!(await page.$('.q-opt.is-bad, .q-opt.is-ok')));
   await press('ArrowRight');
   check('Last frame opens an end card (no silent jump)', (await text('.frame-end .end-title')) === 'The event loop');
-  check('URL reflects the frame', new URL(page.url()).pathname === '/read/c02-t09/5', page.url());
+  check('URL reflects the frame', new URL(page.url()).pathname === `${BOOK}/read/c02-t09/5`, page.url());
   await press(']');
-  await page.waitForFunction(() => location.pathname.startsWith('/read/c02-t10'), { timeout: 4000 }).catch(() => {});
+  await page.waitForFunction(() => location.pathname.includes('/read/c02-t10'), { timeout: 4000 }).catch(() => {});
   check('] goes to the next page', page.url().includes('/read/c02-t10'), page.url());
   await page.waitForSelector('.frame-idea, .frame-soon', { timeout: 4000 }).catch(() => {});
   // every page is written now; the "soon" frame remains only as a safety net for a page that is missing
@@ -119,7 +121,7 @@ try {
   await page.keyboard.type('middleware');
   await sleep(300);
   await page.keyboard.press('Enter');
-  await page.waitForFunction(() => location.pathname.startsWith('/read/c04-t08'), { timeout: 4000 }).catch(() => {});
+  await page.waitForFunction(() => location.pathname.includes('/read/c04-t08'), { timeout: 4000 }).catch(() => {});
   check('⌘K finds a page and opens it', page.url().includes('/read/c04-t08'), page.url());
 
   await go('/read/c00-t01');
@@ -151,7 +153,7 @@ try {
     check('An answer streams in', !!answer && answer.length > 20, String(answer));
     check('The answer is about libuv (page context reached the model)', /libuv|event loop|thread|async/i.test(answer || ''), String(answer));
     await sleep(600);
-    check('The chat is saved on disk', existsSync(join(DATA, 'chats', 'c02-t09.json')));
+    check('The chat is saved on disk', existsSync(join(DATA, 'books', 'backend-engineer', 'chats', 'c02-t09.json')));
     await go('/read/c02-t09');
     await sleep(800);
     check('The chat is still there after a reload', (await page.$$('.msg-user')).length === 1 && (await page.$$('.msg-ai')).length === 1);
@@ -197,7 +199,7 @@ try {
   section('Phone layout (390×844)');
   const phone = await browser.newPage();
   await phone.setViewport({ width: 390, height: 844 });
-  await phone.goto(`${BASE}/read/c02-t09`, { waitUntil: 'networkidle0' });
+  await phone.goto(`${BASE}${BOOK}/read/c02-t09`, { waitUntil: 'networkidle0' });
   await phone.waitForSelector('.stage-body .frame');
   const vis = (sel) => phone.$eval(sel, (e) => { const r = e.getBoundingClientRect(); const cs = getComputedStyle(e); return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && r.left >= -1 && r.right <= innerWidth + 1; }).catch(() => false);
   check('No horizontal scroll', await phone.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
@@ -205,7 +207,7 @@ try {
   await phone.click('.tb-menu');
   await sleep(400);
   check('Menu opens the contents sheet', await vis('.toc-full'));
-  await phone.click('#scrim');
+  await phone.mouse.click(382, 800); // the strip of page the sheet leaves uncovered: that is the scrim
   await sleep(300);
   check('Tapping outside closes it', (await phone.$eval('#app', (e) => e.dataset.toc)) === 'closed');
   await phone.click('.tb-dock');

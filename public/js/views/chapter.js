@@ -1,25 +1,27 @@
 // Chapter cover: big numeral, promise, outcomes, and the page list with progress.
 import { h, icon, pad2, applyHue } from '../ui.js';
-import { chapterOf, topicsOf, chapterStats, isDone, isVisited } from '../state.js';
+import { state, chapterOf, topicsOf, chapterStats, isDone, isVisited, rememberHue } from '../state.js';
 import { shell } from '../shell.js';
+import { paths } from '../paths.js';
 
 const KIND = { roleplay: 'Role-play', challenge: 'Challenge', bonus: 'Bonus' };
 
 export function chapterView(chId) {
   const ch = chapterOf(chId);
   if (!ch) {
-    shell.stage.replaceChildren(h('div', { class: 'empty-state' }, h('h1', null, 'No such chapter'), h('a', { class: 'btn btn-primary', href: '/' }, 'Back to the bookshelf')));
+    shell.stage.replaceChildren(h('div', { class: 'empty-state' }, h('h1', null, 'No such chapter'), h('a', { class: 'btn btn-primary', href: paths.book() }, 'Back to the book')));
     return {};
   }
   applyHue(ch.hue);
-  shell.setCrumbs([{ label: 'Bookshelf', href: '/' }, { label: `${pad2(ch.n)} · ${ch.title}` }]);
+  rememberHue(`${state.slug}:${ch.id}`, ch.hue);
+  shell.setCrumbs([{ label: state.book.book?.title || state.slug, href: paths.book() }, { label: `${pad2(ch.n)} · ${ch.title}` }]);
   const topics = topicsOf(ch.id);
   const st = chapterStats(ch.id);
   const next = topics.find((t) => t.authored && !isDone(t.id)) || topics.find((t) => t.authored);
   const resuming = st.visited > 0 && next;
 
   const rows = topics.map((t) => h('li', null,
-    h('a', { class: `ch-row${t.authored ? '' : ' is-soon'}`, href: `/read/${t.id}` },
+    h('a', { class: `ch-row${t.authored ? '' : ' is-soon'}`, href: paths.read(t.id) },
       h('span', { class: `ch-status ${isDone(t.id) ? 'is-done' : isVisited(t.id) ? 'is-seen' : ''}`, 'aria-hidden': 'true' }, isDone(t.id) ? icon('check', 12) : ''),
       h('span', { class: 'ch-n' }, pad2(t.n)),
       h('span', { class: 'ch-title' }, t.title),
@@ -34,7 +36,7 @@ export function chapterView(chId) {
         h('h1', { class: 'cover-title' }, ch.title),
         h('p', { class: 'cover-tag' }, ch.tagline),
         h('div', { class: 'cover-cta' },
-          next ? h('a', { class: 'btn btn-primary btn-lg', href: `/read/${next.id}` }, resuming ? 'Continue chapter' : 'Start chapter', icon('arrow-right', 18)) : h('span', { class: 'muted' }, 'This chapter is still being written.'),
+          next ? h('a', { class: 'btn btn-primary btn-lg', href: paths.read(next.id) }, resuming ? 'Continue chapter' : 'Start chapter', icon('arrow-right', 18)) : h('span', { class: 'muted' }, 'This chapter is still being written.'),
           h('span', { class: 'cover-meta' }, `${st.total} pages · ${st.written} written · ${st.done} done`)))),
     h('div', { class: 'cover-body' },
       h('section', { class: 'cover-outcomes' }, h('h2', { class: 'label' }, 'By the end you can'), h('ul', null, ch.outcomes.map((o) => h('li', null, icon('check', 16), o)))),

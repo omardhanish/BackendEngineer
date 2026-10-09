@@ -39,7 +39,7 @@ function runLocalStyle(item, dir, serverSrc) {
   return { status: r.status, out: `${r.stdout || ''}${r.stderr || ''}`.trim() };
 }
 
-/** Pushes human-readable problems onto errs. `dir` is content/code/<id>. */
+/** Pushes human-readable problems onto errs. `dir` is content/books/<book>/code/<id>. */
 export function checkChallenges(id, t, dir, errs) {
   const ch = t.challenges;
   if (!ch) return;
@@ -59,7 +59,7 @@ export function checkChallenges(id, t, dir, errs) {
     const local = it.mode === 'local';
     const names = local ? [it.starter, it.tests, it.solution, it.file] : [it.starter, it.tests, it.solution];
     if (names.some((n) => typeof n !== 'string' || !SAFE_FILE.test(n))) { errs.push(`${at}: needs safe file names for ${local ? 'file, ' : ''}starter, tests and solution`); continue; }
-    if (names.slice(0, 3).some((n) => !existsSync(join(dir, n)))) { errs.push(`${at}: a starter, tests or solution file is missing in content/code/${id}/`); continue; }
+    if (names.slice(0, 3).some((n) => !existsSync(join(dir, n)))) { errs.push(`${at}: a starter, tests or solution file is missing in code/${id}/ of the book`); continue; }
     const src = (n) => readFileSync(join(dir, n), 'utf8');
     for (const n of names.slice(0, 3)) if (/\b(import|export)\s/.test(src(n)) && !local) errs.push(`${at}: ${n} must be plain script (no import/export): it runs inside the in-page runner`);
     for (const n of names.slice(0, 3)) if (src(n).split('\n').some((l) => l.length > 80)) errs.push(`${at}: ${n} has a line longer than 80 columns`);

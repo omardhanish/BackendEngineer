@@ -19,11 +19,28 @@ const ls = {
 const DEFAULTS = { theme: 'system', motion: 'system', dock: null, tocOpen: '{}' };
 
 export const state = {
-  book: null, // manifest from /api/book
-  progress: { topics: {}, last: null },
+  library: [], // the books, with this reader's progress in each (GET /api/books)
+  defaultSlug: null, // the book the original /read/... URLs mean
+  slug: null, // the book being read right now
+  book: null, // manifest of the CURRENT book (GET /api/books/:slug/book)
+  progress: { topics: {}, last: null }, // progress in the CURRENT book
   health: null,
   topic: null, // currently open topic (public JSON)
 };
+
+/** A preference that belongs to one book (e.g. which chapters are open). The old unscoped key still works for the default book. */
+export function bookPref(key, value) {
+  const k = `${state.slug}:${key}`;
+  if (value === undefined) return ls.get(k) ?? (state.slug === state.defaultSlug ? ls.get(key) : null) ?? DEFAULTS[key];
+  ls.set(k, value);
+  return value;
+}
+/** Browser-storage key for something that belongs to one page of the CURRENT book (a code draft, rubric marks). */
+export const pageKey = (kind, ...id) => `be:${kind}:${state.slug}:${id.join(':')}`;
+/** The same thing before there were several books. Still read for the default book, so nothing a reader typed is lost. */
+export const legacyPageKey = (kind, ...id) => (state.slug === state.defaultSlug ? `be:${kind}:${id.join(':')}` : null);
+/** The hue a book starts from, remembered so the NEXT page load paints the right colour before any script runs (see prepaint.js). */
+export const rememberHue = (slug, hue) => ls.set(`hue:${slug}`, String(hue));
 
 export function pref(key, value) {
   if (value === undefined) return ls.get(key) ?? DEFAULTS[key];

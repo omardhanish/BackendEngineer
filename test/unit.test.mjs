@@ -45,7 +45,7 @@ describe('store', () => {
     const dir = tmp('lock');
     writeFileSync(join(dir, '.lock'), JSON.stringify({ pid: process.ppid }));
     const s = new Store(dir);
-    await assert.rejects(() => s.init(), /Another BackendEngineer server/);
+    await assert.rejects(() => s.init(), /Another copy of this server/);
     rmSync(dir, { recursive: true, force: true });
   });
   test('paths cannot escape the data dir', async () => {

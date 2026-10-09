@@ -123,8 +123,8 @@ describe('localhost hardening', () => {
   test('only public/ is served; project files and data are not reachable', async () => {
     for (const p of ['/.env', '/%2e%2e/.env', '/..%2f.env', '/content/syllabus.json', '/data/progress.json', '/server/index.js', '/package.json', '/node_modules/express/package.json', '/%2e%2e/%2e%2e/etc/passwd', '/js/..%2f..%2f.env', '/css/%5c..%5c.env']) {
       const r = await rawRequest(p, { host: `localhost:${port}` });
-      assert.ok(r.status === 404 || (r.status === 200 && r.body.includes('<title>BackendEngineer')), `${p} → ${r.status}`);
-      assert.equal(/DEEPSEEK|sk-test|"topics"|express/.test(r.body) && !r.body.includes('<title>BackendEngineer'), false, `${p} leaked content`);
+      assert.ok(r.status === 404 || (r.status === 200 && r.body.includes('<title>Living library')), `${p} → ${r.status}`);
+      assert.equal(/DEEPSEEK|sk-test|"topics"|express/.test(r.body) && !r.body.includes('<title>Living library'), false, `${p} leaked content`);
     }
   });
   test('ids are validated; prototype keys are not pages', async () => {
@@ -187,7 +187,7 @@ describe('tutor chat', () => {
     assert.deepEqual(t.messages.map((m) => [m.role, m.status ?? null]), [['user', null], ['assistant', 'complete']]);
     assert.equal(t.messages[1].content, 'Hello world!');
     assert.equal(JSON.stringify(saved).includes('sk-test'), false);
-    assert.equal(existsSync(join(DATA, 'chats', 'c02-t09.json')), true);
+    assert.equal(existsSync(join(DATA, 'books', 'backend-engineer', 'chats', 'c02-t09.json')), true);
   });
 
   test('a retried request (same clientMsgId) is replayed, not paid for twice', async () => {
@@ -447,7 +447,7 @@ describe('packaging', () => {
     const dot = join(ROOT, '.tmp', `.dot-${process.pid}`);
     rmSync(dot, { recursive: true, force: true });
     mkdirSync(join(dot, 'public'), { recursive: true });
-    writeFileSync(join(dot, 'public', 'index.html'), '<!doctype html><title>BackendEngineer dot-test</title>');
+    writeFileSync(join(dot, 'public', 'index.html'), '<!doctype html><title>Living library dot-test</title>');
     const cfg = loadConfig({}, { dataDir: join(dot, 'data'), publicDir: join(dot, 'public'), silent: true, deepseek: { key: 'sk-test-0000000000000000', baseUrl: fake.url, model: 'deepseek-flash' } });
     const c3 = await createContext(cfg);
     const s3 = createApp(c3).listen(0, '127.0.0.1');

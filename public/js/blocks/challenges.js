@@ -6,14 +6,14 @@ import { h, icon, rich, toast, debounce } from '../ui.js';
 import { createEditor } from '../editor.js';
 import { codeBlock } from './code.js';
 import { runCode } from '../runner-host.js';
-import { state } from '../state.js';
+import { state, pageKey, legacyPageKey } from '../state.js';
 import { patchProgress } from '../progress.js';
 
 let harnessText = null;
 const loadHarness = async () => { harnessText ??= await (await fetch('/sandbox/harness.js')).text(); return harnessText; };
-const draftKey = (topicId, cid) => `be:draft:${topicId}:${cid}`;
-const readDraft = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
-const writeDraft = (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch { /* private mode */ } };
+const draftKey = (topicId, cid) => ({ key: pageKey('draft', topicId, cid), old: legacyPageKey('draft', topicId, cid) });
+const readDraft = ({ key, old }) => { try { return localStorage.getItem(key) ?? (old ? localStorage.getItem(old) : null); } catch { return null; } };
+const writeDraft = ({ key, old }, v) => { try { if (v == null) { localStorage.removeItem(key); if (old) localStorage.removeItem(old); } else localStorage.setItem(key, v); } catch { /* private mode */ } };
 
 export function challengesBlock(t, ctx) {
   const items = t.challenges.items;
@@ -31,11 +31,12 @@ export function challengesBlock(t, ctx) {
     tabs.forEach((b, i) => { b.classList.toggle('is-on', i === active); b.classList.toggle('is-solved', solved.has(items[i].id)); b.setAttribute('aria-selected', String(i === active)); });
   }
 
+  const slug = state.slug; // the book this block belongs to
   function markSolved(id) {
-    if (solved.has(id)) return;
+    if (solved.has(id) || slug !== state.slug) return;
     solved.add(id);
-    patchProgress(t.id, { solved: { [id]: true } });
-    if (solved.size === items.length) { patchProgress(t.id, { done: true }); toast('Every challenge solved. Nice work.', { kind: 'ok' }); }
+    patchProgress(t.id, { solved: { [id]: true } }, slug);
+    if (solved.size === items.length) { patchProgress(t.id, { done: true }, slug); toast('Every challenge solved. Nice work.', { kind: 'ok' }); }
     paintTabs();
   }
 

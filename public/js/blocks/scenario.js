@@ -2,10 +2,16 @@
 // The persona, hidden facts and answer key live on the server only; this file shows what the learner may see.
 import { h, icon, rich } from '../ui.js';
 import { codeBlock } from './code.js';
+import { pageKey, legacyPageKey } from '../state.js';
 
 const store = {
-  get(id) { try { return JSON.parse(localStorage.getItem(`be:rubric:${id}`) || '[]'); } catch { return []; } },
-  set(id, v) { try { localStorage.setItem(`be:rubric:${id}`, JSON.stringify(v)); } catch { /* not persisted */ } },
+  get(id) {
+    try {
+      const old = legacyPageKey('rubric', id);
+      return JSON.parse(localStorage.getItem(pageKey('rubric', id)) ?? (old ? localStorage.getItem(old) : null) ?? '[]');
+    } catch { return []; }
+  },
+  set(id, v) { try { localStorage.setItem(pageKey('rubric', id), JSON.stringify(v)); } catch { /* not persisted */ } },
 };
 
 export function scenarioIntro(t, ctx) {

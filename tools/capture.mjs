@@ -1,10 +1,11 @@
 // Run every runnable snippet on REAL tools and record its output beside the source (<file>.out.json).
 // Never an LLM: the output a learner sees under "Real output" is exactly what this process printed.
-//   npm run capture                          capture changed snippets
-//   npm run capture -- --force c02-t09       re-run everything (or just the listed pages)
+//   npm run capture                                  capture changed snippets in every book
+//   npm run capture -- --book my-book --force        re-run everything in one book (or just the listed page ids)
 //
-// Snippet kinds:
-//   .mjs / .cjs   run with Node, inside content/code/<id>/ (so `import express from 'express'` resolves).
+// Snippet kinds (see tools/lib/runners.mjs; a language is runnable when its toolchain is installed):
+//   .mjs / .cjs   Node, inside <book>/code/<id>/ (so `import express from 'express'` resolves from content/books/node_modules)
+//   .py / .java / .c   Python 3, Java (single-file source mode), C (cc)
 //   .sh           a shell TRANSCRIPT: every line is a command, run in order in a fresh temp folder; the recording
 //                 shows "$ command" followed by its real output. Fixed identity, dates and time zone, so git
 //                 hashes and timestamps are reproducible. `cd` and `export NAME=value` carry over between lines.
@@ -15,15 +16,15 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
-import { dirname, isAbsolute, join, resolve, sep } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join, resolve, sep } from 'node:path';
+import { BOOKS_DIR, ROOT, parseArgs, pickBooks, writtenPages } from './lib/books.mjs';
+import { detect, runnerFor } from './lib/runners.mjs';
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const content = join(root, 'content');
-const examples = join(content, 'code');
-const args = process.argv.slice(2);
-const force = args.includes('--force');
-const only = args.filter((a) => /^c\d\d-/.test(a));
+const root = ROOT;
+const examples = BOOKS_DIR; // shared example libraries live here: content/books/{package.json,node_modules}
+const args = parseArgs(process.argv.slice(2));
+const force = args.rest.includes('--force');
+const only = args.ids;
 const SAFE_FILE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
 const FORBIDDEN = /(^|[\s;&|(])(sudo|ssh|scp|sftp|curl|wget|brew|apt|apt-get|yum|dnf|docker|kubectl|aws|shutdown|reboot|killall)(\s|$)|\brm\s+-[a-z]*r[a-z]*f?\s+(\/|~|\$HOME)(\s|$)|\bnpm\s+(i|install|add)\s+(-g|--global)|:\(\)\s*\{/;
 
@@ -145,13 +146,20 @@ async function envFor(needs, label) {
   return { env, names };
 }
 
-// ------------------------------------------------------------------ the two runners
-function runNode(file, dir, extraEnv) {
-  const r = spawnSync(process.execPath, [file], {
-    cwd: dir, encoding: 'utf8', timeout: 30_000, maxBuffer: 1 << 20,
-    env: { PATH: process.env.PATH, HOME: home, LANG: 'en_US.UTF-8', NODE_ENV: 'development', NO_COLOR: '1', ...extraEnv },
-  });
-  return { stdout: r.stdout || '', stderr: r.stderr || '', code: r.status ?? (r.signal ? 1 : 0), error: r.status === 0 ? null : `exited with ${r.status ?? r.signal}` };
+// ------------------------------------------------------------------ the runners
+const toolLabel = (runner) => {
+  if (runner.id === 'node') return null; // Node's version is recorded in the `node` field
+  const d = runner.needs();
+  if (runner.id === 'c') return `C (${/clang/i.test(d.raw || '') ? 'clang' : 'gcc'} ${d.version || ''})`.replace(' )', ')');
+  return `${runner.label} ${d.version || ''}`.trim();
+};
+
+function runFile(runner, file, dir, extraEnv) {
+  const env = { PATH: process.env.PATH, HOME: home, LANG: 'en_US.UTF-8', NODE_ENV: 'development', NO_COLOR: '1', ...(runner.env || {}), ...extraEnv };
+  const r = runner.spawn(file, dir, env);
+  const out = { stdout: r.stdout || '', stderr: r.stderr || '', code: r.status ?? (r.signal ? 1 : 0), error: r.status === 0 ? null : `exited with ${r.status ?? r.signal}` };
+  if (runner.id === 'java') out.stderr = out.stderr.replace(/^Note: .*\n/gm, ''); // javac notes about preview/unchecked features are not output
+  return { ...out, tool: toolLabel(runner), command: runner.command(file), runner: runner.id };
 }
 
 /** Split a script into commands: one per line; `\` continues a line; a heredoc (<<WORD) runs to its terminator. */
@@ -219,53 +227,60 @@ async function dbVersions(needs) {
   return v;
 }
 
-// ------------------------------------------------------------------ walk the pages
-for (const ch of readdirSync(content).filter((d) => /^c\d\d$/.test(d)).sort()) {
-  for (const f of readdirSync(join(content, ch)).filter((n) => n.endsWith('.json')).sort()) {
-    const id = f.slice(0, -5);
+// ------------------------------------------------------------------ walk the books and their pages
+let books;
+try { books = pickBooks(args.books); } catch (e) { console.error(`✖ ${e.message}`); process.exit(1); }
+for (const book of books) {
+  const pages = writtenPages(book);
+  for (const [id, pageFile] of [...pages].sort()) {
     if (only.length && !only.includes(id)) continue;
     let topic;
-    try { topic = JSON.parse(readFileSync(join(content, ch, f), 'utf8')); } catch (e) { fail(`${id}: invalid JSON (${e.message})`); continue; }
+    try { topic = JSON.parse(readFileSync(pageFile, 'utf8')); } catch (e) { fail(`${book.slug}/${id}: invalid JSON (${e.message})`); continue; }
     for (const sn of topic.code || []) {
       if (sn.run !== 'browser' && sn.run !== 'captured') continue;
-      const dir = join(content, 'code', id);
-      if (!SAFE_FILE.test(String(sn.file)) || !resolve(dir, sn.file).startsWith(resolve(dir) + sep)) { fail(`${id}: unsafe code file name ${JSON.stringify(sn.file)}`); continue; }
+      const dir = join(book.dir, 'code', id);
+      const label = `${book.slug}/${id}/${sn.file}`;
+      if (!SAFE_FILE.test(String(sn.file)) || !resolve(dir, sn.file).startsWith(resolve(dir) + sep)) { fail(`${book.slug}/${id}: unsafe code file name ${JSON.stringify(sn.file)}`); continue; }
       const file = join(dir, sn.file);
-      if (!existsSync(file)) { fail(`${id}/${sn.file}: file is missing`); continue; }
+      if (!existsSync(file)) { fail(`${label}: file is missing`); continue; }
       const isShell = /\.sh$/.test(sn.file);
-      if (isShell && sn.run !== 'captured') { fail(`${id}/${sn.file}: a .sh file can only be run: "captured"`); continue; }
-      if (sn.needs && sn.run !== 'captured') { fail(`${id}/${sn.file}: needs a real database, so it must be run: "captured"`); continue; }
+      const runner = isShell ? null : runnerFor(sn.file);
+      if (!isShell && !runner) { fail(`${label}: no runner for this file type (see tools/lib/runners.mjs)`); continue; }
+      if (runner && !runner.needs().ok) { fail(`${label}: ${runner.label} is not installed here; make this snippet static + illustrative`); continue; }
+      if (isShell && sn.run !== 'captured') { fail(`${label}: a .sh file can only be run: "captured"`); continue; }
+      if (sn.needs && sn.run !== 'captured') { fail(`${label}: needs a real database, so it must be run: "captured"`); continue; }
       const src = readFileSync(file, 'utf8');
       const hash = createHash('sha256').update(src + (sn.needs?.length ? `\0${JSON.stringify(sn.needs)}` : '')).digest('hex').slice(0, 16);
       const outPath = `${file}.out.json`;
-      if (!force && existsSync(outPath) && JSON.parse(readFileSync(outPath, 'utf8')).hash === hash) { results.push([id, sn.file, 'unchanged']); continue; }
+      if (!force && existsSync(outPath) && JSON.parse(readFileSync(outPath, 'utf8')).hash === hash) { results.push([label, 'unchanged']); continue; }
       try {
         const attempts = [];
         for (let n = 0; n < 2; n++) {
-          const { env, names } = await envFor(sn.needs, `${id}_${sn.file}`);
-          const r = isShell ? runShell(file, dir, id) : runNode(file, dir, env);
+          const { env, names } = await envFor(sn.needs, `${book.slug}_${id}_${sn.file}`);
+          const r = isShell ? runShell(file, dir, id) : runFile(runner, file, dir, env);
           const swap = names.map((nm) => [nm, 'app_db']);
           attempts.push({ ...r, text: normalise(r.stdout, swap), err: normalise(r.stderr, swap) });
           if (r.error) break;
         }
         const [a, b] = attempts;
-        if (a.error) { fail(`${id}/${sn.file}: ${a.error}\n${a.err.split('\n').slice(0, 6).join('\n')}`); continue; }
+        if (a.error) { fail(`${label}: ${a.error}\n${a.err.split('\n').slice(0, 6).join('\n')}`); continue; }
         if (a.text !== b.text || a.err !== b.err) {
           const la = a.text.split('\n'); const lb = b.text.split('\n');
           const i = la.findIndex((l, k) => l !== lb[k]);
-          fail(`${id}/${sn.file}: output differs between two runs (random ids, timestamps or ordering?)\n    run 1: ${la[i] ?? '(shorter)'}\n    run 2: ${lb[i] ?? '(shorter)'}`);
+          fail(`${label}: output differs between two runs (random ids, timestamps or ordering?)\n    run 1: ${la[i] ?? '(shorter)'}\n    run 2: ${lb[i] ?? '(shorter)'}`);
           continue;
         }
         const tool = [a.tool, ...(await dbVersions(sn.needs))].filter(Boolean).join(' · ') || null;
-        writeFileSync(outPath, `${JSON.stringify({ stdout: a.text, stderr: a.err, code: 0, node: process.versions.node, tool, hash, at: new Date().toISOString() }, null, 2)}\n`);
-        results.push([id, sn.file, 'captured']);
-      } catch (e) { fail(`${id}/${sn.file}: ${e.message}`); }
+        const usesNode = isShell ? false : runner.id === 'node';
+        writeFileSync(outPath, `${JSON.stringify({ stdout: a.text, stderr: a.err, code: 0, node: usesNode ? process.versions.node : null, runner: isShell ? 'shell' : runner.id, command: isShell ? null : a.command, tool, hash, at: new Date().toISOString() }, null, 2)}\n`);
+        results.push([label, 'captured']);
+      } catch (e) { fail(`${label}: ${e.message}`); }
     }
   }
 }
 await stopServices();
 rmSync(sandbox, { recursive: true, force: true });
 
-for (const [id, file, state] of results) console.log(`${state === 'captured' ? '✔' : '·'} ${id}/${file} ${state}`);
+for (const [label, state] of results) console.log(`${state === 'captured' ? '✔' : '·'} ${label} ${state}`);
 console.log(failures ? `\n${failures} snippet(s) failed.` : `\nOK: ${results.length} snippet(s), Node ${process.versions.node}.`);
 process.exit(failures ? 1 : 0);

@@ -3,13 +3,16 @@
 // server-only role-play material.
 import { promises as fs } from 'node:fs';
 import { join, resolve, sep } from 'node:path';
+import { ID_RE } from './security.js';
 
 const SAFE_FILE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
 const RESCAN_MS = 1500;
 
+/** One book: `dir` is content/books/<slug>/ (syllabus.json, <chapter>/<id>.json, code/<id>/, roleplay/<id>.key.json). */
 export class Content {
-  constructor(config, { log } = {}) {
-    this.dir = config.contentDir;
+  constructor(dir, { log, meta } = {}) {
+    this.dir = dir;
+    this.meta = meta || null; // validated book.json (see book-meta.js)
     this.log = log;
     this.syllabus = null;
     this.topicsById = new Map();
@@ -22,9 +25,16 @@ export class Content {
 
   async load() {
     this.syllabus = JSON.parse(await fs.readFile(join(this.dir, 'syllabus.json'), 'utf8'));
-    for (const c of this.syllabus.chapters) this.chaptersById.set(c.id, c);
+    // ids become file names, so a syllabus (it may come from an imported or generated book) is checked before it is trusted
+    for (const c of this.syllabus.chapters) {
+      if (!ID_RE.test(String(c.id)) || this.chaptersById.has(c.id)) throw new Error(`syllabus: bad or repeated chapter id "${c.id}"`);
+      this.chaptersById.set(c.id, c);
+    }
     this.order = this.syllabus.topics.map((t) => t.id);
-    for (const t of this.syllabus.topics) this.topicsById.set(t.id, t);
+    for (const t of this.syllabus.topics) {
+      if (!ID_RE.test(String(t.id)) || this.topicsById.has(t.id) || !this.chaptersById.has(t.chapter)) throw new Error(`syllabus: bad, repeated or orphaned topic id "${t.id}"`);
+      this.topicsById.set(t.id, t);
+    }
     await this.#scan(true);
     return this;
   }
@@ -78,7 +88,12 @@ export class Content {
       id: t.id, chapter: t.chapter, n: t.n, kind: t.kind, depth: t.depth, lecture: t.lecture ?? null,
       title: this.authored.get(t.id)?.title || t.source, authored: this.authored.has(t.id),
     }));
-    return { version: this.syllabus.version, chapters, topics, authored: this.authored.size };
+    const m = this.meta;
+    return {
+      version: this.syllabus.version,
+      book: m ? { slug: m.slug, title: m.title, tagline: m.tagline, hue: m.hue, monogram: m.monogram, profile: m.profile } : null,
+      chapters, topics, authored: this.authored.size,
+    };
   }
 
   #neighbor(i) {
@@ -94,15 +109,22 @@ export class Content {
     const path = resolve(base, ref.file);
     if (!path.startsWith(base + sep)) return { ...ref, source: '', missing: true };
     const out = { ...ref };
+    // a symlink inside a book (a cloned or unzipped one) must not lead out of its code folder
+    const inside = async (p) => {
+      // the book's whole code/ folder is the boundary (not code/<id>, which could itself be the link)
+      const [realRoot, real] = await Promise.all([fs.realpath(join(this.dir, 'code')), fs.realpath(p)]);
+      if (!real.startsWith(realRoot + sep)) throw new Error('outside the code folder');
+      return real;
+    };
     try {
-      out.source = await fs.readFile(path, 'utf8');
+      out.source = await fs.readFile(await inside(path), 'utf8');
     } catch {
       return { ...ref, source: '', missing: true };
     }
     try {
-      const cap = await this.#json(`${path}.out.json`);
-      out.captured = { stdout: cap.stdout ?? '', stderr: cap.stderr ?? '', node: cap.node ?? null, tool: cap.tool ?? null };
-    } catch { /* not captured (yet) */ }
+      const cap = await this.#json(await inside(`${path}.out.json`));
+      out.captured = { stdout: cap.stdout ?? '', stderr: cap.stderr ?? '', node: cap.node ?? null, tool: cap.tool ?? null, command: typeof cap.command === 'string' ? cap.command : null };
+    } catch { /* not captured (yet), or not a file of this book */ }
     return out;
   }
 
@@ -125,6 +147,7 @@ export class Content {
     }
     return {
       id, kind: meta.kind, depth: meta.depth, n: meta.n, lecture: meta.lecture ?? null, source: meta.source,
+      book: this.meta ? { slug: this.meta.slug, title: this.meta.title } : null,
       chapter: { id: chapter.id, n: chapter.n, title: chapter.title, hue: chapter.hue },
       authored: !!body, title: body?.title || meta.source,
       ...(body || {}), code,

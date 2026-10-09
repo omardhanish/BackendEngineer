@@ -3,6 +3,7 @@ const routes = [];
 let current = null;
 let token = 0;
 let notFound = null;
+let failure = null;
 const listeners = new Set();
 
 export function route(pattern, factory) {
@@ -14,6 +15,8 @@ export function route(pattern, factory) {
   routes.push({ re: new RegExp(`^${src}/?$`), keys, factory });
 }
 export const fallback = (factory) => { notFound = factory; };
+/** What to show when a view throws (offline, server error) instead of leaving a frozen page. */
+export const onFailure = (factory) => { failure = factory; };
 export const onRoute = (fn) => { listeners.add(fn); return () => listeners.delete(fn); };
 export const currentView = () => current?.view || null;
 
@@ -23,13 +26,19 @@ export function navigate(path, { replace = false } = {}) {
   return resolve();
 }
 
+const dec = (v) => { try { return decodeURIComponent(v); } catch { return null; } };
+
 export async function resolve() {
   const my = ++token;
   const path = location.pathname;
   let match = null;
   for (const r of routes) {
     const m = r.re.exec(path);
-    if (m) { match = { r, params: Object.fromEntries(r.keys.map((k, i) => [k, m[i + 1] ? decodeURIComponent(m[i + 1]) : undefined])) }; break; }
+    if (m) {
+      const vals = r.keys.map((k, i) => (m[i + 1] ? dec(m[i + 1]) : undefined));
+      if (!vals.includes(null)) match = { r, params: Object.fromEntries(r.keys.map((k, i) => [k, vals[i]])) }; // a malformed %-escape is just "no such page"
+      break;
+    }
   }
   if (current?.view?.destroy) {
     try { current.view.destroy(); } catch (e) { console.error(e); }
@@ -38,7 +47,13 @@ export async function resolve() {
   const factory = match ? match.r.factory : notFound;
   const params = match ? match.params : {};
   // Async views get `stale()` so they can stop after an await if the user already navigated elsewhere.
-  const view = await factory(params, new URLSearchParams(location.search), { stale: () => my !== token });
+  let view;
+  try {
+    view = await factory(params, new URLSearchParams(location.search), { stale: () => my !== token });
+  } catch (e) {
+    console.error(e);
+    view = my === token && failure ? await failure(e) : null;
+  }
   if (my !== token) { view?.destroy?.(); return; }
   current = { view, path, params };
   for (const fn of listeners) fn({ path, params, view });

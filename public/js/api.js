@@ -1,4 +1,7 @@
 // Thin fetch layer. Same-origin only; JSON in, JSON out; SSE for the tutor.
+// Everything about a page goes to the CURRENT book's endpoints (/api/books/<slug>/…); `slug` overrides it.
+import { paths } from './paths.js';
+
 export class ApiError extends Error {
   constructor(message, status = 0, code = 'error') {
     super(message);
@@ -26,23 +29,24 @@ async function request(method, url, body) {
 }
 
 export const api = {
-  book: () => request('GET', '/api/book'),
+  library: () => request('GET', '/api/books'),
   health: () => request('GET', '/api/health'),
-  topic: (id) => request('GET', `/api/topic/${id}`),
-  progress: () => request('GET', '/api/progress'),
-  patchProgress: (id, patch) => request('PATCH', `/api/progress/${id}`, patch),
-  notes: (id) => request('GET', `/api/notes/${id}`),
-  saveNotes: (id, text, rev) => request('PUT', `/api/notes/${id}`, { text, rev }),
-  chats: (topicId) => request('GET', `/api/chats/${topicId}`),
-  searchChats: (q, topicId) => request('GET', `/api/chats?${new URLSearchParams({ q, ...(topicId ? { topic: topicId } : {}) })}`),
-  newThread: (topicId, body) => request('POST', `/api/chats/${topicId}/threads`, body),
+  book: (slug) => request('GET', `${paths.api(slug)}/book`),
+  progress: (slug) => request('GET', `${paths.api(slug)}/progress`),
+  topic: (id) => request('GET', `${paths.api()}/topic/${id}`),
+  patchProgress: (id, patch, slug) => request('PATCH', `${paths.api(slug)}/progress/${id}`, patch),
+  notes: (id) => request('GET', `${paths.api()}/notes/${id}`),
+  saveNotes: (id, text, rev) => request('PUT', `${paths.api()}/notes/${id}`, { text, rev }),
+  chats: (topicId) => request('GET', `${paths.api()}/chats/${topicId}`),
+  searchChats: (q, topicId) => request('GET', `${paths.api()}/chats?${new URLSearchParams({ q, ...(topicId ? { topic: topicId } : {}) })}`),
+  newThread: (topicId, body) => request('POST', `${paths.api()}/chats/${topicId}/threads`, body),
 };
 
-/** POST /api/chat and read the SSE response. Resolves when the stream ends. */
+/** POST the current book's /chat and read the SSE response. Resolves when the stream ends. */
 export async function streamChat(payload, { signal, onMeta, onDelta, onStatus, onError, onDone }) {
   let res;
   try {
-    res = await fetch('/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload), signal });
+    res = await fetch(`${paths.api()}/chat`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload), signal });
   } catch (e) {
     if (e.name === 'AbortError') throw e;
     throw new ApiError('Cannot reach the local server. Is `npm start` still running?', 0, 'offline');

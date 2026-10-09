@@ -4,6 +4,8 @@
 //   node tools/qa-shots.mjs                       default pilot set, light, 1440×900
 //   node tools/qa-shots.mjs --themes light,dark --sizes 1440x900,1280x720,390x844
 //   node tools/qa-shots.mjs --only c02-t09        only shots whose name contains this
+//   node tools/qa-shots.mjs --book my-book --auto  every frame of every written page of another book (default book: backend-engineer)
+//   node tools/qa-shots.mjs --only library        the library page itself
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -31,6 +33,8 @@ const auto = process.argv.includes('--auto');
 const fromId = arg('from', ''); // resume an --auto sweep at this page id (e.g. --from c06-t08)
 const checkOnly = process.argv.includes('--check-only'); // run every check but skip the screenshots (fast sweep of all pages)
 
+const BOOK = arg('book', 'backend-engineer');
+const bp = (p) => (p.startsWith('//') ? p.slice(1) : `/b/${BOOK}${p === '/' ? '' : p}`); // book-relative path -> URL ('//x' = absolute)
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const press = (n, key = 'ArrowRight') => ['press', key, n];
 
@@ -64,6 +68,7 @@ const SHOTS = [
   { name: 'c09-t10-end', path: '/read/c09-t10/5' },
   { name: 'soon-c05-t03', path: '/read/c05-t03' },
   { name: 'chats', path: '/chats' },
+  { name: 'library', path: '//' },
 ];
 
 mkdirSync(OUT, { recursive: true });
@@ -85,13 +90,13 @@ for (const theme of themes) {
     await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: theme }]);
     wire(page);
 
-    let shots = SHOTS;
+    let shots = BOOK === 'backend-engineer' ? SHOTS : SHOTS.filter((x) => ['home', 'chats', 'library'].includes(x.name)); // the curated pilot list names pages of the default book
     if (auto) {
       // every frame of every written page, plus the middle step of any animation
-      const book = await (await fetch(`${BASE}/api/book`)).json();
+      const book = await (await fetch(`${BASE}/api/books/${BOOK}/book`)).json();
       shots = [];
-      for (const t of book.topics.filter((x) => x.authored && (!fromId || x.id >= fromId))) {
-        await page.goto(`${BASE}/read/${t.id}`, { waitUntil: 'networkidle0' });
+      for (const t of book.topics.filter((x) => x.authored && (!fromId || x.id >= fromId) && (!only || x.id.includes(only)))) {
+        await page.goto(`${BASE}${bp(`/read/${t.id}`)}`, { waitUntil: 'networkidle0' });
         await page.waitForSelector('.stage-body .frame', { timeout: 8000 }).catch(() => {});
         const frames = await page.$$eval('.deck-dot', (d) => d.length);
         for (let f = 1; f <= Math.max(1, frames); f++) {
@@ -103,7 +108,7 @@ for (const theme of themes) {
       if (only && !shot.name.includes(only)) continue;
       if (page.isClosed() || recreate) { recreate = false; await page.close().catch(() => {}); page = await browser.newPage(); await page.setViewport({ width: w, height: h, deviceScaleFactor: 1 }); await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: theme }]); wire(page); }
       problems.length = 0;
-      try { await page.goto(`${BASE}${shot.path}`, { waitUntil: 'networkidle0', timeout: 30000 }); } catch (e) { recreate = true; problems.push(`navigation failed: ${e.message.split('\n')[0]}`); report.push({ file: `${shot.name}__${theme}__${w}x${h}`, ok: false, problems: [...problems] }); failed++; console.log(`✖ ${shot.name} ${theme} ${w}x${h}\n    ${problems.join('\n    ')}`); continue; }
+      try { await page.goto(`${BASE}${bp(shot.path)}`, { waitUntil: 'networkidle0', timeout: 30000 }); } catch (e) { recreate = true; problems.push(`navigation failed: ${e.message.split('\n')[0]}`); report.push({ file: `${shot.name}__${theme}__${w}x${h}`, ok: false, problems: [...problems] }); failed++; console.log(`✖ ${shot.name} ${theme} ${w}x${h}\n    ${problems.join('\n    ')}`); continue; }
       let stats = { overflow: 0 };
       try {
         await page.waitForSelector('.stage-body .frame, .home, .cover, .history, .empty-state', { timeout: 8000 }).catch(() => problems.push('page did not render'));

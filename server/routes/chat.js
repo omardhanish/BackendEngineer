@@ -27,7 +27,7 @@ const cleanLive = (l) => {
 };
 
 export function chatRoutes(router, ctx) {
-  const { config, content, chats, deepseek, store, limiter, log, streaming, controllers } = ctx;
+  const { config, deepseek, store, limiter, log, streaming, controllers } = ctx;
 
   const addUsage = (tokens) => store.update('usage.json', (u) => {
     const d = today();
@@ -37,6 +37,7 @@ export function chatRoutes(router, ctx) {
 
   router.post('/chat', async (req, res) => {
     // ---- 1. synchronous validation (no awaits yet)
+    const { content, chats, meta } = req.bk; // this book's pages and this book's saved chats
     const b = req.body && typeof req.body === 'object' ? req.body : {};
     const topicId = typeof b.topicId === 'string' ? b.topicId : '';
     const message = str(b.message, config.limits.messageChars + 1).trim();
@@ -114,7 +115,7 @@ export function chatRoutes(router, ctx) {
         let promptChars = 0;
         try {
           if (!ac.signal.aborted) {
-            const { messages, temperature, maxTokens } = buildMessages({ topic, mode: m, history, userText: message, quote, live: cleanLive(b.live), limits: config.limits, key });
+            const { messages, temperature, maxTokens } = buildMessages({ topic, mode: m, history, userText: message, quote, live: cleanLive(b.live), limits: config.limits, key, book: meta });
             promptChars = messages.reduce((n, x) => n + x.content.length, 0);
             for await (const ev of deepseek.stream({ messages, temperature, maxTokens, signal: ac.signal, onStatus: (s) => sendEvent(res, 'status', s) })) {
               if (ev.type === 'delta') {

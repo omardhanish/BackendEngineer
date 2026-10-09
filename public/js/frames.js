@@ -1,6 +1,7 @@
 // Turns one page of content into its deck of frames. Authors fill slots; this file owns the layout.
 //   Core idea → How it works → In code → Watch out · Check        (role-play: Scenario → Artifact → Rubric)
 import { h, icon, pad2, rich } from './ui.js';
+import { paths } from './paths.js';
 import { animBlock } from './blocks/anim.js';
 import { flowBlock, seqBlock, timelineBlock, compareBlock, tableBlock, anatomyBlock } from './blocks/visuals.js';
 import { codeBlock } from './blocks/code.js';
@@ -95,7 +96,7 @@ function soonFrame(t, ctx) {
       h('p', { class: 'f-note' }, 'The tutor already knows this topic and can teach it now. Ask it anything, or open another page.'),
       h('div', { class: 'sc-cta' },
         h('button', { class: 'btn btn-primary btn-lg', type: 'button', onclick: () => ctx.openChat() }, icon('chat', 18), 'Ask the tutor about this'),
-        h('a', { class: 'btn', href: `/c/${t.chapter.id}` }, 'Back to the chapter'))));
+        h('a', { class: 'btn', href: paths.chapter(t.chapter.id) }, 'Back to the chapter'))));
   return { el };
 }
 

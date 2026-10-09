@@ -4,20 +4,24 @@ import { randomUUID } from 'node:crypto';
 
 const rid = (p) => `${p}_${randomUUID().replace(/-/g, '').slice(0, 10)}`;
 const emptyDoc = (topicId) => ({ v: 1, topicId, threads: [] });
-const file = (topicId) => `chats/${topicId}.json`;
 const clip = (s, n) => (s.length > n ? `${s.slice(0, n - 1).trimEnd()}…` : s);
 
 export class Chats {
-  constructor(store, { log } = {}) {
+  /** `prefix` is the book's folder inside the store, e.g. "books/backend-engineer/"; one instance per book. */
+  constructor(store, { log, prefix = '', title = 'Saved chats' } = {}) {
     this.store = store;
     this.log = log;
+    this.prefix = prefix;
+    this.title = title;
     this.index = new Map(); // topicId -> doc (read-only snapshots)
   }
 
+  #file(topicId) { return `${this.prefix}chats/${topicId}.json`; }
+
   /** Load everything into the search index and fix streams that were cut off by a crash/restart. */
   async init() {
-    for (const topicId of await this.store.list('chats')) {
-      const fixed = await this.store.update(file(topicId), (doc) => {
+    for (const topicId of await this.store.list(`${this.prefix}chats`)) {
+      const fixed = await this.store.update(this.#file(topicId), (doc) => {
         let n = 0;
         for (const t of doc.threads) {
           for (const m of t.messages) {
@@ -27,13 +31,13 @@ export class Chats {
         return n;
       }, emptyDoc(topicId));
       if (fixed) this.log?.warn(`marked ${fixed} unfinished answer(s) in ${topicId} as interrupted`);
-      this.index.set(topicId, await this.store.read(file(topicId), emptyDoc(topicId)));
+      this.index.set(topicId, await this.store.read(this.#file(topicId), emptyDoc(topicId)));
     }
   }
 
   async #mutate(topicId, fn) {
     let snapshot;
-    const result = await this.store.update(file(topicId), (doc) => {
+    const result = await this.store.update(this.#file(topicId), (doc) => {
       const r = fn(doc);
       snapshot = doc;
       return r;
@@ -43,7 +47,7 @@ export class Chats {
   }
 
   async get(topicId) {
-    return this.store.read(file(topicId), emptyDoc(topicId));
+    return this.store.read(this.#file(topicId), emptyDoc(topicId));
   }
 
   /** Find or create the thread to talk in. Role-play threads are seeded with a scripted opening. */
@@ -163,6 +167,6 @@ export class Chats {
       if (topicId && tid !== topicId) continue;
       for (const t of doc.threads) if (!threadId || t.id === threadId) emit(tid, t);
     }
-    return `# BackendEngineer — saved chats\n\n*Exported ${new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC*\n\n${parts.join('\n')}`;
+    return `# ${this.title} — saved chats\n\n*Exported ${new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC*\n\n${parts.join('\n')}`;
   }
 }

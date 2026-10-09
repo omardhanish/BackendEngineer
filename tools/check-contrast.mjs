@@ -1,11 +1,12 @@
 // Design-token lint: WCAG contrast + sRGB gamut for every chapter hue, light and dark.
 // Mirrors the formulas in public/css/tokens.css (mixes are approximated in OKLab).   node tools/check-contrast.mjs
-import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { bookSlugs, loadBook } from './lib/books.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const hues = JSON.parse(readFileSync(join(root, 'content/syllabus.json'), 'utf8')).chapters.map((c) => [c.id, c.hue]);
+// every chapter of every book, plus each book's own hue (the cover, the library, the book home)
+const hues = bookSlugs().flatMap((slug) => { const b = loadBook(slug); return [[`${slug}`, b.meta.hue], ...b.syllabus.chapters.map((c) => [`${slug}/${c.id}`, c.hue])]; });
 
 const rad = (d) => (d * Math.PI) / 180;
 const toLab = ([L, C, H]) => [L, C * Math.cos(rad(H)), C * Math.sin(rad(H))];

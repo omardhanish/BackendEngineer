@@ -2,25 +2,25 @@ import express from 'express';
 import { relative, sep } from 'node:path';
 import { makeLogger, hostGuard, securityHeaders, originGuard, RateLimiter, RUNNER_CSP } from './lib/security.js';
 import { Store } from './lib/store.js';
-import { Content } from './lib/content.js';
-import { Chats } from './lib/chats.js';
+import { Library } from './lib/library.js';
+import { migrateLegacyData } from './lib/migrate.js';
 import { createDeepSeek } from './lib/deepseek.js';
 import { bookRoutes } from './routes/book.js';
 import { chatRoutes } from './routes/chat.js';
 import { chatsRoutes } from './routes/chats.js';
 import { progressRoutes, notesRoutes, healthRoutes } from './routes/progress.js';
+import { libraryRoutes } from './routes/library.js';
 
 /** Wire up everything the routes need. Tests pass their own config and a stub fetch. */
 export async function createContext(config, { fetchImpl } = {}) {
   const log = makeLogger({ silent: config.silent });
   const store = new Store(config.dataDir, { log });
   await store.init();
-  const content = await new Content(config, { log }).load();
-  const chats = new Chats(store, { log });
-  await chats.init();
+  await migrateLegacyData({ config, log }); // old single-book data -> data/books/<default>/ (copy, verify, then remove)
+  const library = await new Library(config, { store, log }).load();
   const deepseek = createDeepSeek({ ...config.deepseek, limits: config.limits, fetchImpl });
   return {
-    config, log, store, content, chats, deepseek,
+    config, log, store, library, deepseek,
     limiter: new RateLimiter({ max: config.limits.chatPerMinute }),
     streaming: new Set(), // thread ids that are mid-answer
     controllers: new Set(), // abort controllers of live upstream calls
@@ -52,12 +52,15 @@ export function createApp(ctx) {
   api.use((req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
   api.use(originGuard);
   api.use(express.json({ limit: config.limits.bodyBytes, strict: true }));
-  bookRoutes(api, ctx);
-  chatRoutes(api, ctx);
-  chatsRoutes(api, ctx);
-  progressRoutes(api, ctx);
-  notesRoutes(api, ctx);
+  // the per-book routes are built once and mounted twice (see routes/library.js): /api/books/:book/* and, for the default book, /api/*
+  const bookRouter = express.Router();
+  bookRoutes(bookRouter, ctx);
+  chatRoutes(bookRouter, ctx);
+  chatsRoutes(bookRouter, ctx);
+  progressRoutes(bookRouter, ctx);
+  notesRoutes(bookRouter, ctx);
   healthRoutes(api, ctx);
+  libraryRoutes(api, ctx, bookRouter);
   api.use((req, res) => res.status(404).json({ error: { code: 'not_found', message: 'No such API route.' } }));
   app.use('/api', api);
 

@@ -1,8 +1,9 @@
 // One page of the book: loads the topic, builds its frames, drives the deck, feeds the tutor its context.
 import { h, icon, pad2, applyHue } from '../ui.js';
 import { api } from '../api.js';
-import { state, topicMeta, chapterOf } from '../state.js';
+import { state, topicMeta, chapterOf, rememberHue } from '../state.js';
 import { shell } from '../shell.js';
+import { paths } from '../paths.js';
 import { buildFrames } from '../frames.js';
 import { createDeck } from '../deck.js';
 import { patchProgress } from '../progress.js';
@@ -15,12 +16,13 @@ function skeleton() {
 export async function topicView(id, frameParam, rc) {
   const meta = topicMeta(id);
   if (!meta) {
-    shell.stage.replaceChildren(h('div', { class: 'empty-state' }, h('h1', null, 'No such page'), h('a', { class: 'btn btn-primary', href: '/' }, 'Back to the bookshelf')));
+    shell.stage.replaceChildren(h('div', { class: 'empty-state' }, h('h1', null, 'No such page'), h('a', { class: 'btn btn-primary', href: paths.book() }, 'Back to the book')));
     return {};
   }
   const ch = chapterOf(meta.chapter);
   applyHue(ch.hue);
-  shell.setCrumbs([{ label: 'Bookshelf', href: '/' }, { label: `${pad2(ch.n)} · ${ch.title}`, href: `/c/${ch.id}` }, { label: meta.title }]);
+  rememberHue(`${state.slug}:${ch.id}`, ch.hue);
+  shell.setCrumbs([{ label: state.book.book?.title || state.slug, href: paths.book() }, { label: `${pad2(ch.n)} · ${ch.title}`, href: paths.chapter(ch.id) }, { label: meta.title }]);
   shell.stage.replaceChildren(skeleton());
 
   let topic;

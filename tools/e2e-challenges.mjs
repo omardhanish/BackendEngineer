@@ -4,7 +4,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import puppeteer from 'puppeteer-core';
 
-// Browser test of the challenge widget (content/c01/c01-t07.json) on its own throwaway server, so your saved data is untouched.
+// Browser test of the challenge widget (content/books/backend-engineer/c01/c01-t07.json) on its own throwaway server, so your saved data is untouched.
 //   npm run e2e:challenges
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 rmSync(join(root, '.tmp', 'chal-data'), { recursive: true, force: true });
@@ -21,7 +21,7 @@ try {
   const errors = [];
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
   page.on('pageerror', (e) => errors.push(e.message));
-  await page.goto(`${BASE}/read/c01-t07/4`, { waitUntil: 'networkidle0' });
+  await page.goto(`${BASE}/b/backend-engineer/read/c01-t07/4`, { waitUntil: 'networkidle0' });
   await page.waitForSelector('.frame-challenges .ch-tab');
   ok('5 challenge tabs', (await page.$$('.ch-tab')).length === 5);
   ok('counter starts at 0 of 5', (await page.$eval('.ch-count', (e) => e.textContent)) === '0 of 5 solved');

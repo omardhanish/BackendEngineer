@@ -1,31 +1,32 @@
 // Content validator. Fails the build on: schema errors, "not short and crisp" word caps, broken cross-references
-// (animation ids, code files, walk lines), JS that does not parse, APIs missing from Node 20, secrets, stale captures.
-//   npm run validate                      every written page + coverage report
-//   npm run validate -- c02-t09 c04-t08   only these pages
-//   npm run validate -- --strict          also fail if any of the 197 pages is still unwritten
+// (animation ids, code files, walk lines), code that does not parse, APIs a book bans, secrets, stale captures,
+// and a malformed book.json / syllabus.json. It works on every book in content/books/ (or the ones named with --book).
+//   npm run validate                              every written page of every book + coverage report
+//   npm run validate -- --book backend-engineer   one book
+//   npm run validate -- c02-t09 c04-t08           only these pages (add --book when several books share the id)
+//   npm run validate -- --strict                  also fail if any page of a book is still unwritten
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { existsSync, readFileSync } from 'node:fs';
+import { extname, join, relative } from 'node:path';
 import Ajv from 'ajv';
 import { checkScrubber, checkTopology } from './lib/hero-checks.mjs';
 import { checkChallenges } from './lib/challenges.mjs';
+import { CONTENT, PAGE_ID_RE, ROOT, parseArgs, pickBooks, writtenPages } from './lib/books.mjs';
+import { runnableExts, runnerFor } from './lib/runners.mjs';
+import { LANGUAGES, LANGUAGE_ID } from '../public/js/languages.js';
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const content = join(root, 'content');
-const strict = process.argv.includes('--strict');
-const only = process.argv.slice(2).filter((a) => /^c\d\d-/.test(a));
+const args = parseArgs(process.argv.slice(2));
+const strict = args.rest.includes('--strict');
+const only = args.ids;
 
-const syllabus = JSON.parse(readFileSync(join(content, 'syllabus.json'), 'utf8'));
-const meta = new Map(syllabus.topics.map((t) => [t.id, t]));
 const ajv = new Ajv({ allErrors: true, strict: false });
-const validateShape = ajv.compile(JSON.parse(readFileSync(join(content, '_schema/topic.schema.json'), 'utf8')));
+const validateShape = ajv.compile(JSON.parse(readFileSync(join(CONTENT, '_schema/topic.schema.json'), 'utf8')));
 
 const words = (s) => String(s ?? '').replace(/`/g, '').trim().split(/\s+/).filter(Boolean).length;
 const SECRETS = [/sk-[A-Za-z0-9_-]{16,}/, /gh[pousr]_[A-Za-z0-9]{20,}/, /github_pat_[A-Za-z0-9_]{20,}/, /AKIA[0-9A-Z]{16}/, /-----BEGIN [A-Z ]*PRIVATE KEY-----/];
-const NODE20_MISSING = /\b(Object\.groupBy|Map\.groupBy|Promise\.withResolvers|Array\.fromAsync|fs\.glob|new WebSocket)\b/;
-const LONG_LANG = new Set(['yaml', 'yml', 'sql', 'docker', 'dockerfile']);
+const escapeRe = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const bannedRegex = (list) => (list.length ? new RegExp(`\\b(${list.map(escapeRe).join('|')})\\b`) : null);
 const ENGINES = new Set(['lanes', 'pipeline', 'memory', 'topology', 'scrubber']);
 const BUILT_ENGINES = new Set(['lanes', 'pipeline', 'memory', 'topology', 'scrubber']);
 
@@ -114,10 +115,13 @@ function checkHero(h, errs) {
   }
 }
 
-function validateTopic(id, file, t) {
+function validateTopic(book, id, file, t) {
   const errs = [];
   const warns = [];
-  const m = meta.get(id);
+  const m = book.topics.get(id);
+  const banned = bannedRegex(book.meta.runtime.bannedApis);
+  const profile = book.meta.profile;
+  const rel = (p) => relative(ROOT, p);
   if (!validateShape(t)) for (const e of validateShape.errors) errs.push(`schema: ${e.instancePath || '/'} ${e.message}`);
   capWords(id, 'title', t.title, 6, errs);
 
@@ -127,14 +131,15 @@ function validateTopic(id, file, t) {
     if (t.points && (t.points.length < 3 || t.points.length > 4)) errs.push(`points: 3 or 4 required, found ${t.points.length}`);
     if (!t.hero && !t.code?.length && !t.challenges?.items?.length) errs.push('needs a hero visual, a code example or challenges');
     if (m.kind === 'challenge' && !t.challenges?.items?.length) errs.push('a challenge page needs a "challenges" set');
+    if (t.challenges?.items?.length && !['js', 'mixed'].includes(profile)) errs.push(`challenges run JavaScript in the browser; a ${profile} book cannot have them (use a normal page whose quiz asks the learner to predict or fix code)`);
     if (m.depth >= 2 && !t.quiz) errs.push('depth 2+ pages need a quiz');
     if (m.depth >= 2 && !(t.pitfalls?.length >= 2)) errs.push('depth 2+ pages need 2 to 3 pitfalls');
     if (m.depth === 3 && !t.analogy) warns.push('depth 3 pages should have an analogy');
   } else {
     if (!t.scenario) errs.push('role-play needs a "scenario"');
-    if (!existsSync(join(content, 'roleplay', `${id}.key.json`))) errs.push(`missing content/roleplay/${id}.key.json`);
+    if (!existsSync(join(book.dir, 'roleplay', `${id}.key.json`))) errs.push(`missing ${rel(join(book.dir, 'roleplay', `${id}.key.json`))}`);
     else {
-      const key = JSON.parse(readFileSync(join(content, 'roleplay', `${id}.key.json`), 'utf8'));
+      const key = JSON.parse(readFileSync(join(book.dir, 'roleplay', `${id}.key.json`), 'utf8'));
       for (const k of ['persona', 'setup', 'opening', 'hidden', 'flaws']) if (!key[k]) errs.push(`role-play key is missing "${k}"`);
     }
     if (!t.code?.length) errs.push('role-play needs an artifact in "code"');
@@ -160,33 +165,43 @@ function validateTopic(id, file, t) {
   if (t.hero) checkHero(t.hero, errs);
 
   // code
-  const dir = join(content, 'code', id);
+  const dir = join(book.dir, 'code', id);
+  if (t.challenges && !['js', 'mixed'].includes(profile)) errs.push('challenges run in the browser, so they are JavaScript-only (use a "js" or "mixed" book)');
   for (const sn of t.code || []) {
     const path = join(dir, sn.file);
-    if (!existsSync(path)) { errs.push(`code file missing: content/code/${id}/${sn.file}`); continue; }
+    if (!existsSync(path)) { errs.push(`code file missing: ${rel(path)}`); continue; }
+    const langId = LANGUAGE_ID(sn.lang);
+    if (!langId) errs.push(`${sn.file}: unknown lang "${sn.lang}" (known: ${Object.keys(LANGUAGES).join(', ')})`);
     const src = readFileSync(path, 'utf8');
     const lines = src.replace(/\n$/, '').split('\n');
-    const cap = LONG_LANG.has(sn.lang) ? 18 : 14;
+    const cap = LANGUAGES[langId]?.long ? 18 : 14;
     if (lines.length > cap && !sn.walk && !(isRole && sn.run === 'static')) errs.push(`${sn.file}: ${lines.length} lines (max ${cap} without a walkthrough)`);
     if (lines.some((l) => l.length > 80)) errs.push(`${sn.file}: a line is longer than 80 columns`);
     const isShell = /\.sh$/.test(sn.file);
-    if (sn.run !== 'static' && !isShell && NODE20_MISSING.test(src)) errs.push(`${sn.file}: uses an API missing from Node 20 (${NODE20_MISSING.exec(src)[1]})`);
-    if (sn.run !== 'static' && !/\.(mjs|cjs)$/.test(sn.file) && !(isShell && sn.run === 'captured')) errs.push(`${sn.file}: runnable files must end in .mjs or .cjs (a shell transcript .sh must be run: "captured")`);
+    const runner = runnerFor(sn.file);
+    const okExts = runnableExts(profile);
+    if (sn.run !== 'static' && !isShell && banned && banned.test(src)) errs.push(`${sn.file}: uses an API this book bans (${banned.exec(src)[1]}${book.meta.runtime.banHint ? `: ${book.meta.runtime.banHint}` : ''})`);
+    if (sn.run !== 'static' && !(isShell && sn.run === 'captured') && !okExts.includes(extname(sn.file))) errs.push(`${sn.file}: a runnable file in a "${profile}" book must end in ${okExts.join(' or ') || '(nothing: use static snippets)'} (a shell transcript .sh must be run: "captured")`);
+    if (sn.run === 'browser' && !/\.(mjs|cjs)$/.test(sn.file)) errs.push(`${sn.file}: only JavaScript can run in the browser; use run: "captured"`);
+    if (runner && sn.run !== 'static' && !runner.needs().ok) errs.push(`${sn.file}: ${runner.label} is not installed on this machine, so this snippet cannot be run here; use run: "static" with illustrative: true`);
     if (isShell && sn.run === 'captured') {
       const r = spawnSync('bash', ['-n', path], { encoding: 'utf8' });
       if (r.status !== 0) errs.push(`${sn.file}: shell syntax error: ${r.stderr.split('\n')[0]}`);
       if (/&&\s*cd\s|;\s*cd\s/.test(src)) errs.push(`${sn.file}: put \`cd\` on its own line (a transcript only carries a standalone cd to the next line)`);
     }
     if (sn.needs && (sn.run !== 'captured' || !Array.isArray(sn.needs) || sn.needs.some((n) => !['postgres', 'mongo'].includes(n)))) errs.push(`${sn.file}: needs must be a list of "postgres" and/or "mongo", and the snippet must be run: "captured"`);
-    if (/\.(mjs|cjs|js)$/.test(sn.file)) {
+    if (/\.js$/.test(sn.file)) {
       const r = spawnSync(process.execPath, ['--check', path], { encoding: 'utf8' });
       if (r.status !== 0) errs.push(`${sn.file}: does not parse: ${r.stderr.split('\n').find((l) => /Error/.test(l)) || r.stderr.slice(0, 120)}`);
+    } else if (runner && runner.needs().ok) {
+      const r = runner.check(path);
+      if (r.status !== 0) errs.push(`${sn.file}: does not parse: ${r.stderr.split('\n').find((l) => /rror/.test(l)) || r.stderr.slice(0, 120)}`);
     }
     if (sn.run === 'static' && !sn.illustrative && !isRole && /\.(mjs|cjs)$/.test(sn.file)) warns.push(`${sn.file}: JavaScript marked static; make it "browser" or "captured" so it is verified`);
     if (sn.run === 'browser' || sn.run === 'captured') {
       const out = `${path}.out.json`;
-      if (!existsSync(out)) errs.push(`${sn.file}: not captured yet (run: npm run capture -- ${id})`);
-      else if (JSON.parse(readFileSync(out, 'utf8')).hash !== createHash('sha256').update(src + (sn.needs?.length ? `\0${JSON.stringify(sn.needs)}` : '')).digest('hex').slice(0, 16)) errs.push(`${sn.file}: capture is stale (run: npm run capture -- ${id})`);
+      if (!existsSync(out)) errs.push(`${sn.file}: not captured yet (run: npm run capture -- --book ${book.slug} ${id})`);
+      else if (JSON.parse(readFileSync(out, 'utf8')).hash !== createHash('sha256').update(src + (sn.needs?.length ? `\0${JSON.stringify(sn.needs)}` : '')).digest('hex').slice(0, 16)) errs.push(`${sn.file}: capture is stale (run: npm run capture -- --book ${book.slug} ${id})`);
     }
     for (const w of sn.walk || []) {
       capWords(id, 'walk text', w.text, 18, errs);
@@ -207,31 +222,67 @@ function validateTopic(id, file, t) {
   return errs.length === 0;
 }
 
+// ------------------------------------------------------------------ the book itself: syllabus.json shape
+function checkSyllabus(book) {
+  const errs = [];
+  const { chapters, topics } = book.syllabus;
+  if (!Array.isArray(chapters) || !chapters.length) errs.push('syllabus.json has no chapters');
+  if (!Array.isArray(topics) || !topics.length) errs.push('syllabus.json has no topics');
+  const chIds = new Set();
+  for (const c of chapters || []) {
+    if (!/^c\d\d$/.test(c.id || '')) errs.push(`chapter id "${c.id}" must look like c01`);
+    if (chIds.has(c.id)) errs.push(`chapter id "${c.id}" is repeated`);
+    chIds.add(c.id);
+    if (typeof c.title !== 'string' || !c.title.trim()) errs.push(`chapter ${c.id} needs a title`);
+    if (c.hue !== undefined && !(Number.isInteger(c.hue) && c.hue >= 0 && c.hue < 360)) errs.push(`chapter ${c.id}: hue must be an integer 0-359`);
+  }
+  const seen = new Set();
+  const listed = new Set();
+  for (const c of chapters || []) for (const id of c.topics || []) { if (listed.has(id)) errs.push(`topic ${id} is listed in two chapters`); listed.add(id); }
+  for (const t of topics || []) {
+    if (!PAGE_ID_RE.test(t.id || '') || !String(t.id).startsWith(`${t.chapter}-`)) errs.push(`topic id "${t.id}" must look like c01-t01 and start with its chapter id`);
+    if (seen.has(t.id)) errs.push(`topic id "${t.id}" is repeated`);
+    seen.add(t.id);
+    if (!chIds.has(t.chapter)) errs.push(`topic ${t.id} points at unknown chapter "${t.chapter}"`);
+    if (!['lecture', 'challenge', 'roleplay', 'bonus'].includes(t.kind)) errs.push(`topic ${t.id}: kind must be lecture, challenge, roleplay or bonus`);
+    if (t.kind === 'challenge' && !['js', 'mixed'].includes(book.meta.profile)) errs.push(`topic ${t.id}: challenge pages run JavaScript in the browser, so a ${book.meta.profile} book cannot have them (make it a lecture)`);
+    if (![1, 2, 3].includes(t.depth)) errs.push(`topic ${t.id}: depth must be 1, 2 or 3`);
+    if (typeof t.source !== 'string' || !t.source.trim()) errs.push(`topic ${t.id} needs a source title`);
+    if (!listed.has(t.id)) errs.push(`topic ${t.id} is not listed in its chapter's topics`);
+  }
+  for (const id of listed) if (!seen.has(id)) errs.push(`chapter lists "${id}" but there is no such topic`);
+  return errs;
+}
+
 // ------------------------------------------------------------------ run
-const written = new Map();
-for (const ch of syllabus.chapters) {
-  const dir = join(content, ch.id);
-  if (!existsSync(dir)) continue;
-  for (const f of readdirSync(dir).filter((n) => n.endsWith('.json'))) written.set(f.slice(0, -5), join(dir, f));
-}
-
-console.log(`Validating ${only.length ? only.join(', ') : `${written.size} written page(s)`}…`);
+let books;
+try { books = pickBooks(args.books); } catch (e) { console.error(`✖ ${e.message}`); process.exit(1); }
+if (!books.length) { console.error('✖ no books found in content/books/'); process.exit(1); }
 let ok = 0;
-for (const [id, file] of [...written].sort()) {
-  if (only.length && !only.includes(id)) continue;
-  if (!meta.has(id)) { report(id, 'error', 'not in content/syllabus.json'); continue; }
-  let t;
-  try { t = JSON.parse(readFileSync(file, 'utf8')); } catch (e) { report(id, 'error', `invalid JSON: ${e.message}`); continue; }
-  if (validateTopic(id, file, t)) ok++;
+let checked = 0;
+for (const book of books) {
+  console.log(`\n▸ ${book.meta.title} (${book.slug})`);
+  for (const e of checkSyllabus(book)) report(book.slug, 'error', e);
+  const written = writtenPages(book);
+  const todo = only.length ? only.filter((id) => book.topics.has(id) || written.has(id)) : [...written.keys()].sort();
+  if (only.length && !todo.length) { if (books.length === 1) for (const id of only) report(id, 'error', 'no such page'); continue; }
+  console.log(`Validating ${only.length ? todo.join(', ') : `${written.size} written page(s)`}…`);
+  for (const id of todo) {
+    if (!written.has(id)) { report(id, 'error', 'no such page file'); continue; }
+    checked++;
+    if (!book.topics.has(id)) { report(id, 'error', `not in ${book.slug}/syllabus.json`); continue; }
+    let t;
+    try { t = JSON.parse(readFileSync(written.get(id), 'utf8')); } catch (e) { report(id, 'error', `invalid JSON: ${e.message}`); continue; }
+    if (validateTopic(book, id, written.get(id), t)) ok++;
+  }
+  if (!only.length) {
+    const missing = book.syllabus.topics.filter((t) => !written.has(t.id));
+    const orphans = [...written.keys()].filter((id) => !book.topics.has(id));
+    console.log(`\nCoverage: ${written.size}/${book.syllabus.topics.length} pages written` + (missing.length ? ` (${missing.length} to go)` : ''));
+    if (strict && missing.length) report('coverage', 'error', `${missing.length} pages are not written: ${missing.slice(0, 6).map((t) => t.id).join(', ')}…`);
+    for (const id of orphans) report(id, 'error', 'page file has no syllabus entry');
+  }
 }
-for (const id of only) if (!written.has(id)) report(id, 'error', 'no such page file');
-
-if (!only.length) {
-  const missing = syllabus.topics.filter((t) => !written.has(t.id));
-  const orphans = [...written.keys()].filter((id) => !meta.has(id));
-  console.log(`\nCoverage: ${written.size}/${syllabus.topics.length} pages written` + (missing.length ? ` (${missing.length} to go)` : ''));
-  if (strict && missing.length) report('coverage', 'error', `${missing.length} pages are not written: ${missing.slice(0, 6).map((t) => t.id).join(', ')}…`);
-  for (const id of orphans) report(id, 'error', 'page file has no syllabus entry');
-}
+if (only.length && !checked && !errors) { console.error(`✖ none of ${only.join(', ')} exists in ${books.map((b) => b.slug).join(', ')}`); process.exit(1); }
 console.log(`\n${errors ? '✖' : '✔'} ${ok} page(s) clean · ${errors} error(s) · ${warnings} warning(s)`);
 process.exit(errors ? 1 : 0);

@@ -3,12 +3,13 @@ import { h, icon, applyHue, relTime, debounce, pad2 } from '../ui.js';
 import { api } from '../api.js';
 import { state, topicMeta, chapterOf } from '../state.js';
 import { shell } from '../shell.js';
+import { paths } from '../paths.js';
 import { renderMarkdown } from '../markdown.js';
 import { copyText, toast } from '../ui.js';
 
 export function historyView(query) {
-  applyHue(250);
-  shell.setCrumbs([{ label: 'Bookshelf', href: '/' }, { label: 'Saved chats' }]);
+  applyHue(state.book.book?.hue ?? 250);
+  shell.setCrumbs([{ label: state.book.book?.title || state.slug, href: paths.book() }, { label: 'Saved chats' }]);
   let sel = { topic: query.get('topic') || '', thread: query.get('thread') || '' };
   let rows = [];
 
@@ -30,7 +31,7 @@ export function historyView(query) {
     list.replaceChildren(...(rows.length ? rows.map((r) => {
       const meta = topicMeta(r.topicId);
       const ch = meta && chapterOf(meta.chapter);
-      return h('li', null, h('button', { type: 'button', class: `hist-item${r.threadId === sel.thread ? ' is-active' : ''}`, style: { '--h': ch?.hue ?? 250 }, onclick: () => { sel = { topic: r.topicId, thread: r.threadId }; history.replaceState({}, '', `/chats?topic=${r.topicId}&thread=${r.threadId}`); paintList(); paintPane(); } },
+      return h('li', null, h('button', { type: 'button', class: `hist-item${r.threadId === sel.thread ? ' is-active' : ''}`, style: { '--h': ch?.hue ?? 250 }, onclick: () => { sel = { topic: r.topicId, thread: r.threadId }; history.replaceState({}, '', paths.chats(`topic=${r.topicId}&thread=${r.threadId}`)); paintList(); paintPane(); } },
         h('span', { class: 'hist-title' }, r.title),
         h('span', { class: 'hist-where' }, meta ? `${pad2(ch.n)} · ${meta.title}` : r.topicId),
         r.snippet ? h('span', { class: 'hist-snip' }, r.snippet) : null,
@@ -62,9 +63,9 @@ export function historyView(query) {
       h('header', { class: 'hist-head' },
         h('div', null, h('h2', null, t.title), h('p', { class: 'muted' }, meta ? meta.title : sel.topic, ' · ', new Date(t.createdAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }))),
         h('div', { class: 'hist-actions' },
-          h('a', { class: 'btn', href: `/read/${sel.topic}` }, 'Open page', icon('arrow-right', 15)),
-          h('a', { class: 'btn', href: `/api/chats/${sel.topic}/export?thread=${t.id}`, download: '' }, icon('download', 15), 'Export'),
-          h('a', { class: 'btn btn-quiet', href: '/api/chats/export', download: '' }, 'Export all'))),
+          h('a', { class: 'btn', href: paths.read(sel.topic) }, 'Open page', icon('arrow-right', 15)),
+          h('a', { class: 'btn', href: `${paths.api()}/chats/${sel.topic}/export?thread=${t.id}`, download: '' }, icon('download', 15), 'Export'),
+          h('a', { class: 'btn btn-quiet', href: `${paths.api()}/chats/export`, download: '' }, 'Export all'))),
       body);
   }
 

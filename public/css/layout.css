@@ -108,6 +108,7 @@ a.crumb:hover { color: var(--ink); }
   .app[data-toc="open"] ~ .scrim { display: block; }
   .app[data-toc="open"] .toc-full { display: flex; position: fixed; inset: 0 auto 0 0; width: min(340px, 90vw); z-index: 60; background: var(--surface); box-shadow: var(--sh-3); animation: slide-left var(--d3) var(--ease); }
   .app[data-toc="open"] .toc-close { display: inline-grid; }
+  .app[data-toc="open"] .toc { z-index: 60; } /* .toc is its own stacking context: without this the sheet sits under the scrim (z 45) and its links cannot be clicked */
 }
 
 @media (max-width: 1283.98px) {

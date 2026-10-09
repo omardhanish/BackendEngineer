@@ -5,14 +5,24 @@ import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { build } from 'esbuild';
+import { LANGUAGES } from '../public/js/languages.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const nm = (p) => join(root, 'node_modules', p);
 const pub = (p) => join(root, 'public', p);
 for (const d of ['vendor', 'fonts', 'sandbox', 'css']) mkdirSync(pub(d), { recursive: true });
 
-// 1) Prism — core + the languages this book teaches. Manual mode: it never touches the DOM itself.
-const langs = ['core', 'clike', 'markup', 'css', 'javascript', 'typescript', 'json', 'bash', 'sql', 'yaml', 'docker', 'diff', 'http'];
+// 1) Prism — core + every language in public/js/languages.js (the one list), each after the grammars it extends.
+//    Manual mode: it never touches the DOM itself.
+const deps = JSON.parse(readFileSync(nm('prismjs/components.json'), 'utf8')).languages;
+const langs = ['core'];
+const add = (id) => {
+  if (langs.includes(id)) return;
+  if (!deps[id]) throw new Error(`languages.js asks for the Prism grammar "${id}", which this Prism version does not have`);
+  for (const need of [].concat(deps[id].require || [])) add(need);
+  langs.push(id);
+};
+for (const l of Object.values(LANGUAGES)) if (l.prism) add(l.prism);
 const prism =
   'window.Prism=window.Prism||{};window.Prism.manual=true;window.Prism.disableWorkerMessageHandler=true;\n' +
   langs.map((l) => readFileSync(nm(`prismjs/components/prism-${l}.min.js`), 'utf8')).join('\n');

@@ -31,10 +31,10 @@ try {
   console.log(`streamed (${done.usage?.total_tokens ?? '?'} tokens, status ${done.status}):\n  ${answer.trim()}`);
   if (done.status !== 'complete' || answer.length < 20) throw new Error('unexpected answer');
   await sleep(300);
-  const file = join(DATA, 'chats', 'c02-t09.json');
+  const file = join(DATA, 'books', 'backend-engineer', 'chats', 'c02-t09.json');
   if (!existsSync(file)) throw new Error('chat was not saved');
   const saved = JSON.parse(readFileSync(file, 'utf8'));
-  console.log(`saved: ${saved.threads[0].messages.length} messages in data/chats/c02-t09.json (smoke copy)`);
+  console.log(`saved: ${saved.threads[0].messages.length} messages in data/books/backend-engineer/chats/c02-t09.json (smoke copy)`);
   console.log('\n✔ smoke test passed');
   exit = 0;
 } catch (e) {
