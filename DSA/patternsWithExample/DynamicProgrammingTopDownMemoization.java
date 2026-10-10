@@ -8,6 +8,10 @@ package patternsWithExample;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.*;
+
+// Playlist problems (Nikhil Lohia - "LeetCode Solutions" playlist; #N = position in playlist, (N) = LeetCode number):
+// ⚠️ The videos for #132 Unique Paths (62), #136 Word Break (139) and #146 Maximal Square (221) explain memoization, but their code files are bottom-up
 
 public class DynamicProgrammingTopDownMemoization {
 
@@ -78,4 +82,101 @@ public class DynamicProgrammingTopDownMemoization {
         return ans;
     }
 
+    // ===== Playlist solutions (copied from DSA/java/leetcode) =====
+
+    // --- #132 Unique Paths (62) | source: DSA/java/leetcode/medium/UniquePaths.java ---
+    static class UniquePaths {
+
+      int uniquePaths(int m, int n) {
+        int[][] grid = new int[m][n];
+
+        // Iterate over the grid
+        for (int i = 0; i < m; i++)
+
+          for (int j = 0; j < n; j++) {
+
+            // If we are at the first row or first column,
+            // there is only one way to reach that cell
+            if (i == 0 || j == 0)
+              grid[i][j] = 1;
+            else
+              // Memoize the number of ways to reach that cell
+              grid[i][j] = grid[i][j - 1] + grid[i - 1][j];
+          }
+
+        // Return the number of ways to reach the last cell
+        return grid[m - 1][n - 1];
+      }
+
+    }
+
+    // --- #136 Word Break (139) | source: DSA/java/leetcode/medium/WordBreak.java ---
+    static class WordBreak {
+
+      boolean wordBreak(String s, List<String> wordDict) {
+
+        // Convert the dictionary to a set for O(1) lookups
+        Set<String> wordSet = new HashSet<>(wordDict);
+
+        // Find the maximum word length in the dictionary
+        int maxLen = 0;
+        for (String word : wordDict) {
+          maxLen = Math.max(maxLen, word.length());
+        }
+
+        int n = s.length();
+        // dp[i] states if the substring s[0..i] can be segmented
+        boolean[] dp = new boolean[n + 1];
+
+        // Base case: empty string is valid
+        dp[0] = true;
+
+        for (int i = 1; i <= n; i++)
+
+          // Check prefixes of length up to maxLen
+          for (int j = i - 1; j >= Math.max(0, i - maxLen); j--)
+            if (dp[j] && wordSet.contains(s.substring(j, i))) {
+              dp[i] = true;
+              break; // No need to check further prefixes
+            }
+
+        return dp[n];
+      }
+
+    }
+
+    // --- #146 Maximal Square (221) | source: DSA/java/leetcode/medium/MaximalSquare.java ---
+    static class MaximalSquare {
+
+      int maximalSquare(char[][] matrix) {
+
+        int rows = matrix.length;
+        int cols = matrix[0].length;
+        int[][] dp = new int[rows][cols];
+        int maxSide = 0;
+
+        // Fill the dp table
+        for (int i = 0; i < rows; i++) {
+          for (int j = 0; j < cols; j++) {
+            if (matrix[i][j] == '1') {
+
+              // Special handling for the first row and first column
+              if (i == 0 || j == 0)
+                dp[i][j] = 1;
+              else
+                // For others, dp[i][j] is the minimum of the three neighbors
+                dp[i][j] = 1 +
+                    Math.min(Math.min(dp[i-1][j], dp[i][j-1]), dp[i-1][j-1]);
+
+              maxSide = Math.max(maxSide, dp[i][j]);
+            }
+          }
+        }
+
+        // Return the area of the largest square
+        return maxSide * maxSide;
+      }
+
+    }
+    // ===== End of playlist solutions =====
 }

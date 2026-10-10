@@ -7,6 +7,9 @@ package patternsWithExample;
 
 import java.util.Arrays;
 
+// Playlist problems (Nikhil Lohia - "LeetCode Solutions" playlist; #N = position in playlist, (N) = LeetCode number):
+// #13 First and Last Position (34), the `findRightBound` part
+
 public class BinarySearchDuplicateElementsRightMostInsertionPoint {
 
     // Example: [1, 2, 2, 2, 3], target 2 -> right-most insertion point = 4 (just after the last 2)
@@ -35,4 +38,59 @@ public class BinarySearchDuplicateElementsRightMostInsertionPoint {
         return left;
     }
 
+    // ===== Playlist solutions (copied from DSA/java/leetcode) =====
+
+    // --- #13 First and Last Position (34), the `findRightBound` part | source: DSA/java/leetcode/medium/FirstAndLastPositionOfElementInSortedArray.java ---
+    static class FirstAndLastPositionOfElementInSortedArray {
+
+      public int[] searchRange(int[] nums, int target) {
+
+        int left = findLeftBound(nums, target);
+        int right = findRightBound(nums, target);
+
+        return new int[]{left, right};
+      }
+
+      private int findLeftBound(int[] nums, int target) {
+        int index = -1, low = 0, high = nums.length - 1;
+
+        // Standard binary search
+        while (low <= high) {
+          int mid = low + (high - low) / 2;
+
+          if (nums[mid] == target) {
+            index = mid;
+            high = mid - 1; // Look in the left sub-array
+          }
+          else if (nums[mid] < target)
+            low = mid + 1;
+          else
+            high = mid - 1;
+        }
+
+        return index;
+      }
+
+      private int findRightBound(int[] nums, int target) {
+        int index = -1, low = 0, high = nums.length - 1;
+
+        // Standard binary search
+        while (low <= high) {
+          int mid = low + (high - low) / 2;
+
+          if (nums[mid] == target) {
+            index = mid;
+            low = mid + 1; // Look in the right sub-array
+          }
+          else if (nums[mid] < target)
+            low = mid + 1;
+          else
+            high = mid - 1;
+        }
+
+        return index;
+      }
+
+    }
+    // ===== End of playlist solutions =====
 }

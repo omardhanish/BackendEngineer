@@ -8,6 +8,9 @@ package patternsWithExample;
 import java.util.HashMap;
 import java.util.Map;
 
+// Playlist problems (Nikhil Lohia - "LeetCode Solutions" playlist; #N = position in playlist, (N) = LeetCode number):
+// ❌ None in the playlist
+
 public class BuildATrie {
 
     // Example: build a trie from ["cat", "car", "dog"], then look words up.

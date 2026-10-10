@@ -5,6 +5,9 @@ package patternsWithExample;
 // https://leetcode.com/explore/interview/card/cheatsheets/720/resources/4724/
 // https://leetcode.com/explore/interview/card/cheatsheets/720/resources/4725/
 
+// Playlist problems (Nikhil Lohia - "LeetCode Solutions" playlist; #N = position in playlist, (N) = LeetCode number):
+// ❌ None in the playlist
+
 public class BinarySearchForGreedyProblemsLookingForMaximum {
 
     // Example: Cut Ribbons

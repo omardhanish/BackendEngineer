@@ -9,6 +9,9 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.Stack;
 
+// Playlist problems (Nikhil Lohia - "LeetCode Solutions" playlist; #N = position in playlist, (N) = LeetCode number):
+// ❌ None in the playlist
+
 public class GraphDFSIterative {
 
     // Example: count nodes reachable from node 0 (adjacency list)
