@@ -1,4 +1,4 @@
-package DSA.problems.SlidingWindowProblems;
+package problems.SlidingWindowProblems;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -34,13 +34,13 @@ public class slidingWindowProblems {
         "def" → 1 vowel (e)
         */
 
+        System.out.println(functionae("abciiidef", 3)); // 3
 
     }
 
 
     public static int functionae(String str, int k) {
-        int left = 0;
-        String ans = "", curr = "";
+        int left = 0, ans = 0, curr = 0; // curr = number of vowels in the window
 
         Set<Character> set = new HashSet<>();
         set.add('a');
@@ -48,15 +48,19 @@ public class slidingWindowProblems {
         set.add('i');
         set.add('o');
         set.add('u');
-    
+
         for (int right = 0; right < str.length(); right++) {
-            
-            //add current as thw window builds 
-            //curr = curr + str.charAt(right);
-    
-            // if window exeeds minus l from the window 
-            while (curr.equals()) {
-                curr = curr - str.charAt(left);
+
+            //add current as thw window builds
+            if (set.contains(str.charAt(right))) {
+                curr++;
+            }
+
+            // if window exeeds minus l from the window
+            while (right - left + 1 > k) {
+                if (set.contains(str.charAt(left))) {
+                    curr--;
+                }
                 left++;
             }
     

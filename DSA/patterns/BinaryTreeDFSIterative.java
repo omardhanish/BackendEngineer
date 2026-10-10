@@ -14,6 +14,9 @@ public class BinaryTreeDFSIterative {
     }
 
     public int dfs(TreeNode root) {
+        if (root == null) {
+            return 0;
+        }
         Stack<TreeNode> stack = new Stack<>();
         stack.push(root);
         int ans = 0;

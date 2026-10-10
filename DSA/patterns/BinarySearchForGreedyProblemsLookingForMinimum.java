@@ -9,7 +9,7 @@ public class BinarySearchForGreedyProblemsLookingForMinimum {
 
     // Replace with the real bounds of the answer space for your problem
     private static final int MINIMUM_POSSIBLE_ANSWER = 0;
-    private static final int MAXIMUM_POSSIBLE_ANSWER = Integer.MAX_VALUE;
+    private static final int MAXIMUM_POSSIBLE_ANSWER = Integer.MAX_VALUE - 1; // stay below MAX_VALUE so mid + 1 can't overflow
 
     public static void main(String[] args) {
 

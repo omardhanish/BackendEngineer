@@ -13,6 +13,9 @@ public class BuildAprefixSum {
 
     public int[] fn(int[] arr) {
         int[] prefix = new int[arr.length];
+        if (arr.length == 0) {
+            return prefix;
+        }
         prefix[0] = arr[0];
     
         for (int i = 1; i < arr.length; i++) {

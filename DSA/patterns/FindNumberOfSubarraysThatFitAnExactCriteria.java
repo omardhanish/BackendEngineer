@@ -20,7 +20,7 @@ public class FindNumberOfSubarraysThatFitAnExactCriteria {
         int ans = 0, curr = 0;
     
         for (int num: arr) {
-            // do logic to change curr
+            curr += num; // do logic to change curr
             ans += counts.getOrDefault(curr - k, 0);
             counts.put(curr, counts.getOrDefault(curr, 0) + 1);
         }
