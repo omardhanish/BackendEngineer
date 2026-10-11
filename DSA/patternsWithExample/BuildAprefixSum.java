@@ -8,7 +8,11 @@ package patternsWithExample;
 import java.util.Arrays;
 
 // Playlist problems (Nikhil Lohia - "LeetCode Solutions" playlist; #N = position in playlist, (N) = LeetCode number):
-// #128 Find Pivot Index (724), #151 Range Sum Query 2D (304), #42 Product of Array Except Self (238), #131 Left and Right Sum Differences (2574), #154 Trapping Rain Water (42)
+// #128 Find Pivot Index (724),
+//  #151 Range Sum Query 2D (304),
+//  #42 Product of Array Except Self (238),
+//  #131 Left and Right Sum Differences (2574),
+//  #154 Trapping Rain Water (42)
 
 public class BuildAprefixSum {
 
