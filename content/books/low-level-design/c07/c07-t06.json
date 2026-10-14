@@ -1,0 +1,540 @@
+{
+  "title": "Flyweight pattern",
+  "idea": "The Flyweight pattern shares one immutable object for the state many items have in common, and passes the state that differs per item in from outside.",
+  "points": [
+    "Intrinsic state is shared and immutable; extrinsic state, like position, stays with each item.",
+    "A factory caches flyweights by key, so equal requests return the same instance.",
+    "The JDK does this: `Integer.valueOf` returns cached objects for small values.",
+    "Use it for huge numbers of similar objects; for a few hundred, skip it."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "memory",
+    "title": "Three placements, two shared types",
+    "scenario": {
+      "code": [
+        "PieceTypes types = new PieceTypes();",
+        "PieceType wr = types.of(\"rook\", \"white\");",
+        "var a1 = new Placement(wr, \"a1\");",
+        "var h1 = new Placement(types.of(\"rook\", \"white\"), \"h1\");",
+        "var a8 = new Placement(types.of(\"rook\", \"black\"), \"a8\");",
+        "System.out.println(a1.type() == h1.type());"
+      ],
+      "steps": [
+        {
+          "caption": "The factory starts with an empty cache. No sprite has been loaded yet.",
+          "line": 0,
+          "stack": [
+            {
+              "name": "main",
+              "vars": {
+                "types": {
+                  "ref": "f",
+                  "label": "PieceTypes"
+                }
+              }
+            }
+          ],
+          "heap": [
+            {
+              "id": "f",
+              "label": "PieceTypes",
+              "props": {}
+            }
+          ]
+        },
+        {
+          "caption": "The first white rook request misses the cache, so the factory builds one `PieceType`.",
+          "line": 1,
+          "stack": [
+            {
+              "name": "main",
+              "vars": {
+                "types": {
+                  "ref": "f",
+                  "label": "PieceTypes"
+                },
+                "wr": {
+                  "ref": "t1"
+                }
+              }
+            }
+          ],
+          "heap": [
+            {
+              "id": "f",
+              "label": "PieceTypes",
+              "props": {
+                "rook/white": {
+                  "ref": "t1"
+                }
+              }
+            },
+            {
+              "id": "t1",
+              "label": "PieceType",
+              "props": {
+                "kind": "\"rook\"",
+                "colour": "\"white\"",
+                "sprite": "4 KB"
+              }
+            }
+          ]
+        },
+        {
+          "caption": "A placement holds only the extrinsic part: the square, plus a reference to the shared type.",
+          "line": 2,
+          "stack": [
+            {
+              "name": "main",
+              "vars": {
+                "types": {
+                  "ref": "f",
+                  "label": "PieceTypes"
+                },
+                "wr": {
+                  "ref": "t1"
+                },
+                "a1": {
+                  "ref": "p1"
+                }
+              }
+            }
+          ],
+          "heap": [
+            {
+              "id": "f",
+              "label": "PieceTypes",
+              "props": {
+                "rook/white": {
+                  "ref": "t1"
+                }
+              }
+            },
+            {
+              "id": "t1",
+              "label": "PieceType",
+              "props": {
+                "kind": "\"rook\"",
+                "colour": "\"white\"",
+                "sprite": "4 KB"
+              }
+            },
+            {
+              "id": "p1",
+              "label": "Placement",
+              "props": {
+                "type": {
+                  "ref": "t1"
+                },
+                "square": "\"a1\""
+              }
+            }
+          ]
+        },
+        {
+          "caption": "The second white rook hits the cache. No new sprite: `h1` points at the same `PieceType`.",
+          "line": 3,
+          "stack": [
+            {
+              "name": "main",
+              "vars": {
+                "types": {
+                  "ref": "f",
+                  "label": "PieceTypes"
+                },
+                "wr": {
+                  "ref": "t1"
+                },
+                "a1": {
+                  "ref": "p1"
+                },
+                "h1": {
+                  "ref": "p2"
+                }
+              }
+            }
+          ],
+          "heap": [
+            {
+              "id": "f",
+              "label": "PieceTypes",
+              "props": {
+                "rook/white": {
+                  "ref": "t1"
+                }
+              }
+            },
+            {
+              "id": "t1",
+              "label": "PieceType",
+              "props": {
+                "kind": "\"rook\"",
+                "colour": "\"white\"",
+                "sprite": "4 KB"
+              }
+            },
+            {
+              "id": "p1",
+              "label": "Placement",
+              "props": {
+                "type": {
+                  "ref": "t1"
+                },
+                "square": "\"a1\""
+              }
+            },
+            {
+              "id": "p2",
+              "label": "Placement",
+              "props": {
+                "type": {
+                  "ref": "t1"
+                },
+                "square": "\"h1\""
+              }
+            }
+          ]
+        },
+        {
+          "caption": "A black rook is a different key, so the factory builds a second flyweight.",
+          "line": 4,
+          "stack": [
+            {
+              "name": "main",
+              "vars": {
+                "types": {
+                  "ref": "f",
+                  "label": "PieceTypes"
+                },
+                "wr": {
+                  "ref": "t1"
+                },
+                "a1": {
+                  "ref": "p1"
+                },
+                "h1": {
+                  "ref": "p2"
+                },
+                "a8": {
+                  "ref": "p3"
+                }
+              }
+            }
+          ],
+          "heap": [
+            {
+              "id": "f",
+              "label": "PieceTypes",
+              "props": {
+                "rook/white": {
+                  "ref": "t1"
+                },
+                "rook/black": {
+                  "ref": "t2"
+                }
+              }
+            },
+            {
+              "id": "t1",
+              "label": "PieceType",
+              "props": {
+                "kind": "\"rook\"",
+                "colour": "\"white\"",
+                "sprite": "4 KB"
+              }
+            },
+            {
+              "id": "t2",
+              "label": "PieceType",
+              "props": {
+                "kind": "\"rook\"",
+                "colour": "\"black\"",
+                "sprite": "4 KB"
+              }
+            },
+            {
+              "id": "p1",
+              "label": "Placement",
+              "props": {
+                "type": {
+                  "ref": "t1"
+                },
+                "square": "\"a1\""
+              }
+            },
+            {
+              "id": "p2",
+              "label": "Placement",
+              "props": {
+                "type": {
+                  "ref": "t1"
+                },
+                "square": "\"h1\""
+              }
+            },
+            {
+              "id": "p3",
+              "label": "Placement",
+              "props": {
+                "type": {
+                  "ref": "t2"
+                },
+                "square": "\"a8\""
+              }
+            }
+          ]
+        },
+        {
+          "caption": "Comparing with `==` checks identity. Both placements hold one shared object, so it is true.",
+          "line": 5,
+          "stack": [
+            {
+              "name": "main",
+              "vars": {
+                "types": {
+                  "ref": "f",
+                  "label": "PieceTypes"
+                },
+                "wr": {
+                  "ref": "t1"
+                },
+                "a1": {
+                  "ref": "p1"
+                },
+                "h1": {
+                  "ref": "p2"
+                },
+                "a8": {
+                  "ref": "p3"
+                }
+              }
+            }
+          ],
+          "heap": [
+            {
+              "id": "f",
+              "label": "PieceTypes",
+              "props": {
+                "rook/white": {
+                  "ref": "t1"
+                },
+                "rook/black": {
+                  "ref": "t2"
+                }
+              }
+            },
+            {
+              "id": "t1",
+              "label": "PieceType",
+              "props": {
+                "kind": "\"rook\"",
+                "colour": "\"white\"",
+                "sprite": "4 KB"
+              }
+            },
+            {
+              "id": "t2",
+              "label": "PieceType",
+              "props": {
+                "kind": "\"rook\"",
+                "colour": "\"black\"",
+                "sprite": "4 KB"
+              }
+            },
+            {
+              "id": "p1",
+              "label": "Placement",
+              "props": {
+                "type": {
+                  "ref": "t1"
+                },
+                "square": "\"a1\""
+              }
+            },
+            {
+              "id": "p2",
+              "label": "Placement",
+              "props": {
+                "type": {
+                  "ref": "t1"
+                },
+                "square": "\"h1\""
+              }
+            },
+            {
+              "id": "p3",
+              "label": "Placement",
+              "props": {
+                "type": {
+                  "ref": "t2"
+                },
+                "square": "\"a8\""
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "NaiveChessBoards.java",
+      "lang": "java",
+      "title": "The problem: copied state",
+      "run": "captured",
+      "caption": "500 boards in memory. Every piece carries its own copy of an identical sprite.",
+      "walk": [
+        {
+          "lines": [
+            21,
+            22,
+            23,
+            24
+          ],
+          "text": "Kind and colour repeat across thousands of pieces; only the square is unique."
+        },
+        {
+          "lines": [
+            25,
+            26,
+            27,
+            28,
+            29
+          ],
+          "text": "Each constructor allocates a fresh 4 KB sprite, even for the 4000th white pawn."
+        },
+        {
+          "lines": [
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46
+          ],
+          "text": "One opening position builds 32 pieces, so 32 sprite copies per board."
+        },
+        {
+          "lines": [
+            6,
+            7
+          ],
+          "text": "A server holding 500 live games multiplies that waste by 500."
+        },
+        {
+          "lines": [
+            15,
+            16,
+            17,
+            18
+          ],
+          "text": "The output shows the cost: one sprite load per piece, all identical data."
+        }
+      ]
+    },
+    {
+      "file": "FlyweightChessDemo.java",
+      "lang": "java",
+      "title": "The fix: shared piece types",
+      "run": "captured",
+      "caption": "Twelve shared `PieceType` objects serve every board; placements keep only the square.",
+      "walk": [
+        {
+          "lines": [
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43
+          ],
+          "text": "The flyweight holds intrinsic state only. Fields are final and the sprite never leaks out."
+        },
+        {
+          "lines": [
+            42
+          ],
+          "text": "Extrinsic state arrives as a parameter: the type draws itself at the square you pass."
+        },
+        {
+          "lines": [
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53
+          ],
+          "text": "The factory caches by key. `computeIfAbsent` on a `ConcurrentHashMap` keeps creation thread-safe."
+        },
+        {
+          "lines": [
+            54,
+            55,
+            56,
+            57,
+            58,
+            59,
+            60,
+            61
+          ],
+          "text": "A small record holds the per-piece part and validates the square."
+        },
+        {
+          "lines": [
+            15,
+            16,
+            17,
+            18
+          ],
+          "text": "Pieces from game 1 and game 500 share one object, so `==` is true."
+        },
+        {
+          "lines": [
+            19,
+            20
+          ],
+          "text": "The JDK `Integer` cache works the same way, but only for a small range."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "A setter on a shared flyweight changes every board at once; make all its fields final.",
+    "Creating flyweights with `new` skips sharing; nest the factory and make the constructor private.",
+    "Comparing boxed `Integer` values with `==` works for small numbers, fails for large; use `equals`."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "Integer a = -128, b = -128;\nInteger c = 128, d = 128;\nSystem.out.println((a == b) + \" \" + (c == d));",
+    "lang": "java",
+    "options": [
+      "true true",
+      "false false",
+      "true false",
+      "false true"
+    ],
+    "answer": 2,
+    "why": "Autoboxing uses `Integer.valueOf`, which caches -128 to 127 by default. 128 is outside that range, so `c` and `d` are two distinct objects."
+  },
+  "takeaway": "Share the immutable common part once; pass the varying part in per call.",
+  "chat": {
+    "starters": [
+      "How do I decide which fields are intrinsic and which are extrinsic?",
+      "Is the Integer cache in the JDK a real example of a flyweight?",
+      "How is a flyweight factory different from a Singleton or an object pool?"
+    ]
+  }
+}

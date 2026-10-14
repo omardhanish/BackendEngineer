@@ -1,0 +1,11 @@
+{
+  "stdout": "X -> Move[row=0, col=0]\nO -> Move[row=0, col=1]\nX -> Move[row=1, col=1]\nO -> Move[row=0, col=2]\nX -> Move[row=2, col=2]\nresult: X_WON",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java GameLoopDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "7a94e86581849dd8",
+  "at": "2026-10-12T11:18:10.526Z"
+}

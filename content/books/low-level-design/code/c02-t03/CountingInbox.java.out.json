@@ -1,0 +1,11 @@
+{
+  "stdout": "stored:  3\naudited: 6",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java CountingInbox.java",
+  "tool": "Java 17.0.17",
+  "hash": "bec90ad46f38bb81",
+  "at": "2026-10-12T11:14:39.973Z"
+}

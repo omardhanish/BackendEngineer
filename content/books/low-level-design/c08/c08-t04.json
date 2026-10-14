@@ -1,0 +1,357 @@
+{
+  "title": "Observer pattern",
+  "idea": "The Observer pattern lets a subject keep a list of observers and notify each one when something happens, without knowing their concrete classes.",
+  "analogy": {
+    "text": "You subscribe to a newsletter. The publisher mails each issue to its whole list and never learns what each reader does with it.",
+    "breaks": "Here delivery is a direct call: a slow reader stalls the publisher."
+  },
+  "points": [
+    "Observers implement one interface; the subject loops over its list and calls each.",
+    "New reactions subscribe at runtime, so the subject stays closed for modification.",
+    "The JDK has `PropertyChangeListener`; `java.util.Observer` is deprecated since Java 9.",
+    "Skip it when one fixed collaborator always reacts; a direct call is clearer."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "Three builds, four observers",
+    "scenario": {
+      "tiers": [
+        [
+          "build"
+        ],
+        [
+          "chat",
+          "pager",
+          "alert",
+          "dash"
+        ]
+      ],
+      "nodes": {
+        "build": {
+          "label": "BuildServer",
+          "sub": "subject",
+          "kind": "service"
+        },
+        "chat": {
+          "label": "chat",
+          "sub": "lambda",
+          "kind": "box"
+        },
+        "pager": {
+          "label": "pager",
+          "sub": "throws on failure",
+          "kind": "box"
+        },
+        "alert": {
+          "label": "FirstFailureAlert",
+          "sub": "one-shot",
+          "kind": "box"
+        },
+        "dash": {
+          "label": "dashboard",
+          "sub": "lambda",
+          "kind": "box"
+        }
+      },
+      "links": [
+        [
+          "build",
+          "chat"
+        ],
+        [
+          "build",
+          "pager"
+        ],
+        [
+          "build",
+          "alert"
+        ],
+        [
+          "build",
+          "dash"
+        ]
+      ],
+      "steps": [
+        {
+          "caption": "Four observers subscribe. The subject stores them only as `BuildListener` references.",
+          "focus": [
+            "build"
+          ]
+        },
+        {
+          "caption": "Build 41 passes. The subject calls every observer in order; pager and alert ignore it.",
+          "send": [
+            {
+              "from": "build",
+              "to": "chat",
+              "label": "#41",
+              "tone": "ok"
+            },
+            {
+              "from": "build",
+              "to": "pager",
+              "label": "#41",
+              "tone": "ok"
+            },
+            {
+              "from": "build",
+              "to": "alert",
+              "label": "#41",
+              "tone": "ok"
+            },
+            {
+              "from": "build",
+              "to": "dash",
+              "label": "#41",
+              "tone": "ok"
+            }
+          ]
+        },
+        {
+          "caption": "Build 42 fails. Chat posts first, then the loop reaches the pager.",
+          "send": [
+            {
+              "from": "build",
+              "to": "chat",
+              "label": "#42",
+              "tone": "err"
+            }
+          ],
+          "badge": {
+            "build": "#42 failed"
+          }
+        },
+        {
+          "caption": "The pager throws. The subject catches it around that one call and keeps going.",
+          "send": [
+            {
+              "from": "build",
+              "to": "pager",
+              "label": "#42",
+              "tone": "err"
+            }
+          ],
+          "state": {
+            "pager": "down"
+          }
+        },
+        {
+          "caption": "The alert fires, then unsubscribes itself mid-loop. `CopyOnWriteArrayList` makes that safe.",
+          "send": [
+            {
+              "from": "build",
+              "to": "alert",
+              "label": "#42",
+              "tone": "warn"
+            }
+          ],
+          "state": {
+            "alert": "old"
+          },
+          "badge": {
+            "alert": "removed"
+          }
+        },
+        {
+          "caption": "The dashboard still updates. One broken observer did not stop the others.",
+          "send": [
+            {
+              "from": "build",
+              "to": "dash",
+              "label": "#42",
+              "tone": "info"
+            }
+          ]
+        },
+        {
+          "caption": "Build 43 fails. The alert is gone from the list, so only three observers are called.",
+          "send": [
+            {
+              "from": "build",
+              "to": "chat",
+              "label": "#43",
+              "tone": "err"
+            },
+            {
+              "from": "build",
+              "to": "pager",
+              "label": "#43",
+              "tone": "err"
+            },
+            {
+              "from": "build",
+              "to": "dash",
+              "label": "#43",
+              "tone": "info"
+            }
+          ],
+          "badge": {
+            "build": "#43 failed"
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "HardWiredBuild.java",
+      "lang": "java",
+      "title": "The problem: hard-wired calls",
+      "run": "captured",
+      "caption": "The build server calls each interested class by name, in one fixed method.",
+      "walk": [
+        {
+          "lines": [
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21
+          ],
+          "text": "The subject holds three concrete classes and cannot be reused without them."
+        },
+        {
+          "lines": [
+            22,
+            23,
+            24,
+            25,
+            26,
+            27
+          ],
+          "text": "Every reaction is a hard-coded call. Adding audit or metrics means editing this method."
+        },
+        {
+          "lines": [
+            24,
+            25
+          ],
+          "text": "The pager throws, so the dashboard update on the next line never runs."
+        },
+        {
+          "lines": [
+            6,
+            7,
+            8,
+            9,
+            10
+          ],
+          "text": "The failure escapes to the caller: one broken dependency crashes the whole build step."
+        }
+      ]
+    },
+    {
+      "file": "BuildObserverDemo.java",
+      "lang": "java",
+      "title": "The fix: subscribed observers",
+      "run": "captured",
+      "caption": "Observers subscribe through one interface; the subject isolates failures and allows removal.",
+      "walk": [
+        {
+          "lines": [
+            17,
+            18,
+            19,
+            20,
+            21
+          ],
+          "text": "The event is an immutable record, so no observer can change what the others see."
+        },
+        {
+          "lines": [
+            22
+          ],
+          "text": "Observers share one small interface. Lambdas fit because it has a single method."
+        },
+        {
+          "lines": [
+            25,
+            26
+          ],
+          "text": "`CopyOnWriteArrayList` iterates a snapshot, so removing during a notify is safe."
+        },
+        {
+          "lines": [
+            28,
+            29,
+            30,
+            31
+          ],
+          "text": "Subscribe and unsubscribe at runtime; `requireNonNull` rejects a null listener at the door."
+        },
+        {
+          "lines": [
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42
+          ],
+          "text": "Each call has its own try/catch, so one failing observer cannot starve the rest."
+        },
+        {
+          "lines": [
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53
+          ],
+          "text": "A one-shot observer removes itself mid-loop. With a plain `ArrayList` that is a bug."
+        },
+        {
+          "lines": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14
+          ],
+          "text": "`main` wires four observers; the subject never learns their classes."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Never unsubscribing keeps dead observers reachable: a lapsed-listener memory leak that grows over time.",
+    "Removing an observer from an `ArrayList` mid-loop can skip the next one or throw.",
+    "A slow observer blocks the subject; hand slow work to an executor or a queue."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "List<Runnable> ls = new ArrayList<>();\nRunnable once = new Runnable() {\n    public void run() { System.out.println(\"once\"); ls.remove(this); }\n};\nls.add(() -> System.out.println(\"audit\"));\nls.add(once);\nls.add(() -> System.out.println(\"log\"));\nfor (Runnable l : ls) l.run();",
+    "lang": "java",
+    "options": [
+      "ConcurrentModificationException",
+      "audit once log",
+      "audit log",
+      "audit once"
+    ],
+    "answer": 3,
+    "why": "Removing `once` shrinks the list to two while the iterator's cursor sits at 2. `hasNext` returns false, so `log` is silently skipped."
+  },
+  "takeaway": "The subject announces; observers decide. Neither knows the other's class.",
+  "chat": {
+    "starters": [
+      "Why was java.util.Observer deprecated, and what should I use instead?",
+      "How do I make observers asynchronous without losing events?",
+      "How is the Observer pattern different from a message queue or pub/sub?"
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "PASS on time costs nothing\nPASS grace days cost nothing\nPASS third day costs 75\nPASS each late day adds 25\nPASS just under the cap\nPASS cap reached exactly\nPASS huge delay stays capped\nPASS negative days rejected\n0 failing",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java LateFeeGreen.java",
+  "tool": "Java 17.0.17",
+  "hash": "837e042786c8e5ad",
+  "at": "2026-10-12T11:39:47.201Z"
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "app.db.pool -> DEBUG, debug on: true\napp.web -> INFO, debug on: false\nmetrics -> WARN, debug on: false\ncached: true\napp.web now -> ERROR",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java LoggerTree.java",
+  "tool": "Java 17.0.17",
+  "hash": "62b5edc942487431",
+  "at": "2026-10-14T08:33:30.932Z"
+}

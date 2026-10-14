@@ -1,0 +1,11 @@
+{
+  "stdout": "games: 500\npiece objects: 16000\nsprite loads: 16000\nsprite bytes: 65536000",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java NaiveChessBoards.java",
+  "tool": "Java 17.0.17",
+  "hash": "5691f672323af8e4",
+  "at": "2026-10-12T11:23:40.150Z"
+}

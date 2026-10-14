@@ -1,0 +1,11 @@
+{
+  "stdout": "ok      5 UP first press\nrefused 5 UP second press 23505 one_open_call\nok      5 DOWN (other button)\nrefused floor 12 UP 23503 hall_call_building_id_floor_no_fkey\nrefused 5 SIDEWAYS 23514 hall_call_direction_check\nrefused ASSIGNED without car 23514 assigned_has_car\nrefused E2 at floor 40 23503 elevator_building_id_current_floor_fkey\nok      5 UP after it was served\n[{\"floor_no\":5,\"direction\":\"UP\",\"status\":\"SERVED\"},{\"floor_no\":5,\"direction\":\"DOWN\",\"status\":\"PENDING\"},{\"floor_no\":5,\"direction\":\"UP\",\"status\":\"PENDING\"}]",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node schema.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "00f5cab89dc4e0e8",
+  "at": "2026-10-14T08:35:29.045Z"
+}

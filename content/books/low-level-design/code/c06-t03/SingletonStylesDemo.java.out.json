@@ -1,0 +1,11 @@
+{
+  "stdout": "distinct objects: 3\nholder built 1\nlocked built 1\nhttp://orders.internal:8080\ntrue",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java SingletonStylesDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "6190aa6ea52506a1",
+  "at": "2026-10-12T11:22:03.460Z"
+}

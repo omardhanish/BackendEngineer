@@ -1,0 +1,11 @@
+{
+  "stdout": "floor 15 DOWN: nearest=E3 zoned=E3\nfloor 8 DOWN: nearest=E3 zoned=E1\nfloor 0 UP: nearest=E1 zoned=E1\nE1 out of service\nfloor 8 DOWN: nearest=E3 zoned=E2",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ZonedDispatch.java",
+  "tool": "Java 17.0.17",
+  "hash": "2d56683ab19fc110",
+  "at": "2026-10-14T08:34:12.832Z"
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "check-then-act runs: 2\ncompare-and-set runs: 1",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java DoubleRun.java",
+  "tool": "Java 17.0.17",
+  "hash": "bf1a2315d63e1785",
+  "at": "2026-10-14T08:43:35.255Z"
+}

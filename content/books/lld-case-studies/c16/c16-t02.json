@@ -1,0 +1,79 @@
+{
+  "title": "Rate limiter class design",
+  "idea": "The rate limiter design is one small `RateLimiter` interface returning a `Decision`, with each algorithm as its own class and time supplied by an injected `Clock`.",
+  "analogy": {
+    "text": "A wall socket and the appliances you plug in. The socket shape stays fixed; a kettle or a lamp behaves differently behind it.",
+    "breaks": "Appliances draw power; limiters also keep per-key memory between calls."
+  },
+  "points": [
+    "Callers depend only on `RateLimiter` and its single `tryAcquire(key)` method.",
+    "A `Decision` record carries allowed, remaining calls, and a retry-after hint.",
+    "A `LimitRule` holds the limit and window, and rejects invalid values.",
+    "Every algorithm reads time from `Clock`, so tests control time exactly."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Class diagram",
+    "nodes": [
+      { "id": "rl", "label": "RateLimiter", "sub": "tryAcquire(key): Decision" },
+      { "id": "dec", "label": "Decision", "sub": "allowed, remaining, retryAfter" },
+      { "id": "rule", "label": "LimitRule", "sub": "limit, windowMillis" },
+      { "id": "clock", "label": "Clock", "sub": "nowMillis()" },
+      { "id": "tb", "label": "TokenBucketLimiter", "sub": "capacity, refill rate" },
+      { "id": "fw", "label": "FixedWindowLimiter", "sub": "count per window" },
+      { "id": "sl", "label": "SlidingLogLimiter", "sub": "timestamps per key" },
+      { "id": "sc", "label": "SlidingCounterLimiter", "sub": "two windows, weighted" }
+    ],
+    "edges": [
+      { "from": "rl", "to": "dec", "label": "returns", "caption": "Every check returns a Decision. The caller never sees counters or buckets." },
+      { "from": "tb", "to": "rl", "label": "is-a", "caption": "Token bucket refills a budget at a steady rate and allows short bursts." },
+      { "from": "fw", "to": "rl", "label": "is-a", "caption": "Fixed window counts calls in aligned slots, such as each whole second." },
+      { "from": "sl", "to": "rl", "label": "is-a", "caption": "Sliding log keeps each call's time and counts those inside the last window." },
+      { "from": "sc", "to": "rl", "label": "is-a", "caption": "Sliding counter blends the current and previous window counts to save memory." },
+      { "from": "fw", "to": "rule", "label": "has 1", "caption": "Window limiters get one immutable LimitRule; the token bucket takes capacity and refill rate." },
+      { "from": "fw", "to": "clock", "label": "uses", "dashed": true, "caption": "Limiters ask the injected Clock for time. Production passes the system clock; tests pass a manual one." }
+    ]
+  },
+  "code": [
+    {
+      "file": "ClassDesign.java",
+      "lang": "java",
+      "title": "Interfaces and one limiter",
+      "run": "captured",
+      "caption": "The types every page builds on, with the simplest algorithm plugged in and a manual clock driving time. Unlike the scope page, `LimitRule` keeps the window in milliseconds and drops `keyType`: the caller picks the key.",
+      "walk": [
+        { "lines": [6, 7, 8], "text": "Three calls per 1000 ms window, with a clock the demo moves by hand." },
+        { "lines": [9, 10, 11, 12], "text": "Four calls from k1, then one from k2, all at time zero." },
+        { "lines": [13, 14], "text": "Move time to the next window and call k1 again." },
+        { "lines": [18, 20, 21, 22, 23, 24], "text": "Clock is one method. ManualClock returns whatever time the test sets." },
+        { "lines": [34, 35, 36, 37, 38, 39, 40], "text": "Decision has two factory methods, so callers never build a half-valid one." },
+        { "lines": [62, 63, 64, 65], "text": "Find the window start, and reset the count when a new window begins." },
+        { "lines": [66, 67, 68, 69, 70], "text": "Under the limit: count and allow. Otherwise reject until the window ends." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not call `System.currentTimeMillis` inside a limiter; inject a `Clock` instead.",
+    "Do not return a bare boolean; callers need remaining calls and retry-after.",
+    "This `HashMap` version is single-threaded; the concurrency page fixes that."
+  ],
+  "quiz": {
+    "q": "What does the fourth line of ClassDesign print?",
+    "options": [
+      "t=0    k1 ALLOW remaining=0",
+      "t=0    k1 REJECT retryAfter=1000ms",
+      "t=0    k2 ALLOW remaining=2",
+      "t=0    k1 REJECT retryAfter=0ms"
+    ],
+    "answer": 1,
+    "why": "The rule allows three calls per window. The fourth k1 call at time 0 is rejected, and the window ends 1000 ms later."
+  },
+  "takeaway": "One interface, one Decision, one injected Clock; algorithms plug in behind them.",
+  "chat": {
+    "starters": [
+      "Why is Clock my own interface instead of java.time.Clock?",
+      "Should tryAcquire accept a cost for expensive requests?",
+      "Where do per-key states live in this design?"
+    ]
+  }
+}

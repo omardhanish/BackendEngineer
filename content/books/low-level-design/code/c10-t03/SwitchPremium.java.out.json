@@ -1,0 +1,11 @@
+{
+  "stdout": "CAR cover, 20k insured: 60000\nHOME cover, 20k insured: 20000\nPET cover, 20k insured: 0",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java SwitchPremium.java",
+  "tool": "Java 17.0.17",
+  "hash": "8e56279f7c4ddfe8",
+  "at": "2026-10-14T08:33:21.015Z"
+}

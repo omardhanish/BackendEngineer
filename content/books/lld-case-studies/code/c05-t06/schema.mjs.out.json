@@ -1,0 +1,11 @@
+{
+  "stdout": "withdrawal R-1 -> ok\nsame request R-1 again -> 23505 atm_transaction_atm_id_request_id_key\noverdraw AC-1 -> 23514 account_balance_minor_check\ntake 3 notes of 2000 -> 23514 atm_cassette_note_count_check\ncard for unknown account -> 23503 card_account_id_fkey\nused today: 200000",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node schema.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "a77d6933fefaf4bb",
+  "at": "2026-10-14T08:34:17.136Z"
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "prototype: Invoice [Header, Line items]\ncopy:      Invoice for Acme [Header, Line items, Acme discount]\nshares style? true\nerror: no prototype: memo",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java TemplateRegistryDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "e173984149fa55d5",
+  "at": "2026-10-12T11:21:40.028Z"
+}

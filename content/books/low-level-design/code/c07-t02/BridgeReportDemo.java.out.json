@@ -1,0 +1,11 @@
+{
+  "stdout": "item,qty\n\"Desk, oak\",3\nLamp,40\nTOTAL,43\nsku,on hand\n\"Desk, oak\",3 LOW\nLamp,40\n| sku | on hand |\n|-|-|\n| Desk, oak | 3 LOW |\n| Lamp | 40 |",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java BridgeReportDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "2c587caa5802723a",
+  "at": "2026-10-12T11:31:42.535Z"
+}

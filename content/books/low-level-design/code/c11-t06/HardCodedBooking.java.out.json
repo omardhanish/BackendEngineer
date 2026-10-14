@@ -1,0 +1,11 @@
+{
+  "stdout": "email: ana got R1\naudit: B1 [CLEANING_GAP]\nrejected raj CLEANING_GAP\nemail: ana got R1\naudit: B1 [CLEANING-GAP]\nemail: raj got R1\naudit: B2 [CLEANING-GAP]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java HardCodedBooking.java",
+  "tool": "Java 17.0.17",
+  "hash": "63fd25deb1bb46c7",
+  "at": "2026-10-12T11:24:26.478Z"
+}

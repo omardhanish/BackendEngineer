@@ -1,0 +1,11 @@
+{
+  "stdout": "stock: {SKU-1=7, ORD-7=-3}\nfind returned null -> NullPointerException\nORD-8 after clear: null",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java LooseInventory.java",
+  "tool": "Java 17.0.17",
+  "hash": "014fe973aefccffb",
+  "at": "2026-10-12T11:20:11.933Z"
+}

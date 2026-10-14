@@ -1,0 +1,11 @@
+{
+  "stdout": "sync-orders retries=3 timeout=30s tags=[nightly]\nping retries=0 timeout=60s tags=[]\n[daily] vs [daily, urgent]\nrejected: worst case 1320s exceeds 600s",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java JobConfigDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "a294e5ef79b4f06d",
+  "at": "2026-10-12T11:21:00.900Z"
+}

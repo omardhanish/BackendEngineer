@@ -1,0 +1,73 @@
+{
+  "title": "Ticket lifecycle and flows",
+  "idea": "The ticket lifecycle is a small state machine: a Ticket starts ACTIVE and may only move along allowed arrows to PAID, LOST or EXITED.",
+  "points": [
+    "ACTIVE becomes PAID after payment, or LOST when an attendant reports it.",
+    "PAID becomes EXITED at the gate, or ACTIVE again after the grace window.",
+    "A ParkingSpot goes FREE to OCCUPIED at entry and back to FREE at exit.",
+    "Illegal moves are refused in one place, the enum, not in every gate."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "Enter, pay, exit",
+    "actors": [
+      { "id": "driver", "label": "Driver" },
+      { "id": "in", "label": "EntryGate" },
+      { "id": "lot", "label": "ParkingLot" },
+      { "id": "pg", "label": "PaymentGateway" },
+      { "id": "out", "label": "ExitGate" }
+    ],
+    "messages": [
+      { "from": "driver", "to": "in", "label": "arrive KA01AB1234", "note": "A car reaches entry gate IN-1. The gate reads the vehicle type." },
+      { "from": "in", "to": "lot", "label": "park(vehicle)", "note": "The lot picks a spot. The spot goes FREE to OCCUPIED, and ticket T-1 starts ACTIVE." },
+      { "from": "lot", "to": "in", "label": "T-1 at F1-C1", "dashed": true, "note": "The gate prints the ticket and lifts the barrier." },
+      { "from": "driver", "to": "lot", "label": "pay(T-1)", "note": "At the pay station the lot prices the stay. Page 3 merged pay and exit; here they are separate steps." },
+      { "from": "lot", "to": "pg", "label": "charge(15000)", "note": "The lot charges the fee once, in paise." },
+      { "from": "pg", "to": "lot", "label": "ok", "dashed": true, "note": "Success moves T-1 from ACTIVE to PAID. A grace window to reach the exit starts now." },
+      { "from": "driver", "to": "out", "label": "scan T-1", "note": "The driver reaches exit gate OUT-1 and scans the ticket." },
+      { "from": "out", "to": "lot", "label": "exit(T-1)", "note": "PAID moves to EXITED and the spot goes back to FREE. An ACTIVE ticket is refused here." },
+      { "from": "out", "to": "driver", "label": "barrier up", "dashed": true, "note": "If the grace window had run out, T-1 would be ACTIVE again and owe more." }
+    ]
+  },
+  "code": [
+    {
+      "file": "TicketLifecycle.java",
+      "lang": "java",
+      "title": "Status enum with rules",
+      "run": "captured",
+      "caption": "The allowed moves live in the enum. Ticket asks the enum and throws on an illegal move.",
+      "walk": [
+        { "lines": [8, 9, 10], "text": "T-1 takes the happy path: pay, then exit." },
+        { "lines": [11, 12], "text": "T-2 tries to leave without paying." },
+        { "lines": [13, 14, 15], "text": "T-3 is reported lost, then paid with the flat fee." },
+        { "lines": [16, 17, 18, 19], "text": "T-4 pays but overstays the grace window; then T-1 tries to pay again." },
+        { "lines": [36, 37, 38, 39, 40, 41, 42, 43], "text": "An `EnumMap` lists the allowed next states for each state." },
+        { "lines": [57, 58, 59, 60, 61], "text": "`moveTo` is the only way to change status, and it refuses illegal moves." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Never set `status` directly from a gate; every change goes through `moveTo`.",
+    "Keep ticket and spot states separate; an EXITED ticket must also free its spot.",
+    "Decide the grace window rule up front, or paid drivers get stuck at the exit."
+  ],
+  "quiz": {
+    "q": "What does the line for T-2 print?",
+    "options": [
+      "T-2 ACTIVE -> EXITED",
+      "T-2 refused: PAID -> EXITED",
+      "T-2 refused: ACTIVE -> EXITED",
+      "Nothing; the exception stops the program"
+    ],
+    "answer": 2,
+    "why": "ACTIVE allows only PAID and LOST. `moveTo` throws, and `step` catches it and prints the refused move with the current state."
+  },
+  "takeaway": "Write allowed ticket moves once, in the enum, and refuse the rest.",
+  "chat": {
+    "starters": [
+      "Should a failed payment be its own ticket state?",
+      "How long should the grace window be, and who sets it?",
+      "Would the State pattern fit better than an enum here?"
+    ]
+  }
+}

@@ -1,188 +1,197 @@
 {
-  "title": "Cab booking system design",
-  "idea": "A cab booking design matches a ride request to one free driver, then drives the trip through a strict lifecycle while a swappable rule prices it.",
+  "title": "Depend on abstractions",
+  "idea": "The Dependency Inversion Principle (DIP) says business policy must not depend on concrete details; both depend on an abstraction the policy owns.",
+  "analogy": {
+    "text": "A laptop declares the charging port it needs. Any charger built to that port works, and the laptop never changes for a new charger brand.",
+    "breaks": "Ports are industry standards; your interfaces are written by the policy code."
+  },
   "points": [
-    "Core entities: `Rider`, `Driver`, `Location`, `Trip`, plus a `TripService` that coordinates them.",
-    "A `DriverMatcher` strategy picks the driver: nearest today, top rated tomorrow.",
-    "Assigning a driver is an atomic check-and-set, so two trips never share one.",
-    "A `TripStatus` enum owns the legal moves; a `FareRule` prices the finished trip."
+    "High-level code holds business rules; low-level code talks to mail, databases and files.",
+    "The policy declares an interface in its own terms; details implement it.",
+    "Only one place, the composition root, calls `new` on concrete details and wires them.",
+    "DIP is the design rule; dependency injection (DI) is the technique that delivers it."
   ],
   "hero": {
     "type": "seq",
-    "title": "One ride, start to finish",
+    "title": "Wiring once, calling through the port",
     "actors": [
       {
-        "id": "rider",
-        "label": "Rider"
+        "id": "main",
+        "label": "main (wiring)"
       },
       {
         "id": "svc",
-        "label": "TripService"
+        "label": "InvoiceService"
       },
       {
-        "id": "match",
-        "label": "DriverMatcher"
+        "id": "port",
+        "label": "InvoiceNotifier"
       },
       {
-        "id": "driver",
-        "label": "Driver"
+        "id": "email",
+        "label": "EmailNotifier"
       }
     ],
     "messages": [
       {
-        "from": "rider",
+        "from": "main",
+        "to": "email",
+        "label": "new EmailNotifier(host)",
+        "note": "Only the composition root names the concrete class and knows its config."
+      },
+      {
+        "from": "main",
         "to": "svc",
-        "label": "requestRide(pickup)",
-        "note": "The rider sends a pickup point. A `Trip` is created in state `REQUESTED`."
+        "label": "new InvoiceService(notifier)",
+        "note": "The service receives the detail through its constructor. It never builds one itself."
       },
       {
         "from": "svc",
-        "to": "match",
-        "label": "match(pickup, drivers)",
-        "note": "The service asks the strategy. It never knows which rule is plugged in."
+        "to": "port",
+        "label": "invoiceIssued(invoice)",
+        "note": "In source code the service calls only `InvoiceNotifier`, an interface it owns."
       },
       {
-        "from": "match",
-        "to": "svc",
-        "label": "D2",
+        "from": "port",
+        "to": "email",
+        "label": "dispatch at runtime",
         "dashed": true,
-        "note": "The matcher filters out busy drivers, then ranks the rest by its own rule."
+        "note": "At runtime the call lands on whichever implementation main passed in."
       },
       {
-        "from": "svc",
-        "to": "driver",
-        "label": "tryAssign()",
-        "note": "One atomic step marks the driver busy. A second claim gets `false`."
-      },
-      {
-        "from": "driver",
+        "from": "email",
         "to": "svc",
-        "label": "true",
+        "label": "returns",
         "dashed": true,
-        "note": "Assigned. The trip moves to `ACCEPTED`; on `false` the service asks the matcher again."
+        "note": "The detail does its work and returns. The service never learns the transport."
       },
       {
-        "from": "driver",
+        "from": "main",
         "to": "svc",
-        "label": "start, complete",
-        "note": "Each move is checked by `TripStatus.canMoveTo`. Skipping a state throws."
-      },
-      {
-        "from": "svc",
-        "to": "rider",
-        "label": "fare",
-        "dashed": true,
-        "note": "The trip's `FareRule` prices distance and time. Surge wraps the standard rule."
+        "label": "new InvoiceService(fake)",
+        "note": "A test wires a recording fake instead. The policy code stays untouched."
       }
     ]
   },
   "code": [
     {
-      "file": "MatchDemo.java",
+      "file": "HardWiredDemo.java",
       "lang": "java",
-      "title": "Matching a driver",
+      "title": "The problem",
       "run": "captured",
-      "caption": "Two matching strategies over the same drivers, and an assignment that cannot happen twice.",
+      "caption": "`InvoiceService` builds its own `SmtpMailer`. A plain unit test now emails a real customer.",
       "walk": [
-        {
-          "lines": [
-            23,
-            25
-          ],
-          "text": "`Location` is a value object. Manhattan distance keeps the maths in whole numbers."
-        },
-        {
-          "lines": [
-            27,
-            36
-          ],
-          "text": "`compareAndSet` claims the driver in one step. A real `Driver` entity would be a class, not a record."
-        },
-        {
-          "lines": [
-            38,
-            45
-          ],
-          "text": "`DriverMatcher` is the strategy. `NearestMatcher` skips busy drivers, then takes the closest."
-        },
         {
           "lines": [
             12,
-            14
+            23
           ],
-          "text": "A second rule needs no new class: the interface has one method, so a lambda fits."
+          "text": "`SmtpMailer` is a low-level detail. A static counter stands in for real side effects."
         },
         {
           "lines": [
-            17,
-            19
+            25,
+            27
           ],
-          "text": "D2 is claimed once; the second claim fails, and matching moves on to the next nearest."
-        }
-      ]
-    },
-    {
-      "file": "TripDemo.java",
-      "lang": "java",
-      "title": "Trip lifecycle and fare",
-      "run": "captured",
-      "caption": "The enum decides which moves are legal. The fare rule is injected, so surge is a wrapper.",
-      "walk": [
-        {
-          "lines": [
-            19,
-            29
-          ],
-          "text": "Each state lists where it may go next. Finished trips go nowhere."
+          "text": "The policy calls `new SmtpMailer` in a field. The arrow points from rules down to transport."
         },
         {
           "lines": [
-            45,
-            49
+            30,
+            36
           ],
-          "text": "`moveTo` refuses an illegal move before it changes anything."
-        },
-        {
-          "lines": [
-            31,
-            38
-          ],
-          "text": "`SurgeFare` wraps any `FareRule` and multiplies its result: a small Decorator."
+          "text": "The business rule validates and numbers invoices, then is welded to SMTP."
         },
         {
           "lines": [
             3,
-            15
+            6
           ],
-          "text": "A started trip cannot be cancelled, so that call throws; completing it is fine."
+          "text": "A unit test only wants to check the invoice id. It cannot swap the mailer out."
+        },
+        {
+          "lines": [
+            7,
+            8
+          ],
+          "text": "The output shows the cost: the test opened a connection and sent mail."
+        }
+      ]
+    },
+    {
+      "file": "InvertedDemo.java",
+      "lang": "java",
+      "title": "The fix",
+      "run": "captured",
+      "caption": "The service owns `InvoiceNotifier`; email and a test fake both implement it. Wiring lives in `main`.",
+      "walk": [
+        {
+          "lines": [
+            19,
+            24
+          ],
+          "text": "`Invoice` is an immutable record that rejects bad input at construction."
+        },
+        {
+          "lines": [
+            26,
+            27
+          ],
+          "text": "The port is named for what the policy needs: news that an invoice exists."
+        },
+        {
+          "lines": [
+            29,
+            40
+          ],
+          "text": "`InvoiceService` takes the port by constructor and rejects null. It imports no SMTP code."
+        },
+        {
+          "lines": [
+            42,
+            51
+          ],
+          "text": "`EmailNotifier` depends on the abstraction. Its host config stays with the detail."
+        },
+        {
+          "lines": [
+            53,
+            57
+          ],
+          "text": "`RecordingNotifier` is a test fake. It returns a copy of what it saw."
+        },
+        {
+          "lines": [
+            6,
+            16
+          ],
+          "text": "`main` is the composition root: production and test wire different details into the same policy."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Do not read `isFree()` then set busy in two steps; claim the driver atomically.",
-    "Keep money in whole units such as `long` paise or cents, never `double`.",
-    "Avoid `if (status == ...)` checks scattered across services; let the enum own the transitions."
+    "Naming the interface after the detail, like `SmtpGateway`, still leaks the transport into the policy.",
+    "Adding an interface for every class with one implementation and no test seam is overkill.",
+    "Calling `new` on details inside services, or a static `getInstance()`, silently undoes the inversion."
   ],
   "quiz": {
-    "q": "What is the first line `TripDemo` prints?",
-    "code": "trip.moveTo(TripStatus.ACCEPTED);\ntrip.moveTo(TripStatus.STARTED);\ntrip.moveTo(TripStatus.CANCELLED); // caught, message printed",
-    "lang": "java",
+    "q": "Ops wants invoices sent by SMS instead of email. With the fix, what changes?",
     "options": [
-      "rejected: ACCEPTED -> CANCELLED",
-      "rejected: STARTED -> CANCELLED",
-      "normal fare: 186",
-      "rejected: STARTED -> COMPLETED"
+      "`InvoiceService` gets an `if` for SMS",
+      "A new `SmsNotifier` class, and one line in `main`",
+      "`InvoiceNotifier` gets a new `sendSms` method",
+      "`EmailNotifier` is edited to also send SMS"
     ],
     "answer": 1,
-    "why": "The trip is `STARTED`, and `STARTED` may only move to `COMPLETED`. `moveTo` throws with the current and requested states."
+    "why": "The policy depends only on `InvoiceNotifier`. A new detail implements it, and the composition root passes it in. Policy and port stay unchanged."
   },
-  "takeaway": "Match with a strategy, assign atomically, let the status enum guard every move.",
+  "takeaway": "Policy owns the interface; details plug in from the edge.",
   "chat": {
     "starters": [
-      "How would I find nearby drivers fast when there are thousands of them?",
-      "What should happen if the assigned driver never accepts the ride?",
-      "Should cancellation fees live in Trip or in a separate class?"
+      "What is the difference between DIP and dependency injection?",
+      "Which package should the `InvoiceNotifier` interface live in?",
+      "When is it fine to call `new` on a concrete class directly?"
     ]
   }
 }

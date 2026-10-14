@@ -1,0 +1,11 @@
+{
+  "stdout": "from 10: null at 10\nAda works 11-8",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java AnemicClinic.java",
+  "tool": "Java 17.0.17",
+  "hash": "4ebaf6cbb57acf54",
+  "at": "2026-10-12T11:41:55.039Z"
+}

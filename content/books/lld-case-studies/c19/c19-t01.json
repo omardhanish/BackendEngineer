@@ -1,0 +1,170 @@
+{
+  "title": "Task scheduler requirements",
+  "idea": "Scoping a task scheduler means fixing what a task is, when it runs, which task wins a tie, what happens when it fails, and what v1 leaves out.",
+  "points": [
+    "A task pairs a job with a run time and a priority.",
+    "Due tasks run earliest first; a tie goes to the higher priority.",
+    "A failed task retries after a growing delay, up to a set limit.",
+    "Assume one process, many thousands of tasks, and an injectable clock for tests."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Actors and use cases in v1",
+    "nodes": [
+      {
+        "id": "client",
+        "label": "Client",
+        "sub": "code that submits work"
+      },
+      {
+        "id": "submit",
+        "label": "Submit task",
+        "sub": "one-shot or recurring"
+      },
+      {
+        "id": "cancel",
+        "label": "Cancel or query",
+        "sub": "by task id"
+      },
+      {
+        "id": "clock",
+        "label": "Clock",
+        "sub": "time moves on"
+      },
+      {
+        "id": "run",
+        "label": "Run due tasks",
+        "sub": "time, then priority"
+      },
+      {
+        "id": "retry",
+        "label": "Retry with backoff",
+        "sub": "up to max attempts"
+      },
+      {
+        "id": "out",
+        "label": "Out of scope",
+        "sub": "restarts, DAGs, cron"
+      }
+    ],
+    "edges": [
+      {
+        "from": "client",
+        "to": "submit",
+        "caption": "A client hands over a job, a run time, a priority and an optional repeat period."
+      },
+      {
+        "from": "client",
+        "to": "cancel",
+        "caption": "The client gets a task id back. It uses that id to cancel or read status."
+      },
+      {
+        "from": "clock",
+        "to": "run",
+        "caption": "Time is an actor: once a task's run time passes, it becomes due."
+      },
+      {
+        "from": "submit",
+        "to": "run",
+        "label": "queues",
+        "caption": "Submitted tasks wait in order of run time, then priority."
+      },
+      {
+        "from": "run",
+        "to": "retry",
+        "label": "on failure",
+        "caption": "A job that throws goes back into the queue with a later run time."
+      },
+      {
+        "from": "client",
+        "to": "out",
+        "dashed": true,
+        "caption": "Surviving a restart, task dependencies and cron syntax wait for later. Name them out loud."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "Requirements.java",
+      "lang": "java",
+      "title": "Scope and run order",
+      "run": "captured",
+      "caption": "The v1 scope as an enum you can read aloud, and the ordering rule tested on three tasks.",
+      "walk": [
+        {
+          "lines": [
+            7,
+            8,
+            9,
+            10
+          ],
+          "text": "Print every use case with its actor and an IN or OUT tag."
+        },
+        {
+          "lines": [
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "text": "Three tasks: two share a run time, one is earlier."
+        },
+        {
+          "lines": [
+            24,
+            25,
+            26,
+            27,
+            28
+          ],
+          "text": "The ordering rule: run time ascending, then priority descending."
+        },
+        {
+          "lines": [
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37
+          ],
+          "text": "Six use cases form v1: two kinds of submit, cancel, query, run and retry."
+        },
+        {
+          "lines": [
+            38,
+            39,
+            40
+          ],
+          "text": "Three are named and cut, so the boundary is part of the design."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Ask whether higher priority can jump ahead of an earlier run time; usually it cannot.",
+    "Agree on retry limits and backoff before writing code; unlimited retries hide bugs.",
+    "State that v1 lives in memory; persistence across restarts is a separate decision."
+  ],
+  "quiz": {
+    "q": "Two tasks are due at the same moment. Which rule should v1 state first?",
+    "options": [
+      "Run whichever task was submitted last",
+      "Higher priority first, then earlier submission",
+      "Run both at once on separate threads, always",
+      "Pick one at random to keep things fair"
+    ],
+    "answer": 1,
+    "why": "A clear, deterministic tie-break makes the order testable. Priority first, then submit order, gives every pair of tasks one defined order."
+  },
+  "takeaway": "Fix run time, priority order and the retry rule before any class.",
+  "chat": {
+    "starters": [
+      "Should priority ever override an earlier run time?",
+      "What is the difference between fixed rate and fixed delay?",
+      "Why inject a clock instead of calling System.currentTimeMillis?"
+    ]
+  }
+}

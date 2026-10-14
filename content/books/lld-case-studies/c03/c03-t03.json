@@ -1,0 +1,323 @@
+{
+  "title": "Payment service and policies",
+  "idea": "The core design is one PaymentService facade that dedupes by Idempotency-Key, sends each method to a PaymentGateway, and asks a RetryPolicy whether to try again.",
+  "analogy": {
+    "text": "A cashier at a busy counter. One cashier takes every payment, hands cards to the card machine and UPI to the QR scanner, and follows the store's retry rule.",
+    "breaks": "A cashier remembers faces; the service remembers only keys."
+  },
+  "points": [
+    "`PaymentService` is a facade: callers see one `pay` method.",
+    "Each `PaymentGateway` says which methods it supports; the service picks one.",
+    "`RetryPolicy` is the strategy pattern: retry timeouts, never declines.",
+    "A repeated Idempotency-Key returns the stored Payment without calling a gateway."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "One card payment through the service",
+    "scenario": {
+      "token": {
+        "label": "pay k-2",
+        "tone": "req"
+      },
+      "stages": [
+        {
+          "id": "client",
+          "label": "Caller",
+          "kind": "end"
+        },
+        {
+          "id": "svc",
+          "label": "PaymentService",
+          "sub": "facade"
+        },
+        {
+          "id": "gw",
+          "label": "CardGateway",
+          "sub": "one per method"
+        },
+        {
+          "id": "retry",
+          "label": "RetryPolicy",
+          "sub": "timeouts only",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "Order ORD-2 pays 15000 by card with key `k-2`.",
+          "at": "client",
+          "slot": "top",
+          "state": {
+            "client": "active"
+          }
+        },
+        {
+          "caption": "PaymentService checks its key map first. `k-2` is new, so it creates P-2.",
+          "at": "svc",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "svc": "active"
+          }
+        },
+        {
+          "caption": "CardGateway supports CardPayment, so it gets the charge. Attempt 1 times out.",
+          "at": "gw",
+          "slot": "top",
+          "token": {
+            "label": "attempt 1",
+            "tone": "err"
+          },
+          "state": {
+            "svc": "done",
+            "gw": "error"
+          }
+        },
+        {
+          "caption": "RetryPolicy allows another try: the result was a timeout and attempts are under the limit.",
+          "at": "retry",
+          "slot": "top",
+          "token": {
+            "label": "retry?",
+            "tone": "req"
+          },
+          "state": {
+            "gw": "done",
+            "retry": "active"
+          }
+        },
+        {
+          "caption": "Attempt 2 sends the same payment id, so the gateway can dedupe it. It is approved.",
+          "at": "gw",
+          "slot": "bottom",
+          "token": {
+            "label": "attempt 2",
+            "tone": "ok"
+          },
+          "state": {
+            "retry": "done",
+            "gw": "active"
+          }
+        },
+        {
+          "caption": "P-2 returns SUCCEEDED with two attempts recorded.",
+          "at": "client",
+          "slot": "bottom",
+          "token": {
+            "label": "P-2 SUCCEEDED",
+            "tone": "ok"
+          },
+          "state": {
+            "gw": "done",
+            "svc": "done",
+            "client": "active"
+          }
+        },
+        {
+          "caption": "The client retries `k-2` after a dropped response. The service finds P-2 in its map.",
+          "at": "svc",
+          "slot": "top",
+          "token": {
+            "label": "pay k-2 again",
+            "tone": "req"
+          },
+          "state": {
+            "client": "done",
+            "svc": "active",
+            "gw": "done",
+            "retry": "done"
+          }
+        },
+        {
+          "caption": "The stored P-2 comes back at once. No gateway is called again.",
+          "at": "client",
+          "slot": "bottom",
+          "token": {
+            "label": "P-2 replay",
+            "tone": "ok"
+          },
+          "state": {
+            "svc": "done",
+            "client": "active"
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "CorePayment.java",
+      "lang": "java",
+      "title": "Service and interfaces",
+      "run": "captured",
+      "caption": "The core flow. Gateways and the retry rule are interfaces passed into the constructor. The map is not thread-safe yet; page 5 fixes that.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7
+          ],
+          "text": "Wire two gateways and a fixed retry policy of three attempts."
+        },
+        {
+          "lines": [
+            8,
+            9,
+            10,
+            11,
+            12
+          ],
+          "text": "A UPI payment and its replay, a flaky card and its replay, a declined card."
+        },
+        {
+          "lines": [
+            24,
+            25,
+            26,
+            27,
+            28,
+            29
+          ],
+          "text": "Two interfaces are the swap points: gateways and the retry rule."
+        },
+        {
+          "lines": [
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48
+          ],
+          "text": "The fake card gateway times out on its first call and declines one token."
+        },
+        {
+          "lines": [
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56
+          ],
+          "text": "FixedRetry retries only TIMEOUT, and only below the attempt limit."
+        },
+        {
+          "lines": [
+            77,
+            78,
+            79,
+            80,
+            81,
+            82,
+            83,
+            84
+          ],
+          "text": "A known key returns the stored Payment. The key is claimed only after a gateway is found."
+        },
+        {
+          "lines": [
+            85,
+            86,
+            87,
+            88,
+            89,
+            90,
+            91,
+            92,
+            93
+          ],
+          "text": "Charge until the policy says stop. A final timeout leaves PROCESSING, not FAILED."
+        }
+      ]
+    },
+    {
+      "file": "BackoffRetry.java",
+      "lang": "java",
+      "title": "A new retry policy",
+      "run": "captured",
+      "caption": "Exponential backoff added as a new RetryPolicy class. The loop in main mirrors `PaymentService.pay`; passing the new policy to its constructor is the only change.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6
+          ],
+          "text": "The policy gets a Sleeper that records waits instead of sleeping, so the run is fast and repeatable."
+        },
+        {
+          "lines": [
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "text": "Replay a scripted gateway: three timeouts, then an approval."
+        },
+        {
+          "lines": [
+            17,
+            18
+          ],
+          "text": "Ask whether a decline would be retried."
+        },
+        {
+          "lines": [
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39
+          ],
+          "text": "A new class: each retry waits twice as long as the one before."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Retry a timed-out charge with the same payment id, or the gateway may charge twice.",
+    "Never retry a DECLINED result; the bank has already answered.",
+    "Do not branch on method type inside the service; add a gateway class."
+  ],
+  "quiz": {
+    "q": "What does CorePayment print for key k-3?",
+    "options": [
+      "k-3 -> P-3 FAILED attempts=3",
+      "k-3 -> P-3 PROCESSING attempts=3",
+      "k-3 -> P-3 FAILED attempts=1",
+      "k-3 -> P-4 FAILED attempts=1"
+    ],
+    "answer": 2,
+    "why": "`tok_declined` returns DECLINED. FixedRetry retries only TIMEOUT, so one attempt ends in FAILED. The k-1 replay created no payment, so the id is P-3."
+  },
+  "takeaway": "One facade, one gateway per method, and retry rules behind an interface.",
+  "chat": {
+    "starters": [
+      "Is choosing a gateway by supports() a strategy or a chain of responsibility?",
+      "Where should jitter go in the backoff policy?",
+      "How do I test PaymentService without a real gateway?"
+    ]
+  }
+}

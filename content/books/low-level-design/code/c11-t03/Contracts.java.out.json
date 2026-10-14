@@ -1,0 +1,11 @@
+{
+  "stdout": "booked B1\nB2 conflicts: true\nB3 conflicts: false\nfind B9: false",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java Contracts.java",
+  "tool": "Java 17.0.17",
+  "hash": "ef633f6965aabb39",
+  "at": "2026-10-12T11:24:37.189Z"
+}

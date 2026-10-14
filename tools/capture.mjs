@@ -10,7 +10,7 @@
 //                 shows "$ command" followed by its real output. Fixed identity, dates and time zone, so git
 //                 hashes and timestamps are reproducible. `cd` and `export NAME=value` carry over between lines.
 //   needs: ["postgres"] | ["mongo"]   (in the page JSON) a REAL PostgreSQL / MongoDB is started for the snippet and
-//                 its fresh database is passed as DATABASE_URL / MONGO_URI.
+//                 its fresh database is passed as DATABASE_URL / MONGO_URI (Java: JDBC_URL, DB_USER, DB_PASSWORD).
 // Every snippet runs twice; if the two outputs differ the capture fails (random ids, timestamps and ports must
 // not reach the page).
 import { spawn, spawnSync } from 'node:child_process';
@@ -140,6 +140,9 @@ async function envFor(needs, label) {
       const r = await svc.call({ cmd: 'createdb', name });
       if (!r.ok) throw new Error(`could not create database: ${r.error}`);
       env.DATABASE_URL = `postgres://postgres:postgres@127.0.0.1:${svc.port}/${name}`;
+      env.JDBC_URL = `jdbc:postgresql://127.0.0.1:${svc.port}/${name}`; // Java: DriverManager.getConnection(JDBC_URL, DB_USER, DB_PASSWORD)
+      env.DB_USER = 'postgres';
+      env.DB_PASSWORD = 'postgres';
     } else env.MONGO_URI = `mongodb://127.0.0.1:${svc.port}/${name}`;
     names.push(name);
   }

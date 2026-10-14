@@ -1,0 +1,232 @@
+{
+  "title": "Payment domain model",
+  "idea": "The payment domain model separates what is paid (Money), how it is paid (PaymentMethod), and what happened to it (Payment, Refund, PaymentStatus).",
+  "analogy": {
+    "text": "A shop receipt book. Each receipt records the amount, how the customer paid, and any money handed back, written under the original line.",
+    "breaks": "Paper never refuses a refund larger than the sale."
+  },
+  "points": [
+    "Money is a value object: a long in minor units plus a currency.",
+    "PaymentMethod is an interface; UPIPayment and CardPayment implement it.",
+    "A Payment has one method, one amount, and zero or more Refunds.",
+    "Payment guards its invariant: refunds never add up past the amount."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Class diagram",
+    "nodes": [
+      {
+        "id": "payment",
+        "label": "Payment",
+        "sub": "id, orderId, idempotencyKey"
+      },
+      {
+        "id": "money",
+        "label": "Money",
+        "sub": "minor, currency"
+      },
+      {
+        "id": "method",
+        "label": "PaymentMethod",
+        "sub": "interface, describe()"
+      },
+      {
+        "id": "upi",
+        "label": "UPIPayment",
+        "sub": "vpa"
+      },
+      {
+        "id": "card",
+        "label": "CardPayment",
+        "sub": "token, last4, network"
+      },
+      {
+        "id": "refund",
+        "label": "Refund",
+        "sub": "id, paymentId, amount"
+      },
+      {
+        "id": "status",
+        "label": "PaymentStatus",
+        "sub": "enum"
+      }
+    ],
+    "edges": [
+      {
+        "from": "payment",
+        "to": "money",
+        "label": "has 1",
+        "caption": "A Payment holds its amount as Money. The running refunded total is Money too."
+      },
+      {
+        "from": "payment",
+        "to": "method",
+        "label": "paid by 1",
+        "caption": "Each Payment is made with exactly one PaymentMethod."
+      },
+      {
+        "from": "upi",
+        "to": "method",
+        "label": "is-a",
+        "caption": "UPIPayment is-a PaymentMethod. It holds a UPI id and checks its format."
+      },
+      {
+        "from": "card",
+        "to": "method",
+        "label": "is-a",
+        "caption": "CardPayment is-a PaymentMethod. It keeps a gateway token and the last four digits, never the card number."
+      },
+      {
+        "from": "payment",
+        "to": "refund",
+        "label": "has 0..*",
+        "caption": "A Payment owns its Refunds. Each Refund points back by paymentId."
+      },
+      {
+        "from": "refund",
+        "to": "money",
+        "label": "has 1",
+        "caption": "A Refund amount is Money in the same currency as its payment."
+      },
+      {
+        "from": "payment",
+        "to": "status",
+        "label": "has",
+        "caption": "PaymentStatus is an enum. The lifecycle page turns it into a state machine."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "PaymentModel.java",
+      "lang": "java",
+      "title": "The model in Java 17",
+      "run": "captured",
+      "caption": "Records for values, a class for Payment because its status and totals change. Invariants live in constructors and methods.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7
+          ],
+          "text": "Build a UPI payment of 49900 paise for order ORD-7 with key k-1."
+        },
+        {
+          "lines": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13
+          ],
+          "text": "Mark it succeeded, then refund 20000 and 29900: partial, then full."
+        },
+        {
+          "lines": [
+            14,
+            15,
+            16,
+            17
+          ],
+          "text": "Four bad inputs; each is refused with a message."
+        },
+        {
+          "lines": [
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36
+          ],
+          "text": "Money rejects negative amounts and bad currency codes, and adds without rounding."
+        },
+        {
+          "lines": [
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56
+          ],
+          "text": "Each method validates its own fields. The card record never holds a card number."
+        },
+        {
+          "lines": [
+            72,
+            73,
+            74,
+            75,
+            76,
+            77,
+            78,
+            79,
+            80
+          ],
+          "text": "The constructor rejects a zero amount and starts the refunded total at zero."
+        },
+        {
+          "lines": [
+            84,
+            85,
+            86,
+            87,
+            88,
+            89,
+            90,
+            91,
+            92,
+            93,
+            94,
+            95,
+            96,
+            97,
+            98
+          ],
+          "text": "refund checks status and remaining balance, then updates both together."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Never store a full card number; keep a gateway token and the last four digits.",
+    "Use long minor units for money; double cannot hold 0.1 exactly.",
+    "Keep refunds as their own records, not a single refunded flag."
+  ],
+  "quiz": {
+    "q": "What does PaymentModel print for the refund R-3 of 1?",
+    "options": [
+      "rejected: cannot refund in REFUNDED",
+      "rejected: refund exceeds payment",
+      "Nothing; the refund of 1 succeeds",
+      "rejected: negative amount"
+    ],
+    "answer": 0,
+    "why": "After R-2 the refunded total equals the amount, so status is REFUNDED. The status check runs before the balance check."
+  },
+  "takeaway": "Money, method and history are separate types; Payment guards the totals.",
+  "chat": {
+    "starters": [
+      "Why is Money a record instead of a plain long?",
+      "Should PaymentMethod be a sealed interface in Java 17?",
+      "How would I add a wallet as a third payment method?"
+    ]
+  }
+}

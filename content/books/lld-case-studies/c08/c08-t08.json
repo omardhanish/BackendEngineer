@@ -1,0 +1,247 @@
+{
+  "title": "Seat picker and checkout UI",
+  "idea": "The booking frontend is a seat picker and a checkout screen driven by one reducer, so the UI can never submit a hold or payment twice.",
+  "points": [
+    "`SeatPicker` renders state and dispatches events; the reducer owns every rule.",
+    "Buttons disable while a request is in flight, and the reducer ignores repeats.",
+    "One Idempotency-Key per checkout survives retries, so a retry never charges twice.",
+    "Follow-ups: live seat updates, waitlists for sold-out shows, and seat map caching."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Screens and component tree",
+    "nodes": [
+      {
+        "id": "page",
+        "label": "ShowPage",
+        "sub": "route /shows/:id"
+      },
+      {
+        "id": "red",
+        "label": "checkout reducer",
+        "sub": "step, selected, payKey"
+      },
+      {
+        "id": "picker",
+        "label": "SeatPicker",
+        "sub": "hold button"
+      },
+      {
+        "id": "grid",
+        "label": "SeatGrid",
+        "sub": "seat buttons"
+      },
+      {
+        "id": "pay",
+        "label": "CheckoutPanel",
+        "sub": "pay button"
+      },
+      {
+        "id": "timer",
+        "label": "HoldTimer",
+        "sub": "counts to heldUntil"
+      },
+      {
+        "id": "api",
+        "label": "apiClient",
+        "sub": "fetch + Idempotency-Key"
+      },
+      {
+        "id": "done",
+        "label": "ConfirmationPage",
+        "sub": "bookingId"
+      }
+    ],
+    "edges": [
+      {
+        "from": "page",
+        "to": "red",
+        "label": "owns",
+        "caption": "ShowPage owns the reducer state and passes it down. Children never keep their own copy."
+      },
+      {
+        "from": "page",
+        "to": "picker",
+        "caption": "In the PICKING step the page renders SeatPicker with the seat map from the API."
+      },
+      {
+        "from": "picker",
+        "to": "grid",
+        "caption": "SeatGrid draws each seat and reports clicks as TOGGLE_SEAT events."
+      },
+      {
+        "from": "picker",
+        "to": "api",
+        "label": "hold",
+        "caption": "The hold button calls the API once; the step becomes HOLDING so repeat clicks do nothing."
+      },
+      {
+        "from": "page",
+        "to": "pay",
+        "caption": "After HOLD_OK the page shows CheckoutPanel and a HoldTimer for the deadline."
+      },
+      {
+        "from": "pay",
+        "to": "timer",
+        "caption": "When the timer reaches zero it dispatches HOLD_EXPIRED and the user picks again."
+      },
+      {
+        "from": "pay",
+        "to": "api",
+        "label": "book",
+        "caption": "Pay sends POST /bookings with the checkout key; the service books the `show_seat` rows in one transaction."
+      },
+      {
+        "from": "api",
+        "to": "done",
+        "caption": "The API returns 201, or 200 on a replay; both lead to the confirmation page."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "checkout.mjs",
+      "lang": "js",
+      "title": "Checkout reducer",
+      "run": "browser",
+      "caption": "Pure screen logic. Run it, then add a third PAY_CLICKED and predict the output.",
+      "walk": [
+        {
+          "lines": [
+            3,
+            4
+          ],
+          "text": "The whole screen state: step, chosen seats, hold, Idempotency-Key and error."
+        },
+        {
+          "lines": [
+            8,
+            9,
+            10,
+            11
+          ],
+          "text": "Seats toggle only while picking; a click clears the old error."
+        },
+        {
+          "lines": [
+            12,
+            13,
+            14
+          ],
+          "text": "Hold starts once and only with seats chosen. HOLDING clears old errors and blocks a second click."
+        },
+        {
+          "lines": [
+            18,
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "text": "A 409 clears the selection; any other failure returns to picking with a retry message."
+        },
+        {
+          "lines": [
+            24,
+            25,
+            26,
+            27
+          ],
+          "text": "Pay is ignored unless PAYING. The key is made once, then reused; production uses a random UUID."
+        },
+        {
+          "lines": [
+            28,
+            29
+          ],
+          "text": "A failed payment goes back to PAYING but keeps the same key."
+        },
+        {
+          "lines": [
+            32,
+            33,
+            34
+          ],
+          "text": "Hold expiry resets the screen, unless the booking is already done."
+        }
+      ]
+    },
+    {
+      "file": "SeatPicker.jsx",
+      "lang": "js",
+      "title": "SeatPicker component",
+      "run": "static",
+      "illustrative": true,
+      "caption": "A React component that only renders state and dispatches events. Not run here.",
+      "walk": [
+        {
+          "lines": [
+            2
+          ],
+          "text": "Props bring the show, seats, reducer state, dispatch and the API client."
+        },
+        {
+          "lines": [
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12
+          ],
+          "text": "Mark HOLDING first, then call the API; 409 is a conflict, other failures return to picking."
+        },
+        {
+          "lines": [
+            17
+          ],
+          "text": "No seat data yet means a loading state, never an empty grid."
+        },
+        {
+          "lines": [
+            13
+          ],
+          "text": "Errors render in an alert region so screen readers announce them."
+        },
+        {
+          "lines": [
+            20,
+            21,
+            22,
+            23
+          ],
+          "text": "The button is disabled with no seats or once a hold is in flight."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Disabling a button is not enough; the reducer and the Idempotency-Key must also stop repeats.",
+    "Show the server's heldUntil, not a local ten-minute guess; clocks drift between devices.",
+    "Interview follow-up: polling the seat map at scale is costly; mention push updates or caching."
+  ],
+  "quiz": {
+    "q": "In the run, what is payKey after the payment retry?",
+    "options": [
+      "ck-2",
+      "ck-1",
+      "-",
+      "null"
+    ],
+    "answer": 1,
+    "why": "PAY_CLICKED creates a key only when `payKey` is empty. PAY_FAILED keeps it, so the retry reuses ck-1."
+  },
+  "takeaway": "One reducer owns the screen; one key per checkout makes retries safe.",
+  "chat": {
+    "starters": [
+      "How do I show other users' holds on the seat map in near real time?",
+      "Should the hold call be optimistic in the UI?",
+      "What changes if the payment happens on a redirect page?"
+    ]
+  }
+}

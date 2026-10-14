@@ -1,0 +1,319 @@
+{
+  "title": "Object Pool pattern",
+  "idea": "The Object Pool pattern keeps a fixed set of costly, reusable objects; callers borrow one, use it, and return it instead of creating their own.",
+  "points": [
+    "Pool objects that are slow to create and limited: connections, threads, sockets.",
+    "The pool size caps concurrency; when all are busy, callers wait with a timeout.",
+    "`release` must reset state, or the next borrower inherits the last one's settings.",
+    "The JDK pools threads in `ThreadPoolExecutor`; HikariCP pools JDBC connections."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "lanes",
+    "title": "Borrow, return, wait",
+    "scenario": {
+      "lanes": [
+        {
+          "id": "idle",
+          "label": "Idle connections",
+          "kind": "queue",
+          "hint": "ready to lend"
+        },
+        {
+          "id": "busy",
+          "label": "In use",
+          "kind": "area",
+          "hint": "borrowed by a thread"
+        },
+        {
+          "id": "wait",
+          "label": "Waiting threads",
+          "kind": "queue",
+          "hint": "blocked in acquire"
+        }
+      ],
+      "tokens": {
+        "c1": {
+          "label": "conn 1",
+          "tone": "io"
+        },
+        "c2": {
+          "label": "conn 2",
+          "tone": "io"
+        },
+        "tC": {
+          "label": "thread C",
+          "tone": "sync"
+        },
+        "tD": {
+          "label": "thread D",
+          "tone": "sync"
+        }
+      },
+      "steps": [
+        {
+          "caption": "The pool creates two connections up front. No request pays the setup cost later.",
+          "at": {
+            "idle": [
+              "c1",
+              "c2"
+            ],
+            "busy": [],
+            "wait": []
+          }
+        },
+        {
+          "caption": "Thread A calls `acquire` and borrows connection 1 from the queue head.",
+          "at": {
+            "idle": [
+              "c2"
+            ],
+            "busy": [
+              "c1"
+            ],
+            "wait": []
+          },
+          "active": "c1"
+        },
+        {
+          "caption": "Thread B borrows connection 2. The idle queue is now empty.",
+          "at": {
+            "idle": [],
+            "busy": [
+              "c1",
+              "c2"
+            ],
+            "wait": []
+          },
+          "active": "c2"
+        },
+        {
+          "caption": "Thread C calls `acquire` and blocks. The pool size caps load on the database.",
+          "at": {
+            "idle": [],
+            "busy": [
+              "c1",
+              "c2"
+            ],
+            "wait": [
+              "tC"
+            ]
+          },
+          "active": "tC"
+        },
+        {
+          "caption": "Thread A calls `release`. The pool resets the connection, then puts it back.",
+          "at": {
+            "idle": [
+              "c1"
+            ],
+            "busy": [
+              "c2"
+            ],
+            "wait": [
+              "tC"
+            ]
+          },
+          "active": "c1"
+        },
+        {
+          "caption": "Thread C wakes and takes the same connection object, clean.",
+          "at": {
+            "idle": [],
+            "busy": [
+              "c2",
+              "c1"
+            ],
+            "wait": []
+          },
+          "active": "c1"
+        },
+        {
+          "caption": "Thread D waits, but nothing returns before its timeout.",
+          "at": {
+            "idle": [],
+            "busy": [
+              "c2",
+              "c1"
+            ],
+            "wait": [
+              "tD"
+            ]
+          },
+          "active": "tD"
+        },
+        {
+          "caption": "The timeout expires and `acquire` throws. D fails fast instead of hanging forever.",
+          "at": {
+            "idle": [],
+            "busy": [
+              "c2",
+              "c1"
+            ],
+            "wait": []
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "NoPoolProblem.java",
+      "lang": "java",
+      "title": "The problem: open per request",
+      "run": "captured",
+      "caption": "Every request opens its own connection: the setup cost repeats and nothing limits the total.",
+      "walk": [
+        {
+          "lines": [
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39
+          ],
+          "text": "The database accepts a fixed number of open connections. Each `open` stands in for a slow handshake."
+        },
+        {
+          "lines": [
+            9,
+            10,
+            11,
+            12,
+            13
+          ],
+          "text": "Sequential requests never overload it, but each one repeats the full setup cost."
+        },
+        {
+          "lines": [
+            16,
+            17,
+            18
+          ],
+          "text": "The loop holds 25 connections open at once, as a burst of requests would. Nothing caps it."
+        },
+        {
+          "lines": [
+            19,
+            20,
+            21,
+            22
+          ],
+          "text": "The database refuses the extra request. The app learns its limit only from a failure."
+        }
+      ]
+    },
+    {
+      "file": "ConnectionPoolDemo.java",
+      "lang": "java",
+      "title": "The fix: a bounded pool",
+      "run": "captured",
+      "caption": "A thread-safe pool on an `ArrayBlockingQueue`: eager creation, timed acquire, reset on release.",
+      "walk": [
+        {
+          "lines": [
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53
+          ],
+          "text": "The constructor validates the size and creates every connection once. The queue is thread-safe."
+        },
+        {
+          "lines": [
+            55,
+            56,
+            57,
+            58,
+            59,
+            60
+          ],
+          "text": "`poll` with a timeout blocks until a connection returns, then gives up with a clear error."
+        },
+        {
+          "lines": [
+            62,
+            63,
+            64,
+            65,
+            66
+          ],
+          "text": "`release` resets state first. A full queue catches some double releases, not all; real pools track borrowed objects."
+        },
+        {
+          "lines": [
+            13,
+            14,
+            18,
+            19,
+            20,
+            21
+          ],
+          "text": "`try`/`finally` returns the connection even when the work throws. Leaks drain a pool silently."
+        },
+        {
+          "lines": [
+            9,
+            15,
+            25,
+            26,
+            27,
+            28
+          ],
+          "text": "Eight tasks on four threads share two connections. Printing counts and a bound keeps output stable."
+        },
+        {
+          "lines": [
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36
+          ],
+          "text": "With both connections held, a third `acquire` times out after 50 ms."
+        },
+        {
+          "lines": [
+            37,
+            38,
+            39
+          ],
+          "text": "The tenant schema set by the last user is gone after release."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Skipping `release` on an exception path leaks objects until every caller times out.",
+    "Returning objects without a reset leaks the previous user's schema, session or buffer contents.",
+    "Pooling cheap objects like DTOs or `StringBuilder` adds locking and stale state for no gain."
+  ],
+  "quiz": {
+    "q": "Same `ConnectionPool` as the demo. What does this print?",
+    "code": "ConnectionPool pool = new ConnectionPool(1);\nPooledConnection c = pool.acquire(50);\nc.useSchema(\"acme\");\npool.release(c);\nPooledConnection d = pool.acquire(50);\nSystem.out.println((c == d) + \" \" + d.schema());",
+    "lang": "java",
+    "options": [
+      "false public",
+      "true acme",
+      "false acme",
+      "true public"
+    ],
+    "answer": 3,
+    "why": "A pool of one lends the same object again, so `c == d`. `release` reset the schema. The caller still holding `c` is a bug waiting to happen."
+  },
+  "takeaway": "Pool only costly, limited objects; always release in `finally`, and reset on return.",
+  "chat": {
+    "starters": [
+      "How do I choose the right size for a connection pool?",
+      "Why is Object Pool rarely worth it for ordinary Java objects?",
+      "How do pools detect and handle a broken connection?"
+    ]
+  }
+}

@@ -1,0 +1,185 @@
+{
+  "title": "Pluggable schedules and retry policies",
+  "idea": "An extensible scheduler accepts new schedules, retry policies and job wrappers as new classes, while the core loop and its queue stay untouched.",
+  "points": [
+    "Strategy: `Schedule` and `RetryPolicy` are interfaces the core only calls.",
+    "Decorator: wrap a schedule or a job to add a stop time or logging.",
+    "Builder: `TaskSpec` collects optional settings and refuses a task with no job.",
+    "Config holds defaults, such as the retry policy for tasks that set none."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "Where new behaviour plugs in",
+    "head": [
+      "Extension point",
+      "Pattern",
+      "Built in",
+      "Added without edits"
+    ],
+    "rows": [
+      [
+        "Schedule",
+        "Strategy + Decorator",
+        "FixedRate, one-shot",
+        "EndsAt stop time"
+      ],
+      [
+        "RetryPolicy",
+        "Strategy",
+        "ExponentialBackoff",
+        "JitteredBackoff, seeded"
+      ],
+      [
+        "Job",
+        "Decorator",
+        "Any lambda",
+        "Logged wrapper"
+      ],
+      [
+        "TaskSpec",
+        "Builder",
+        "Required job, defaults",
+        "Per-task overrides"
+      ],
+      [
+        "SchedulerConfig",
+        "Builder",
+        "Default retry",
+        "Per-team defaults"
+      ]
+    ],
+    "highlight": {
+      "col": 3
+    },
+    "caption": "Schedules, retry policies and job wrappers on the right are new classes; the builders only gather settings. The scheduler's loop never changes."
+  },
+  "code": [
+    {
+      "file": "Extensions.java",
+      "lang": "java",
+      "title": "Extensions, core unchanged",
+      "run": "captured",
+      "caption": "A schedule decorator, a seeded jitter policy and a logging job wrapper, plugged into the same core loop.",
+      "walk": [
+        {
+          "lines": [
+            7,
+            8,
+            9,
+            10
+          ],
+          "text": "Config sets the default retry policy for every task that names none."
+        },
+        {
+          "lines": [
+            12,
+            13,
+            14,
+            15
+          ],
+          "text": "Sync runs every 300 ms until 900, wrapped in a logging decorator."
+        },
+        {
+          "lines": [
+            16,
+            17,
+            18,
+            19,
+            20,
+            21
+          ],
+          "text": "Email fails twice, then succeeds, and retries with seeded jitter."
+        },
+        {
+          "lines": [
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41
+          ],
+          "text": "EndsAt wraps any schedule and stops it after a time limit."
+        },
+        {
+          "lines": [
+            52,
+            53,
+            54,
+            55
+          ],
+          "text": "Jitter picks a delay between half and all of the backoff."
+        },
+        {
+          "lines": [
+            65,
+            66,
+            67,
+            68,
+            69,
+            70,
+            71,
+            72,
+            73,
+            74
+          ],
+          "text": "Logged prints each outcome and rethrows, so retries still happen."
+        },
+        {
+          "lines": [
+            157,
+            158,
+            159,
+            160,
+            161,
+            162,
+            163,
+            164,
+            165,
+            166,
+            167,
+            168,
+            169,
+            170,
+            171,
+            172,
+            173,
+            174,
+            175
+          ],
+          "text": "The core only calls the interfaces; it knows none of the new classes."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Seed jitter in tests only; in production, every instance needs its own randomness.",
+    "A decorator that swallows exceptions silently disables retries; always rethrow.",
+    "A policy with state, like a seeded Random, must be thread-safe or created per task."
+  ],
+  "quiz": {
+    "q": "What does Extensions print for sync-users after t=600?",
+    "options": [
+      "Nothing: the schedule ended at 600",
+      "t=900 sync-users ok",
+      "t=900 sync-users ok and t=1200 sync-users ok",
+      "t=650 sync-users ok"
+    ],
+    "answer": 1,
+    "why": "Fixed rate proposes 900, which is not past the 900 limit, so it runs. Next it proposes 1200, and EndsAt returns empty."
+  },
+  "takeaway": "New behaviour arrives as new classes behind interfaces the core already calls.",
+  "chat": {
+    "starters": [
+      "How would I add a cron-style schedule as a Schedule implementation?",
+      "Should a dead-letter hook be a decorator or a listener?",
+      "When does a builder beat a constructor with many parameters?"
+    ]
+  }
+}

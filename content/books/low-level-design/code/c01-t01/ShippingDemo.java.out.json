@@ -1,0 +1,11 @@
+{
+  "stdout": "Standard: 700 cents, 4 day(s)\nExpress: 1400 cents, 1 day(s)\nSame day: 1500 cents, 1 day(s)\nRejected: weight <= 0: -5",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ShippingDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "7b24517810778469",
+  "at": "2026-10-12T11:16:44.895Z"
+}

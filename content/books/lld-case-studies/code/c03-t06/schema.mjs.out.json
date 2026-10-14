@@ -1,0 +1,11 @@
+{
+  "stdout": "P-1 for ORD-1 -> ok\nP-2 failed try for ORD-2 -> ok\nP-3 second try for ORD-2 -> ok\nsame Idempotency-Key -> 23505 payment_idempotency_key_key\nsecond success for ORD-1 -> 23505 payment_one_success\nzero amount -> 23514 payment_amount_minor_check\nrefund more than paid -> 23514 refund_within_amount\nrefund for unknown payment -> 23503 refund_payment_id_fkey\n[{\"id\":\"P-1\",\"order_id\":\"ORD-1\",\"status\":\"SUCCEEDED\"},{\"id\":\"P-2\",\"order_id\":\"ORD-2\",\"status\":\"FAILED\"},{\"id\":\"P-3\",\"order_id\":\"ORD-2\",\"status\":\"SUCCEEDED\"}]",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node schema.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "a3f81736872b5c20",
+  "at": "2026-10-14T10:23:41.868Z"
+}

@@ -1,0 +1,132 @@
+{
+  "title": "Pluggable limiter algorithms",
+  "idea": "An extensible rate limiter builds limiters from configuration through a registry of factories, and adds behavior by wrapping limiters in decorators instead of editing them.",
+  "points": [
+    "A factory maps an algorithm name to a constructor; new names register at startup.",
+    "Config text such as a route's rule picks the algorithm without code changes.",
+    "A composite limiter allows a call only when every inner limiter allows it.",
+    "Decorators add metrics or an allow-list while the inner algorithm stays untouched."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "From config text to a wrapped limiter",
+    "nodes": [
+      {
+        "id": "config",
+        "label": "Config text",
+        "sub": "sliding-log 2/1000 + fixed 3/60000"
+      },
+      {
+        "id": "factory",
+        "label": "LimiterFactory",
+        "sub": "name -> maker"
+      },
+      {
+        "id": "parts",
+        "label": "One limiter per part"
+      },
+      {
+        "id": "composite",
+        "label": "Composite",
+        "sub": "all must allow"
+      },
+      {
+        "id": "counter",
+        "label": "CountingLimiter",
+        "sub": "decorator"
+      },
+      {
+        "id": "allow",
+        "label": "AllowListLimiter",
+        "sub": "decorator"
+      }
+    ],
+    "edges": [
+      {
+        "from": "config",
+        "to": "factory",
+        "label": "parsed by",
+        "caption": "The factory splits a route's rule text on plus signs and reads each algorithm name."
+      },
+      {
+        "from": "factory",
+        "to": "parts",
+        "label": "builds",
+        "caption": "Each name looks up its registered maker, which builds one limiter from a rule and a clock."
+      },
+      {
+        "from": "parts",
+        "to": "composite",
+        "label": "joined into",
+        "caption": "Two or more parts become a composite. A call passes only if every part allows it."
+      },
+      {
+        "from": "composite",
+        "to": "counter",
+        "label": "wrapped by",
+        "caption": "A counting decorator records each answer. Decorators.java wraps a stand-in limiter; a composite wraps the same way."
+      },
+      {
+        "from": "counter",
+        "to": "allow",
+        "label": "wrapped by",
+        "caption": "An outer allow-list returns early for exempt keys, so inner layers never see them."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "Extensible.java",
+      "lang": "java",
+      "title": "Factory, config, composite",
+      "run": "captured",
+      "caption": "Routes read their limiter from config text. A second algorithm is registered without touching the factory. `tryAcquire` returns a boolean here to keep the wiring short.",
+      "walk": [
+        { "lines": [8, 9, 10], "text": "Register algorithms by name. Sliding log arrives later with one line." },
+        { "lines": [11, 12, 13], "text": "Config per route; upload combines a per-second and a per-minute rule." },
+        { "lines": [14, 15, 16, 17, 18, 19, 20, 21], "text": "Six calls per route: four at 0 ms, two at 1000 ms. Y means allowed." },
+        { "lines": [23, 24, 25, 26, 27], "text": "An unknown algorithm fails at startup, not on the first request." },
+        { "lines": [42, 43, 47, 48, 49], "text": "The registry maps names to constructors that take a rule and a clock." },
+        { "lines": [52, 53, 54, 55, 56, 57, 58, 59, 60], "text": "Parse each part, look up its maker, and build one limiter per part." },
+        { "lines": [62, 63], "text": "Several parts become a composite: every part must allow the call." }
+      ]
+    },
+    {
+      "file": "Decorators.java",
+      "lang": "java",
+      "title": "Stacking decorators",
+      "run": "captured",
+      "caption": "Metrics and an allow-list wrap any limiter. The order of wrapping decides what gets counted.",
+      "walk": [
+        { "lines": [5, 6, 7], "text": "Wrap the core in a counter, then wrap that in an allow-list." },
+        { "lines": [8, 9, 10, 11, 12, 13], "text": "Three calls from u1, three from ops, then print the counter." },
+        { "lines": [33, 34, 35, 36], "text": "The counter forwards every call and records the answer." },
+        { "lines": [47, 48], "text": "Exempt keys return early, so the inner limiter never sees them." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "In a composite, earlier parts spend budget even when a later part rejects.",
+    "Validate the whole config at startup; a typo should stop the deploy.",
+    "Wrapping order matters: an outer allow-list hides exempt calls from inner metrics."
+  ],
+  "quiz": {
+    "q": "What is the last line Decorators prints?",
+    "options": [
+      "allowed=5 rejected=1",
+      "allowed=3 rejected=3",
+      "allowed=2 rejected=4",
+      "allowed=2 rejected=1"
+    ],
+    "answer": 3,
+    "why": "The allow-list sits outside the counter. The three ops calls return early and are never counted; u1 gets two allows and one reject."
+  },
+  "takeaway": "Register new algorithms and wrap new behavior; never edit working limiters.",
+  "chat": {
+    "starters": [
+      "How would I reload limiter config without restarting?",
+      "Is the factory registry the Strategy pattern or something else?",
+      "How do I avoid the composite wasting budget in earlier parts?"
+    ]
+  }
+}

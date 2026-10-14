@@ -1,0 +1,11 @@
+{
+  "stdout": "report.csv\nalice,3\nbob,5\nreport.json\n[\"alice,3\",\"bob,5\"]\nreport.txt\n<rows>2</rows>",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ExportSwitches.java",
+  "tool": "Java 17.0.17",
+  "hash": "e79531c853449738",
+  "at": "2026-10-12T11:18:15.105Z"
+}

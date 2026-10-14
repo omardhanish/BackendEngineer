@@ -1,0 +1,364 @@
+{
+  "title": "Overlapping slots and edge cases",
+  "idea": "Concurrency for court booking means two overlapping multi-hour requests must never both win; you make check-all-then-write-all one atomic step per court.",
+  "analogy": {
+    "text": "Two captains read the same planner at once, see 19:00 empty, and both write their team in. A key to the planner stops that.",
+    "breaks": "One key locks the whole planner; the code locks each court separately."
+  },
+  "points": [
+    "Checking free hours, then writing them, is two steps another thread can split.",
+    "Bookings span several hours; claiming them one by one can leave half a booking.",
+    "A lock per court makes check-and-write atomic without blocking other courts.",
+    "Expired holds can be taken over; a late payment for them is refunded."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "lanes",
+    "title": "Two players, overlapping hours",
+    "scenario": {
+      "lanes": [
+        {
+          "id": "a",
+          "label": "Thread P-1",
+          "kind": "area",
+          "hint": "18:00-20:00"
+        },
+        {
+          "id": "b",
+          "label": "Thread P-2",
+          "kind": "area",
+          "hint": "19:00-21:00"
+        },
+        {
+          "id": "court",
+          "label": "Court C-1",
+          "kind": "area",
+          "hint": "who owns each hour"
+        }
+      ],
+      "tokens": {
+        "ca": {
+          "label": "18, 19 free?",
+          "tone": "sync"
+        },
+        "cb": {
+          "label": "19, 20 free?",
+          "tone": "sync"
+        },
+        "ya": {
+          "label": "yes",
+          "tone": "io"
+        },
+        "yb": {
+          "label": "yes",
+          "tone": "io"
+        },
+        "a18": {
+          "label": "18: BK-1",
+          "tone": "micro"
+        },
+        "a19": {
+          "label": "19: BK-1",
+          "tone": "micro"
+        },
+        "b19": {
+          "label": "19: BK-2",
+          "tone": "macro"
+        },
+        "b20": {
+          "label": "20: BK-2",
+          "tone": "macro"
+        },
+        "lock": {
+          "label": "C-1 lock",
+          "tone": "timer"
+        },
+        "wait": {
+          "label": "waiting",
+          "tone": "neutral"
+        },
+        "no": {
+          "label": "19 taken",
+          "tone": "neutral"
+        }
+      },
+      "steps": [
+        {
+          "caption": "Unsafe version. P-1 checks whether 18:00 and 19:00 are free.",
+          "at": {
+            "a": [
+              "ca"
+            ]
+          },
+          "active": "ca"
+        },
+        {
+          "caption": "Before P-1 writes, P-2 checks 19:00 and 20:00. The court is still empty.",
+          "at": {
+            "a": [
+              "ya"
+            ],
+            "b": [
+              "cb"
+            ]
+          },
+          "active": "cb"
+        },
+        {
+          "caption": "Both threads now hold a yes. Each believes 19:00 is free.",
+          "at": {
+            "a": [
+              "ya"
+            ],
+            "b": [
+              "yb"
+            ]
+          }
+        },
+        {
+          "caption": "P-1 writes both of its hours and reports success.",
+          "at": {
+            "b": [
+              "yb"
+            ],
+            "court": [
+              "a18",
+              "a19"
+            ]
+          },
+          "active": "a19"
+        },
+        {
+          "caption": "P-2 acts on its stale yes and overwrites 19:00. Two teams arrive at 19:00.",
+          "at": {
+            "court": [
+              "a18",
+              "b19",
+              "b20"
+            ]
+          },
+          "active": "b19"
+        },
+        {
+          "caption": "Safe version. Both threads ask for the lock of court C-1. P-1 gets it.",
+          "at": {
+            "a": [
+              "lock"
+            ],
+            "b": [
+              "wait"
+            ]
+          },
+          "active": "lock"
+        },
+        {
+          "caption": "Holding the lock, P-1 checks and writes both hours as one step.",
+          "at": {
+            "a": [
+              "lock"
+            ],
+            "b": [
+              "wait"
+            ],
+            "court": [
+              "a18",
+              "a19"
+            ]
+          },
+          "active": "a19"
+        },
+        {
+          "caption": "P-1 unlocks. P-2 takes the lock, checks, and finds 19:00 owned.",
+          "at": {
+            "b": [
+              "lock"
+            ],
+            "court": [
+              "a18",
+              "a19"
+            ]
+          },
+          "active": "lock"
+        },
+        {
+          "caption": "P-2 writes nothing and unlocks. One winner, no half-written booking.",
+          "at": {
+            "b": [
+              "no"
+            ],
+            "court": [
+              "a18",
+              "a19"
+            ]
+          },
+          "active": "no"
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "SlotRace.java",
+      "lang": "java",
+      "title": "Prove the race",
+      "run": "captured",
+      "caption": "A barrier makes both threads look before either writes, so the unsafe race happens on every run. The counts are stable; who wins is not printed.",
+      "walk": [
+        {
+          "lines": [
+            13,
+            14,
+            15,
+            16
+          ],
+          "text": "Shared hour owners, one lock per court, a barrier for two threads, and counters."
+        },
+        {
+          "lines": [
+            17,
+            18,
+            19
+          ],
+          "text": "Two bookings that overlap only at 19:00."
+        },
+        {
+          "lines": [
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30
+          ],
+          "text": "Safe: take the court's lock, then check and write inside it."
+        },
+        {
+          "lines": [
+            31,
+            32,
+            33,
+            34
+          ],
+          "text": "Unsafe: check, wait for the other thread, then write regardless."
+        },
+        {
+          "lines": [
+            41,
+            42,
+            43
+          ],
+          "text": "Join both threads, then report winners, hours claimed and hours stored."
+        }
+      ]
+    },
+    {
+      "file": "EdgeCases.java",
+      "lang": "java",
+      "title": "Holds, late pay, refunds",
+      "run": "captured",
+      "caption": "Time is passed in, never read from the system clock, so every run prints the same lines.",
+      "walk": [
+        {
+          "lines": [
+            9,
+            10,
+            11,
+            12,
+            13
+          ],
+          "text": "BK-1 holds 18:00. BK-2 is refused while the hold is live; BK-3 takes over after it expires."
+        },
+        {
+          "lines": [
+            14,
+            15,
+            16
+          ],
+          "text": "BK-1's payment lands late. Confirm fails, so the money goes back."
+        },
+        {
+          "lines": [
+            18,
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "text": "The tiered policy refunds less the later a player cancels."
+        },
+        {
+          "lines": [
+            24,
+            25,
+            26
+          ],
+          "text": "A closure is the ground's fault, so a different policy refunds everything."
+        },
+        {
+          "lines": [
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44
+          ],
+          "text": "A hold is refused only if the hour is paid or the old hold is still live."
+        },
+        {
+          "lines": [
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53
+          ],
+          "text": "Confirm checks the owner and the deadline. Expiry alone is not enough."
+        },
+        {
+          "lines": [
+            60,
+            61,
+            62,
+            63,
+            64,
+            65,
+            66,
+            67
+          ],
+          "text": "Full refund from 24 hours before, half from 4 hours, then nothing."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not reserve hour by hour without a lock; a failure leaves half a booking.",
+    "Confirm must check the hold still belongs to this booking, not only its time.",
+    "Make cancel idempotent; a double click must not refund twice."
+  ],
+  "quiz": {
+    "q": "What is the first line SlotRace prints?",
+    "options": [
+      "check-then-act: winners=1 hours claimed=2 hours stored=2",
+      "check-then-act: winners=2 hours claimed=4 hours stored=3",
+      "check-then-act: winners=2 hours claimed=4 hours stored=4",
+      "It changes from run to run"
+    ],
+    "answer": 1,
+    "why": "The barrier lets both threads see free hours first. Both write two hours, but 19:00 is one map key, so only three are stored."
+  },
+  "takeaway": "Lock the court, then check and write every hour as one step.",
+  "chat": {
+    "starters": [
+      "Why not use putIfAbsent for each hour instead of a lock?",
+      "What happens to the court lock when there are many app servers?",
+      "How should a refund be retried if the payment provider is down?"
+    ]
+  }
+}

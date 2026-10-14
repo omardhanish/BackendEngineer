@@ -1,0 +1,11 @@
+{
+  "stdout": "Codes issued: 4100, 4101\nThird drop-off: all lockers full\nBad code: denied\nDay 1: books\nDay 5: shoes\nCharges: [Ada 300, Lin 300, Kim 150]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ParcelLockerDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "4ecb711dac08c33b",
+  "at": "2026-10-12T11:31:05.369Z"
+}

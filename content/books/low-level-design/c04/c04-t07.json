@@ -1,164 +1,81 @@
 {
-  "title": "API versioning and compatibility",
-  "idea": "Backward compatibility means a new release still works for every caller written against the old one; versioning lets you ship a breaking change beside it.",
+  "title": "Method signatures that resist misuse",
+  "idea": "A misuse-resistant API makes wrong calls fail to compile or fail fast, through precise parameter types, honest return types and no exposed internal state.",
   "points": [
-    "A published API is a contract: other code depends on its exact shape.",
-    "Adding is usually safe; removing, renaming or tightening anything breaks some caller.",
-    "Ship a breaking change as a new version that runs beside the old.",
-    "Mark old methods `@Deprecated`, tell callers, and remove them only after they move."
+    "Distinct types for ids make swapped arguments a compile error, not a data bug.",
+    "Replace a boolean flag with an enum so every call site reads clearly.",
+    "Return `Optional` for an expected absence; throw when the caller breaks the contract.",
+    "Return copies or unmodifiable views; never hand out an internal collection."
   ],
   "hero": {
-    "type": "table",
-    "title": "Which changes break old callers?",
-    "head": [
-      "Change",
-      "What an old caller sees",
-      "Compatible?"
-    ],
-    "rows": [
-      [
-        "Add an optional response field",
-        "An extra field it ignores",
-        "Yes, if readers ignore unknowns"
-      ],
-      [
-        "Add a new method or endpoint",
-        "Nothing; it never calls it",
-        "Yes"
-      ],
-      [
-        "Add an interface method with a default body",
-        "Its class still compiles",
-        "Usually; a same-signature clash can still break it"
-      ],
-      [
-        "Add an abstract interface method",
-        "Its class no longer compiles",
-        "No"
-      ],
-      [
-        "Rename or remove a field",
-        "A missing value or a failure",
-        "No"
-      ],
-      [
-        "Make an optional input required",
-        "Its requests get rejected",
-        "No"
-      ]
-    ],
-    "highlight": {
-      "col": 2
-    },
-    "caption": "Most additions keep old callers working; an abstract method, a removal or a tightened rule needs a new version."
+    "type": "anatomy",
+    "title": "Reading a signature that resists misuse",
+    "parts": [
+      { "text": "Optional<Reservation>", "label": "Honest return", "note": "A normal refusal can happen. The absence sits in the type, so callers cannot miss it like a null." },
+      { "text": " reserve", "label": "Verb name", "note": "Names the caller's intent, not how the method stores anything." },
+      { "text": "(OrderId order, ", "label": "Typed id", "note": "A wrapper record. Passing a Sku here is a compile error, not a corrupted row." },
+      { "text": "Sku sku, ", "label": "Second typed id", "note": "Two Strings side by side invite swaps. Two distinct types do not." },
+      { "text": "int qty, ", "label": "Validated primitive", "note": "A plain int is fine when the method rejects zero and negatives with a clear message." },
+      { "text": "Shortfall onShortfall)", "label": "Enum, not boolean", "note": "Call sites read REJECT or BACKORDER instead of a bare true." }
+    ]
   },
   "code": [
     {
-      "file": "ApiEvolutionDemo.java",
+      "file": "LooseInventory.java",
       "lang": "java",
-      "title": "Evolving a Java interface",
+      "title": "The problem",
       "run": "captured",
-      "caption": "Version 2 adds a priority overload as a `default` method. A class written for version 1 still compiles and gains it.",
+      "caption": "Strings, a bare boolean, a null return and a leaked list. Each misuse compiles.",
       "walk": [
-        {
-          "lines": [
-            16,
-            16
-          ],
-          "text": "The version 1 contract: one abstract method every implementer wrote."
-        },
-        {
-          "lines": [
-            18,
-            21
-          ],
-          "text": "Version 2 adds an overload with a body, built on the old method."
-        },
-        {
-          "lines": [
-            24,
-            28
-          ],
-          "text": "`LegacySms` was never edited, yet it now answers the new call too."
-        },
-        {
-          "lines": [
-            30,
-            38
-          ],
-          "text": "A newer class overrides the default to use priority its own way."
-        },
-        {
-          "lines": [
-            6,
-            9
-          ],
-          "text": "Old and new callers share one loop; nothing breaks."
-        }
+        { "lines": [28, 28], "text": "Two adjacent `String` parameters and a `boolean`. Nothing at the call site says which is which." },
+        { "lines": [10, 10], "text": "Order and sku are swapped. It compiles, and stock goes negative for a SKU that does not exist." },
+        { "lines": [11, 11], "text": "A negative quantity is accepted and quietly adds stock." },
+        { "lines": [30, 30], "text": "Under the flag, a shortfall returns without a word. The caller cannot tell it failed." },
+        { "lines": [34, 38], "text": "`find` returns `null`, so the crash happens later in the caller, not here." },
+        { "lines": [39, 39], "text": "Returning the internal list lets any caller erase history, as line 18 does." }
       ]
     },
     {
-      "file": "VersionRouterDemo.java",
+      "file": "InventoryDemo.java",
       "lang": "java",
-      "title": "Two versions side by side",
+      "title": "The fix",
       "run": "captured",
-      "caption": "Version 2 renamed `capacity` to `seats`, a breaking change. Version 1 stays frozen, and both read one model.",
+      "caption": "Typed ids, an enum policy, `Optional` results and fail-fast checks.",
       "walk": [
-        {
-          "lines": [
-            13,
-            18
-          ],
-          "text": "One current model; each version only maps it to its own shape."
-        },
-        {
-          "lines": [
-            24,
-            27
-          ],
-          "text": "The version 1 shape is frozen: the same field names until that version is retired."
-        },
-        {
-          "lines": [
-            28,
-            33
-          ],
-          "text": "Version 2 carries the rename and new fields."
-        },
-        {
-          "lines": [
-            34,
-            34
-          ],
-          "text": "An unknown version gets a stable error code, not a guess."
-        }
+        { "lines": [30, 38], "text": "`OrderId` and `Sku` wrap strings. Swapping them is now a compile error, as line 12 notes." },
+        { "lines": [40, 40], "text": "The enum replaces `boolean force`. The call site names the policy it chose." },
+        { "lines": [52, 56], "text": "Preconditions fail at once: nulls throw `NullPointerException`, bad values `IllegalArgumentException` with a clear message." },
+        { "lines": [57, 59], "text": "A shortfall under `REJECT` returns `Optional.empty()`. Under `BACKORDER`, stock goes negative on purpose: units owed." },
+        { "lines": [64, 67], "text": "`find` returns `Optional`: a missing order shows in the signature, and callers unwrap it on purpose." },
+        { "lines": [68, 68], "text": "`List.copyOf` hands out an unmodifiable snapshot, never the live list." },
+        { "lines": [13, 25], "text": "Each outcome is visible in the output: success, refusal, backorder, absence and rejection." }
       ]
     }
   ],
   "pitfalls": [
-    "Never rename or remove a public field in place; add the new one, deprecate the old.",
-    "Do not add an abstract method to a published interface; give it a `default` body.",
-    "Make clients ignore unknown fields, or every additive change will break them."
+    "Returning `null` from a finder; the NullPointerException appears lines later, far from the cause.",
+    "Two adjacent `String` or `int` parameters; a swapped call compiles and corrupts data silently.",
+    "Ignoring bad input, like a negative quantity, hides bugs; throw `IllegalArgumentException` instead."
   ],
   "quiz": {
-    "q": "Using `ApiEvolutionDemo`'s types, what does this print?",
+    "q": "Using the fixed `Inventory`, what does this print?",
+    "code": "var sku = new Sku(\"S\");\nvar inv = new Inventory(Map.of(sku, 2));\nvar r = inv.reserve(new OrderId(\"A\"), sku, 3,\n        Shortfall.REJECT);\nSystem.out.println(r.isPresent() + \" \" + inv.stockOf(sku));",
+    "lang": "java",
     "options": [
-      "sms to ada: Hi",
-      "sms to ada: [!] Hi",
-      "A compile error: LegacySms lacks the method",
-      "An AbstractMethodError at run time"
+      "true -1",
+      "false -1",
+      "IllegalArgumentException is thrown",
+      "false 2"
     ],
-    "answer": 1,
-    "why": "`LegacySms` inherits the `default` overload. It adds the `[!] ` prefix for `HIGH`, then calls the version 1 `send` that `LegacySms` implements.",
-    "code": "Notifier n = new LegacySms();\nSystem.out.println(n.send(\"ada\", \"Hi\", Priority.HIGH));",
-    "lang": "java"
+    "answer": 3,
+    "why": "Stock 2 is short of 3 and the policy is `REJECT`, so `reserve` returns empty before changing stock. Exceptions are only for broken preconditions, like a non-positive quantity."
   },
-  "takeaway": "Add freely, never break in place, and version what must break.",
+  "takeaway": "Make wrong calls fail to compile, or fail fast and loudly.",
   "chat": {
     "starters": [
-      "Should I version a REST API in the URL or in a header?",
-      "How long should I keep a deprecated version running?",
-      "Why can adding an enum constant still break some callers?"
+      "When should a method return Optional instead of throwing an exception?",
+      "How many parameters is too many, and what replaces them?",
+      "Are wrapper types like Sku worth the extra code in a real codebase?"
     ]
   }
 }

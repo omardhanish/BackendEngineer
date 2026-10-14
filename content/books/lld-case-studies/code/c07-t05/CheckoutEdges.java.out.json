@@ -1,0 +1,11 @@
+{
+  "stdout": "PRICE_CHANGED: total is now 109800\nOR-1 PENDING_PAYMENT until 10:16, available 1\nreplay OR-1, available 1\nOR-2 PENDING_PAYMENT until 10:17, available 0\nOR-1 declined, stock held until 10:16\nOR-1 PAID\nOR-2 expired, available 1\nOR-2 refused: CANCELLED, refund the charge",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java CheckoutEdges.java",
+  "tool": "Java 17.0.17",
+  "hash": "24a77f9459f44cf9",
+  "at": "2026-10-14T08:44:13.776Z"
+}

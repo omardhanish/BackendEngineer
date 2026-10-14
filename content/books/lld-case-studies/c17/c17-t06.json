@@ -1,0 +1,334 @@
+{
+  "title": "Cache service in Node.js",
+  "idea": "A cache service in Node.js puts an LRU in front of PostgreSQL: reads try the cache, a miss loads once, and writes update the database then invalidate.",
+  "points": [
+    "Cache-aside: read the cache; on a miss, read the database and fill.",
+    "A `Map` keeps insertion order; delete then set a key to make it newest.",
+    "One shared promise per cold key stops parallel misses from stampeding PostgreSQL.",
+    "Interview follow-up: several instances hold copies; invalidate by message or short TTLs."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "Local caches across two instances",
+    "scenario": {
+      "tiers": [
+        [
+          "client"
+        ],
+        [
+          "api1",
+          "api2"
+        ],
+        [
+          "shared",
+          "db"
+        ]
+      ],
+      "nodes": {
+        "client": {
+          "label": "Client",
+          "kind": "client"
+        },
+        "api1": {
+          "label": "API 1",
+          "sub": "local LRU",
+          "kind": "service"
+        },
+        "api2": {
+          "label": "API 2",
+          "sub": "local LRU",
+          "kind": "service"
+        },
+        "shared": {
+          "label": "Shared cache or bus",
+          "sub": "follow-up",
+          "kind": "cache"
+        },
+        "db": {
+          "label": "PostgreSQL",
+          "kind": "db"
+        }
+      },
+      "links": [
+        [
+          "client",
+          "api1"
+        ],
+        [
+          "client",
+          "api2"
+        ],
+        [
+          "api1",
+          "db"
+        ],
+        [
+          "api2",
+          "db"
+        ],
+        [
+          "api1",
+          "shared",
+          {
+            "dashed": true
+          }
+        ],
+        [
+          "api2",
+          "shared",
+          {
+            "dashed": true
+          }
+        ]
+      ],
+      "steps": [
+        {
+          "caption": "A read of P-1 reaches API 1. Its local LRU misses, so it queries PostgreSQL and keeps the row.",
+          "send": [
+            {
+              "from": "client",
+              "to": "api1",
+              "label": "GET P-1",
+              "tone": "req"
+            },
+            {
+              "from": "api1",
+              "to": "db",
+              "label": "SELECT",
+              "tone": "info"
+            }
+          ],
+          "items": {
+            "api1": [
+              "P-1"
+            ]
+          },
+          "badge": {
+            "api1": "miss"
+          }
+        },
+        {
+          "caption": "The next read of P-1 on API 1 is served from memory. PostgreSQL sees nothing.",
+          "send": [
+            {
+              "from": "client",
+              "to": "api1",
+              "label": "GET P-1",
+              "tone": "ok"
+            }
+          ],
+          "badge": {
+            "api1": "hit"
+          }
+        },
+        {
+          "caption": "A price change lands on API 2. It updates PostgreSQL and clears only its own cache.",
+          "send": [
+            {
+              "from": "client",
+              "to": "api2",
+              "label": "PUT price",
+              "tone": "req"
+            },
+            {
+              "from": "api2",
+              "to": "db",
+              "label": "UPDATE",
+              "tone": "info"
+            }
+          ]
+        },
+        {
+          "caption": "API 1 still holds the old price. Its readers get stale data until the entry leaves.",
+          "send": [
+            {
+              "from": "client",
+              "to": "api1",
+              "label": "GET P-1",
+              "tone": "warn"
+            }
+          ],
+          "state": {
+            "api1": "stale"
+          },
+          "badge": {
+            "api1": "old price"
+          }
+        },
+        {
+          "caption": "Follow-up answer: API 2 publishes an invalidation through a shared channel, and API 1 drops its copy.",
+          "send": [
+            {
+              "from": "api2",
+              "to": "shared",
+              "label": "publish",
+              "tone": "info"
+            },
+            {
+              "from": "shared",
+              "to": "api1",
+              "label": "invalidate",
+              "tone": "info"
+            }
+          ],
+          "state": {
+            "api1": "ok",
+            "shared": "new"
+          },
+          "items": {
+            "api1": []
+          },
+          "badge": {
+            "api1": null
+          },
+          "focus": [
+            "shared"
+          ]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "service.mjs",
+      "lang": "js",
+      "title": "Cache-aside Express service",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "An LRU of two products in front of a real PostgreSQL table, with stats, validation and invalidation on write.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7,
+            8
+          ],
+          "text": "A product table with a CHECK on price, seeded with three rows."
+        },
+        {
+          "lines": [
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26
+          ],
+          "text": "LRU on a Map: a hit re-inserts the key; overflow drops the first key."
+        },
+        {
+          "lines": [
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34
+          ],
+          "text": "The repository counts database reads, so the demo can prove cache hits."
+        },
+        {
+          "lines": [
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49
+          ],
+          "text": "Service read: cache first, else one shared promise per key fills it."
+        },
+        {
+          "lines": [
+            50,
+            51,
+            52,
+            53,
+            54
+          ],
+          "text": "Service write: update PostgreSQL first, then delete the cached copy."
+        },
+        {
+          "lines": [
+            60,
+            61,
+            62,
+            63,
+            64,
+            65,
+            66,
+            67,
+            68,
+            69,
+            70,
+            71
+          ],
+          "text": "Controllers validate with `zod`; the error middleware maps errors to 400, 404, 500."
+        },
+        {
+          "lines": [
+            78,
+            79,
+            80,
+            81,
+            82,
+            83,
+            84,
+            85,
+            86,
+            87,
+            88,
+            89
+          ],
+          "text": "Calls show a miss, a hit, a refused price, invalidation, eviction, then a parallel burst."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "A read in flight during a write can cache the old row; keep a TTL.",
+    "Cache a not-found result only briefly, or new rows stay invisible.",
+    "An in-process cache dies with the process; never treat it as storage."
+  ],
+  "quiz": {
+    "q": "What does the last line of the service demo print?",
+    "options": [
+      "DB reads for 3 parallel cold GETs: 3",
+      "DB reads for 3 parallel cold GETs: 0",
+      "DB reads for 3 parallel cold GETs: 1"
+    ],
+    "answer": 2,
+    "why": "P-1 was evicted, so the first request misses and stores a promise. Pending requests await it; later ones hit the filled cache. One query runs."
+  },
+  "takeaway": "Cache-aside with one load per key, and invalidate every copy on write.",
+  "chat": {
+    "starters": [
+      "How would I add Redis as a second cache tier here?",
+      "Should a write update the cache or delete the entry?",
+      "How do I stop a hot key from overloading one cache node?"
+    ]
+  }
+}

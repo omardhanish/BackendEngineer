@@ -1,0 +1,11 @@
+{
+  "stdout": "left 9: fixed 450000, scarcity 450000\nleft 5: fixed 450000, scarcity 540000\nleft 3: fixed 450000, scarcity 540000\nleft 2: fixed 450000, scarcity 675000\nleft 1: fixed 450000, scarcity 675000",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java NewPricingRule.java",
+  "tool": "Java 17.0.17",
+  "hash": "c604ca39550d830c",
+  "at": "2026-10-14T08:45:10.076Z"
+}

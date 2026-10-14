@@ -1,0 +1,11 @@
+{
+  "stdout": "A wants SEDAN, gets D1 (BIKE, 0.7 km)\nB wants SEDAN, gets D1 (BIKE, 0.7 km)\nC wants SEDAN, gets D2 (SEDAN, 9.8 km)",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java CabMatchingNaive.java",
+  "tool": "Java 17.0.17",
+  "hash": "9d0c84645461740b",
+  "at": "2026-10-12T11:16:48.203Z"
+}

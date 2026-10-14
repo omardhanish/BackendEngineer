@@ -1,0 +1,11 @@
+{
+  "stdout": "SUBMIT by ada -> IN_REVIEW\nREJECT by lin -> DRAFT\nSUBMIT by ada -> IN_REVIEW\nRefused: author cannot approve\nAPPROVE by lin -> PUBLISHED\nRefused: SUBMIT not allowed in PUBLISHED\nARCHIVE by lin -> ARCHIVED\nRefused: REJECT not allowed in ARCHIVED",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java DocumentWorkflow.java",
+  "tool": "Java 17.0.17",
+  "hash": "1ec4779a001ef556",
+  "at": "2026-10-12T11:18:36.159Z"
+}

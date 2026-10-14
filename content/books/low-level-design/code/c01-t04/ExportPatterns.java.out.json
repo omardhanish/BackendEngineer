@@ -1,0 +1,11 @@
+{
+  "stdout": "report.csv\n# Scores\nalice,3\nbob,5\nreport.xml\n# Scores\n<rows>2</rows>\nRefused: no exporter: pdf",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ExportPatterns.java",
+  "tool": "Java 17.0.17",
+  "hash": "9bb8ca2b69d96f2b",
+  "at": "2026-10-12T11:30:09.749Z"
+}

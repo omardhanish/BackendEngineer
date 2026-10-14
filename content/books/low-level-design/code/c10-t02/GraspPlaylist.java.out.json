@@ -1,0 +1,11 @@
+{
+  "stdout": "Web shows:    7:05\nMobile shows: 7:05\nRejected: seconds <= 0",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java GraspPlaylist.java",
+  "tool": "Java 17.0.17",
+  "hash": "a69d3457e69e2e99",
+  "at": "2026-10-12T11:18:07.044Z"
+}

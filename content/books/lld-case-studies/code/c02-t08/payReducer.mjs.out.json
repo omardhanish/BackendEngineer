@@ -1,0 +1,11 @@
+{
+  "stdout": "SCANNED      QUOTING  -      -\nQUOTE_OK     QUOTED   15000  -\nPAY_CLICKED  PAYING   15000  pk-1\nPAY_CLICKED  PAYING   15000  pk-1\nPAY_FAILED   QUOTED   15000  pk-1 Payment failed. Try again.\nPAY_CLICKED  PAYING   15000  pk-1\nPAY_FAILED   QUOTED   15000  pk-1 Payment failed. Try again.\nQUOTE_STALE  QUOTING  15000  pk-1 Payment failed. Try again.\nQUOTE_OK     QUOTED   20000  -\nPAY_CLICKED  PAYING   20000  pk-2\nPAY_OK       PAID     20000  pk-2\nSCANNED      PAID     20000  pk-2",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node payReducer.mjs",
+  "tool": null,
+  "hash": "d2dd781452f14b42",
+  "at": "2026-10-14T08:44:17.982Z"
+}

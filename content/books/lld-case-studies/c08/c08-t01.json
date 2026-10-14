@@ -1,0 +1,172 @@
+{
+  "title": "Movie booking requirements",
+  "idea": "Scoping a movie ticket booking system means naming the actors, their use cases, the one guarantee that matters most, and what v1 leaves out.",
+  "points": [
+    "Customers browse shows, view a seat map, hold seats, pay, and cancel.",
+    "The core rule: one seat in one show is sold at most once.",
+    "A hold reserves seats for a few minutes while the customer pays.",
+    "Assume many readers and sudden spikes when a popular show opens."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Who does what in v1",
+    "nodes": [
+      {
+        "id": "cust",
+        "label": "Customer",
+        "sub": "signed-in user"
+      },
+      {
+        "id": "browse",
+        "label": "Browse shows",
+        "sub": "city, date, movie"
+      },
+      {
+        "id": "map",
+        "label": "View seat map",
+        "sub": "free, held, booked"
+      },
+      {
+        "id": "hold",
+        "label": "Hold seats",
+        "sub": "10-minute hold"
+      },
+      {
+        "id": "pay",
+        "label": "Pay and confirm",
+        "sub": "hold becomes Booking"
+      },
+      {
+        "id": "cancel",
+        "label": "Cancel booking",
+        "sub": "seats freed"
+      },
+      {
+        "id": "sys",
+        "label": "System timer",
+        "sub": "expires old holds"
+      },
+      {
+        "id": "out",
+        "label": "Out of scope",
+        "sub": "food, offers, admin UI"
+      }
+    ],
+    "edges": [
+      {
+        "from": "cust",
+        "to": "browse",
+        "caption": "The customer starts by finding a show: movie, city, date and time."
+      },
+      {
+        "from": "browse",
+        "to": "map",
+        "caption": "Opening a show loads its seat map with each seat's current state."
+      },
+      {
+        "from": "map",
+        "to": "hold",
+        "caption": "Picking seats creates a hold. Nobody else can take them for now."
+      },
+      {
+        "from": "hold",
+        "to": "pay",
+        "caption": "Paying before the hold expires turns it into a confirmed booking."
+      },
+      {
+        "from": "pay",
+        "to": "cancel",
+        "caption": "A confirmed booking can be cancelled, which frees its seats again."
+      },
+      {
+        "from": "sys",
+        "to": "hold",
+        "label": "expires",
+        "dashed": true,
+        "caption": "The system is an actor too: it releases holds that run out of time."
+      },
+      {
+        "from": "cust",
+        "to": "out",
+        "dashed": true,
+        "caption": "Snacks, coupons and show scheduling screens wait for a later version. Say so out loud."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "Scope.java",
+      "lang": "java",
+      "title": "Use cases as an enum",
+      "run": "captured",
+      "caption": "The scope written as code: every use case has one actor, and v1 is an explicit set.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7,
+            8
+          ],
+          "text": "v1 is a named set. Anything missing from it is out of scope by default."
+        },
+        {
+          "lines": [
+            9,
+            10,
+            11
+          ],
+          "text": "Print every use case with its actor and an IN or OUT tag."
+        },
+        {
+          "lines": [
+            16
+          ],
+          "text": "Three actors: the customer, the theatre admin, and the system itself."
+        },
+        {
+          "lines": [
+            19,
+            20,
+            21,
+            22,
+            23,
+            24
+          ],
+          "text": "Six use cases form the booking path, including hold expiry by the system."
+        },
+        {
+          "lines": [
+            25,
+            26
+          ],
+          "text": "Admin scheduling and food add-ons are listed, so the cut is visible."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not start drawing classes before you agree on the use cases and actors.",
+    "State scale numbers as assumptions; never present a guess as a measured fact.",
+    "Forgetting the system actor hides hold expiry until late in the design."
+  ],
+  "quiz": {
+    "q": "Which requirement shapes the movie booking design the most?",
+    "options": [
+      "Seat map loads in under 10 ms",
+      "Search movies by actor name",
+      "A seat is never sold twice for one show",
+      "Support every payment method on day one"
+    ],
+    "answer": 2,
+    "why": "Double-selling a seat breaks trust and money flow. Holds, locks and database constraints all exist to protect that one rule."
+  },
+  "takeaway": "Agree on actors, use cases and the no-double-booking rule before designing.",
+  "chat": {
+    "starters": [
+      "How long should a seat hold last, and who decides?",
+      "Should group bookings be in v1 scope?",
+      "Which scale assumptions should I state in an interview?"
+    ]
+  }
+}

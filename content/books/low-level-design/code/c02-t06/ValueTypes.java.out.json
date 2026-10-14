@@ -1,0 +1,11 @@
+{
+  "stdout": "Item[name=Tea, price=Money[cents=500, currency=GBP], tags=[hot]]\nItem[name=Tea, price=Money[cents=650, currency=GBP], tags=[hot]]\nSoup tags [hot]\nPAID -> SHIPPED\nRejected: cents < 0",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ValueTypes.java",
+  "tool": "Java 17.0.17",
+  "hash": "36917c4a0d3222f7",
+  "at": "2026-10-12T11:17:06.240Z"
+}

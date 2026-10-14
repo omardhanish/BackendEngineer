@@ -1,0 +1,11 @@
+{
+  "stdout": "2 h weekday: 200\n2 h weekend: 300\n0 h weekday: -1\nExpected 2 h weekday: 350",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java RentalMess.java",
+  "tool": "Java 17.0.17",
+  "hash": "f4de37022a13f5d4",
+  "at": "2026-10-12T11:22:46.746Z"
+}

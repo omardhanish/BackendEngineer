@@ -1,0 +1,204 @@
+{
+  "title": "Hotel reservation API in Express",
+  "idea": "The hotel API exposes search, hold, confirm and cancel as REST endpoints, with each service call running in one database transaction.",
+  "analogy": {
+    "text": "A hotel reception window: the clerk checks your form, the back office updates the ledger, and any problem returns as a standard slip with a code.",
+    "breaks": "A clerk forgets a repeated form; the API replays it by key."
+  },
+  "points": [
+    "Router and controller parse HTTP; the service owns rules; the repository owns SQL.",
+    "`zod` rejects bad bodies before any SQL runs, including check-out before check-in.",
+    "POST /reservations needs an Idempotency-Key; a repeated key returns the first result.",
+    "Cancel locks the row, checks status, gives back nights, and refunds only if paid."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "Endpoints",
+    "head": [
+      "Method",
+      "Path",
+      "Request",
+      "Success",
+      "Errors"
+    ],
+    "rows": [
+      [
+        "GET",
+        "/availability",
+        "checkIn, checkOut, guests",
+        "200 room types with free count and total",
+        "400 dates"
+      ],
+      [
+        "POST",
+        "/reservations",
+        "roomType, dates, guests + Idempotency-Key",
+        "201 HELD; 200 on replay",
+        "400, 409 sold out"
+      ],
+      [
+        "POST",
+        "/reservations/:id/confirm",
+        "paymentToken + Idempotency-Key",
+        "200 CONFIRMED",
+        "404, 409 hold expired, 402 declined"
+      ],
+      [
+        "POST",
+        "/reservations/:id/cancel",
+        "none",
+        "200 CANCELLED with refundMinor",
+        "404, 409 state"
+      ],
+      [
+        "GET",
+        "/reservations/:id",
+        "none",
+        "200 reservation",
+        "404"
+      ]
+    ],
+    "highlight": {
+      "row": 1
+    },
+    "caption": "The snippet below runs the hold and cancel routes. The others follow the same layers."
+  },
+  "code": [
+    {
+      "file": "api.mjs",
+      "lang": "js",
+      "title": "Layered Express app",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "Repository, service, controllers and error mapping in one file, on a real PostgreSQL. One Deluxe room exists per night.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12
+          ],
+          "text": "Trimmed schema: per-night inventory and reservations with a unique Idempotency-Key."
+        },
+        {
+          "lines": [
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20
+          ],
+          "text": "A fixed demo date keeps refunds stable; `tx` wraps each service call in one transaction."
+        },
+        {
+          "lines": [
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27
+          ],
+          "text": "Repository: lock nights in order, then shift `reserved` by +1 or -1 within bounds."
+        },
+        {
+          "lines": [
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51
+          ],
+          "text": "Service `hold`: replay a known key, else take every night or throw SOLD_OUT."
+        },
+        {
+          "lines": [
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63
+          ],
+          "text": "Service `cancel`: 404, 409 on a bad status, else free nights and refund."
+        },
+        {
+          "lines": [
+            65,
+            66,
+            67,
+            68,
+            69,
+            70,
+            71,
+            72,
+            73,
+            74,
+            75,
+            76,
+            77,
+            78
+          ],
+          "text": "Controllers parse with `zod` and demand the key; Express 5 forwards async throws."
+        },
+        {
+          "lines": [
+            79,
+            80,
+            81,
+            82,
+            83,
+            84
+          ],
+          "text": "Error middleware maps validation, domain, duplicate-key and unknown errors to codes."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not charge the card inside the database transaction; a slow gateway holds row locks.",
+    "Return 200 with the stored result on replay, not a fresh 201 or a 409.",
+    "Lock the reservation row before checking its status, or two cancels both refund."
+  ],
+  "quiz": {
+    "q": "What status does the first cancel of RS-1 print?",
+    "options": [
+      "404",
+      "409",
+      "200",
+      "201"
+    ],
+    "answer": 2,
+    "why": "RS-1 is HELD, which is cancellable. The service frees its nights, sets CANCELLED, refunds nothing since nothing was charged, and answers 200."
+  },
+  "takeaway": "Thin controllers, rules in the service, SQL in the repository, one transaction.",
+  "chat": {
+    "starters": [
+      "Why does the replay return 200 instead of 201?",
+      "How would the confirm endpoint call the payment gateway safely?",
+      "Should availability search hit the primary database or a cache?"
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "  try 1: timeout\n  wait 100ms\nGBP 1.17\n  try 1: timeout\n  wait 100ms\n  try 2: timeout\n  wait 200ms\n  try 3: timeout\n  all tries failed, using last good rate\nGBP 1.17\nrejected: unknown currency XYZ",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ResilientRates.java",
+  "tool": "Java 17.0.17",
+  "hash": "0fc344eeb661c9ca",
+  "at": "2026-10-12T11:34:34.450Z"
+}

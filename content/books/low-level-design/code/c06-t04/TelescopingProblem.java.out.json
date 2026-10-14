@@ -1,0 +1,11 @@
+{
+  "stdout": "sync-orders retries=3 timeout=30s\nsync-users retries=30 timeout=3s   <- swapped, still compiles\nhalf-built: null timeout=60s\ninvalid, no error: report timeout=-5s",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java TelescopingProblem.java",
+  "tool": "Java 17.0.17",
+  "hash": "aebb18c3d5312626",
+  "at": "2026-10-12T11:21:00.287Z"
+}

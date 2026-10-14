@@ -1,0 +1,11 @@
+{
+  "stdout": "PASS capacity is a minimum, not exact\nPASS busy room is excluded\nPASS slot ending as B1 starts is free\nPASS no room is big enough\nall checks passed",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java SearchModule.java",
+  "tool": "Java 17.0.17",
+  "hash": "dcf9c65d3509aed4",
+  "at": "2026-10-12T11:27:23.869Z"
+}

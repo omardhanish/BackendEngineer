@@ -1,0 +1,279 @@
+{
+  "title": "Fare and surge pricing strategies",
+  "idea": "Pricing in a cab system is two swappable strategies: a `FareStrategy` per vehicle type computes the base fare, and a `SurgePolicy` scales it by current demand.",
+  "points": [
+    "This is the Strategy pattern from c08: one interface, one class per pricing rule.",
+    "A map keyed by `VehicleType` picks the fare rule; adding XL needs no `if`.",
+    "Surge is a separate policy, so cities can change surge without touching fares.",
+    "Keep money in `long` cents; round each fractional product once, never cents already rounded."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "One sedan quote through the pricing steps",
+    "scenario": {
+      "token": {
+        "label": "SEDAN 5 km 12 min",
+        "tone": "req"
+      },
+      "stages": [
+        {
+          "id": "trip",
+          "label": "TripInfo",
+          "sub": "type, km, minutes",
+          "kind": "end"
+        },
+        {
+          "id": "pick",
+          "label": "Rate lookup",
+          "sub": "map by type"
+        },
+        {
+          "id": "meter",
+          "label": "MeteredFare",
+          "sub": "flag + km + minutes"
+        },
+        {
+          "id": "min",
+          "label": "Minimum",
+          "sub": "max(metered, min) in baseCents"
+        },
+        {
+          "id": "surge",
+          "label": "SurgePolicy",
+          "sub": "demand / supply"
+        },
+        {
+          "id": "quote",
+          "label": "Quote",
+          "sub": "rounded cents",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "The caller builds a `TripInfo` record: vehicle type, distance and minutes. It holds no pricing logic.",
+          "at": "trip",
+          "slot": "top",
+          "state": {
+            "trip": "active"
+          }
+        },
+        {
+          "caption": "The calculator looks up the `FareStrategy` registered for SEDAN. A missing type fails with a clear message.",
+          "at": "pick",
+          "slot": "top",
+          "state": {
+            "trip": "done",
+            "pick": "active"
+          }
+        },
+        {
+          "caption": "`MeteredFare` adds flag fall, 5 km at 90 and 12 minutes at 20: 840 cents.",
+          "at": "meter",
+          "slot": "top",
+          "token": {
+            "label": "840",
+            "tone": "req"
+          },
+          "state": {
+            "trip": "done",
+            "pick": "done",
+            "meter": "active"
+          }
+        },
+        {
+          "caption": "840 is above the sedan minimum of 500, so the minimum leaves it unchanged.",
+          "at": "min",
+          "slot": "top",
+          "token": {
+            "label": "840",
+            "tone": "req"
+          },
+          "state": {
+            "trip": "done",
+            "pick": "done",
+            "meter": "done",
+            "min": "active"
+          }
+        },
+        {
+          "caption": "25 open requests over 20 free drivers is 1.25. `DemandSurge` rounds down to a 0.25 step and caps it.",
+          "at": "surge",
+          "slot": "top",
+          "token": {
+            "label": "x1.25",
+            "tone": "req"
+          },
+          "state": {
+            "trip": "done",
+            "pick": "done",
+            "meter": "done",
+            "min": "done",
+            "surge": "active"
+          }
+        },
+        {
+          "caption": "The calculator multiplies once and rounds once: 1050 cents.",
+          "at": "quote",
+          "slot": "top",
+          "token": {
+            "label": "1050 cents",
+            "tone": "ok"
+          },
+          "state": {
+            "trip": "done",
+            "pick": "done",
+            "meter": "done",
+            "min": "done",
+            "surge": "done",
+            "quote": "done"
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "FareIfElse.java",
+      "lang": "java",
+      "title": "The problem: one if-else",
+      "run": "captured",
+      "caption": "Every rule lives in one method, so each new type or surge rule is an edit with new bugs.",
+      "walk": [
+        {
+          "lines": [
+            13,
+            14
+          ],
+          "text": "One static method owns all vehicle types and surge. It violates the Open/Closed Principle (OCP)."
+        },
+        {
+          "lines": [
+            15,
+            16,
+            17
+          ],
+          "text": "The bike branch never applies surge. Nobody decided that; the branch was just forgotten."
+        },
+        {
+          "lines": [
+            20
+          ],
+          "text": "Surge is a boolean and a fixed doubling. A city that wants 1.5x must edit this line."
+        },
+        {
+          "lines": [
+            21,
+            22
+          ],
+          "text": "XL was added to the enum but not here, so it fails only at runtime."
+        },
+        {
+          "lines": [
+            28
+          ],
+          "text": "The enum and the pricing method change for the same reason but live apart."
+        }
+      ]
+    },
+    {
+      "file": "PricingDemo.java",
+      "lang": "java",
+      "title": "The fix: two strategies",
+      "run": "captured",
+      "caption": "Fare rules and surge rules are separate strategies, injected into one small calculator.",
+      "walk": [
+        {
+          "lines": [
+            24,
+            25
+          ],
+          "text": "Two narrow interfaces. `SurgePolicy` has one method, so a lambda can implement it."
+        },
+        {
+          "lines": [
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34
+          ],
+          "text": "One record covers every metered rule; the data differs per type, not the code."
+        },
+        {
+          "lines": [
+            42,
+            43,
+            44,
+            45
+          ],
+          "text": "Ratio rounded down to 0.25 steps, floored at 1 and capped. Zero drivers means maximum surge."
+        },
+        {
+          "lines": [
+            52,
+            53,
+            54
+          ],
+          "text": "`Map.copyOf` freezes the rates, so callers cannot change prices after construction."
+        },
+        {
+          "lines": [
+            61,
+            62,
+            63
+          ],
+          "text": "Multiply the base by surge and round that product once; never re-round earlier results."
+        },
+        {
+          "lines": [
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11
+          ],
+          "text": "Wiring happens in one place. A new city gets a new map or policy, not new code."
+        },
+        {
+          "lines": [
+            17
+          ],
+          "text": "The bike hop is under its minimum, so it is raised first, then surged."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Using `double` for money collects rounding errors across steps; store cents in `long`.",
+    "Applying surge before the minimum fare under-charges short trips; fix and document the order.",
+    "Reading demand inside `FareStrategy` mixes two concerns; pass it to a separate `SurgePolicy`."
+  ],
+  "quiz": {
+    "q": "Same classes as the fix. What does this print?",
+    "code": "TripInfo t = new TripInfo(VehicleType.SEDAN, 2.0, 5);\nSystem.out.println(busy.quote(t, 11, 10));",
+    "lang": "java",
+    "options": [
+      "430 cents (x1.00)",
+      "500 cents (x1.00)",
+      "550 cents (x1.10)",
+      "473 cents (x1.10)"
+    ],
+    "answer": 1,
+    "why": "Metered is 150 + 180 + 100 = 430, raised to the 500 minimum. 11/10 is 1.1, which rounds down to the 1.00 step."
+  },
+  "takeaway": "Fare rule per vehicle, surge rule per market, both injected strategies.",
+  "chat": {
+    "starters": [
+      "How would I add a promo code discount without editing PriceCalculator?",
+      "Should the rider be charged the quoted price or the final metered price?",
+      "How do I stop surge from jumping up and down every few seconds?"
+    ]
+  }
+}

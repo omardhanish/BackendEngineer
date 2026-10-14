@@ -1,0 +1,11 @@
+{
+  "stdout": "stored:  4\naudited: 4",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java DesignedInbox.java",
+  "tool": "Java 17.0.17",
+  "hash": "7f6db1ee2a636ec9",
+  "at": "2026-10-12T11:14:40.557Z"
+}

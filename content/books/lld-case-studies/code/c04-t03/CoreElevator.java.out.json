@@ -1,0 +1,11 @@
+{
+  "stdout": "hall 6 DOWN -> E2\nhall 2 UP -> E1\nt1 | E1@1 MOVING | E2@7 MOVING\nt2 | E1@2 MOVING | E2@6 MOVING\nt3 | E1@2 DOORS_OPEN | E2@6 DOORS_OPEN\nt4 | E1@2 IDLE | E2@6 IDLE\nt5 | E1@3 MOVING | E2@6 IDLE\nt6 | E1@4 MOVING | E2@6 IDLE\nt7 | E1@5 MOVING | E2@6 IDLE\nt8 | E1@5 DOORS_OPEN | E2@6 IDLE",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java CoreElevator.java",
+  "tool": "Java 17.0.17",
+  "hash": "94ba32452029f052",
+  "at": "2026-10-14T08:34:11.881Z"
+}

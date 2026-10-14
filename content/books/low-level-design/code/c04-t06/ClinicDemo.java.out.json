@@ -1,0 +1,11 @@
+{
+  "stdout": "from 8 -> Dr Lee at 9\nfrom 12 -> Dr Ada at 12\nfrom 17 -> no slot\nrejected: bad shift hours",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ClinicDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "9d432414d48abf56",
+  "at": "2026-10-12T11:42:27.108Z"
+}

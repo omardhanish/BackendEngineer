@@ -1,116 +1,155 @@
 {
-  "title": "Design patterns at a glance",
-  "idea": "A design pattern is a named, reusable shape of classes that solves a problem which keeps coming back, such as hiding which class gets created.",
+  "title": "Design patterns and their families",
+  "idea": "A design pattern is a named, proven solution shape for a recurring design problem; the Gang of Four group them into creational, structural and behavioural families.",
   "points": [
-    "A pattern is a structure you adapt, not a library you import.",
-    "The Gang of Four book groups its patterns: creational, structural, behavioural.",
-    "A pattern name lets you say a design in one word to a reviewer.",
-    "Most patterns lean on an `interface` so a new class can plug in."
+    "Creational patterns control how objects are made, hiding which concrete class gets built.",
+    "Structural patterns compose objects: they wrap, adapt or group them behind one interface.",
+    "Behavioural patterns divide work between objects and define how those objects communicate.",
+    "A pattern name is shared vocabulary: \"Strategy pattern\" explains a design in two words."
   ],
   "hero": {
     "type": "table",
-    "title": "Three families of patterns",
+    "title": "Three families, one question each",
     "head": [
       "Family",
       "Question it answers",
-      "Examples",
-      "Signal you need one"
+      "Patterns in this book",
+      "Seen in the JDK"
     ],
     "rows": [
       [
         "Creational",
-        "Who builds the object, and how?",
-        "Factory pattern, Builder, Singleton",
-        "Constructor calls inside if-chains, spread everywhere"
+        "Who creates the object, and of which class?",
+        "Factory Method, Abstract Factory, Singleton, Builder, Prototype, Object Pool (not GoF)",
+        "Runtime.getRuntime() returns one shared instance; StringBuilder builds step by step"
       ],
       [
         "Structural",
         "How do objects fit together?",
-        "Adapter, Decorator, Facade",
-        "Wrong interface, or extras bolted on by subclassing"
+        "Adapter, Bridge, Composite, Decorator, Facade, Flyweight, Proxy",
+        "BufferedReader wraps any Reader; Arrays.asList adapts an array to a List"
       ],
       [
         "Behavioural",
-        "Who does what, and who tells whom?",
-        "Strategy, Observer, Chain of Responsibility",
-        "A long switch on a type or rule"
+        "Which object does the work, and how do they talk?",
+        "Chain of Responsibility, Command, Mediator, Observer, Strategy, Template Method, State, Visitor, Iterator, Memento",
+        "Iterator walks any collection; a Comparator passed to List.sort is a strategy"
       ]
     ],
-    "highlight": {
-      "col": 1
-    },
-    "caption": "Name the problem first; the family narrows the pattern list to a few."
+    "caption": "Classify a problem by its question first; the family narrows which pattern to reach for."
   },
   "code": [
     {
-      "file": "PatternDemo.java",
+      "file": "ExportSwitches.java",
       "lang": "java",
-      "title": "Factory and Decorator",
+      "title": "The problem",
       "run": "captured",
-      "caption": "A factory picks the notifier; a decorator adds a tag without touching it.",
+      "caption": "No patterns: one format decision is made twice with switches, and the copies drift apart.",
       "walk": [
         {
           "lines": [
-            12,
-            13
+            13,
+            20
           ],
-          "text": "The shared contract both patterns rely on."
-        },
-        {
-          "lines": [
-            15,
-            21
-          ],
-          "text": "Factory pattern: callers ask by name and never see which implementation they get."
+          "text": "The render decision switches on a string. A developer added the `xml` branch here."
         },
         {
           "lines": [
             24,
-            31
+            30
           ],
-          "text": "Decorator: it is a `Notifier` and also has one inside."
+          "text": "The extension decision repeats the same switch elsewhere, and `xml` is missing."
         },
         {
           "lines": [
-            33,
+            28,
+            28
+          ],
+          "text": "The `default` branch hides the gap. Nothing fails; it quietly answers `txt`."
+        },
+        {
+          "lines": [
+            6,
+            9
+          ],
+          "text": "Run it: the XML body is saved as a `.txt` file. Two decisions, one forgotten."
+        }
+      ]
+    },
+    {
+      "file": "ExportPatterns.java",
+      "lang": "java",
+      "title": "One per family",
+      "run": "captured",
+      "caption": "The same feature with one small pattern from each family. Later chapters teach each in depth.",
+      "walk": [
+        {
+          "lines": [
+            19,
+            24
+          ],
+          "text": "Behavioural: `Exporter` is a strategy. Each format owns both decisions, so neither drifts."
+        },
+        {
+          "lines": [
+            26,
             36
           ],
-          "text": "It adds its tag, then forwards the call to the wrapped object."
+          "text": "Each concrete exporter is a small immutable record with one job."
         },
         {
           "lines": [
-            3,
-            8
+            38,
+            49
           ],
-          "text": "`main` mixes plain and decorated notifiers behind one type."
+          "text": "Creational: a simple factory maps each name to a class in one place. Not the Factory Method pattern."
+        },
+        {
+          "lines": [
+            45,
+            46
+          ],
+          "text": "An unknown format fails loudly instead of falling into a silent default."
+        },
+        {
+          "lines": [
+            51,
+            58
+          ],
+          "text": "Structural: `Titled` wraps any exporter, adding a title line without editing it."
+        },
+        {
+          "lines": [
+            7,
+            15
+          ],
+          "text": "The caller combines all three and never names a concrete exporter class."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Do not start from a pattern and hunt for a problem; start from the problem.",
-    "Avoid stacking patterns for a feature that a plain method solves.",
-    "Name the pattern in the class or a comment so readers spot it."
+    "Forcing a pattern onto a two-line problem; reviewers see extra classes and no gained flexibility.",
+    "Naming a class after a pattern it does not follow; readers then misjudge how it behaves.",
+    "Memorising class diagrams without the problem; in interviews you cannot say when to use one."
   ],
   "quiz": {
-    "q": "What does this print?",
+    "q": "You must add retries around a PaymentClient you cannot edit. Which family?",
     "options": [
-      "SMS: [a] [b] hi",
-      "SMS: [b] [a] hi",
-      "[a] [b] SMS: hi",
-      "SMS: [a] hi"
+      "Creational: it changes how the client is constructed",
+      "Behavioural: retries change how objects communicate",
+      "Structural: wrap the client behind the same interface",
+      "None: copy the client and add a loop"
     ],
-    "answer": 1,
-    "why": "The outer decorator adds `[a] ` and forwards. The inner one then puts `[b] ` in front of that text before the SMS notifier prints it.",
-    "code": "Notifier n = new Tagged(\"[a] \",\n        new Tagged(\"[b] \", Notifier.of(\"sms\")));\nn.send(\"hi\");",
-    "lang": "java"
+    "answer": 2,
+    "why": "Adding behaviour by wrapping an existing object behind its own interface is composition, the structural family's job. The Decorator pattern in c07 does exactly this."
   },
-  "takeaway": "Patterns are named answers to recurring problems; start from the problem.",
+  "takeaway": "Creational builds, structural composes, behavioural divides the work.",
   "chat": {
     "starters": [
       "Which design patterns come up most in LLD interviews?",
-      "How do I tell Decorator apart from Adapter?",
-      "When is a pattern overkill for a small codebase?"
+      "How do I tell Decorator, Proxy and Adapter apart?",
+      "When is a plain if-else better than a pattern?"
     ]
   }
 }

@@ -1,0 +1,11 @@
+{
+  "stdout": "Optional[Reservation[order=ORD-7, sku=SKU-1, qty=3, backordered=false]]\nOptional.empty\nOptional[Reservation[order=ORD-9, sku=SKU-1, qty=4, backordered=true]]\nstock now -2\nORD-404 found: false\nrejected: qty must be > 0",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java InventoryDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "e9c11b058e20e16f",
+  "at": "2026-10-12T11:20:12.529Z"
+}

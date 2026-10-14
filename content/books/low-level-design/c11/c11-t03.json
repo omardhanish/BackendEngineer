@@ -1,0 +1,155 @@
+{
+  "title": "Booking system class diagram",
+  "idea": "A class diagram fixes who knows whom: `BookingService` sits in the middle and talks only to interfaces, so storage, conflict rules and notifications can change behind them.",
+  "points": [
+    "Draw entities first, then the service, then each dependency as an interface.",
+    "Arrows point toward what a class depends on; the service's arrows end at interfaces.",
+    "Each interface takes the narrowest signature its single caller needs, nothing more.",
+    "Interviewers read the diagram first; mark multiplicity where it matters, like `0..*` listeners."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Service at the centre, interfaces around it",
+    "nodes": [
+      { "id": "svc", "label": "BookingService", "sub": "searchFree · book · cancel" },
+      { "id": "rooms", "label": "RoomRepository", "sub": "findById · findAll" },
+      { "id": "repo", "label": "BookingRepository", "sub": "save · findById · forRoom · remove" },
+      { "id": "policy", "label": "ConflictPolicy", "sub": "conflicts(candidate, existing)" },
+      { "id": "listener", "label": "BookingListener", "sub": "onBooked · onCancelled" },
+      { "id": "impls", "label": "NotificationService, AuditLogger", "sub": "implement BookingListener" },
+      { "id": "booking", "label": "Booking", "sub": "id, roomId, employeeId, start, end" },
+      { "id": "room", "label": "Room", "sub": "id, buildingId, capacity" }
+    ],
+    "edges": [
+      { "from": "svc", "to": "rooms", "label": "uses" },
+      { "from": "svc", "to": "repo", "label": "uses" },
+      { "from": "svc", "to": "policy", "label": "asks" },
+      { "from": "svc", "to": "listener", "label": "0..* notifies" },
+      { "from": "impls", "to": "listener", "label": "implements", "dashed": true },
+      { "from": "repo", "to": "booking", "label": "stores" },
+      { "from": "booking", "to": "room", "label": "roomId" }
+    ],
+    "steps": [
+      {
+        "caption": "Start from the entities found in requirements: `Booking` points to `Room` by id only.",
+        "active": ["booking", "room"],
+        "edges": [6]
+      },
+      {
+        "caption": "`BookingService` owns the use cases. It holds the rules but no storage or delivery code.",
+        "active": ["svc"],
+        "edges": []
+      },
+      {
+        "caption": "Storage hides behind two repository interfaces, one per entity the service loads.",
+        "active": ["svc", "rooms", "repo", "booking"],
+        "edges": [0, 1, 5]
+      },
+      {
+        "caption": "The overlap rule is an interface too, because buffer times or priority rules may replace it.",
+        "active": ["svc", "policy"],
+        "edges": [2]
+      },
+      {
+        "caption": "Side effects go out through `BookingListener`. The service holds zero or more of them.",
+        "active": ["svc", "listener"],
+        "edges": [3]
+      },
+      {
+        "caption": "Concrete listeners implement the interface. Adding Slack alerts adds a class; the service is untouched.",
+        "active": ["listener", "impls"],
+        "edges": [4]
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "class-diagram.mmd",
+      "lang": "text",
+      "title": "Diagram as code",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Mermaid text for the same diagram. It lives in the repository and changes in the same pull request as the code.",
+      "walk": [
+        {
+          "lines": [2, 6],
+          "text": "The service lists only its public use-case methods. Private helpers stay off the diagram."
+        },
+        {
+          "lines": [7, 18],
+          "text": "Repositories are marked `<<interface>>`. Their methods are what the service needs, not generic CRUD."
+        },
+        {
+          "lines": [19, 27],
+          "text": "`ConflictPolicy` and `BookingListener` are the two extension points of the design."
+        },
+        {
+          "lines": [28, 31],
+          "text": "Solid arrows are associations: the service stores each as a field. `0..*` allows zero listeners."
+        },
+        {
+          "lines": [32, 33],
+          "text": "Dotted arrows with a hollow head mean 'implements'. Both concrete listeners are interchangeable."
+        },
+        {
+          "lines": [34, 36],
+          "text": "Composition: a room cannot exist without its building. A booking only refers to room and employee."
+        }
+      ]
+    },
+    {
+      "file": "Contracts.java",
+      "lang": "java",
+      "title": "Interfaces in Java",
+      "run": "captured",
+      "caption": "The diagram's interfaces, compiled. Each is usable alone with a lambda or a small in-memory class.",
+      "walk": [
+        {
+          "lines": [33, 43],
+          "text": "Lookups take ids and return `Optional` or `List`, never null; implementations return copies, not live views."
+        },
+        {
+          "lines": [45, 47],
+          "text": "`ConflictPolicy` has one method, so a lambda can implement it in a test or a demo."
+        },
+        {
+          "lines": [49, 52],
+          "text": "A default `onCancelled` lets a listener that only cares about new bookings stay one method."
+        },
+        {
+          "lines": [54, 69],
+          "text": "The in-memory repository uses a `TreeMap` and returns `List.copyOf`, so callers cannot edit its state."
+        },
+        {
+          "lines": [9, 17],
+          "text": "Main wires a repository, a policy and a listener without any `BookingService` yet."
+        },
+        {
+          "lines": [19, 24],
+          "text": "Overlap is caught, a back-to-back slot is not, and a missing id returns an empty `Optional`."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Drawing every getter and setter buries the dependencies; show only methods other classes call.",
+    "Pointing arrows from interface to service reverses the dependency and hides who can be swapped.",
+    "A repository interface with twenty generic methods leaks storage details into the service."
+  ],
+  "quiz": {
+    "q": "After the demo, what does this print?",
+    "code": "Booking b4 = new Booking(\"B4\", \"R2\", \"e3\", 9.5, 10.5);\nSystem.out.println(overlap.conflicts(b4, repo.forRoom(\"R1\")));",
+    "lang": "java",
+    "options": ["false", "true", "IllegalArgumentException", "NullPointerException"],
+    "answer": 1,
+    "why": "The lambda compares times only. It trusts the caller to pass bookings of the same room, so B1 in R1 counts as a clash."
+  },
+  "takeaway": "Put the service in the middle and every changeable part behind an interface.",
+  "chat": {
+    "starters": [
+      "Should ConflictPolicy check that bookings are in the same room?",
+      "When do I draw composition instead of a plain association?",
+      "How much detail should a class diagram have in a 45-minute interview?"
+    ]
+  }
+}

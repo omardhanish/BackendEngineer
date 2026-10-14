@@ -1,0 +1,11 @@
+{
+  "stdout": "get-then-put sends: 2\nputIfAbsent sends:  1",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java DuplicateSend.java",
+  "tool": "Java 17.0.17",
+  "hash": "06c96ba0c644e7e3",
+  "at": "2026-10-14T08:34:45.978Z"
+}

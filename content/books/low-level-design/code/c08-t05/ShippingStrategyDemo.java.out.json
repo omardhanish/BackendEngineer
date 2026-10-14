@@ -1,0 +1,11 @@
+{
+  "stdout": "express 2kg: 2300\npickup 2kg: 0\nstandard 2kg: 800\nrejected: unknown method: Express",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ShippingStrategyDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "394ef7848763f165",
+  "at": "2026-10-12T11:18:41.815Z"
+}

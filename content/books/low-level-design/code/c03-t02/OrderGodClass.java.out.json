@@ -1,0 +1,11 @@
+{
+  "stdout": "2 items, total 120.00\nLedger: [revenue 120.00]\nAccounting expected net revenue 100.00",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java OrderGodClass.java",
+  "tool": "Java 17.0.17",
+  "hash": "bb96825ef519095d",
+  "at": "2026-10-12T11:11:11.100Z"
+}

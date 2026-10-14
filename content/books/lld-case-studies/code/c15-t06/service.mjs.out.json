@@ -1,0 +1,11 @@
+{
+  "stdout": "POST /orders 201 {\"id\":\"OD-1\"}\nPOST /orders 400 {\"error\":\"INVALID_BODY\"}\nGET /boom 500 {\"error\":\"INTERNAL\",\"requestId\":\"edge-42\"}\nPUT /admin/log-level 400 {\"error\":\"INVALID_LEVEL\"}\nPUT /admin/log-level 200 {\"level\":\"debug\"}\nPOST /orders 201 {\"id\":\"OD-1\"}\n--- log lines ---\n{\"time\":\"2026-01-15T10:00:00.000Z\",\"level\":\"info\",\"msg\":\"request done\",\"requestId\":\"req-1\",\"method\":\"POST\",\"path\":\"/orders\",\"status\":201}\n{\"time\":\"2026-01-15T10:00:00.000Z\",\"level\":\"info\",\"msg\":\"request done\",\"requestId\":\"req-2\",\"method\":\"POST\",\"path\":\"/orders\",\"status\":400}\n{\"time\":\"2026-01-15T10:00:00.000Z\",\"level\":\"error\",\"msg\":\"unhandled error\",\"requestId\":\"edge-42\",\"error\":\"db pool exhausted\"}\n{\"time\":\"2026-01-15T10:00:00.000Z\",\"level\":\"info\",\"msg\":\"request done\",\"requestId\":\"edge-42\",\"method\":\"GET\",\"path\":\"/boom\",\"status\":500}\n{\"time\":\"2026-01-15T10:00:00.000Z\",\"level\":\"info\",\"msg\":\"request done\",\"requestId\":\"req-3\",\"method\":\"PUT\",\"path\":\"/admin/log-level\",\"status\":400}\n{\"time\":\"2026-01-15T10:00:00.000Z\",\"level\":\"info\",\"msg\":\"request done\",\"requestId\":\"req-4\",\"method\":\"PUT\",\"path\":\"/admin/log-level\",\"status\":200}\n{\"time\":\"2026-01-15T10:00:00.000Z\",\"level\":\"debug\",\"msg\":\"order body\",\"requestId\":\"req-5\",\"item\":\"pizza\",\"cardNumber\":\"[redacted]\"}\n{\"time\":\"2026-01-15T10:00:00.000Z\",\"level\":\"info\",\"msg\":\"request done\",\"requestId\":\"req-5\",\"method\":\"POST\",\"path\":\"/orders\",\"status\":201}",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node service.mjs",
+  "tool": null,
+  "hash": "e909aeee96d0954a",
+  "at": "2026-10-14T10:22:18.528Z"
+}

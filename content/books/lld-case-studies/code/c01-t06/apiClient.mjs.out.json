@@ -1,0 +1,11 @@
+{
+  "stdout": " GET /doctors/D-1/slots  -> 503\n   retry 1, would wait 200 ms\n GET /doctors/D-1/slots  -> 200\nload slots {\"ok\":true,\"data\":{\"items\":[\"SL-1\",\"SL-2\"]}}\n POST /appointments key-1 -> 0\n   retry 1, would wait 200 ms\n POST /appointments key-1 -> 200\nbook SL-1 {\"ok\":true,\"data\":{\"id\":\"AP-1\",\"slotId\":\"SL-1\"}}\n POST /appointments key-2 -> 409\nbook SL-2 {\"ok\":false,\"code\":\"SLOT_TAKEN\",\"canRetry\":false}",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node apiClient.mjs",
+  "tool": null,
+  "hash": "05289987fbc46888",
+  "at": "2026-10-14T08:37:57.350Z"
+}

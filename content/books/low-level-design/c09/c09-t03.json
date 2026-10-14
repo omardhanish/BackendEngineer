@@ -1,0 +1,102 @@
+{
+  "title": "Splitwise users, groups, expenses",
+  "idea": "A Splitwise model records who paid and who owes which part: users belong to groups, and each expense is one immutable payment divided into shares.",
+  "analogy": {
+    "text": "A shared house notebook. Each line says who paid, the total, and each housemate's part. Only housemates appear in it.",
+    "breaks": "A notebook takes any scribble; the model rejects lines that do not add up."
+  },
+  "points": [
+    "Users and groups live long; an `Expense` is a frozen record of one payment.",
+    "Money is `long` cents: integer sums are exact, so shares can match totals.",
+    "An `Expense` guards its own invariants: positive total, shares summing to it.",
+    "`Group` checks membership, because only the group knows who belongs to it."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "The Splitwise core class diagram",
+    "nodes": [
+      { "id": "group", "label": "Group", "sub": "name, members, expenses" },
+      { "id": "user", "label": "User (record)", "sub": "id, name" },
+      { "id": "expense", "label": "Expense (record)", "sub": "paidBy, totalCents, shares" },
+      { "id": "share", "label": "Share (record)", "sub": "user, cents" },
+      { "id": "strategy", "label": "SplitStrategy", "sub": "next page" },
+      { "id": "sheet", "label": "Balances", "sub": "net per user, later" }
+    ],
+    "edges": [
+      { "from": "group", "to": "user", "label": "members" },
+      { "from": "group", "to": "expense", "label": "records" },
+      { "from": "expense", "to": "user", "label": "paid by" },
+      { "from": "expense", "to": "share", "label": "has many" },
+      { "from": "share", "to": "user", "label": "owed by" },
+      { "from": "strategy", "to": "share", "label": "computes", "dashed": true },
+      { "from": "expense", "to": "sheet", "label": "feeds", "dashed": true }
+    ],
+    "steps": [
+      { "caption": "A `Group` has members. Users exist on their own and can join many groups.", "active": ["group", "user"], "edges": [0] },
+      { "caption": "The group records expenses. Adding one is where membership is checked.", "active": ["group", "expense"], "edges": [1] },
+      { "caption": "An `Expense` names one payer and a total in cents. It never changes after creation.", "active": ["expense", "user"], "edges": [2] },
+      { "caption": "The total is divided into `Share` values, one per person who owes a part.", "active": ["expense", "share", "user"], "edges": [3, 4] },
+      { "caption": "How shares are computed (equal, exact, percent) is a strategy, kept out of `Expense`.", "active": ["strategy", "share"], "edges": [5] },
+      { "caption": "Balances are derived from expenses, never typed in. That keeps one source of truth.", "active": ["expense", "sheet"], "edges": [6] }
+    ]
+  },
+  "code": [
+    {
+      "file": "NaiveExpenses.java",
+      "lang": "java",
+      "title": "The problem: loose data",
+      "run": "captured",
+      "caption": "Open fields, `double` money and no checks: outsiders owe, shares miss, history changes.",
+      "walk": [
+        { "lines": [32, 33, 34, 35], "text": "Package-visible lists: any code in the package can add members or expenses unchecked." },
+        { "lines": [37, 38, 39, 40, 41], "text": "Money is a `double`, and shares are a loose map keyed by display name." },
+        { "lines": [16, 17, 18], "text": "Zed is not a member, yet the share is stored." },
+        { "lines": [21, 22, 23], "text": "Nothing compares the shares with the amount. The printout shows the gap." },
+        { "lines": [24, 25], "text": "Chen ate dinner but owes nothing, and the model cannot notice." },
+        { "lines": [27, 28], "text": "A recorded expense changes in place, so past balances change silently." }
+      ]
+    },
+    {
+      "file": "SplitwiseModel.java",
+      "lang": "java",
+      "title": "The fix: guarded model",
+      "run": "captured",
+      "caption": "Records for values, cents for money, and each object guarding the rule it can check.",
+      "walk": [
+        { "lines": [31, 32, 33, 34, 35, 36], "text": "Small value types. A `Share` is never negative; a `User` always has an id." },
+        { "lines": [37, 38, 39, 40, 41], "text": "An expense is a record. `List.copyOf` freezes the shares the caller passed in." },
+        { "lines": [42, 43, 44], "text": "The invariant lives with the data: shares must add up to the total, to the cent." },
+        { "lines": [49, 50, 51], "text": "Group state is private. Members are kept by id, in insertion order." },
+        { "lines": [57, 58, 59, 60, 61, 62, 63], "text": "The group checks the payer and every share holder, since only it knows members." },
+        { "lines": [66], "text": "Callers get a copy, so nobody adds an unchecked expense behind the group's back." },
+        { "lines": [12, 13, 14, 15, 16, 17, 18], "text": "One valid dinner, a taxi whose shares fall short, and a boat ride with an outsider." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Storing money as `double` lets shares drift from the total; store `long` cents.",
+    "Editing a recorded expense rewrites history; add a correcting expense or a new version.",
+    "Putting every check in one `ExpenseService` breeds a god class; let objects guard their rules."
+  ],
+  "quiz": {
+    "q": "Same classes as the fix. What does this print?",
+    "code": "List<Share> parts = new ArrayList<>();\nparts.add(new Share(ben, 500));\nExpense e = new Expense(\"e5\", \"Cab\", ben, 500, parts);\nparts.add(new Share(chen, 500));\nSystem.out.println(e.shares().size());",
+    "lang": "java",
+    "options": [
+      "2",
+      "1",
+      "IllegalArgumentException",
+      "UnsupportedOperationException"
+    ],
+    "answer": 1,
+    "why": "The compact constructor stored `List.copyOf(parts)`, a separate unmodifiable copy. Adding to the caller's `ArrayList` later cannot reach the expense."
+  },
+  "takeaway": "Model money in cents, freeze expenses, and let each object guard its rules.",
+  "chat": {
+    "starters": [
+      "Should Group or an ExpenseService own the list of expenses?",
+      "How do I handle expenses in different currencies?",
+      "How would I let a user edit an expense without rewriting history?"
+    ]
+  }
+}

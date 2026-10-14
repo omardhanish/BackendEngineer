@@ -1,0 +1,232 @@
+{
+  "title": "ATM domain model",
+  "idea": "The ATM domain model separates the machine (ATM, CashDispenser, ATMState) from the bank's records (Card, Account, Transaction), joined only through BankService.",
+  "analogy": {
+    "text": "A shop till and the bank behind it. The till holds notes and knows its own mode; the bank holds accounts and the ledger.",
+    "breaks": "A till pays out without asking; an ATM needs the bank's approval first."
+  },
+  "points": [
+    "An ATM owns one CashDispenser and has exactly one ATMState at a time.",
+    "A Card points to one Account; the ATM holds zero or one Card.",
+    "Account owns the balance; only `debit` may lower it, never below zero.",
+    "A Transaction records type, amount in paise and status for one Account."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Class diagram",
+    "nodes": [
+      {
+        "id": "atm",
+        "label": "ATM",
+        "sub": "id, state, currentCard"
+      },
+      {
+        "id": "state",
+        "label": "ATMState",
+        "sub": "enum"
+      },
+      {
+        "id": "disp",
+        "label": "CashDispenser",
+        "sub": "note -> count"
+      },
+      {
+        "id": "card",
+        "label": "Card",
+        "sub": "number, expiresIn"
+      },
+      {
+        "id": "bank",
+        "label": "BankService",
+        "sub": "interface"
+      },
+      {
+        "id": "acc",
+        "label": "Account",
+        "sub": "balanceMinor, debit()"
+      },
+      {
+        "id": "tx",
+        "label": "Transaction",
+        "sub": "type, amountMinor"
+      },
+      {
+        "id": "txs",
+        "label": "TransactionStatus",
+        "sub": "enum"
+      }
+    ],
+    "edges": [
+      {
+        "from": "atm",
+        "to": "disp",
+        "label": "has 1",
+        "caption": "Each ATM owns one CashDispenser: a map from note value to how many notes are loaded."
+      },
+      {
+        "from": "atm",
+        "to": "state",
+        "label": "has 1",
+        "caption": "ATMState says what the machine is doing now. Page 4 turns it into a state machine."
+      },
+      {
+        "from": "atm",
+        "to": "card",
+        "label": "holds 0..1",
+        "caption": "At most one Card is inside the machine during a session."
+      },
+      {
+        "from": "atm",
+        "to": "bank",
+        "label": "uses",
+        "caption": "The ATM never touches an Account directly. It asks BankService over the network."
+      },
+      {
+        "from": "bank",
+        "to": "acc",
+        "label": "manages *",
+        "caption": "BankService owns every Account. It is the only code that calls debit."
+      },
+      {
+        "from": "card",
+        "to": "acc",
+        "label": "links 1",
+        "caption": "A Card links to one Account by id. Several cards may share an account."
+      },
+      {
+        "from": "bank",
+        "to": "tx",
+        "label": "records *",
+        "caption": "Every debit or reversal the bank performs is written as a Transaction."
+      },
+      {
+        "from": "tx",
+        "to": "txs",
+        "label": "has",
+        "caption": "TransactionStatus moves PENDING to COMPLETED or REVERSED. DECLINED records a refusal."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "AtmModel.java",
+      "lang": "java",
+      "title": "The model in Java 17",
+      "run": "captured",
+      "caption": "Records for data that never changes, classes for Account and CashDispenser because their numbers change. Invariants live in constructors and methods.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7,
+            8
+          ],
+          "text": "A Card prints a masked number and knows when it expires."
+        },
+        {
+          "lines": [
+            9,
+            10,
+            11
+          ],
+          "text": "Debit Rs 2,000 from an account holding Rs 5,000."
+        },
+        {
+          "lines": [
+            12,
+            13,
+            14,
+            15
+          ],
+          "text": "Load notes in any order; the dispenser keeps them largest first."
+        },
+        {
+          "lines": [
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30
+          ],
+          "text": "Two refusals: overdrawing the account, and a zero-amount withdrawal."
+        },
+        {
+          "lines": [
+            39,
+            40,
+            41,
+            42,
+            43,
+            44
+          ],
+          "text": "`toString` shows only the last four digits, so logs never leak a card number."
+        },
+        {
+          "lines": [
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59,
+            60,
+            61
+          ],
+          "text": "Balance is private. `debit` is the only way down, and it refuses to overdraw."
+        },
+        {
+          "lines": [
+            74,
+            75,
+            76,
+            77,
+            78,
+            79,
+            80,
+            81,
+            82,
+            83
+          ],
+          "text": "A reverse-ordered `TreeMap` keeps note order fixed, and negative counts are refused."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not give the ATM a direct Account reference; balances live at the bank.",
+    "Never print or log a full card number; mask all but the last four digits.",
+    "Store money and note values as long paise; double cannot hold exact paise."
+  ],
+  "quiz": {
+    "q": "What does the third line of AtmModel print?",
+    "options": [
+      "ATM-7 IDLE 100x10 500x4 2000x1 total 500000",
+      "ATM-7 IDLE 2000x1 500x4 100x10 total 500000",
+      "ATM-7 IDLE 2000x1 500x4 100x10 total 5000",
+      "ATM-7 CARD_INSERTED 2000x1 500x4 100x10"
+    ],
+    "answer": 1,
+    "why": "The TreeMap uses reverse order, so the largest note prints first. The total stays in paise, and a new ATM starts IDLE."
+  },
+  "takeaway": "The machine holds notes and state; the bank holds accounts and the ledger.",
+  "chat": {
+    "starters": [
+      "Why is BankService an interface and not a class?",
+      "Should Card hold the PIN, or only the bank?",
+      "How would I model a joint account with two cards?"
+    ]
+  }
+}

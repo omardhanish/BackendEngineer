@@ -1,0 +1,11 @@
+{
+  "stdout": "BK-1 PENDING -> CONFIRMED\nBK-1 CONFIRMED -> CANCELLED\nBK-2 PENDING -> EXPIRED\nBK-2 refused EXPIRED -> CONFIRMED",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java BookingLifecycle.java",
+  "tool": "Java 17.0.17",
+  "hash": "a62fe6d48dfa8cdb",
+  "at": "2026-10-12T11:17:27.273Z"
+}

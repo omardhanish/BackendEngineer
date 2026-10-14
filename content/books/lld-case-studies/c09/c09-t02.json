@@ -1,0 +1,233 @@
+{
+  "title": "Hotel booking domain model",
+  "idea": "The hotel domain model separates the building (Hotel, Room, RoomType) from what a guest buys (a Reservation of one RoomType over a DateRange).",
+  "analogy": {
+    "text": "A car rental desk sells you \"a compact for three days\", not a plate number. The exact car is handed over at pickup.",
+    "breaks": "A hotel counts units per night; a rental counts cars per pickup."
+  },
+  "points": [
+    "A Hotel has Rooms; each Room belongs to exactly one RoomType.",
+    "A Reservation names one Guest, one RoomType and one DateRange.",
+    "DateRange is a value object: check-out is exclusive, nights are derived.",
+    "CancellationPolicy is an interface, so each rate plan can refund differently."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Class diagram",
+    "nodes": [
+      {
+        "id": "hotel",
+        "label": "Hotel",
+        "sub": "id, name, rooms"
+      },
+      {
+        "id": "room",
+        "label": "Room",
+        "sub": "number, type"
+      },
+      {
+        "id": "type",
+        "label": "RoomType",
+        "sub": "code, maxGuests, rate"
+      },
+      {
+        "id": "guest",
+        "label": "Guest",
+        "sub": "id, name, email"
+      },
+      {
+        "id": "res",
+        "label": "Reservation",
+        "sub": "amountMinor, status"
+      },
+      {
+        "id": "range",
+        "label": "DateRange",
+        "sub": "checkIn, checkOut"
+      },
+      {
+        "id": "policy",
+        "label": "CancellationPolicy",
+        "sub": "refundMinor()"
+      },
+      {
+        "id": "status",
+        "label": "ReservationStatus",
+        "sub": "enum"
+      }
+    ],
+    "edges": [
+      {
+        "from": "hotel",
+        "to": "room",
+        "label": "has 1..*",
+        "caption": "A Hotel owns its Rooms. A Room never moves to another hotel."
+      },
+      {
+        "from": "room",
+        "to": "type",
+        "label": "of type 1",
+        "caption": "Each Room is one RoomType. Many Rooms share a type, which holds the nightly rate."
+      },
+      {
+        "from": "res",
+        "to": "type",
+        "label": "books 1",
+        "caption": "A Reservation books a RoomType, not a Room. That keeps rooms interchangeable."
+      },
+      {
+        "from": "res",
+        "to": "guest",
+        "label": "for 1",
+        "caption": "One Guest makes the Reservation. A Guest may hold many over time."
+      },
+      {
+        "from": "res",
+        "to": "range",
+        "label": "has 1",
+        "caption": "The stay is a DateRange value object. Price is rate times nights."
+      },
+      {
+        "from": "res",
+        "to": "policy",
+        "label": "uses 1",
+        "caption": "The Reservation keeps the CancellationPolicy it was sold with, so later rule changes do not apply."
+      },
+      {
+        "from": "res",
+        "to": "room",
+        "label": "0..1 later",
+        "dashed": true,
+        "caption": "The assigned Room is empty until check-in. The front desk fills it."
+      },
+      {
+        "from": "res",
+        "to": "status",
+        "label": "has",
+        "caption": "ReservationStatus is an enum. Page four turns it into a state machine."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "HotelModel.java",
+      "lang": "java",
+      "title": "The model in Java 17",
+      "run": "captured",
+      "caption": "Records for fixed data, a class for Reservation because its status and room change. Constructors guard the invariants.",
+      "walk": [
+        {
+          "lines": [
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13
+          ],
+          "text": "Two RoomTypes with nightly rates in paise, and a Hotel with three Rooms."
+        },
+        {
+          "lines": [
+            15,
+            16,
+            17,
+            18,
+            19,
+            20
+          ],
+          "text": "A three-night Deluxe reservation that is free to cancel up to two days before."
+        },
+        {
+          "lines": [
+            21,
+            22,
+            23,
+            24
+          ],
+          "text": "Ask the policy for the refund on two different cancel dates."
+        },
+        {
+          "lines": [
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36
+          ],
+          "text": "Two invalid inputs are refused: too many guests and a zero-night stay."
+        },
+        {
+          "lines": [
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63
+          ],
+          "text": "DateRange refuses empty stays and derives nights; nobody stores a night count."
+        },
+        {
+          "lines": [
+            65,
+            66,
+            67,
+            69,
+            70,
+            71,
+            72,
+            73
+          ],
+          "text": "The policy is an interface; FreeUntilDaysBefore is one rule among many."
+        },
+        {
+          "lines": [
+            82,
+            83,
+            85,
+            86,
+            87,
+            88,
+            89,
+            90,
+            91
+          ],
+          "text": "Status starts HELD, room is empty, and money is a long in minor units."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not put an availability flag on Room; availability is per night, not per room.",
+    "Store the CancellationPolicy with the Reservation; the hotel may change its rules later.",
+    "Keep money as long minor units; multiplying doubles by nights drifts."
+  ],
+  "quiz": {
+    "q": "What does the refund line for 03-09 print?",
+    "options": [
+      "refund if cancelled on 03-09: 1950000",
+      "refund if cancelled on 03-09: 0",
+      "refund if cancelled on 03-09: 650000",
+      "rejected: stay needs at least one night"
+    ],
+    "answer": 1,
+    "why": "Check-in is 03-10, so 03-09 is one day before. The policy refunds only when cancelling at least two days ahead."
+  },
+  "takeaway": "Reservations book a RoomType over a DateRange; Rooms are assigned later.",
+  "chat": {
+    "starters": [
+      "Why is DateRange a record and not two fields on Reservation?",
+      "Should nightly rates live on RoomType or in a separate rate table?",
+      "How would I model one reservation with two rooms?"
+    ]
+  }
+}

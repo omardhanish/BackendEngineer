@@ -1,0 +1,93 @@
+{
+  "title": "Splitwise split strategies",
+  "idea": "A split strategy turns one expense total into per-user shares; each rule (equal, percent, exact) is its own class behind one `SplitStrategy` interface.",
+  "points": [
+    "This is the Strategy pattern from c08: one method, `split(totalCents)`, many rules.",
+    "Each rule needs different inputs, so each strategy takes them in its constructor.",
+    "Integer division drops cents; hand leftover cents out in a fixed, documented order.",
+    "A new rule, such as split by units, is one new class."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "A 1000-cent bill split by percent",
+    "scenario": {
+      "token": { "label": "1000 cents", "tone": "req" },
+      "stages": [
+        { "id": "caller", "label": "Caller", "sub": "picks a strategy", "kind": "end" },
+        { "id": "check", "label": "Validate inputs", "sub": "before any share" },
+        { "id": "floor", "label": "Round down", "sub": "total × w ÷ sum" },
+        { "id": "spare", "label": "Leftover cents", "sub": "+1 to first users" },
+        { "id": "expense", "label": "Expense", "sub": "shares == total", "kind": "end" }
+      ],
+      "steps": [
+        { "caption": "The caller picks a strategy and configures it with its own inputs: 33.33%, 33.33% and 33.34%.", "at": "caller", "slot": "top", "state": { "caller": "active" } },
+        { "caption": "Percents arrive as integer basis points (1% = 100), so 33.33% is 3333. They must total 10000, checked up front.", "at": "check", "slot": "top", "state": { "caller": "done", "check": "active" } },
+        { "caption": "Each share rounds down: 33.33% of 1000 cents is 333.3, which becomes 333.", "at": "floor", "slot": "top", "token": { "label": "333 | 333 | 333", "tone": "req" }, "state": { "caller": "done", "check": "done", "floor": "active" } },
+        { "caption": "One cent is left. It goes to the first user, Asha, even though Chen's percent is largest: simple and deterministic.", "at": "spare", "slot": "top", "token": { "label": "334 | 333 | 333", "tone": "req" }, "state": { "caller": "done", "check": "done", "floor": "done", "spare": "active" } },
+        { "caption": "The `Expense` re-checks that shares equal the total. A correct strategy always passes.", "at": "expense", "slot": "bottom", "token": { "label": "sum 1000", "tone": "ok" }, "state": { "caller": "done", "check": "done", "floor": "done", "spare": "done", "expense": "done" } },
+        { "caption": "An `ExactSplit` whose amounts total 900 throws inside `split(1000)`. No `Expense` is ever created.", "at": "check", "slot": "bottom", "token": { "label": "900 ≠ 1000", "tone": "err" }, "state": { "caller": "done", "check": "blocked" } }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "SplitSwitch.java",
+      "lang": "java",
+      "title": "The problem: one switch",
+      "run": "captured",
+      "caption": "Every rule in one `switch`: cents leak, exact amounts go unchecked, and new rules edit old code.",
+      "walk": [
+        { "lines": [21], "text": "An enum of types is the usual start. Each value hides a different algorithm." },
+        { "lines": [25, 26], "text": "One signature for all rules, so `inputs` means something different per type." },
+        { "lines": [29], "text": "Integer division rounds down, and the lost cents are never handed out." },
+        { "lines": [30], "text": "Percent leaks cents the same way." },
+        { "lines": [31], "text": "Exact amounts are trusted blindly, even when they miss the total." },
+        { "lines": [24, 28], "text": "A fourth rule means editing this method again. That breaks OCP." },
+        { "lines": [7, 8, 9, 10, 11, 12], "text": "The printout shows each sum next to the real total." }
+      ]
+    },
+    {
+      "file": "SplitStrategies.java",
+      "lang": "java",
+      "title": "The fix: strategies",
+      "run": "captured",
+      "caption": "One interface, a weighted strategy for equal and percent, and an exact strategy that validates. Users are plain names here to keep the file short.",
+      "walk": [
+        { "lines": [23, 24, 25, 26], "text": "One method and one contract: the shares always sum to the total, or the call throws." },
+        { "lines": [39, 40, 41, 42, 43, 44, 45, 46, 47, 48], "text": "Equal and percent are both weights. Static factories check each rule's own inputs." },
+        { "lines": [31, 32, 33, 34, 35, 36, 37, 38], "text": "The private constructor guards shared rules and copies inputs, so callers cannot change them later." },
+        { "lines": [49, 50, 51, 52, 53, 54, 55, 56, 57], "text": "Each share rounds down first. Multiplying before dividing keeps the precision." },
+        { "lines": [58, 59], "text": "Fewer than n cents remain. The first users get one each: deterministic, nothing lost." },
+        { "lines": [64, 65, 66, 67, 68, 69, 70, 71, 72], "text": "Exact needs no rounding, only a check that the amounts match the total." },
+        { "lines": [8, 9, 10, 11, 12, 13, 14], "text": "The caller depends only on `SplitStrategy`. It never asks which rule it holds." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Stopping at integer division loses cents; assert that shares sum to the total.",
+    "Taking percents as `double` invites rounding bugs; accept integer basis points instead.",
+    "A `switch` on `SplitType` inside the service grows with every rule and breaks OCP."
+  ],
+  "quiz": {
+    "q": "Same classes as the fix. Which cents does this print, in order?",
+    "code": "List<String> four = List.of(\"A\", \"B\", \"C\", \"D\");\nWeightedSplit.equal(four).split(1002)\n        .forEach(s -> System.out.print(s.cents() + \" \"));",
+    "lang": "java",
+    "options": [
+      "250 250 251 251",
+      "250 250 250 250",
+      "251 251 250 250",
+      "250 250 250 252"
+    ],
+    "answer": 2,
+    "why": "Each share rounds down to 250, leaving 2 cents. The leftover loop gives one cent each to the first two users."
+  },
+  "takeaway": "One interface, one class per rule, and every cent assigned.",
+  "chat": {
+    "starters": [
+      "Who should choose the SplitStrategy: the UI, a factory or the service?",
+      "Is giving leftover cents to the first users fair, and what are alternatives?",
+      "How would I add a split by shares, like 2 units for Asha and 1 for Ben?"
+    ]
+  }
+}

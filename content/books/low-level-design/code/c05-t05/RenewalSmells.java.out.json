@@ -1,0 +1,11 @@
+{
+  "stdout": "Ada renews 3 months: 96.00\nreceipt for Ada: 102.00\nAda renews -3 months: -96.00",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java RenewalSmells.java",
+  "tool": "Java 17.0.17",
+  "hash": "79f71a00282f9b99",
+  "at": "2026-10-12T11:45:09.307Z"
+}

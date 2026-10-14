@@ -1,0 +1,11 @@
+{
+  "stdout": "three parties of 4 got: [\"T2\",\"T3\",\"T4\"]\na fourth party of 4 gets: NO_TABLE\na couple gets: T1\nper table: [{\"table_id\":\"T1\",\"n\":1},{\"table_id\":\"T2\",\"n\":1},{\"table_id\":\"T3\",\"n\":1},{\"table_id\":\"T4\",\"n\":1}]",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node book.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "03b45950511fd725",
+  "at": "2026-10-14T08:49:20.114Z"
+}

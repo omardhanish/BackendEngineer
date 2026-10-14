@@ -1,0 +1,292 @@
+{
+  "title": "Trip state machine",
+  "idea": "A trip state machine is the fixed set of trip statuses plus the only legal moves between them, enforced in one place.",
+  "points": [
+    "Statuses are an `enum`; each constant answers `canMoveTo(next)` with a `switch` expression.",
+    "Every event method calls one private `moveTo`, which rejects illegal moves with `IllegalStateException`.",
+    "Cancel is legal only before pickup; `COMPLETED` and `CANCELLED` are terminal, with no exits.",
+    "Driver apps resend events; `synchronized` methods keep check-then-set atomic per trip."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Legal moves of one trip",
+    "nodes": [
+      {
+        "id": "req",
+        "label": "REQUESTED",
+        "sub": "rider asked"
+      },
+      {
+        "id": "asg",
+        "label": "ASSIGNED",
+        "sub": "driver reserved"
+      },
+      {
+        "id": "arr",
+        "label": "ARRIVED",
+        "sub": "at pickup"
+      },
+      {
+        "id": "inp",
+        "label": "IN_PROGRESS",
+        "sub": "rider on board"
+      },
+      {
+        "id": "cmp",
+        "label": "COMPLETED",
+        "sub": "terminal, fare set"
+      },
+      {
+        "id": "can",
+        "label": "CANCELLED",
+        "sub": "terminal"
+      }
+    ],
+    "edges": [
+      {
+        "from": "req",
+        "to": "asg",
+        "label": "assign"
+      },
+      {
+        "from": "asg",
+        "to": "arr",
+        "label": "arrive"
+      },
+      {
+        "from": "arr",
+        "to": "inp",
+        "label": "start"
+      },
+      {
+        "from": "inp",
+        "to": "cmp",
+        "label": "complete"
+      },
+      {
+        "from": "req",
+        "to": "can",
+        "label": "cancel",
+        "dashed": true
+      },
+      {
+        "from": "asg",
+        "to": "can",
+        "label": "cancel",
+        "dashed": true
+      },
+      {
+        "from": "arr",
+        "to": "can",
+        "label": "cancel",
+        "dashed": true
+      }
+    ],
+    "steps": [
+      {
+        "caption": "A new `Trip` starts in `REQUESTED`. The constructor records it as the first history entry.",
+        "active": [
+          "req"
+        ],
+        "edges": []
+      },
+      {
+        "caption": "`assign` is legal only from `REQUESTED`. The driver id is stored after the move succeeds.",
+        "active": [
+          "req",
+          "asg"
+        ],
+        "edges": [
+          0
+        ]
+      },
+      {
+        "caption": "`arrive` then `start` follow the happy path. Each one is a single allowed arrow.",
+        "active": [
+          "asg",
+          "arr",
+          "inp"
+        ],
+        "edges": [
+          1,
+          2
+        ]
+      },
+      {
+        "caption": "`complete` needs a positive fare and is legal only from `IN_PROGRESS`.",
+        "active": [
+          "inp",
+          "cmp"
+        ],
+        "edges": [
+          3
+        ]
+      },
+      {
+        "caption": "Cancel arrows leave only the three pre-pickup states. Mid-ride, the only exit is `complete`.",
+        "active": [
+          "req",
+          "asg",
+          "arr",
+          "can"
+        ],
+        "edges": [
+          4,
+          5,
+          6
+        ]
+      },
+      {
+        "caption": "Terminal states have no outgoing arrows. A late `start` or `assign` is rejected, not applied.",
+        "active": [
+          "cmp",
+          "can"
+        ],
+        "edges": []
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "TripWithFlags.java",
+      "lang": "java",
+      "title": "The problem: a status string",
+      "run": "captured",
+      "caption": "A free-form setter accepts any status in any order, so money and history go wrong silently.",
+      "walk": [
+        {
+          "lines": [
+            24,
+            25
+          ],
+          "text": "The setter checks nothing: not the value, not the current state, not the caller."
+        },
+        {
+          "lines": [
+            3,
+            4,
+            5,
+            6
+          ],
+          "text": "A buggy driver app jumps to `COMPLETED`, so the rider pays for a ride that never started."
+        },
+        {
+          "lines": [
+            7,
+            8
+          ],
+          "text": "A typo becomes a new status, and the trip is cancelled after the charge."
+        },
+        {
+          "lines": [
+            10,
+            11,
+            12,
+            13
+          ],
+          "text": "A retried message moves a running trip back to `REQUESTED`. Matching could send a second driver."
+        },
+        {
+          "lines": [
+            27,
+            28,
+            29
+          ],
+          "text": "Business rules test raw strings scattered through the code. Each new rule is another place to get wrong."
+        }
+      ]
+    },
+    {
+      "file": "TripStateMachineDemo.java",
+      "lang": "java",
+      "title": "The fix: enum transitions",
+      "run": "captured",
+      "caption": "One enum owns the legal moves; the trip exposes events, never a raw setter.",
+      "walk": [
+        {
+          "lines": [
+            27,
+            28
+          ],
+          "text": "An `enum` makes typos impossible: an unknown status no longer compiles."
+        },
+        {
+          "lines": [
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37
+          ],
+          "text": "The whole transition table in one `switch`. The compiler forces a case for every constant."
+        },
+        {
+          "lines": [
+            52,
+            53,
+            54,
+            55
+          ],
+          "text": "Events validate input first, move second, and change other fields only after the move succeeds."
+        },
+        {
+          "lines": [
+            68,
+            69,
+            70,
+            71,
+            72,
+            73,
+            74
+          ],
+          "text": "The single gate: an illegal move throws with trip id, from and to, and changes nothing."
+        },
+        {
+          "lines": [
+            57,
+            58,
+            59,
+            60
+          ],
+          "text": "`synchronized` stops two duplicate events on one trip from both passing the check."
+        },
+        {
+          "lines": [
+            16,
+            17
+          ],
+          "text": "Cancel mid-ride and a stale reassign are both refused; the history shows they never happened."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "A public `setStatus` lets callers bypass every rule; expose events like `start()` instead.",
+    "Updating `driverId` before `moveTo` leaves a half-changed trip when the move is rejected.",
+    "Silently ignoring an illegal event hides app bugs; throw, or log and return the current status."
+  ],
+  "quiz": {
+    "q": "Same classes as the fix. What does the last line print?",
+    "code": "Trip t = new Trip(\"T-3\");\nt.assign(\"D1\");\nt.cancel();\nattempt(t::arrive);\nSystem.out.println(t.summary());",
+    "lang": "java",
+    "options": [
+      "T-3 D1 [REQUESTED, ASSIGNED, CANCELLED, ARRIVED] fare=0",
+      "T-3 - [REQUESTED, CANCELLED] fare=0",
+      "T-3 D1 [REQUESTED, ASSIGNED, CANCELLED] fare=0",
+      "T-3 D1 [REQUESTED, ASSIGNED, ARRIVED] fare=0"
+    ],
+    "answer": 2,
+    "why": "Cancel from `ASSIGNED` is legal. `CANCELLED` is terminal, so `arrive` throws before touching history, and `attempt` prints the error."
+  },
+  "takeaway": "Statuses in an enum, moves in one gate, events instead of setters.",
+  "chat": {
+    "starters": [
+      "Should I use the State pattern with one class per status instead of an enum?",
+      "How do I persist the trip status safely when two servers handle events?",
+      "Where should side effects like charging the rider run after a transition?"
+    ]
+  }
+}

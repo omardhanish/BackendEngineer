@@ -1,0 +1,11 @@
+{
+  "stdout": "/payments k-1 201 {\"id\":\"P-1\",\"status\":\"SUCCEEDED\",\"amountMinor\":49900,\"refundedMinor\":0}\n/payments k-1 200 {\"id\":\"P-1\",\"status\":\"SUCCEEDED\",\"amountMinor\":49900,\"refundedMinor\":0}\n/payments k-1 422 {\"error\":\"KEY_REUSED\"}\n/payments k-2 201 {\"id\":\"P-2\",\"status\":\"FAILED\",\"amountMinor\":15000,\"refundedMinor\":0}\n/payments k-3 400 {\"error\":\"VALIDATION\"}\n/payments/P-1/refunds - 201 {\"id\":\"P-1\",\"status\":\"PARTIALLY_REFUNDED\",\"amountMinor\":49900,\"refundedMinor\":30000}\n/payments/P-1/refunds - 409 {\"error\":\"REFUND_EXCEEDS_BALANCE\"}",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node api.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "4054ef05fa4c2b8d",
+  "at": "2026-10-14T10:33:01.536Z"
+}

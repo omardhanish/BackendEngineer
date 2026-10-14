@@ -1,0 +1,185 @@
+{
+  "title": "Payment API in Express",
+  "idea": "The payment API exposes payments and refunds as REST resources: the controller validates, the service applies idempotency and money rules, and the repository runs SQL.",
+  "analogy": {
+    "text": "A bank counter with numbered tokens. Show the same token twice and the clerk hands back the original receipt instead of serving you again.",
+    "breaks": "A reused token with a different request is refused, not answered."
+  },
+  "points": [
+    "`POST /payments` needs an Idempotency-Key; a replay returns 200 with the stored payment.",
+    "Only a reused key with a different body gets 422; rule refusals get 409.",
+    "The gateway is called between two short writes, never inside a transaction.",
+    "Refunds run in one transaction that locks the payment row."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "Endpoints",
+    "head": [
+      "Method",
+      "Path",
+      "Request",
+      "Success",
+      "Errors"
+    ],
+    "rows": [
+      [
+        "POST",
+        "/payments",
+        "Idempotency-Key, orderId, amountMinor, method",
+        "201 payment; 200 on replay",
+        "400, 409 concurrent first use, 422 key reused"
+      ],
+      [
+        "GET",
+        "/payments/:id",
+        "none",
+        "200 payment",
+        "404"
+      ],
+      [
+        "POST",
+        "/payments/:id/refunds",
+        "Idempotency-Key, amountMinor",
+        "201 updated payment",
+        "400, 404, 409 state or balance"
+      ],
+      [
+        "POST",
+        "/webhooks/gateway",
+        "signed gateway event",
+        "204",
+        "401 bad signature"
+      ]
+    ],
+    "highlight": {
+      "row": 0
+    },
+    "caption": "The snippet runs the two POST routes for payments and refunds. GET and the webhook follow the same layers."
+  },
+  "code": [
+    {
+      "file": "api.mjs",
+      "lang": "js",
+      "title": "Layered Express app",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "Repository, service, controllers and error mapping in one file, on a real PostgreSQL. Refund keys work like payment keys and are left out to keep it short.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7,
+            8
+          ],
+          "text": "Demo schema: a unique Idempotency-Key, the stored request, and a refund CHECK."
+        },
+        {
+          "lines": [
+            10
+          ],
+          "text": "A fake gateway: the token `tok_bad` declines, everything else succeeds."
+        },
+        {
+          "lines": [
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24
+          ],
+          "text": "Repository: SQL only. `settle` changes status only from PROCESSING."
+        },
+        {
+          "lines": [
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40
+          ],
+          "text": "`pay`: replay a known key, refuse a reused key, else insert, charge, settle."
+        },
+        {
+          "lines": [
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49
+          ],
+          "text": "`refund`: lock the row, check state and balance, then add the refund."
+        },
+        {
+          "lines": [
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63,
+            64,
+            65,
+            66
+          ],
+          "text": "Controllers parse with `zod`; Express 5 forwards async throws to the error middleware."
+        },
+        {
+          "lines": [
+            67,
+            68,
+            69,
+            70,
+            71,
+            72
+          ],
+          "text": "Errors map to status codes; a duplicate key from a race becomes 409."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Never hold a database transaction open while waiting for the gateway.",
+    "Store the request with its key; same key, different body must not replay.",
+    "Refunds need their own Idempotency-Key; a retried refund must not repeat."
+  ],
+  "quiz": {
+    "q": "What status does the third POST /payments, reusing k-1, print?",
+    "options": [
+      "200",
+      "201",
+      "422",
+      "409"
+    ],
+    "answer": 2,
+    "why": "k-1 is stored with a 49900 request. The new body asks for 100, so the stored request differs and the service throws KEY_REUSED: 422."
+  },
+  "takeaway": "Validate in the controller, dedupe by key, and call gateways outside transactions.",
+  "chat": {
+    "starters": [
+      "How should the webhook endpoint verify the gateway signature?",
+      "What should a client do after a 409 for a concurrent request?",
+      "Why is a declined payment a 201 and not an error status?"
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "test 1: 900\ntest 2: 900\noff: 1000\non: 900",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java HiddenGlobalState.java",
+  "tool": "Java 17.0.17",
+  "hash": "f2b23c54c4a45f76",
+  "at": "2026-10-12T11:22:04.458Z"
+}

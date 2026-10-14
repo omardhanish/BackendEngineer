@@ -13,7 +13,7 @@
     "build:vendor": "node tools/build-vendor.mjs",
     "validate": "node tools/validate.mjs",
     "capture": "node tools/capture.mjs",
-    "examples:install": "npm install --prefix content/books --no-audit --no-fund",
+    "examples:install": "npm install --prefix content/books --no-audit --no-fund && node tools/fetch-java-libs.mjs",
     "qa:shots": "node tools/qa-shots.mjs",
     "smoke:chat": "node tools/smoke-chat.mjs",
     "test": "node --test test/*.test.mjs",

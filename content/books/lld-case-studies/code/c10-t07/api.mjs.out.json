@@ -1,0 +1,11 @@
+{
+  "stdout": "POST /flights/F1/bookings 201 {\"pnr\":\"PNR-1\",\"status\":\"HELD\",\"amountMinor\":900000,\"holdUntil\":\"2026-02-10T09:15:00.000Z\"}\nPOST /flights/F1/bookings 200 {\"pnr\":\"PNR-1\",\"status\":\"HELD\",\"amountMinor\":900000,\"holdUntil\":\"2026-02-10T09:15:00.000Z\"}\nPOST /flights/F1/bookings 409 {\"error\":\"SOLD_OUT\"}\nPOST /flights/F9/bookings 404 {\"error\":\"FARE_NOT_FOUND\"}\nPOST /flights/F1/bookings 400 {\"error\":\"VALIDATION\"}\nPUT /bookings/PNR-1/passengers/1/seat 200 {\"pnr\":\"PNR-1\",\"paxNo\":1,\"seatNo\":\"12A\"}\nPUT /bookings/PNR-1/passengers/2/seat 409 {\"error\":\"SEAT_TAKEN\"}",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node api.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "be7de23dfb1bed44",
+  "at": "2026-10-14T10:25:43.256Z"
+}

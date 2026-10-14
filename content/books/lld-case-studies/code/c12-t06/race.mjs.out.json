@@ -1,0 +1,11 @@
+{
+  "stdout": "outcomes: [\"23P01\",\"ok\"]\nactive bookings in R-1: 1\nrows updated: [0,1]\nfinal version: 1",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node race.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "fb43d69f19247a94",
+  "at": "2026-10-14T08:32:07.323Z"
+}

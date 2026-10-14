@@ -1,0 +1,179 @@
+{
+  "title": "The 45-minute LLD answer",
+  "idea": "A 45-minute low-level design (LLD) framework splits the interview into timed phases, so you finish with a running core and a design you can defend.",
+  "analogy": {
+    "text": "A cooking-show slot has fixed segments: prep on camera, cook the main dish, then plate and explain. Nobody spends forty minutes chopping onions.",
+    "breaks": "The interviewer changes the recipe halfway; a show rarely does."
+  },
+  "points": [
+    "Spend the first five minutes on questions; agreed use cases become your demo script.",
+    "Model with enums, records and one interface per variation point before writing logic.",
+    "In a coding round, get one use case running by minute 30.",
+    "Follow-ups test extensibility: show a new rule is a new class, not an edit."
+  ],
+  "hero": {
+    "type": "timeline",
+    "title": "Where the 45 minutes go",
+    "items": [
+      {
+        "label": "0-5 min: Clarify",
+        "text": "Ask about actors, must-have use cases and scope. Write the agreed list down."
+      },
+      {
+        "label": "5-10 min: Entities",
+        "text": "Nouns become classes. Fixed sets become enums; unchanging values become records."
+      },
+      {
+        "label": "10-15 min: Contracts",
+        "text": "Sketch the class diagram. Add an interface wherever behaviour will vary."
+      },
+      {
+        "label": "15-30 min: Core",
+        "text": "Code the main use case end to end, guards included. Skip boilerplate."
+      },
+      {
+        "label": "30-40 min: Follow-ups",
+        "text": "Handle twists: a new rule, bad input, two users. Name the class that changes."
+      },
+      {
+        "label": "40-45 min: Wrap-up",
+        "text": "Summarise trade-offs, the tests you would write, and what comes next."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "VendingSkeleton.java",
+      "lang": "java",
+      "title": "Minute 30: the core",
+      "run": "captured",
+      "caption": "A vending machine prompt at the end of the core phase: every agreed use case runs from `main`.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            16
+          ],
+          "text": "`main` replays the use cases agreed in minute five. This is your live demo, not a test suite."
+        },
+        {
+          "lines": [
+            20,
+            23
+          ],
+          "text": "Enums fix the slots and statuses. `select` returns an `Outcome` value, so callers decide how to display it."
+        },
+        {
+          "lines": [
+            25,
+            30
+          ],
+          "text": "`Product` is an immutable record that rejects a missing name or a non-positive price at construction."
+        },
+        {
+          "lines": [
+            32,
+            42
+          ],
+          "text": "State lives in private `EnumMap` fields. Only `restock` and `select` change stock; nothing outside can."
+        },
+        {
+          "lines": [
+            44,
+            44
+          ],
+          "text": "`insert` accepts any value. Name this gap aloud and park it; it is a likely follow-up."
+        },
+        {
+          "lines": [
+            46,
+            53
+          ],
+          "text": "Guards first: sold out, then not enough credit with the exact shortfall. The interviewer sees edge cases handled."
+        },
+        {
+          "lines": [
+            54,
+            57
+          ],
+          "text": "The happy path is last and short: take one item, compute change, clear the credit."
+        }
+      ]
+    },
+    {
+      "file": "VendingFollowUps.java",
+      "lang": "java",
+      "title": "Minute 35: follow-ups",
+      "run": "captured",
+      "caption": "Two typical twists: a new pricing rule and a bad coin. The machine is trimmed to the parts the twists touch, and it takes a `PricingRule`, the interface you drew at minute 15.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            10
+          ],
+          "text": "The happy-hour request becomes a second `PricingRule` passed in. The machine code does not change."
+        },
+        {
+          "lines": [
+            26,
+            29
+          ],
+          "text": "Draw this interface at minute 15, even if the core only uses list price."
+        },
+        {
+          "lines": [
+            35,
+            48
+          ],
+          "text": "`PercentOff` checks its range once. Integer cents avoid float error; division rounds down, so say so aloud."
+        },
+        {
+          "lines": [
+            50,
+            56
+          ],
+          "text": "The rule arrives by constructor injection and is checked for null. The field is final."
+        },
+        {
+          "lines": [
+            60,
+            65
+          ],
+          "text": "The parked gap is closed: `insert` rejects zero and negative coins with a message naming the value."
+        },
+        {
+          "lines": [
+            11,
+            20
+          ],
+          "text": "The demo tries a good coin and two bad ones. Credit counts only the accepted coin."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Coding before agreeing use cases; at minute 30 you find you built the wrong feature.",
+    "Drawing twelve classes and running none; the interviewer never sees anything work.",
+    "Typing in silence; narrate each decision so the interviewer can grade your reasoning."
+  ],
+  "quiz": {
+    "q": "Minute 22: entities exist but no use case runs yet. The interviewer asks about thread safety. Your best move?",
+    "options": [
+      "Add synchronized to every method right away",
+      "Say it is out of scope for this interview",
+      "Answer briefly, note it, finish the core first",
+      "Rewrite the maps as ConcurrentHashMap before continuing"
+    ],
+    "answer": 2,
+    "why": "A short answer shows you know the issue; noting it keeps it on the follow-up list. A running core by minute 30 matters more than early hardening."
+  },
+  "takeaway": "Clarify, model, run one use case, then extend: watch the clock.",
+  "chat": {
+    "starters": [
+      "What questions should I ask in the first five minutes?",
+      "What if I am still coding the core at minute 35?",
+      "How much of the class diagram should I draw before coding?"
+    ]
+  }
+}

@@ -1,268 +1,199 @@
 {
-  "title": "The SOLID principles",
-  "idea": "SOLID is five rules for classes: one reason to change, extend without editing, honour the parent's contract, keep interfaces small, depend on abstractions.",
-  "analogy": {
-    "text": "A wall socket: the kettle needs only the socket's shape, any plug that fits works, and a new appliance never needs rewiring the house.",
-    "breaks": "Sockets never change; real interfaces do, so design them with care."
-  },
+  "title": "LLD versus HLD interviews",
+  "idea": "High-level design (HLD) chooses the services, data stores and network links of a system; low-level design (LLD) designs the classes and methods inside one service.",
   "points": [
-    "Single responsibility (SRP): a class has one reason to change.",
-    "Open/closed (OCP): add behaviour with a new class, not by editing old ones.",
-    "Liskov substitution (LSP): a subtype must keep every promise its parent type makes.",
-    "Interface segregation (ISP) keeps interfaces small; dependency inversion (DIP) makes callers depend on them."
+    "HLD asks which boxes exist and how they scale; LLD asks what classes do.",
+    "The same product gets both: HLD draws the shortener service, LLD writes its classes.",
+    "An LLD round runs: clarify, list entities, define contracts, code the core, then extend.",
+    "Interviewers score clear responsibilities, sound contracts and how cheaply your design absorbs follow-ups."
   ],
   "hero": {
-    "type": "anim",
-    "engine": "topology",
-    "title": "Five principles in one checkout",
-    "scenario": {
-      "tiers": [
-        [
-          "main"
-        ],
-        [
-          "checkout"
-        ],
-        [
-          "receipt",
-          "card",
-          "wallet"
-        ]
-      ],
-      "nodes": {
-        "main": {
-          "label": "main",
-          "kind": "client"
-        },
-        "checkout": {
-          "label": "Checkout",
-          "sub": "runs a payment",
-          "kind": "service"
-        },
-        "receipt": {
-          "label": "ConsoleReceipt",
-          "sub": "Receipt",
-          "kind": "box"
-        },
-        "card": {
-          "label": "CardPayment",
-          "sub": "PaymentMethod",
-          "kind": "box"
-        },
-        "wallet": {
-          "label": "WalletPayment",
-          "sub": "PaymentMethod",
-          "kind": "box"
-        }
+    "type": "seq",
+    "title": "One LLD round, start to finish",
+    "actors": [
+      {
+        "id": "int",
+        "label": "Interviewer"
       },
-      "links": [
-        [
-          "main",
-          "checkout"
-        ],
-        [
-          "checkout",
-          "receipt",
-          {
-            "label": "prints",
-            "dashed": true
-          }
-        ],
-        [
-          "checkout",
-          "card"
-        ],
-        [
-          "checkout",
-          "wallet"
-        ]
-      ],
-      "steps": [
-        {
-          "caption": "SRP: `Checkout` only runs a payment. Printing the result is the job of a separate `Receipt`.",
-          "focus": [
-            "checkout",
-            "receipt"
-          ]
-        },
-        {
-          "caption": "DIP: `Checkout` depends only on the `Receipt` interface. `main` injects a `ConsoleReceipt` through the constructor.",
-          "send": [
-            {
-              "from": "main",
-              "to": "checkout",
-              "label": "receipt",
-              "tone": "info"
-            }
-          ],
-          "state": {
-            "checkout": "ok"
-          }
-        },
-        {
-          "caption": "`pay(1200, card)` asks the `PaymentMethod` to charge. `Checkout` never checks which class it got.",
-          "send": [
-            {
-              "from": "checkout",
-              "to": "card",
-              "label": "charge",
-              "tone": "req"
-            }
-          ],
-          "state": {
-            "card": "ok"
-          }
-        },
-        {
-          "caption": "OCP: `WalletPayment` came later as a new class. Not one line of `Checkout` changed.",
-          "state": {
-            "wallet": "new"
-          },
-          "badge": {
-            "wallet": "added"
-          },
-          "focus": [
-            "wallet"
-          ]
-        },
-        {
-          "caption": "LSP: the wallet declines 900 by returning `false`, as the contract allows. It never throws a surprise.",
-          "send": [
-            {
-              "from": "checkout",
-              "to": "wallet",
-              "label": "charge",
-              "tone": "warn"
-            }
-          ],
-          "badge": {
-            "wallet": "declined"
-          }
-        },
-        {
-          "caption": "ISP: `Receipt` has one method. A class that only prints never has to fake payment methods.",
-          "send": [
-            {
-              "from": "checkout",
-              "to": "receipt",
-              "label": "print",
-              "tone": "ok"
-            }
-          ],
-          "focus": [
-            "receipt"
-          ]
-        }
-      ]
-    }
+      {
+        "id": "you",
+        "label": "You"
+      },
+      {
+        "id": "ide",
+        "label": "Editor"
+      }
+    ],
+    "messages": [
+      {
+        "from": "int",
+        "to": "you",
+        "label": "Design a URL shortener's classes",
+        "note": "The prompt is vague on purpose. Treat it as an invitation to ask questions."
+      },
+      {
+        "from": "you",
+        "to": "int",
+        "label": "Custom aliases? Expiry? Single process?",
+        "note": "Clarify scope first. Write the agreed use cases where the interviewer can see them."
+      },
+      {
+        "from": "int",
+        "to": "you",
+        "label": "Shorten and resolve only, for now",
+        "note": "Now you know what is in scope and what will likely come later."
+      },
+      {
+        "from": "you",
+        "to": "int",
+        "label": "ShortenerService, CodeGenerator, UrlRepository",
+        "note": "Name entities and contracts before code. Say why each interface exists."
+      },
+      {
+        "from": "you",
+        "to": "ide",
+        "label": "Code the core use case",
+        "note": "Write the main path end to end, with validation. Skip getters and boilerplate."
+      },
+      {
+        "from": "int",
+        "to": "you",
+        "label": "Add custom aliases",
+        "note": "The follow-up tests your design. A good one bends in one place."
+      },
+      {
+        "from": "you",
+        "to": "ide",
+        "label": "saveIfAbsent + AliasTakenException",
+        "note": "Extend the contract, add one method, fail loudly on conflicts."
+      },
+      {
+        "from": "int",
+        "to": "you",
+        "label": "Two users take one alias at once?",
+        "note": "Close with trade-offs: thread-safety, what you would test, what you left out."
+      }
+    ]
   },
   "code": [
     {
-      "file": "SolidDemo.java",
+      "file": "ShortenerDemo.java",
       "lang": "java",
-      "title": "S, O, I and D",
+      "title": "The core round",
       "run": "captured",
-      "caption": "A checkout built on two small interfaces. New payment methods arrive as new classes.",
-      "walk": [
-        {
-          "lines": [
-            10,
-            13
-          ],
-          "text": "DIP: the abstraction `Checkout` depends on. `false` is a normal answer, not an error."
-        },
-        {
-          "lines": [
-            15,
-            23
-          ],
-          "text": "OCP: each method is its own class. Adding one never edits `Checkout`."
-        },
-        {
-          "lines": [
-            25,
-            31
-          ],
-          "text": "ISP: `Receipt` asks for one method, so any printer fits easily."
-        },
-        {
-          "lines": [
-            33,
-            36
-          ],
-          "text": "SRP: one job. DIP: it holds a `Receipt`, injected through the constructor."
-        },
-        {
-          "lines": [
-            38,
-            41
-          ],
-          "text": "`pay` calls the interface only. It works for any `PaymentMethod`."
-        }
-      ]
-    },
-    {
-      "file": "LspDemo.java",
-      "lang": "java",
-      "title": "L, broken",
-      "run": "captured",
-      "caption": "`FrozenSettings` compiles as a `Settings`, yet it breaks code that trusts `put`.",
+      "caption": "The LLD answer for shorten and resolve: two contracts and one service that depends only on them.",
       "walk": [
         {
           "lines": [
             20,
-            23
+            25
           ],
-          "text": "The interface promises both reading and writing."
+          "text": "Two interfaces mark the parts most likely to change: code generation and storage."
         },
         {
           "lines": [
-            32,
-            37
+            27,
+            32
           ],
-          "text": "This subtype refuses `put`: it type-checks but breaks the promise."
+          "text": "A base-36 counter is short and collision-free. Say aloud that it is not thread-safe."
         },
         {
           "lines": [
-            10,
-            17
+            43,
+            49
           ],
-          "text": "`rename` was written for any `Settings` and now fails on one."
+          "text": "The service receives both collaborators through its constructor and rejects nulls at once."
         },
         {
           "lines": [
-            6,
-            7
+            50,
+            57
           ],
-          "text": "Same call, two subtypes, one broken promise. The fix is ISP: split read from write."
+          "text": "`shorten` validates first, then generates and saves. Bad input never reaches storage."
+        },
+        {
+          "lines": [
+            14,
+            14
+          ],
+          "text": "An unknown code returns an empty `Optional`, not null. The caller must decide what to show."
+        },
+        {
+          "lines": [
+            15,
+            16
+          ],
+          "text": "A non-web URL fails with `IllegalArgumentException`: a caller bug, so unchecked fits."
+        }
+      ]
+    },
+    {
+      "file": "AliasDemo.java",
+      "lang": "java",
+      "title": "The follow-up",
+      "run": "captured",
+      "caption": "The interviewer adds custom aliases. Only the new path is shown; the contract grows by one method.",
+      "walk": [
+        {
+          "lines": [
+            24,
+            28
+          ],
+          "text": "Saving now reports whether the code was free. Check and write are one call."
+        },
+        {
+          "lines": [
+            31,
+            35
+          ],
+          "text": "`putIfAbsent` on `ConcurrentHashMap` is atomic, which answers the closing concurrency question."
+        },
+        {
+          "lines": [
+            19,
+            22
+          ],
+          "text": "A taken alias gets its own named exception, so callers can catch exactly that case and offer another."
+        },
+        {
+          "lines": [
+            47,
+            54
+          ],
+          "text": "`shortenAs` validates the alias format, then lets storage decide if it is free."
+        },
+        {
+          "lines": [
+            9,
+            15
+          ],
+          "text": "The second claim on `q3` is refused, and the first mapping is untouched."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Do not throw `UnsupportedOperationException` from an override; split the interface instead.",
-    "Do not split classes by method count; split them by who asks for changes.",
-    "Add an interface where you need to swap or fake a class, not by reflex."
+    "Drawing load balancers and databases in an LLD round; the interviewer wanted classes and methods.",
+    "Coding before agreeing scope; you build features nobody asked for and run out of time.",
+    "Checking then saving in two calls; under concurrency two users both win the same alias."
   ],
   "quiz": {
-    "q": "What is the second line `LspDemo` prints?",
+    "q": "Which question belongs in an LLD round rather than an HLD round?",
     "options": [
-      "saved default",
-      "saved shop",
-      "broke: frozen",
-      "broke: null"
+      "How many cache nodes will serve resolve traffic?",
+      "Which class decides that an alias is already taken?",
+      "Should the database be replicated across regions?",
+      "Where does the load balancer route a request?"
     ],
-    "answer": 2,
-    "why": "`FrozenSettings.put` throws `UnsupportedOperationException` with the message `frozen`. `rename` catches it and returns that message, so substitution failed.",
-    "code": "rename(new FrozenSettings());\n// rename: s.put(\"name\", \"shop\") ... catch -> \"broke: \" + message",
-    "lang": "java"
+    "answer": 1,
+    "why": "LLD assigns responsibilities to classes inside one service. Cache nodes, replication and load balancers are infrastructure choices, which HLD makes."
   },
-  "takeaway": "Small classes, small interfaces, kept promises: add features by adding classes.",
+  "takeaway": "HLD picks the boxes; LLD designs the classes inside one box.",
   "chat": {
     "starters": [
-      "How do I explain SRP without saying 'does one thing'?",
-      "Is the Square extends Rectangle problem really an LSP violation?",
-      "What is the difference between dependency inversion and dependency injection?"
+      "How long should I spend clarifying before I start coding?",
+      "Do LLD interviews expect a running program or just class diagrams?",
+      "What if the interviewer mixes HLD questions into an LLD round?"
     ]
   }
 }

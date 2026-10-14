@@ -1,0 +1,11 @@
+{
+  "stdout": "tea costs 250 cents\ntea costs 250 (cached)\ncake: price feed offline, try again soon\nbug surfaced: sku must not be null",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java PricingDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "7b060dcbd1057621",
+  "at": "2026-10-12T11:44:45.879Z"
+}

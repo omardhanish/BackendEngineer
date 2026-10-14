@@ -1,0 +1,11 @@
+{
+  "stdout": "CardGateway -> PAID A-1 50000\n  log: charge A-1\nLoggingCardGateway -> PAID A-1 50000\nLimitedCardGateway -> DECLINED A-1\n  log: charge A-1\nLoggingLimitedCardGateway -> DECLINED A-1\nsubclasses needed: 14",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java SubclassExplosion.java",
+  "tool": "Java 17.0.17",
+  "hash": "ebfe2f0f46decdfc",
+  "at": "2026-10-12T11:09:28.421Z"
+}

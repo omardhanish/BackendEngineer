@@ -1,0 +1,11 @@
+{
+  "stdout": "GET /charges/9 {X-Request-Id=req-1} -> 429\n  wait 2000ms\nGET /charges/9 {X-Request-Id=req-2} -> 200\nfinal 200\nrejected config: search: no retry policy",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java Extensible.java",
+  "tool": "Java 17.0.17",
+  "hash": "53bdd78f293a66e0",
+  "at": "2026-10-14T10:23:41.926Z"
+}

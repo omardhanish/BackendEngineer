@@ -1,0 +1,11 @@
+{
+  "stdout": "BK-2 row: ok\nBK-2 takes 19:00: 23505 one_live_booking_per_hour\nend before start: 23514 ends_after_start\npending, no deadline: 23514 pending_has_deadline\nunknown court: 23503 booking_court_id_fkey\nchess court: 23514 known_sport\nafter cancel, BK-2 takes 19:00: ok\n17:00 free\n18:00 free\n19:00 BK-2\n20:00 free",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node schema.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "ed3329b4061bb264",
+  "at": "2026-10-14T08:53:10.794Z"
+}

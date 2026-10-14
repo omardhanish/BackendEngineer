@@ -1,0 +1,297 @@
+{
+  "title": "Errors, logs and booking metrics",
+  "idea": "Good error handling throws typed exceptions with stable codes from the core, then catches them at one boundary that logs once, counts the outcome and answers the caller.",
+  "points": [
+    "`BookingService` throws and never logs; the boundary decides what a failure means.",
+    "A rejected booking is a normal outcome: log WARN with code and context.",
+    "Unknown ids get WARN and 404; other exceptions are bugs: ERROR and 500.",
+    "Count every outcome by code; alert on the error rate, not on rejections."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "One failure, one catch site",
+    "nodes": [
+      {
+        "id": "svc",
+        "label": "BookingService",
+        "sub": "throws, never logs"
+      },
+      {
+        "id": "ex",
+        "label": "BookingException",
+        "sub": "code(): ROOM_TAKEN, INVALID_SLOT, NOT_OWNER"
+      },
+      {
+        "id": "bug",
+        "label": "Other RuntimeException",
+        "sub": "a defect, e.g. a null"
+      },
+      {
+        "id": "edge",
+        "label": "BookingEndpoint",
+        "sub": "the only catch site"
+      },
+      {
+        "id": "log",
+        "label": "Log",
+        "sub": "one key=value line"
+      },
+      {
+        "id": "metrics",
+        "label": "Metrics",
+        "sub": "counter per outcome"
+      },
+      {
+        "id": "resp",
+        "label": "Response",
+        "sub": "400 / 403 / 404 / 409 / 500"
+      },
+      {
+        "id": "alert",
+        "label": "Alert",
+        "sub": "on booking.error rate"
+      }
+    ],
+    "edges": [
+      {
+        "from": "svc",
+        "to": "ex",
+        "label": "throws"
+      },
+      {
+        "from": "svc",
+        "to": "bug",
+        "label": "throws",
+        "dashed": true
+      },
+      {
+        "from": "ex",
+        "to": "edge",
+        "label": "caught first"
+      },
+      {
+        "from": "bug",
+        "to": "edge",
+        "label": "caught last"
+      },
+      {
+        "from": "edge",
+        "to": "log",
+        "label": "WARN or ERROR"
+      },
+      {
+        "from": "edge",
+        "to": "metrics",
+        "label": "increment"
+      },
+      {
+        "from": "edge",
+        "to": "resp",
+        "label": "status + code"
+      },
+      {
+        "from": "metrics",
+        "to": "alert",
+        "label": "error rate"
+      }
+    ],
+    "steps": [
+      {
+        "caption": "A clash makes `BookingService` throw `RoomTakenException`. It adds no log line of its own.",
+        "active": [
+          "svc",
+          "ex"
+        ],
+        "edges": [
+          0
+        ]
+      },
+      {
+        "caption": "`BookingEndpoint` catches the `BookingException` family first and reads its stable `code()`.",
+        "active": [
+          "ex",
+          "edge"
+        ],
+        "edges": [
+          2
+        ]
+      },
+      {
+        "caption": "It writes one WARN line with the code, employee, room and slot, so support can search it.",
+        "active": [
+          "edge",
+          "log"
+        ],
+        "edges": [
+          4
+        ]
+      },
+      {
+        "caption": "It bumps a counter named after the code and maps the code to a status for the caller.",
+        "active": [
+          "edge",
+          "metrics",
+          "resp"
+        ],
+        "edges": [
+          5,
+          6
+        ]
+      },
+      {
+        "caption": "A null id is a defect, not a rule. It falls through to the last catch: ERROR and 500.",
+        "active": [
+          "svc",
+          "bug",
+          "edge",
+          "resp"
+        ],
+        "edges": [
+          1,
+          3,
+          6
+        ]
+      },
+      {
+        "caption": "Dashboards watch `booking.error`. A rise there pages someone; more rejections only mean busy rooms.",
+        "active": [
+          "metrics",
+          "alert"
+        ],
+        "edges": [
+          7
+        ]
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "SwallowedErrors.java",
+      "lang": "java",
+      "title": "The problem",
+      "run": "captured",
+      "caption": "A catch-all turns a busy room and a null bug into the same false, logged twice as ERROR.",
+      "walk": [
+        {
+          "lines": [
+            16,
+            20
+          ],
+          "text": "`book` returns a boolean, so the reason for a failure has nowhere to go."
+        },
+        {
+          "lines": [
+            21,
+            25
+          ],
+          "text": "A clash throws a generic exception just to reach the shared catch below."
+        },
+        {
+          "lines": [
+            28,
+            31
+          ],
+          "text": "`catch (Exception e)` also swallows the `NullPointerException`. The bug is hidden, not handled."
+        },
+        {
+          "lines": [
+            42,
+            47
+          ],
+          "text": "The endpoint logs again and answers 500 for both cases. On-call is paged for a busy room."
+        },
+        {
+          "lines": [
+            7,
+            9
+          ],
+          "text": "Compare the second and third outputs: identical, though one is a user conflict and one a defect."
+        }
+      ]
+    },
+    {
+      "file": "ErrorBoundary.java",
+      "lang": "java",
+      "title": "The fix",
+      "run": "captured",
+      "caption": "Typed exceptions from the core, one boundary that logs once, maps codes and counts outcomes.",
+      "walk": [
+        {
+          "lines": [
+            103,
+            106
+          ],
+          "text": "`BookingException` is unchecked and abstract; each subclass returns a fixed `code()` clients can rely on."
+        },
+        {
+          "lines": [
+            63,
+            83
+          ],
+          "text": "The trimmed service only throws. It knows nothing about logs, metrics or HTTP."
+        },
+        {
+          "lines": [
+            32,
+            39
+          ],
+          "text": "Context is built once. Success logs INFO with the new id and counts `booking.created`."
+        },
+        {
+          "lines": [
+            40,
+            49
+          ],
+          "text": "Business rejections log WARN, count per code, and map to 400, 403 or 409 with a switch."
+        },
+        {
+          "lines": [
+            50,
+            58
+          ],
+          "text": "An unknown id is the caller's mistake: WARN and 404. Anything else is a defect: ERROR and 500."
+        },
+        {
+          "lines": [
+            85,
+            101
+          ],
+          "text": "`Log` prints key=value lines without timestamps; `Metrics` keeps counters in a sorted `TreeMap`."
+        },
+        {
+          "lines": [
+            12,
+            17
+          ],
+          "text": "One success, two rejections, one unknown room and one defect, each with its own status, log and counter."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Logging and rethrowing at every layer prints one failure three times and confuses incident timelines.",
+    "Catching only `RuntimeException` at the boundary turns every rejection into a 500 and pages on-call.",
+    "Matching on exception messages breaks the client when someone rewords the text; match on `code()`."
+  ],
+  "quiz": {
+    "q": "In ErrorBoundary, what does the third call return?",
+    "code": "api.book(\"e2\", \"R1\", 11.0, 10.0);",
+    "lang": "java",
+    "options": [
+      "409 INVALID_SLOT",
+      "400 INVALID_SLOT",
+      "500 INTERNAL",
+      "409 ROOM_TAKEN"
+    ],
+    "answer": 1,
+    "why": "The slot check throws `InvalidSlotException` before the clash loop. The `BookingException` catch runs first, and the switch maps INVALID_SLOT to 400."
+  },
+  "takeaway": "Throw typed codes in the core; log, count and map once at the edge.",
+  "chat": {
+    "starters": [
+      "Should BookingException be checked or unchecked here?",
+      "How would I add a request id to every log line with SLF4J?",
+      "Which booking metrics would I put on a dashboard first?"
+    ]
+  }
+}

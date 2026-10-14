@@ -1,0 +1,170 @@
+{
+  "title": "Payment system requirements",
+  "idea": "Scoping a payment system means naming who pays, who refunds and who confirms, the one money guarantee that matters most, and what v1 leaves out.",
+  "points": [
+    "Customers pay an order by UPI or card and can check its status.",
+    "Merchants issue full or partial refunds, never more than was paid.",
+    "The core rule: one Idempotency-Key never charges the customer twice.",
+    "Assume slow, unreliable gateways; a timeout means unknown, not failed."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Actors and use cases in v1",
+    "nodes": [
+      {
+        "id": "cust",
+        "label": "Customer",
+        "sub": "pays an order"
+      },
+      {
+        "id": "pay",
+        "label": "Pay by UPI or card",
+        "sub": "with Idempotency-Key"
+      },
+      {
+        "id": "status",
+        "label": "Check payment status",
+        "sub": "by payment id"
+      },
+      {
+        "id": "merchant",
+        "label": "Merchant",
+        "sub": "support or admin"
+      },
+      {
+        "id": "refund",
+        "label": "Refund",
+        "sub": "full or partial"
+      },
+      {
+        "id": "gw",
+        "label": "Gateway webhook",
+        "sub": "async final result"
+      },
+      {
+        "id": "recon",
+        "label": "Reconciler job",
+        "sub": "settles stuck payments"
+      },
+      {
+        "id": "out",
+        "label": "Out of scope",
+        "sub": "saved cards, payouts, FX"
+      }
+    ],
+    "edges": [
+      {
+        "from": "cust",
+        "to": "pay",
+        "caption": "The customer pays one order. Each request carries an Idempotency-Key, so a retry never charges twice."
+      },
+      {
+        "from": "pay",
+        "to": "status",
+        "caption": "The customer then sees SUCCEEDED, FAILED, or PROCESSING while the result is still unknown."
+      },
+      {
+        "from": "gw",
+        "to": "status",
+        "label": "confirms",
+        "dashed": true,
+        "caption": "UPI often finishes later. The gateway is an actor: it reports the final result by webhook."
+      },
+      {
+        "from": "merchant",
+        "to": "refund",
+        "caption": "A merchant refunds part or all of a successful payment, one refund at a time."
+      },
+      {
+        "from": "recon",
+        "to": "status",
+        "label": "settles",
+        "dashed": true,
+        "caption": "A system job asks the gateway about payments stuck in PROCESSING and records the answer."
+      },
+      {
+        "from": "cust",
+        "to": "out",
+        "dashed": true,
+        "caption": "Saved cards, split payouts and multi-currency wait for later. Naming them early keeps the interview focused."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "PaymentScope.java",
+      "lang": "java",
+      "title": "Use cases as an enum",
+      "run": "captured",
+      "caption": "The scope as code: each use case has one actor, and v1 is an explicit set.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7
+          ],
+          "text": "v1 is a named EnumSet. Anything missing from it is out of scope."
+        },
+        {
+          "lines": [
+            8,
+            9,
+            10
+          ],
+          "text": "Print every use case with an IN or OUT tag and its actor."
+        },
+        {
+          "lines": [
+            16
+          ],
+          "text": "Four actors: customer, merchant, the gateway itself, and a system job."
+        },
+        {
+          "lines": [
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25
+          ],
+          "text": "Seven v1 use cases: pay by UPI, pay by card, check, retry, refund, confirm, reconcile."
+        },
+        {
+          "lines": [
+            26,
+            27,
+            28
+          ],
+          "text": "Saved cards, split payouts and multi-currency are listed, so the cut is visible."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not treat a gateway timeout as a failure; the money may have moved.",
+    "State volume and latency targets as assumptions, never as measured facts.",
+    "Name the out-of-scope list aloud so the interviewer can redirect early."
+  ],
+  "quiz": {
+    "q": "A UPI charge times out at the gateway. Which v1 rule fits?",
+    "options": [
+      "Mark it FAILED and let the customer pay again",
+      "Keep it PROCESSING until the webhook or reconciler decides",
+      "Charge again at once with a new Idempotency-Key",
+      "Refund it immediately to be safe"
+    ],
+    "answer": 1,
+    "why": "A timeout says nothing about the money. FAILED invites a second charge; PROCESSING waits for the gateway's real answer."
+  },
+  "takeaway": "Agree on actors, use cases and the charge-once rule before any class.",
+  "chat": {
+    "starters": [
+      "Why is the payment gateway treated as an actor?",
+      "Should saved cards ever be in v1 scope?",
+      "Which scale assumptions should I state for a payment system?"
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "check-then-act: sold 2, available -1\ncompareAndSet:  sold 1, available 0",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java StockRace.java",
+  "tool": "Java 17.0.17",
+  "hash": "789361368c9dfafc",
+  "at": "2026-10-14T08:44:13.143Z"
+}

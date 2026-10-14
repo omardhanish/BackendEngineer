@@ -1,0 +1,11 @@
+{
+  "stdout": "CARD_READ        PIN         -\nPIN_WRONG        PIN         - Wrong PIN. 2 left.\nPIN_OK           AMOUNT      -\nAMOUNT_CONFIRMED PROCESSING  wd-1\nDECLINED         AMOUNT      - Insufficient funds.\nAMOUNT_CONFIRMED PROCESSING  wd-2\nAMOUNT_CONFIRMED PROCESSING  wd-2\nNETWORK_ERROR    AMOUNT      wd-2 No reply. Try again.\nAMOUNT_CONFIRMED PROCESSING  wd-2\nAPPROVED         TAKE_CASH   wd-2\nCASH_TAKEN       INSERT_CARD - Take your card.",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node atmScreen.mjs",
+  "tool": null,
+  "hash": "8487e85e65be5762",
+  "at": "2026-10-14T08:37:28.672Z"
+}

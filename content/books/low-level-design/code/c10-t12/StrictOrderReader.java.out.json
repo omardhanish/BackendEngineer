@@ -1,0 +1,11 @@
+{
+  "stdout": "read OrderV1[sku=PEN-1, qty=3]\nREJECTED unknown field giftWrap\nREJECTED unknown field quantity",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java StrictOrderReader.java",
+  "tool": "Java 17.0.17",
+  "hash": "74901b299ad90d82",
+  "at": "2026-10-12T11:22:44.770Z"
+}

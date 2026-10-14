@@ -1,191 +1,192 @@
 {
-  "title": "Proxy and Chain of Responsibility",
-  "idea": "Proxy is a stand-in with the same interface that controls access to the real object. Chain of Responsibility passes a request along handlers until one deals with it.",
+  "title": "Value equality and hash codes",
+  "idea": "`equals` decides when two objects mean the same value; `hashCode` must agree with it, so equal objects land in the same hash bucket.",
   "points": [
-    "A proxy implements the real object's interface, so callers cannot tell them apart.",
-    "Unlike a decorator, it controls access and often creates the real object itself.",
-    "In a chain, each handler either answers the request or forwards it to `next`.",
-    "The sender knows only the first handler; the chain's order sets the outcome."
+    "Equal objects must return equal `hashCode` values; unequal ones may collide.",
+    "Hash collections pick a bucket by `hashCode`, then confirm the match with `equals`.",
+    "Build both from the same immutable fields, or let a `record` generate them.",
+    "Value objects compare by content; entities compare by a stable id."
   ],
   "hero": {
-    "type": "flow",
-    "title": "A refund request walks the chain",
-    "nodes": [
+    "type": "seq",
+    "title": "How HashSet.contains finds a match",
+    "actors": [
       {
-        "id": "req",
-        "label": "handle(150.0)",
-        "sub": "caller"
+        "id": "caller",
+        "label": "Caller"
       },
       {
-        "id": "auto",
-        "label": "AutoRefund",
-        "sub": "up to 20"
+        "id": "set",
+        "label": "HashSet"
       },
       {
-        "id": "agent",
-        "label": "AgentRefund",
-        "sub": "up to 200"
-      },
-      {
-        "id": "mgr",
-        "label": "ManagerReview",
-        "sub": "anything left"
-      },
-      {
-        "id": "done",
-        "label": "Answer",
-        "sub": "back to caller"
+        "id": "b",
+        "label": "b (lookup key)"
       }
     ],
-    "edges": [
+    "messages": [
       {
-        "from": "req",
-        "to": "auto",
-        "label": "start",
-        "caption": "The caller hands the request to the first handler only."
+        "from": "caller",
+        "to": "set",
+        "label": "contains(b)",
+        "note": "The set holds `a`, which equals `b` by content."
       },
       {
-        "from": "auto",
-        "to": "agent",
-        "label": "too big",
-        "caption": "150.0 is over the automatic limit, so `AutoRefund` forwards it."
+        "from": "set",
+        "to": "b",
+        "label": "hashCode()",
+        "note": "The hash picks one bucket. Only that bucket is searched."
       },
       {
-        "from": "agent",
-        "to": "done",
-        "label": "handled",
-        "caption": "`AgentRefund` can approve up to 200, so it answers and the chain stops."
-      },
-      {
-        "from": "agent",
-        "to": "mgr",
-        "label": "too big",
+        "from": "b",
+        "to": "set",
+        "label": "hash value",
         "dashed": true,
-        "caption": "A larger amount would travel on to `ManagerReview`, the catch-all."
+        "note": "`hashCode` is overridden from the same fields, so `b` hashes like `a` and lands in `a`'s bucket."
       },
       {
-        "from": "mgr",
-        "to": "done",
-        "label": "handled",
+        "from": "set",
+        "to": "b",
+        "label": "equals(a)",
+        "note": "Only an entry with the same hash in that bucket is compared with `equals`."
+      },
+      {
+        "from": "b",
+        "to": "set",
+        "label": "true",
         "dashed": true,
-        "caption": "The last handler always answers, so no request falls off the end."
+        "note": "Fields match, so `equals` confirms the value."
+      },
+      {
+        "from": "set",
+        "to": "caller",
+        "label": "true",
+        "dashed": true,
+        "note": "Both methods agree, so the lookup succeeds. Break either and it fails."
       }
     ]
   },
   "code": [
     {
-      "file": "ProxyDemo.java",
+      "file": "BrokenKey.java",
       "lang": "java",
-      "title": "Proxy",
+      "title": "The problem",
       "run": "captured",
-      "caption": "A protection proxy that also opens the costly real object only when needed.",
+      "caption": "`equals` overridden, `hashCode` not. Equal keys get lost in hash collections.",
       "walk": [
         {
           "lines": [
-            11,
-            13
+            34,
+            39
           ],
-          "text": "The interface both the real object and the proxy implement."
+          "text": "`equals` compares code and size, so two SKUs with the same fields are equal."
         },
         {
           "lines": [
-            15,
-            21
+            24,
+            25
           ],
-          "text": "`ArchiveReports` is costly to build; its constructor prints so you see when."
+          "text": "`hashCode` is still the identity-based one from `Object`. The contract is broken."
         },
         {
           "lines": [
-            23,
-            27
+            8,
+            10
           ],
-          "text": "The proxy keeps the caller's role and a `real` field that starts empty."
+          "text": "Direct comparison works, which is why the bug survives simple tests."
         },
         {
           "lines": [
-            29,
-            33
+            12,
+            16
           ],
-          "text": "It refuses the wrong role, builds the real object once, then delegates."
+          "text": "The set searches the copy's bucket, misses `a`, and then stores a duplicate."
         },
         {
           "lines": [
-            3,
-            7
+            18,
+            20
           ],
-          "text": "`main` uses two proxies; only the analyst's ever opens the archive."
+          "text": "The map lookup with an equal key finds nothing and returns `null`."
         }
       ]
     },
     {
-      "file": "ChainDemo.java",
+      "file": "ValueKeys.java",
       "lang": "java",
-      "title": "Chain of Responsibility",
+      "title": "The fix",
       "run": "captured",
-      "caption": "Three handlers, each with its own limit. The chain is built once in `main`.",
+      "caption": "A final value class with matching `equals` and `hashCode`, and the record version.",
       "walk": [
         {
           "lines": [
-            11,
-            19
+            31,
+            36
           ],
-          "text": "The base class stores `next` and forwards by default."
+          "text": "Validate and normalise in the constructor, so equal meanings get equal fields."
         },
         {
           "lines": [
-            21,
-            27
-          ],
-          "text": "`AutoRefund` answers small amounts, otherwise calls `super.handle` to forward."
-        },
-        {
-          "lines": [
-            29,
-            35
-          ],
-          "text": "`AgentRefund` follows the same shape with a higher limit."
-        },
-        {
-          "lines": [
-            37,
+            38,
             43
           ],
-          "text": "`ManagerReview` ends the chain and always answers."
+          "text": "Same-reference shortcut, a type check that also rejects `null`, then field comparison."
         },
         {
           "lines": [
-            3,
-            7
+            45,
+            48
           ],
-          "text": "`main` links the handlers and sends three amounts to the first one."
+          "text": "`Objects.hash` over exactly the fields used in `equals` keeps the contract."
+        },
+        {
+          "lines": [
+            27,
+            29
+          ],
+          "text": "The class is final with final fields, so equality cannot drift after insertion."
+        },
+        {
+          "lines": [
+            51,
+            56
+          ],
+          "text": "A record generates both methods from its components; only validation is hand-written."
+        },
+        {
+          "lines": [
+            17,
+            22
+          ],
+          "text": "`merge` finds the existing entry with a fresh equal key, so one entry holds both amounts."
         }
       ]
     }
   ],
   "pitfalls": [
-    "End every chain with a catch-all, or check the null `next` case explicitly.",
-    "Do not build a lazy proxy's real object in the constructor; that defeats it.",
-    "Keep a proxy's interface identical to the real one, or callers must know about it."
+    "Overriding `equals` without `hashCode`: `HashSet.contains` returns false for an equal copy.",
+    "Mutating a field used by `hashCode` after insertion: the entry becomes unreachable.",
+    "Letting subclasses add fields to `equals` breaks symmetry; make value classes final."
   ],
   "quiz": {
     "q": "What does this print?",
+    "code": "List<String> key = new ArrayList<>(List.of(\"a\"));\nSet<List<String>> set = new HashSet<>();\nset.add(key);\nkey.add(\"b\");\nSystem.out.println(set.contains(key) + \" \" + set.size());",
+    "lang": "java",
     "options": [
-      "auto refund",
-      "agent refund",
-      "manager review",
-      "rejected"
+      "true 1",
+      "false 0",
+      "false 1",
+      "true 2"
     ],
-    "answer": 0,
-    "why": "`AutoRefund` tests `amount <= 20`. Exactly 20.0 passes that test, so the first handler answers and nothing is forwarded.",
-    "code": "RefundHandler chain =\n    new AutoRefund(new AgentRefund(new ManagerReview()));\nSystem.out.println(chain.handle(20.0));",
-    "lang": "java"
+    "answer": 2,
+    "why": "`ArrayList.hashCode` depends on its contents. After the edit the set looks in the wrong bucket, though the entry still counts toward `size`."
   },
-  "takeaway": "A proxy guards one object; a chain lets many handlers take turns.",
+  "takeaway": "Same fields in `equals` and `hashCode`, and never mutate a key.",
   "chat": {
     "starters": [
-      "How is a Proxy different from a Decorator if both wrap?",
-      "Are servlet filters an example of Chain of Responsibility?",
-      "What is a dynamic proxy in Java and when would I use one?"
+      "Should an entity with an id compare all fields or only the id?",
+      "Why prefer instanceof over getClass in equals?",
+      "When is a hand-written equals better than using a record?"
     ]
   }
 }

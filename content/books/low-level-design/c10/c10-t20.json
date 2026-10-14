@@ -1,0 +1,265 @@
+{
+  "title": "Hexagonal architecture",
+  "idea": "Hexagonal architecture keeps business logic in a core that talks to the outside only through interfaces it owns, called ports; adapters plug technologies into them.",
+  "analogy": {
+    "text": "A laptop has standard ports. Chargers, screens and drives from any brand plug in through adapters. The laptop never changes to suit a new device.",
+    "breaks": "Hardware ports are fixed standards; your ports are interfaces you design and evolve."
+  },
+  "points": [
+    "Driving ports are use cases the core offers; HTTP or CLI adapters call them.",
+    "Driven ports are what the core needs, like storage; database adapters implement them.",
+    "Every dependency points inward: adapters know the core, the core knows no adapter.",
+    "One composition root wires adapters, so tests swap a database for an in-memory fake."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "One request crosses the hexagon",
+    "scenario": {
+      "token": {
+        "label": "POST /links",
+        "tone": "req"
+      },
+      "stages": [
+        {
+          "id": "http",
+          "label": "HttpAdapter",
+          "sub": "driving adapter"
+        },
+        {
+          "id": "in",
+          "label": "ShortenLink",
+          "sub": "driving port"
+        },
+        {
+          "id": "core",
+          "label": "LinkService",
+          "sub": "domain core"
+        },
+        {
+          "id": "out",
+          "label": "LinkStore",
+          "sub": "driven port"
+        },
+        {
+          "id": "db",
+          "label": "InMemoryLinkStore",
+          "sub": "driven adapter",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "An HTTP request arrives. The adapter parses JSON; that technology detail stays here.",
+          "at": "http",
+          "slot": "top",
+          "state": {
+            "http": "active"
+          }
+        },
+        {
+          "caption": "The adapter calls the driving port with a plain `String`. No HTTP types cross the line.",
+          "at": "in",
+          "slot": "top",
+          "token": {
+            "label": "shorten(url)",
+            "tone": "req"
+          },
+          "state": {
+            "http": "done",
+            "in": "active"
+          }
+        },
+        {
+          "caption": "The core validates the url and asks a generator for a code. Business rules live only here.",
+          "at": "core",
+          "slot": "top",
+          "token": {
+            "label": "code k2",
+            "tone": "req"
+          },
+          "state": {
+            "in": "done",
+            "core": "active"
+          }
+        },
+        {
+          "caption": "The core saves through `LinkStore`, an interface it owns. It does not know which store is wired.",
+          "at": "out",
+          "slot": "top",
+          "token": {
+            "label": "save(k2, url)",
+            "tone": "req"
+          },
+          "state": {
+            "core": "done",
+            "out": "active"
+          }
+        },
+        {
+          "caption": "The driven adapter implements the port. Swapping in a SQL store changes this box only.",
+          "at": "db",
+          "slot": "top",
+          "state": {
+            "out": "done",
+            "db": "active"
+          }
+        },
+        {
+          "caption": "`save` returns. The core hands the code back through its driving port.",
+          "at": "core",
+          "slot": "bottom",
+          "token": {
+            "label": "k2",
+            "tone": "ok"
+          },
+          "state": {
+            "db": "done",
+            "core": "active"
+          }
+        },
+        {
+          "caption": "The HTTP adapter turns the result into a 201 response. A bad url would become a 400 here.",
+          "at": "http",
+          "slot": "bottom",
+          "token": {
+            "label": "201 {code:k2}",
+            "tone": "ok"
+          },
+          "state": {
+            "core": "done",
+            "http": "done"
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "HexagonDemo.java",
+      "lang": "java",
+      "title": "Core, ports and two adapters",
+      "run": "captured",
+      "caption": "A CLI adapter and an HTTP adapter drive the same core. Each maps the same domain error to its own format.",
+      "walk": [
+        {
+          "lines": [
+            19,
+            21
+          ],
+          "text": "Ports are interfaces in the core's own terms: one driving port, two driven ports."
+        },
+        {
+          "lines": [
+            27,
+            41
+          ],
+          "text": "The core holds the rules and depends only on ports, injected through the constructor."
+        },
+        {
+          "lines": [
+            23,
+            25
+          ],
+          "text": "A domain exception says what went wrong, not how to show it."
+        },
+        {
+          "lines": [
+            44,
+            51
+          ],
+          "text": "The CLI adapter parses text and turns the domain error into a message line."
+        },
+        {
+          "lines": [
+            53,
+            61
+          ],
+          "text": "The HTTP adapter maps the same error to a 400. The core never sees status codes."
+        },
+        {
+          "lines": [
+            63,
+            71
+          ],
+          "text": "Driven adapters implement the core's ports; a SQL store would replace only these."
+        },
+        {
+          "lines": [
+            6,
+            10
+          ],
+          "text": "The composition root is the one place that picks concrete adapters."
+        }
+      ]
+    },
+    {
+      "file": "HexagonTestDemo.java",
+      "lang": "java",
+      "title": "Testing the core with fakes",
+      "run": "captured",
+      "caption": "The same core runs with a recording store and a lambda generator. No server, no database, no mocks library.",
+      "walk": [
+        {
+          "lines": [
+            9,
+            10
+          ],
+          "text": "Test adapters plug into the driven ports; a lambda is enough for a one-method port."
+        },
+        {
+          "lines": [
+            12,
+            15
+          ],
+          "text": "Assert on what crossed the port, not on any private field of the core."
+        },
+        {
+          "lines": [
+            16,
+            22
+          ],
+          "text": "The failure path is tested too: a bad url throws and saves nothing."
+        },
+        {
+          "lines": [
+            26,
+            29
+          ],
+          "text": "A tiny `check` runner stands in for JUnit 5, which this book cannot load."
+        },
+        {
+          "lines": [
+            57,
+            61
+          ],
+          "text": "The fake records calls in order, so the test result is deterministic."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Putting JPA or Jackson annotations on domain classes: the core now depends on an adapter technology.",
+    "Defining ports in the adapter package: the arrow flips and the core imports infrastructure.",
+    "One port per table with CRUD methods: ports should name what the core needs, like `findExpiredLinks`."
+  ],
+  "quiz": {
+    "q": "Your team moves link storage from memory to PostgreSQL. In a clean hexagon, what changes?",
+    "options": [
+      "`LinkService` and the `LinkStore` interface",
+      "A new `LinkStore` adapter and the composition root",
+      "Every driving adapter, since they reach the database",
+      "Nothing; the core opens the connection itself"
+    ],
+    "answer": 1,
+    "why": "The core depends only on the `LinkStore` port. You add an adapter implementing it and wire it in the composition root; core and driving adapters stay untouched."
+  },
+  "takeaway": "The core owns the ports; adapters depend on the core, never the reverse.",
+  "chat": {
+    "starters": [
+      "How is hexagonal architecture different from a layered architecture?",
+      "Where do DTOs and mapping live in ports and adapters?",
+      "Is hexagonal architecture overkill for a small service?"
+    ]
+  }
+}

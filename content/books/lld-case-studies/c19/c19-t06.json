@@ -1,0 +1,404 @@
+{
+  "title": "Task scheduler as a Node.js service",
+  "idea": "As a Node.js service, the scheduler keeps tasks in a PostgreSQL table: an API inserts them idempotently, and workers claim due rows with `FOR UPDATE SKIP LOCKED`.",
+  "points": [
+    "The table replaces the in-memory heap; an index serves the due-task query.",
+    "POST takes an `Idempotency-Key`, so a retried request never creates a second task.",
+    "Each claim locks one due row and skips rows other workers hold.",
+    "A failure writes a later `run_at`, which is backoff that survives a restart."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "API, table and two workers",
+    "scenario": {
+      "tiers": [
+        [
+          "client"
+        ],
+        [
+          "api"
+        ],
+        [
+          "db"
+        ],
+        [
+          "w1",
+          "w2"
+        ]
+      ],
+      "nodes": {
+        "client": {
+          "label": "Client",
+          "kind": "client"
+        },
+        "api": {
+          "label": "Task API",
+          "sub": "Express",
+          "kind": "service"
+        },
+        "db": {
+          "label": "task table",
+          "sub": "PostgreSQL",
+          "kind": "db"
+        },
+        "w1": {
+          "label": "Worker 1",
+          "kind": "server"
+        },
+        "w2": {
+          "label": "Worker 2",
+          "kind": "server"
+        }
+      },
+      "links": [
+        [
+          "client",
+          "api"
+        ],
+        [
+          "api",
+          "db"
+        ],
+        [
+          "w1",
+          "db"
+        ],
+        [
+          "w2",
+          "db"
+        ]
+      ],
+      "steps": [
+        {
+          "caption": "The client posts a task with an `Idempotency-Key`. The API inserts one row.",
+          "send": [
+            {
+              "from": "client",
+              "to": "api",
+              "label": "POST",
+              "tone": "req"
+            },
+            {
+              "from": "api",
+              "to": "db",
+              "label": "INSERT",
+              "tone": "req"
+            }
+          ],
+          "badge": {
+            "api": "201 T-1"
+          },
+          "items": {
+            "db": [
+              "T-1"
+            ]
+          }
+        },
+        {
+          "caption": "The client times out and retries with the same key. The unique key returns the same task.",
+          "send": [
+            {
+              "from": "client",
+              "to": "api",
+              "label": "POST again",
+              "tone": "warn"
+            }
+          ],
+          "badge": {
+            "api": "200 T-1"
+          }
+        },
+        {
+          "caption": "More tasks arrive. Both workers ask for the best due row at the same moment.",
+          "items": {
+            "db": [
+              "charge",
+              "flaky",
+              "report"
+            ]
+          },
+          "badge": {
+            "api": null
+          },
+          "send": [
+            {
+              "from": "w1",
+              "to": "db",
+              "label": "claim",
+              "tone": "info"
+            },
+            {
+              "from": "w2",
+              "to": "db",
+              "label": "claim",
+              "tone": "info"
+            }
+          ]
+        },
+        {
+          "caption": "Worker 1 locks charge. Worker 2 skips that locked row and takes flaky.",
+          "state": {
+            "w1": "busy",
+            "w2": "busy"
+          },
+          "badge": {
+            "w1": "charge",
+            "w2": "flaky"
+          },
+          "items": {
+            "db": [
+              "report"
+            ]
+          }
+        },
+        {
+          "caption": "Flaky fails. Worker 2 writes it back as SCHEDULED with a run time 30 seconds later.",
+          "send": [
+            {
+              "from": "w2",
+              "to": "db",
+              "label": "retry later",
+              "tone": "err"
+            }
+          ],
+          "state": {
+            "w1": "ok",
+            "w2": "ok"
+          },
+          "badge": {
+            "w1": null,
+            "w2": null
+          },
+          "items": {
+            "db": [
+              "report",
+              "flaky+30"
+            ]
+          }
+        },
+        {
+          "caption": "Worker 1 claims report and finishes it. Only flaky waits, due again at 10:00:30.",
+          "send": [
+            {
+              "from": "w1",
+              "to": "db",
+              "label": "claim",
+              "tone": "info"
+            }
+          ],
+          "items": {
+            "db": [
+              "flaky+30"
+            ]
+          }
+        },
+        {
+          "caption": "At 10:01 flaky is past its new run time (10:00:30). Its second attempt succeeds and the row is done.",
+          "send": [
+            {
+              "from": "w2",
+              "to": "db",
+              "label": "SUCCEEDED",
+              "tone": "ok"
+            }
+          ],
+          "items": {
+            "db": []
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "api.mjs",
+      "lang": "js",
+      "title": "Task API",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "Create, read and cancel tasks: 201, an idempotent 200 replay, 400, 404 and 409.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13
+          ],
+          "text": "The table enforces status values, priority range and one task per key."
+        },
+        {
+          "lines": [
+            15,
+            16,
+            17,
+            18,
+            19
+          ],
+          "text": "Insert, or do nothing if this key was already used."
+        },
+        {
+          "lines": [
+            23,
+            24
+          ],
+          "text": "Cancel only a SCHEDULED row, in one conditional update."
+        },
+        {
+          "lines": [
+            30,
+            31,
+            32
+          ],
+          "text": "A replay returns the stored task instead of creating another."
+        },
+        {
+          "lines": [
+            39,
+            40,
+            41,
+            42,
+            43
+          ],
+          "text": "No row changed: 404 if missing, else 409 because it moved on."
+        },
+        {
+          "lines": [
+            46,
+            47,
+            48,
+            49
+          ],
+          "text": "Zod checks the body: name, ISO run time, priority 0 to 9."
+        },
+        {
+          "lines": [
+            63,
+            64,
+            65,
+            66
+          ],
+          "text": "Errors map to HTTP codes in one place."
+        }
+      ]
+    },
+    {
+      "file": "worker.mjs",
+      "lang": "js",
+      "title": "Workers with SKIP LOCKED",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "Two workers drain due tasks in parallel at three moments. Each claim is unique, and failures back off.",
+      "walk": [
+        {
+          "lines": [
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "text": "The task table, plus a partial index of only SCHEDULED rows in claim order."
+        },
+        {
+          "lines": [
+            17,
+            18,
+            19,
+            20
+          ],
+          "text": "Flaky fails its first attempt; broken always fails."
+        },
+        {
+          "lines": [
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27
+          ],
+          "text": "Lock the best due row, skip locked ones, mark it RUNNING."
+        },
+        {
+          "lines": [
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37
+          ],
+          "text": "Succeed, give up at the limit, or reschedule with doubled backoff."
+        },
+        {
+          "lines": [
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47
+          ],
+          "text": "Each worker claims until no due row is left."
+        },
+        {
+          "lines": [
+            48,
+            49,
+            50,
+            51,
+            52,
+            53
+          ],
+          "text": "Run two workers at 10:00, 10:01 and 10:05; count claims."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Follow-up: a crashed worker leaves rows RUNNING; add a lease expiry that returns them.",
+    "Follow-up: a reused Idempotency-Key with a new body should get 409, not the old task.",
+    "Follow-up: for many workers, claim small batches and keep the partial index."
+  ],
+  "quiz": {
+    "q": "What does worker.mjs print for the 10:00 round?",
+    "options": [
+      "10:00 claims: 5 distinct: 5",
+      "10:00 claims: 10 distinct: 5",
+      "10:00 claims: 6 distinct: 6",
+      "10:00 claims: 7 distinct: 5"
+    ],
+    "answer": 0,
+    "why": "Five rows are due at 10:00; later is not. SKIP LOCKED gives each row to one worker, and retries land 30 seconds later."
+  },
+  "takeaway": "Store tasks in a table; claim due rows with SKIP LOCKED.",
+  "chat": {
+    "starters": [
+      "How do I recover tasks stuck in RUNNING after a worker crash?",
+      "Why not use LISTEN and NOTIFY instead of polling for due tasks?",
+      "How would I guarantee a job runs exactly once, not at least once?"
+    ]
+  }
+}

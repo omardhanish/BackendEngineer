@@ -1,0 +1,11 @@
+{
+  "stdout": "NearestFirst -> F1-C4\nLeastBusyFloor -> F3-C1",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java SpreadLoad.java",
+  "tool": "Java 17.0.17",
+  "hash": "a3fffc01ff861fba",
+  "at": "2026-10-14T10:22:08.317Z"
+}

@@ -1,0 +1,348 @@
+{
+  "title": "Thread-safe event delivery",
+  "idea": "A thread-safe event bus lets any thread publish or subscribe safely, runs subscribers in parallel, and still delivers events with the same key in order.",
+  "analogy": {
+    "text": "A bank assigns each customer a fixed counter. One customer's requests are served in arrival order, while other counters serve other customers at once.",
+    "breaks": "An idle counter here cannot take work from a busy one."
+  },
+  "points": [
+    "A shared pool lets a later same-key event overtake an earlier one.",
+    "A key lane is one single-thread executor; the key's hash picks the lane.",
+    "Different keys usually get different lanes; keys sharing a lane wait their turn.",
+    "A `CopyOnWriteArrayList` of subscriptions lets publish iterate while others subscribe."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "Key lanes keep per-key order",
+    "scenario": {
+      "tiers": [
+        [
+          "pub"
+        ],
+        [
+          "bus"
+        ],
+        [
+          "l0",
+          "l1",
+          "l2"
+        ],
+        [
+          "billing"
+        ]
+      ],
+      "nodes": {
+        "pub": {
+          "label": "Publisher",
+          "kind": "service"
+        },
+        "bus": {
+          "label": "orders topic",
+          "kind": "topic"
+        },
+        "l0": {
+          "label": "Lane 0",
+          "sub": "1 thread",
+          "kind": "queue"
+        },
+        "l1": {
+          "label": "Lane 1",
+          "sub": "1 thread",
+          "kind": "queue"
+        },
+        "l2": {
+          "label": "Lane 2",
+          "sub": "1 thread",
+          "kind": "queue"
+        },
+        "billing": {
+          "label": "Billing handler",
+          "kind": "service"
+        }
+      },
+      "links": [
+        [
+          "pub",
+          "bus"
+        ],
+        [
+          "bus",
+          "l0"
+        ],
+        [
+          "bus",
+          "l1"
+        ],
+        [
+          "bus",
+          "l2"
+        ],
+        [
+          "l0",
+          "billing"
+        ],
+        [
+          "l1",
+          "billing"
+        ],
+        [
+          "l2",
+          "billing"
+        ]
+      ],
+      "steps": [
+        {
+          "caption": "EV-1 for key O-1 is hashed to a lane. Only that lane's single thread will run it.",
+          "send": [
+            {
+              "from": "pub",
+              "to": "bus",
+              "label": "EV-1",
+              "tone": "req"
+            },
+            {
+              "from": "bus",
+              "to": "l2",
+              "label": "EV-1",
+              "tone": "info"
+            }
+          ],
+          "items": {
+            "l2": [
+              "EV-1"
+            ]
+          },
+          "state": {
+            "l2": "busy"
+          }
+        },
+        {
+          "caption": "EV-2 has the same key, so it lands in the same lane, queued behind EV-1.",
+          "send": [
+            {
+              "from": "pub",
+              "to": "bus",
+              "label": "EV-2",
+              "tone": "req"
+            },
+            {
+              "from": "bus",
+              "to": "l2",
+              "label": "EV-2",
+              "tone": "info"
+            }
+          ],
+          "items": {
+            "l2": [
+              "EV-1",
+              "EV-2"
+            ]
+          },
+          "badge": {
+            "l2": "key O-1"
+          }
+        },
+        {
+          "caption": "EV-3 has key O-2 and another lane. It runs at once, in parallel, without waiting.",
+          "send": [
+            {
+              "from": "pub",
+              "to": "bus",
+              "label": "EV-3",
+              "tone": "req"
+            },
+            {
+              "from": "bus",
+              "to": "l0",
+              "label": "EV-3",
+              "tone": "info"
+            },
+            {
+              "from": "l0",
+              "to": "billing",
+              "label": "EV-3",
+              "tone": "ok"
+            }
+          ],
+          "state": {
+            "l0": "ok"
+          }
+        },
+        {
+          "caption": "EV-1's handler is slow. EV-2 waits, because a lane's one thread works in order.",
+          "state": {
+            "l2": "hot"
+          },
+          "badge": {
+            "l2": "slow EV-1"
+          },
+          "focus": [
+            "l2"
+          ]
+        },
+        {
+          "caption": "EV-1 finishes, then EV-2 runs. Billing sees placed before paid on every run.",
+          "send": [
+            {
+              "from": "l2",
+              "to": "billing",
+              "label": "EV-1",
+              "tone": "ok"
+            },
+            {
+              "from": "l2",
+              "to": "billing",
+              "label": "EV-2",
+              "tone": "ok"
+            }
+          ],
+          "items": {
+            "l2": []
+          },
+          "state": {
+            "l2": "ok"
+          },
+          "badge": {
+            "l2": null
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "KeyedDispatch.java",
+      "lang": "java",
+      "title": "Prove the reorder and the fix",
+      "run": "captured",
+      "caption": "The first handler waits for the second, so any overtaking shows on every run rather than by luck.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7
+          ],
+          "text": "Run the same two-event race on a shared pool, then on key lanes."
+        },
+        {
+          "lines": [
+            15,
+            16,
+            17,
+            18,
+            19
+          ],
+          "text": "The placed handler waits up to 500 ms for paid to finish."
+        },
+        {
+          "lines": [
+            20,
+            21
+          ],
+          "text": "Paid records itself and releases the latch; close waits for both."
+        },
+        {
+          "lines": [
+            31,
+            32,
+            33,
+            34
+          ],
+          "text": "Shared pool: any idle thread takes the next task, whatever its key."
+        },
+        {
+          "lines": [
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49
+          ],
+          "text": "Key lanes: the key's hash picks one single-thread lane. Paid waits, so placed times out first."
+        }
+      ]
+    },
+    {
+      "file": "SnapshotSubscribers.java",
+      "lang": "java",
+      "title": "Subscribe during delivery",
+      "run": "captured",
+      "caption": "A handler that subscribes while an event is delivered breaks a plain list but not a copy-on-write one.",
+      "walk": [
+        {
+          "lines": [
+            24,
+            25,
+            26,
+            27,
+            28
+          ],
+          "text": "The welcome handler subscribes a new handler in the middle of delivery."
+        },
+        {
+          "lines": [
+            29,
+            30,
+            31,
+            32,
+            33
+          ],
+          "text": "ArrayList's iterator detects the change and throws on its next step."
+        },
+        {
+          "lines": [
+            7,
+            8
+          ],
+          "text": "CopyOnWriteArrayList iterates a snapshot: no exception, and the late handler waits for the next event."
+        },
+        {
+          "lines": [
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20
+          ],
+          "text": "Four threads subscribe 500 handlers each, and no add is lost."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not hand events to a shared pool when consumers need per-key order.",
+    "Bound each lane's queue; an unbounded queue hides a slow subscriber until memory runs out.",
+    "Use copy-on-write lists only when subscribing is rare and publishing is frequent."
+  ],
+  "quiz": {
+    "q": "What does KeyedDispatch print for the shared pool?",
+    "options": [
+      "shared pool: [placed, paid]",
+      "shared pool: [paid, placed]",
+      "shared pool: [paid]",
+      "It throws ConcurrentModificationException"
+    ],
+    "answer": 1,
+    "why": "The pool gives paid to a second thread while placed waits on the latch. Paid records first and releases the latch, then placed records."
+  },
+  "takeaway": "Hash each key to one lane: parallel across keys, ordered within a key.",
+  "chat": {
+    "starters": [
+      "How many lanes should a subscriber get in production?",
+      "What happens to order if I change the number of lanes at runtime?",
+      "Why not use a ReadWriteLock around the subscriber list?"
+    ]
+  }
+}

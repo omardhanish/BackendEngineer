@@ -1,0 +1,11 @@
+{
+  "stdout": "check-then-act dispatches: 2\ncomputeIfAbsent dispatches: 1",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java HallCallRace.java",
+  "tool": "Java 17.0.17",
+  "hash": "f1cce660a5c4a2ba",
+  "at": "2026-10-14T08:34:43.169Z"
+}

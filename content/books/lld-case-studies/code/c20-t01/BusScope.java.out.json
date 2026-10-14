@@ -1,0 +1,11 @@
+{
+  "stdout": "FUNCTIONAL (5)\n  create a named topic\n  publish a keyed event to a topic\n  subscribe a handler, with an optional filter\n  unsubscribe one handler, others untouched\n  park events that keep failing\nQUALITY (4)\n  every subscriber gets each event 1+ times\n  same key, same order, per subscriber\n  a slow subscriber never stalls the others\n  publish and subscribe from any thread\nOUT_OF_SCOPE (3)\n  keep events across a process restart\n  brokers spread over many machines\n  exactly-once delivery\nPUBLISH in v1? yes\nEXACTLY_ONCE in v1? no\nKEY_ORDER in v1? yes",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java BusScope.java",
+  "tool": "Java 17.0.17",
+  "hash": "a992c898bd2b38b3",
+  "at": "2026-10-14T08:43:04.859Z"
+}

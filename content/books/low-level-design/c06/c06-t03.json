@@ -1,0 +1,343 @@
+{
+  "title": "Singleton pattern",
+  "idea": "The Singleton pattern makes a class create exactly one instance and gives everyone a global way to reach it, usually through a static method.",
+  "points": [
+    "A Singleton hides its constructor and hands out one shared instance.",
+    "A holder class or an `enum` gives lazy, thread-safe creation with no explicit lock.",
+    "Double-checked locking is correct only when the instance field is `volatile`.",
+    "`Runtime.getRuntime()` is a JDK Singleton; prefer DI for your own services."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "lanes",
+    "title": "Two threads race a lazy Singleton",
+    "scenario": {
+      "code": [
+        "static Registry getInstance() {",
+        "    if (instance == null) {",
+        "        instance = new Registry();",
+        "    }",
+        "    return instance;",
+        "}"
+      ],
+      "lanes": [
+        {
+          "id": "a",
+          "label": "Thread A",
+          "kind": "stack"
+        },
+        {
+          "id": "b",
+          "label": "Thread B",
+          "kind": "stack"
+        },
+        {
+          "id": "heap",
+          "label": "Heap",
+          "kind": "area"
+        }
+      ],
+      "tokens": {
+        "ca": {
+          "label": "null? yes",
+          "tone": "sync"
+        },
+        "cb": {
+          "label": "null? yes",
+          "tone": "io"
+        },
+        "r1": {
+          "label": "Registry #1",
+          "tone": "neutral"
+        },
+        "r2": {
+          "label": "Registry #2",
+          "tone": "timer"
+        },
+        "ra": {
+          "label": "holds #1",
+          "tone": "sync"
+        },
+        "rb": {
+          "label": "holds #2",
+          "tone": "io"
+        },
+        "one": {
+          "label": "Registry",
+          "tone": "micro"
+        },
+        "ha": {
+          "label": "holds it",
+          "tone": "sync"
+        },
+        "hb": {
+          "label": "holds it",
+          "tone": "io"
+        }
+      },
+      "steps": [
+        {
+          "caption": "Thread A calls `getInstance` first and sees the field is still `null`.",
+          "line": 1,
+          "at": {
+            "a": [
+              "ca"
+            ],
+            "b": [],
+            "heap": []
+          },
+          "active": "ca"
+        },
+        {
+          "caption": "The scheduler switches to Thread B before A writes. B also sees `null`.",
+          "line": 1,
+          "at": {
+            "a": [
+              "ca"
+            ],
+            "b": [
+              "cb"
+            ],
+            "heap": []
+          },
+          "active": "cb"
+        },
+        {
+          "caption": "Thread A builds Registry #1, stores it in the static field and returns it.",
+          "line": 2,
+          "at": {
+            "a": [
+              "ra"
+            ],
+            "b": [
+              "cb"
+            ],
+            "heap": [
+              "r1"
+            ]
+          },
+          "active": "r1"
+        },
+        {
+          "caption": "Thread B builds Registry #2 and overwrites the field. Two instances now exist.",
+          "line": 2,
+          "at": {
+            "a": [
+              "ra"
+            ],
+            "b": [
+              "rb"
+            ],
+            "heap": [
+              "r1",
+              "r2"
+            ]
+          },
+          "active": "r2"
+        },
+        {
+          "caption": "A's caller keeps using #1, so anything it registers is invisible to everyone else.",
+          "at": {
+            "a": [
+              "ra"
+            ],
+            "b": [
+              "rb"
+            ],
+            "heap": [
+              "r1",
+              "r2"
+            ]
+          },
+          "active": "ra"
+        },
+        {
+          "caption": "Fix (see the code tab): with a holder class the JVM initialises the field once, under its class-init lock.",
+          "at": {
+            "a": [],
+            "b": [],
+            "heap": [
+              "one"
+            ]
+          },
+          "active": "one"
+        },
+        {
+          "caption": "Both threads now receive the same object, and no explicit lock appears in your code.",
+          "at": {
+            "a": [
+              "ha"
+            ],
+            "b": [
+              "hb"
+            ],
+            "heap": [
+              "one"
+            ]
+          },
+          "active": "hb"
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "SingletonStylesDemo.java",
+      "lang": "java",
+      "title": "Three thread-safe styles",
+      "run": "captured",
+      "caption": "Eight threads race on first use; each style still builds exactly one instance.",
+      "walk": [
+        {
+          "lines": [
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21
+          ],
+          "text": "Eight threads hit all three Singletons at once, then `join` makes the output deterministic."
+        },
+        {
+          "lines": [
+            33,
+            34,
+            35,
+            36,
+            37
+          ],
+          "text": "Holder idiom: `Holder` loads on the first `getInstance` call, and class init runs once."
+        },
+        {
+          "lines": [
+            43
+          ],
+          "text": "`volatile` stops another thread seeing a reference to a half-built object."
+        },
+        {
+          "lines": [
+            46,
+            47,
+            48,
+            49,
+            50
+          ],
+          "text": "Check, lock, check again: only callers that arrive before the instance exists take the lock."
+        },
+        {
+          "lines": [
+            58,
+            59,
+            60,
+            61
+          ],
+          "text": "An `enum` constant is created once by the JVM, and reflection cannot make another."
+        },
+        {
+          "lines": [
+            22,
+            23,
+            24
+          ],
+          "text": "The counters show one construction each; the JVM's rules, not this run, guarantee it."
+        },
+        {
+          "lines": [
+            26
+          ],
+          "text": "The JDK's own Singleton: `getRuntime` always returns the same object."
+        }
+      ]
+    },
+    {
+      "file": "HiddenGlobalState.java",
+      "lang": "java",
+      "title": "Why to avoid it",
+      "run": "captured",
+      "caption": "A global Singleton leaks state between callers; an injected interface does not.",
+      "walk": [
+        {
+          "lines": [
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28
+          ],
+          "text": "A classic eager Singleton holding mutable state: a set of enabled flags."
+        },
+        {
+          "lines": [
+            31,
+            32,
+            33,
+            34,
+            35
+          ],
+          "text": "`PriceService` reaches the global directly. Its constructor hides the dependency."
+        },
+        {
+          "lines": [
+            8,
+            9,
+            10,
+            11
+          ],
+          "text": "Test 1 turns a flag on. Test 2 inherits it, so results depend on test order."
+        },
+        {
+          "lines": [
+            40,
+            41,
+            42,
+            43,
+            44
+          ],
+          "text": "The fix asks for a `Flags` in the constructor and rejects `null`."
+        },
+        {
+          "lines": [
+            14,
+            15,
+            16,
+            17
+          ],
+          "text": "Each caller passes its own flags. No shared state, no order dependence."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "A lazy null check without a lock can build two instances when first calls overlap.",
+    "Double-checked locking without `volatile` may hand another thread a half-built object.",
+    "Static `getInstance` calls hide dependencies, and tests leak state; inject an interface instead."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "enum Counter {\n    INSTANCE;\n    private int n;\n    int next() { return ++n; }\n}\nCounter a = Counter.INSTANCE;\nCounter b = Counter.INSTANCE;\na.next();\nb.next();\nSystem.out.println(b.next() + \" \" + (a == b));",
+    "lang": "java",
+    "options": [
+      "1 false",
+      "2 true",
+      "3 true",
+      "1 true"
+    ],
+    "answer": 2,
+    "why": "`a` and `b` reference the single enum constant, so all three calls bump one counter, and `==` compares the same reference."
+  },
+  "takeaway": "Need one instance? Let DI share it, rather than a static global.",
+  "chat": {
+    "starters": [
+      "Why does double-checked locking need the volatile keyword?",
+      "Why is an enum Singleton safe against reflection and serialisation?",
+      "How does Spring's singleton scope differ from the Singleton pattern?"
+    ]
+  }
+}

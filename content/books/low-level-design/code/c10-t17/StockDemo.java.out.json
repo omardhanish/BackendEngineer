@@ -1,0 +1,11 @@
+{
+  "stdout": "sold=100 rejected=60 left=0\nrequests={sku-0=60, sku-1=60, sku-2=40}",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java StockDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "c659a27bf18195c8",
+  "at": "2026-10-12T11:09:03.353Z"
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "RV-1 booked 19:00-20:30\nRV-1 replayed 19:00-20:30\nrefused 20:00-21:30\nRV-2 booked 21:00-22:30\nRV-1 moved to 19:30-21:00\nRV-1 kept 19:30-21:00\nRV-1 moved to 20:30-22:00",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java EdgeCases.java",
+  "tool": "Java 17.0.17",
+  "hash": "dd16dbf6e6c08236",
+  "at": "2026-10-14T10:24:55.852Z"
+}

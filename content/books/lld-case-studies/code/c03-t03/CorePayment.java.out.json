@@ -1,0 +1,11 @@
+{
+  "stdout": "k-1 -> P-1 SUCCEEDED attempts=1\nk-1 -> P-1 SUCCEEDED attempts=1\nk-2 -> P-2 SUCCEEDED attempts=2\nk-2 -> P-2 SUCCEEDED attempts=2\nk-3 -> P-3 FAILED attempts=1\ncard gateway calls: 3",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java CorePayment.java",
+  "tool": "Java 17.0.17",
+  "hash": "ccb3aa95e24ad92b",
+  "at": "2026-10-14T10:23:38.047Z"
+}

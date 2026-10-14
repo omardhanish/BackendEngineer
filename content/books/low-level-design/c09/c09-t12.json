@@ -1,0 +1,213 @@
+{
+  "title": "Your end-to-end design project",
+  "idea": "An end-to-end low-level design (LLD) is a repeatable path: requirements, classes, lifecycles, strategies, an API with typed errors, and a run that proves each requirement.",
+  "points": [
+    "Pick a chapter system or a fresh domain; this page uses library lending.",
+    "Write numbered requirements first; each later class or check should trace to one.",
+    "Model each lifecycle as an `enum` with an allowed-moves table, not scattered flags.",
+    "Put each rule likely to change behind a one-method strategy, injected through the constructor."
+  ],
+  "hero": {
+    "type": "timeline",
+    "title": "Six steps, one design",
+    "items": [
+      {
+        "label": "1 · Clarify",
+        "text": "List actors, use cases and limits as numbered requirements. Ask what is excluded."
+      },
+      {
+        "label": "2 · Classes",
+        "text": "Nouns become classes or records, verbs become service methods. Give each class one owner."
+      },
+      {
+        "label": "3 · Lifecycles",
+        "text": "Anything with a status gets an `enum` and an allowed-moves table."
+      },
+      {
+        "label": "4 · Variation",
+        "text": "Fines, pricing, matching: each rule that may change becomes a strategy interface."
+      },
+      {
+        "label": "5 · API, errors",
+        "text": "Name the public methods and one error code per failure, read from `code()`."
+      },
+      {
+        "label": "6 · Prove it",
+        "text": "A `main` runs the happy path and every error; checks trace to requirements."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "LendingDesign.java",
+      "lang": "java",
+      "title": "Steps 2–5: the slice",
+      "run": "captured",
+      "caption": "A thin, complete slice of library lending: model, lifecycle, swappable fine rule and typed errors.",
+      "walk": [
+        {
+          "lines": [
+            28,
+            29,
+            30
+          ],
+          "text": "Steps 2 to 4 output: a state `enum`, an immutable `Loan` record and a one-method `FinePolicy` strategy."
+        },
+        {
+          "lines": [
+            32,
+            33,
+            34,
+            35,
+            36
+          ],
+          "text": "Step 5: one unchecked exception with a stable `code()`, so callers branch on codes, not message text."
+        },
+        {
+          "lines": [
+            44,
+            45,
+            46,
+            47,
+            48
+          ],
+          "text": "The constructor rejects bad config and receives the fine rule: dependency injection, no hidden `new`."
+        },
+        {
+          "lines": [
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58
+          ],
+          "text": "Guard clauses first: unknown copy and wrong state fail with different codes before any change."
+        },
+        {
+          "lines": [
+            65,
+            66,
+            67,
+            68,
+            69,
+            70
+          ],
+          "text": "Returning a copy frees it and asks the policy for the fine. The service never computes money itself."
+        },
+        {
+          "lines": [
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14
+          ],
+          "text": "Step 6: the same scenario runs under two policies. Only the injected lambda differs."
+        }
+      ]
+    },
+    {
+      "file": "CopyStateChecks.java",
+      "lang": "java",
+      "title": "Step 6: requirement checks",
+      "run": "captured",
+      "caption": "A tiny `check` runner turns numbered requirements into PASS or FAIL lines, no test library needed. These checks use the full four-state `CopyState` the slice grows into; the slice's `borrow` would call `canMoveTo` instead of its `if`.",
+      "walk": [
+        {
+          "lines": [
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "text": "A hand-written runner: print the requirement name and count failures. Teams use JUnit 5 for this."
+        },
+        {
+          "lines": [
+            33,
+            34,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43
+          ],
+          "text": "The full lifecycle as data: each state lists where it may go. `EnumMap` keeps it compact and ordered."
+        },
+        {
+          "lines": [
+            45,
+            46,
+            47,
+            50,
+            51,
+            52
+          ],
+          "text": "A state missing from the table yields an empty set, so it can never move, instead of crashing."
+        },
+        {
+          "lines": [
+            12,
+            13,
+            14,
+            15,
+            16,
+            17
+          ],
+          "text": "Each check names its requirement, so a reviewer sees which promise broke, not just a stack trace."
+        },
+        {
+          "lines": [
+            21,
+            22
+          ],
+          "text": "Every state needs a rule, catching a forgotten new state. Drop it if a state is truly final."
+        },
+        {
+          "lines": [
+            23,
+            24,
+            25
+          ],
+          "text": "Strategies are tested alone, with no service or state around them."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Drawing twenty classes before listing requirements; the interviewer cannot tell which class serves what.",
+    "Using `boolean` flags like `isLent` and `isLost`; two can be true at once.",
+    "Stopping at a diagram; with no running `main`, nobody sees the errors handled."
+  ],
+  "quiz": {
+    "q": "Halfway through, the interviewer adds: fines are capped at 50. Which change fits this design best?",
+    "options": [
+      "Add a cap check inside `giveBack`",
+      "Subclass `LendingService` as `CappedLendingService`",
+      "Write a new `FinePolicy` and inject it into `LendingService`",
+      "Add a `maxFine` field to the `Loan` record"
+    ],
+    "answer": 2,
+    "why": "Fines already vary behind `FinePolicy`. A capped policy, the smaller of 50 and the base fine, is a new class injected into `LendingService`; the service is not edited."
+  },
+  "takeaway": "Requirements in, running proof out: every class traces to a numbered need.",
+  "chat": {
+    "starters": [
+      "Can you review my requirement list for a cab booking design before I draw classes?",
+      "How much of this six-step path should I say aloud in a 45-minute interview?",
+      "Where would reservations and a waiting list fit in the library lending design?"
+    ]
+  }
+}

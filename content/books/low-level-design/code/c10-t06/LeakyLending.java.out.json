@@ -1,0 +1,11 @@
+{
+  "stdout": "loans   {ann=3, bob=1}\nholders {C1=bob, C2=ann, C3=ann}",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java LeakyLending.java",
+  "tool": "Java 17.0.17",
+  "hash": "f59a3f07ef45ef03",
+  "at": "2026-10-12T11:21:03.280Z"
+}

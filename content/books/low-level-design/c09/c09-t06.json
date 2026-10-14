@@ -1,0 +1,391 @@
+{
+  "title": "Cab booking model and matching",
+  "idea": "A cab booking low-level design (LLD) models riders, drivers, vehicles and ride requests, then matches each request to the nearest free driver of the right type, exactly once.",
+  "analogy": {
+    "text": "A taxi-rank dispatcher looks at the free cars, picks the closest one of the right size, and radios \"that car is yours\" before taking the next call.",
+    "breaks": "A dispatcher sees the street; your matcher sees only reported coordinates."
+  },
+  "points": [
+    "Nouns become classes: `Driver`, `RideRequest`, `Location`, `VehicleType`; verbs become services.",
+    "`NearestDriverMatcher` only ranks candidates: filter by type and radius, then sort by distance.",
+    "`DriverRegistry` owns availability; `tryReserve` checks and takes a driver in one atomic step.",
+    "In interviews, call the matcher a strategy: ETA or rating ranking plugs in."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "One sedan request finds its driver",
+    "scenario": {
+      "tiers": [
+        [
+          "rider"
+        ],
+        [
+          "svc"
+        ],
+        [
+          "match"
+        ],
+        [
+          "d1",
+          "d2",
+          "d3",
+          "d4"
+        ]
+      ],
+      "nodes": {
+        "rider": {
+          "label": "Rider A",
+          "sub": "wants SEDAN",
+          "kind": "user"
+        },
+        "svc": {
+          "label": "RideService",
+          "sub": "book(req)",
+          "kind": "service"
+        },
+        "match": {
+          "label": "DriverMatcher",
+          "sub": "rank(req, free)",
+          "kind": "box"
+        },
+        "d1": {
+          "label": "D1",
+          "sub": "BIKE",
+          "kind": "client"
+        },
+        "d2": {
+          "label": "D2",
+          "sub": "SEDAN",
+          "kind": "client"
+        },
+        "d3": {
+          "label": "D3",
+          "sub": "SEDAN",
+          "kind": "client"
+        },
+        "d4": {
+          "label": "D4",
+          "sub": "SEDAN",
+          "kind": "client"
+        }
+      },
+      "links": [
+        [
+          "rider",
+          "svc"
+        ],
+        [
+          "svc",
+          "match"
+        ],
+        [
+          "match",
+          "d1",
+          {
+            "dashed": true
+          }
+        ],
+        [
+          "match",
+          "d2",
+          {
+            "dashed": true
+          }
+        ],
+        [
+          "match",
+          "d3",
+          {
+            "dashed": true
+          }
+        ],
+        [
+          "match",
+          "d4",
+          {
+            "dashed": true
+          }
+        ]
+      ],
+      "steps": [
+        {
+          "caption": "Rider A sends a `RideRequest`: pickup point plus vehicle type. Nothing is assigned yet.",
+          "send": [
+            {
+              "from": "rider",
+              "to": "svc",
+              "label": "SEDAN",
+              "tone": "req"
+            }
+          ],
+          "focus": [
+            "rider",
+            "svc"
+          ]
+        },
+        {
+          "caption": "The service passes the request and a snapshot of free drivers to the matcher.",
+          "send": [
+            {
+              "from": "svc",
+              "to": "match",
+              "label": "4 free",
+              "tone": "info"
+            }
+          ],
+          "focus": [
+            "svc",
+            "match"
+          ]
+        },
+        {
+          "caption": "`D1` is close but rides a bike. The type filter drops it first.",
+          "state": {
+            "d1": "down"
+          },
+          "badge": {
+            "d1": "wrong type"
+          },
+          "focus": [
+            "d1"
+          ]
+        },
+        {
+          "caption": "`D2` is a sedan, but outside the 5 km radius. The radius filter drops it.",
+          "state": {
+            "d2": "down"
+          },
+          "badge": {
+            "d2": "too far"
+          },
+          "focus": [
+            "d2"
+          ]
+        },
+        {
+          "caption": "The survivors are sorted by distance, ties broken by id. `D3` ranks first.",
+          "badge": {
+            "d3": "rank 1",
+            "d4": "rank 2"
+          },
+          "focus": [
+            "d3",
+            "d4"
+          ]
+        },
+        {
+          "caption": "The service calls `tryReserve`. The registry removes `D3` from the free set in one locked step.",
+          "send": [
+            {
+              "from": "svc",
+              "to": "d3",
+              "label": "reserve",
+              "tone": "ok"
+            }
+          ],
+          "state": {
+            "d3": "busy"
+          },
+          "badge": {
+            "d3": "Rider A"
+          }
+        },
+        {
+          "caption": "Rider B asks next. `D3` is no longer free, so `D4` is ranked and reserved.",
+          "label": {
+            "rider": "Rider B"
+          },
+          "send": [
+            {
+              "from": "svc",
+              "to": "d4",
+              "label": "reserve",
+              "tone": "ok"
+            }
+          ],
+          "state": {
+            "d4": "busy"
+          },
+          "badge": {
+            "d4": "Rider B"
+          }
+        },
+        {
+          "caption": "Rider C finds no sedan in range. The service answers \"no driver\" instead of a far or wrong car.",
+          "label": {
+            "rider": "Rider C"
+          },
+          "send": [
+            {
+              "from": "svc",
+              "to": "rider",
+              "label": "none",
+              "tone": "warn"
+            }
+          ],
+          "focus": [
+            "rider",
+            "svc"
+          ]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "CabMatchingNaive.java",
+      "lang": "java",
+      "title": "The problem: first free driver",
+      "run": "captured",
+      "caption": "Matching by list order: wrong vehicle, one driver sent to two riders, and a far car chosen.",
+      "walk": [
+        {
+          "lines": [
+            20,
+            21,
+            22,
+            23
+          ],
+          "text": "Returns the first driver with the flag set. Vehicle type and distance are never checked."
+        },
+        {
+          "lines": [
+            11,
+            12,
+            13,
+            14
+          ],
+          "text": "Nothing flips `available`, so riders A and B both get the same bike."
+        },
+        {
+          "lines": [
+            26,
+            27,
+            28,
+            29,
+            30,
+            31
+          ],
+          "text": "Adding a type check helps, but list order still beats distance: `D2` wins over a nearer `D3`."
+        },
+        {
+          "lines": [
+            40,
+            41,
+            42,
+            43,
+            44
+          ],
+          "text": "`location` and `available` are package-private, so any class can flip them. Two threads could both read true."
+        },
+        {
+          "lines": [
+            34,
+            35,
+            36
+          ],
+          "text": "`Location` is the one good part: an immutable record with its own distance method."
+        }
+      ]
+    },
+    {
+      "file": "CabMatchingDemo.java",
+      "lang": "java",
+      "title": "The fix: rank, then reserve",
+      "run": "captured",
+      "caption": "A matcher ranks candidates; a registry hands each driver out once. The service only coordinates.",
+      "walk": [
+        {
+          "lines": [
+            19,
+            20,
+            21,
+            22,
+            23,
+            24
+          ],
+          "text": "Value objects are records. A driver who moves gets a new `Driver` record, not a mutated one."
+        },
+        {
+          "lines": [
+            26,
+            27,
+            28
+          ],
+          "text": "The matcher contract returns a ranked list, best first. It does not reserve anything."
+        },
+        {
+          "lines": [
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42
+          ],
+          "text": "Filter by type and radius, sort by distance, break ties by id so the result is stable."
+        },
+        {
+          "lines": [
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53
+          ],
+          "text": "The registry owns the free set. `synchronized` makes check-and-take atomic across threads."
+        },
+        {
+          "lines": [
+            62,
+            63,
+            64,
+            65,
+            66,
+            67
+          ],
+          "text": "If another request grabbed the top driver first, `tryReserve` fails and the loop tries the next."
+        },
+        {
+          "lines": [
+            69
+          ],
+          "text": "An empty ranking is a normal outcome, not an exception. The caller can retry or widen the radius."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Matching inside `Driver` or `Rider` creates a god class; keep ranking in a separate matcher.",
+    "Checking `isAvailable()` then setting it in two steps double-books drivers under concurrent requests.",
+    "Sorting on distance alone gives unstable picks for ties; add a tie-breaker such as id."
+  ],
+  "quiz": {
+    "q": "Same drivers as the fix, but radius 2.0. What does rider B's line print?",
+    "code": "RideService rides =\n    new RideService(registry, new NearestDriverMatcher(2.0));\nfor (String r : List.of(\"A\", \"B\")) {\n    var req = new RideRequest(r, pickup, VehicleType.SEDAN);\n    System.out.println(r + \": \" + rides.book(req));\n}",
+    "lang": "java",
+    "options": [
+      "B: D4, 3.2 km away",
+      "B: no SEDAN within range",
+      "B: D3, 1.4 km away",
+      "B: D2, 9.8 km away"
+    ],
+    "answer": 1,
+    "why": "`D3` is reserved for A, `D1` is a bike, and `D4` at 3.2 km is beyond 2.0, so B's ranking is empty."
+  },
+  "takeaway": "Rank candidates in a matcher; hand each driver out once in a registry.",
+  "chat": {
+    "starters": [
+      "How would I rank drivers by ETA instead of straight-line distance?",
+      "How does this registry change when drivers send location updates every few seconds?",
+      "What should happen if the reserved driver rejects the ride?"
+    ]
+  }
+}

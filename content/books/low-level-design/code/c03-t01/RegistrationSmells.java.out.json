@@ -1,0 +1,11 @@
+{
+  "stdout": "weak password\ntexted bob@x.test\nL: archive is read-only",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java RegistrationSmells.java",
+  "tool": "Java 17.0.17",
+  "hash": "e6cb0614795dfafe",
+  "at": "2026-10-12T11:46:02.196Z"
+}

@@ -1,0 +1,194 @@
+{
+  "title": "Payment lifecycle and flows",
+  "idea": "The payment lifecycle is a state machine: a Payment moves from CREATED through PROCESSING to SUCCEEDED or FAILED, and only successful payments can be refunded.",
+  "points": [
+    "PROCESSING ends in SUCCEEDED or FAILED, decided by the gateway, not a timer.",
+    "SUCCEEDED moves to PARTIALLY_REFUNDED or REFUNDED as refunds add up.",
+    "FAILED and REFUNDED are final; nothing may leave them.",
+    "A repeated webhook is ignored; a conflicting one raises an alert."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "A UPI payment, end to end",
+    "actors": [
+      {
+        "id": "app",
+        "label": "Customer app"
+      },
+      {
+        "id": "svc",
+        "label": "PaymentService"
+      },
+      {
+        "id": "gw",
+        "label": "Gateway"
+      },
+      {
+        "id": "upi",
+        "label": "UPI app"
+      }
+    ],
+    "messages": [
+      {
+        "from": "app",
+        "to": "svc",
+        "label": "pay(ORD-1, UPI, k-1)",
+        "note": "The customer pays by UPI. A Payment P-1 is CREATED for key k-1."
+      },
+      {
+        "from": "svc",
+        "to": "gw",
+        "label": "collect(P-1, 49900)",
+        "note": "The service sends a collect request and moves P-1 to PROCESSING."
+      },
+      {
+        "from": "gw",
+        "to": "svc",
+        "label": "accepted, pending",
+        "dashed": true,
+        "note": "The gateway accepted the request but has no final answer yet."
+      },
+      {
+        "from": "svc",
+        "to": "app",
+        "label": "P-1 PROCESSING",
+        "dashed": true,
+        "note": "The app asks the customer to approve in their UPI app and starts polling."
+      },
+      {
+        "from": "gw",
+        "to": "upi",
+        "label": "approve 49900?",
+        "note": "The customer's UPI app shows the request. The customer approves it."
+      },
+      {
+        "from": "upi",
+        "to": "gw",
+        "label": "approved",
+        "dashed": true,
+        "note": "The approval reaches the gateway through the UPI network."
+      },
+      {
+        "from": "gw",
+        "to": "svc",
+        "label": "webhook: SUCCEEDED",
+        "note": "The service verifies the webhook signature, then moves PROCESSING to SUCCEEDED."
+      },
+      {
+        "from": "gw",
+        "to": "svc",
+        "label": "webhook: SUCCEEDED",
+        "note": "Webhooks may arrive more than once. The second one is ignored as a duplicate."
+      },
+      {
+        "from": "app",
+        "to": "svc",
+        "label": "GET /payments/P-1",
+        "note": "The next poll returns SUCCEEDED and the app shows the receipt."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "PaymentLifecycle.java",
+      "lang": "java",
+      "title": "Status enum with rules",
+      "run": "captured",
+      "caption": "The allowed moves live in the enum. Payment asks the enum before every change.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "text": "P-1: happy path, a duplicate webhook, a partial refund, then a full refund."
+        },
+        {
+          "lines": [
+            10,
+            11,
+            12,
+            13
+          ],
+          "text": "P-2 fails, then a late SUCCEEDED event arrives."
+        },
+        {
+          "lines": [
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32
+          ],
+          "text": "An EnumMap lists allowed next states. CREATED may fail before any gateway call; FAILED and REFUNDED have none."
+        },
+        {
+          "lines": [
+            33
+          ],
+          "text": "`canMoveTo` is the single question every change asks."
+        },
+        {
+          "lines": [
+            43,
+            44,
+            45,
+            46
+          ],
+          "text": "Same status again without a self-loop is a duplicate: ignore it quietly."
+        },
+        {
+          "lines": [
+            47,
+            48,
+            49,
+            50,
+            51
+          ],
+          "text": "Any other illegal move is refused and needs a person to look."
+        },
+        {
+          "lines": [
+            52,
+            53,
+            54
+          ],
+          "text": "A legal move updates the status and the history."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not mark a payment FAILED on timeout; wait for the webhook or reconciler.",
+    "Verify the webhook signature before trusting the status it carries.",
+    "Never set status directly; every change goes through `moveTo`."
+  ],
+  "quiz": {
+    "q": "What does PaymentLifecycle print for P-2's late SUCCEEDED?",
+    "options": [
+      "P-2 FAILED -> SUCCEEDED",
+      "P-2 refused FAILED -> SUCCEEDED (raise alert)",
+      "P-2 ignored duplicate SUCCEEDED",
+      "Nothing; it throws an exception"
+    ],
+    "answer": 1,
+    "why": "FAILED has no allowed next states. SUCCEEDED differs from FAILED, so it is not a duplicate, and `moveTo` prints the refusal."
+  },
+  "takeaway": "Allowed moves live in one enum; duplicates are ignored, conflicts alerted.",
+  "chat": {
+    "starters": [
+      "What should happen to money when a FAILED payment later succeeds?",
+      "Should there be a separate state for a gateway timeout?",
+      "Would the State pattern fit better than an enum here?"
+    ]
+  }
+}

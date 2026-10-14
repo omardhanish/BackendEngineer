@@ -1,0 +1,149 @@
+{
+  "title": "Turning feedback into fixes",
+  "idea": "Iteration turns each review comment into a decision: reproduce it as a failing check, fix the one class responsible, re-run everything, and record what you decided.",
+  "points": [
+    "Triage each comment by id: fix, defer, or decline; blocking ones usually become fixes.",
+    "Write the failing check first, so the comment becomes a test that cannot regress.",
+    "Fix in the class that owns the rule: `BookingService.cancel` owns cancel rules.",
+    "Re-run the full suite after each fix, not only the new check."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "One review comment, start to close",
+    "nodes": [
+      {
+        "id": "c",
+        "label": "Review comment",
+        "sub": "FB-4: ended meeting cancels"
+      },
+      {
+        "id": "t",
+        "label": "Triage",
+        "sub": "fix / defer / decline"
+      },
+      {
+        "id": "f",
+        "label": "Failing check",
+        "sub": "expects INVALID_SLOT"
+      },
+      {
+        "id": "x",
+        "label": "Fix owning class",
+        "sub": "BookingService.cancel"
+      },
+      {
+        "id": "r",
+        "label": "Re-run all checks",
+        "sub": "old and new"
+      },
+      {
+        "id": "d",
+        "label": "Decision log",
+        "sub": "FB-4 fixed, why"
+      }
+    ],
+    "edges": [
+      {
+        "from": "c",
+        "to": "t",
+        "caption": "Give the comment an id and decide its fate before touching code."
+      },
+      {
+        "from": "t",
+        "to": "f",
+        "caption": "Accepted: reproduce the gap as a check that fails today."
+      },
+      {
+        "from": "f",
+        "to": "x",
+        "caption": "Change only the class that owns the rule, here the service's `cancel` with a clock."
+      },
+      {
+        "from": "x",
+        "to": "r",
+        "caption": "Run every check, so the fix cannot break booking or search."
+      },
+      {
+        "from": "r",
+        "to": "d",
+        "caption": "Record the decision so the next reviewer sees why it changed."
+      },
+      {
+        "from": "r",
+        "to": "x",
+        "back": true,
+        "dashed": true,
+        "caption": "A red check sends you back to the fix, not to the comment."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "FeedbackRegression.java",
+      "lang": "java",
+      "title": "Feedback as a check",
+      "run": "captured",
+      "caption": "Review comment FB-4 becomes two named checks: an ended booking is refused and an upcoming one still cancels.",
+      "walk": [
+        {
+          "lines": [
+            10,
+            12
+          ],
+          "text": "An injected clock fixes now at 11:00, so one booking has ended and one is upcoming."
+        },
+        {
+          "lines": [
+            13,
+            15
+          ],
+          "text": "The check carries the feedback id, so its output links back to the review comment."
+        },
+        {
+          "lines": [
+            16,
+            17
+          ],
+          "text": "A second check guards the other side: the fix must not block future bookings."
+        },
+        {
+          "lines": [
+            21,
+            28
+          ],
+          "text": "The runner compares stable error codes, not messages, so wording changes do not break it."
+        },
+        {
+          "lines": [
+            81,
+            93
+          ],
+          "text": "Owner checks came from c11-t04. The new `if` compares the end with the clock."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Fixing silently without a check; the same bug returns in the next refactor.",
+    "Accepting every comment; a declined comment with a written reason is a valid outcome."
+  ],
+  "quiz": {
+    "q": "Delete lines 89-91 (the end-time `if`). What does the first check print?",
+    "options": [
+      "FAIL FB-4 ended booking cannot cancel -> OK",
+      "PASS FB-4 ended booking cannot cancel -> INVALID_SLOT",
+      "FAIL FB-4 ended booking cannot cancel -> NOT_OWNER",
+      "It crashes with InvalidSlotException"
+    ],
+    "answer": 0,
+    "why": "Without the guard, `cancel` removes the ended booking and returns, so the runner records OK. OK is not the expected INVALID_SLOT, so the check fails."
+  },
+  "takeaway": "Each comment becomes a check, a focused fix and a recorded decision.",
+  "chat": {
+    "starters": [
+      "How do I decide whether to fix, defer or decline a review comment?",
+      "What should a decision log entry for my booking system look like?",
+      "How do I handle two reviewers who give opposite feedback?"
+    ]
+  }
+}

@@ -1,0 +1,185 @@
+{
+  "title": "Testing the booking core",
+  "idea": "A test case is code that sets up known state, calls one behaviour, and checks the result, so a wrong rule fails loudly before users find it.",
+  "points": [
+    "Each test builds fresh state (arrange), calls once (act), then checks one result (assert).",
+    "Bugs hide at boundaries: touching slots, zero length, other rooms, wrong owner.",
+    "Assert the stable `code()` of an exception, not its message text, which may change.",
+    "Replace email and audit with a recording fake to check which events fired."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "Boundary cases around one booking",
+    "head": [
+      "Case",
+      "Existing",
+      "Request",
+      "Expected"
+    ],
+    "rows": [
+      [
+        "Back-to-back",
+        "R1 9.0-10.0 (ana)",
+        "R1 10.0-11.0",
+        "OK"
+      ],
+      [
+        "Partial overlap",
+        "R1 9.0-10.0 (ana)",
+        "R1 9.5-10.5",
+        "ROOM_TAKEN"
+      ],
+      [
+        "Other room",
+        "R1 9.0-10.0 (ana)",
+        "R2 9.0-10.0",
+        "OK"
+      ],
+      [
+        "Zero length",
+        "R1 9.0-10.0 (ana)",
+        "R1 11.0-11.0",
+        "INVALID_SLOT"
+      ],
+      [
+        "Wrong owner",
+        "B1 owned by ana",
+        "raj cancels B1",
+        "NOT_OWNER"
+      ]
+    ],
+    "highlight": {
+      "row": 0
+    },
+    "caption": "Back-to-back is the easiest case to get wrong: slots are half-open, so 10.0 ends one and starts the next."
+  },
+  "code": [
+    {
+      "file": "BookingRulesTest.java",
+      "lang": "java",
+      "title": "Rule tests at the boundaries",
+      "run": "captured",
+      "caption": "A tiny hand-written runner standing in for JUnit 5. Each case states its expected error code.",
+      "walk": [
+        {
+          "lines": [
+            9,
+            10,
+            11,
+            12
+          ],
+          "text": "Each test reads as a sentence: name, expected outcome, one action. The table becomes code."
+        },
+        {
+          "lines": [
+            22,
+            23
+          ],
+          "text": "Arrange: every test gets a new service with ana's 09:00 booking. Tests cannot leak state."
+        },
+        {
+          "lines": [
+            25,
+            26
+          ],
+          "text": "Act: run the action once. Map success to `OK` and failures to their stable `code()`."
+        },
+        {
+          "lines": [
+            27
+          ],
+          "text": "Assert: compare codes, and print what actually happened so a failure explains itself."
+        },
+        {
+          "lines": [
+            50,
+            51,
+            52
+          ],
+          "text": "The rule under test. `start >= end` covers both reversed and zero-length slots."
+        },
+        {
+          "lines": [
+            54,
+            55
+          ],
+          "text": "Strict less-than on both sides makes slots half-open, so back-to-back bookings pass."
+        }
+      ]
+    },
+    {
+      "file": "BookingEventsTest.java",
+      "lang": "java",
+      "title": "A fake listener for events",
+      "run": "captured",
+      "caption": "Teams use Mockito here; a hand-written fake does the same job and shows the idea clearly.",
+      "walk": [
+        {
+          "lines": [
+            7,
+            8
+          ],
+          "text": "The fake is injected exactly like `NotificationService` would be. The service cannot tell the difference."
+        },
+        {
+          "lines": [
+            14,
+            15,
+            16
+          ],
+          "text": "The most valuable test: a rejected booking must not notify anyone."
+        },
+        {
+          "lines": [
+            19,
+            20
+          ],
+          "text": "Checking the full list also checks order: booked first, cancelled second."
+        },
+        {
+          "lines": [
+            41,
+            42,
+            43,
+            44
+          ],
+          "text": "The fake only records strings. No network, no clock, so the test is deterministic."
+        },
+        {
+          "lines": [
+            55,
+            58,
+            59
+          ],
+          "text": "Listeners fire only after the save. Notify before the clash check and the second test fails."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Sharing one service across tests makes results depend on run order; build fresh state each time.",
+    "Testing only the happy path misses back-to-back and zero-length slots, where real bugs live.",
+    "Asserting on exception messages breaks tests on rewording; assert the `code()` instead."
+  ],
+  "quiz": {
+    "q": "Ana holds R1 from 9.0 to 10.0. What does this print?",
+    "code": "expect(\"starts at 10\", \"OK\",\n        s -> s.book(\"raj\", \"R1\", 10.0, 11.0));\nexpect(\"ends at 9\", \"ROOM_TAKEN\",\n        s -> s.book(\"raj\", \"R1\", 8.0, 9.0));",
+    "lang": "java",
+    "options": [
+      "PASS starts at 10 (OK), PASS ends at 9 (ROOM_TAKEN)",
+      "PASS starts at 10 (OK), FAIL ends at 9 (OK)",
+      "FAIL starts at 10 (ROOM_TAKEN), PASS ends at 9 (OK)",
+      "FAIL for both tests"
+    ],
+    "answer": 1,
+    "why": "Slots are half-open, so 8.0-9.0 only touches 9.0-10.0 and is booked. The second test encodes a wrong expectation: tests can be wrong too."
+  },
+  "takeaway": "Fresh state, one action, one stable assertion, and every boundary covered.",
+  "chat": {
+    "starters": [
+      "How would these tests look in JUnit 5 with assertThrows?",
+      "When should I use Mockito instead of a hand-written fake?",
+      "How do I test that two threads cannot book the same slot?"
+    ]
+  }
+}

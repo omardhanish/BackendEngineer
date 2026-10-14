@@ -1,0 +1,11 @@
+{
+  "stdout": "ana has C1, due day 14\nNOT_AVAILABLE: C1 ON_LOAN\nfine on day 17: 15\nana has C1, due day 14\nNOT_AVAILABLE: C1 ON_LOAN\nfine on day 17: 5\nUNKNOWN_COPY: C9 unknown\nNOT_ON_LOAN: C1 is not lent",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java LendingDesign.java",
+  "tool": "Java 17.0.17",
+  "hash": "f168baf940094ad2",
+  "at": "2026-10-12T11:17:48.433Z"
+}

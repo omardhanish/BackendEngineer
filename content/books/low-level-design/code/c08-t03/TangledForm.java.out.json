@@ -1,0 +1,11 @@
+{
+  "stdout": "total: 6000\norder button: true\ntotal: 0\norder button: false\ntotal: -1000\norder button: true",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java TangledForm.java",
+  "tool": "Java 17.0.17",
+  "hash": "c896d2cc89879e52",
+  "at": "2026-10-12T11:25:07.500Z"
+}

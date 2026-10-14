@@ -1,0 +1,11 @@
+{
+  "stdout": "short: k1\n201 {\"code\":\"k2\"}\nerror: not an https url: ftp://example.com\n400 {\"error\":\"bad url\"}",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java HexagonDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "81a34e4309b00be6",
+  "at": "2026-10-12T11:24:02.316Z"
+}

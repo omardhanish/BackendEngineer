@@ -1,0 +1,11 @@
+{
+  "stdout": "Normal: 150\nHappy hour: 120\nAccepted 50\nRejected: coin must be > 0: 0\nRejected: coin must be > 0: -20\nCredit: 50",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java VendingFollowUps.java",
+  "tool": "Java 17.0.17",
+  "hash": "492bc0573492734f",
+  "at": "2026-10-12T11:26:36.237Z"
+}

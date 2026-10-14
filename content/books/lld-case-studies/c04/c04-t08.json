@@ -1,0 +1,219 @@
+{
+  "title": "Hall panel UI and data flow",
+  "idea": "The elevator frontend is a hall panel whose reducer owns each button's light, so a press is sent once and the light follows server events.",
+  "points": [
+    "The light goes on at once (SENDING); repeat presses do nothing until OFF.",
+    "A server-sent status feed pushes ASSIGNED and ARRIVED events to the panel.",
+    "The operator dashboard sends each car's `version` and reloads after a 409.",
+    "Follow-ups: destination keypads, peak-hour zoning, and many buildings per service."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "One press, end to end",
+    "actors": [
+      {
+        "id": "user",
+        "label": "Passenger"
+      },
+      {
+        "id": "panel",
+        "label": "HallPanel"
+      },
+      {
+        "id": "api",
+        "label": "Express API"
+      },
+      {
+        "id": "db",
+        "label": "PostgreSQL"
+      },
+      {
+        "id": "ctl",
+        "label": "Controller"
+      }
+    ],
+    "messages": [
+      {
+        "from": "user",
+        "to": "panel",
+        "label": "press ▲",
+        "note": "The light goes on at once: the reducer moves UP from OFF to SENDING."
+      },
+      {
+        "from": "panel",
+        "to": "api",
+        "label": "POST hall-calls {5, UP}",
+        "note": "One request per press. Repeat presses are ignored while the light is on."
+      },
+      {
+        "from": "api",
+        "to": "db",
+        "label": "INSERT … ON CONFLICT",
+        "note": "The call is stored once; a car is assigned by the scheduling strategy."
+      },
+      {
+        "from": "api",
+        "to": "panel",
+        "label": "201 HC-1, E2",
+        "dashed": true,
+        "note": "SENT stores the call id and shows E2 next to the arrow."
+      },
+      {
+        "from": "db",
+        "to": "ctl",
+        "label": "new stop for E2",
+        "dashed": true,
+        "note": "The controller picks up the new stop and E2 starts moving."
+      },
+      {
+        "from": "ctl",
+        "to": "panel",
+        "label": "ASSIGNED HC-1 E1 (failover)",
+        "note": "Only if E2 fails: the API's status feed reports the new car and the label changes."
+      },
+      {
+        "from": "ctl",
+        "to": "panel",
+        "label": "ARRIVED HC-1",
+        "note": "A car opens its doors at floor 5. The feed says ARRIVED and the light goes off."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "hallPanel.mjs",
+      "lang": "js",
+      "title": "Hall panel reducer",
+      "run": "browser",
+      "caption": "Pure screen logic. Run it, then add a SENT event for HC-9 and predict the output.",
+      "walk": [
+        {
+          "lines": [
+            2,
+            3
+          ],
+          "text": "Each button has a light, a call id and a car. Both start OFF."
+        },
+        {
+          "lines": [
+            8,
+            9,
+            10
+          ],
+          "text": "PRESS works only when OFF; a second press returns the same state."
+        },
+        {
+          "lines": [
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "text": "SENT lights the button with its id; a failure turns it off with a message."
+        },
+        {
+          "lines": [
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22
+          ],
+          "text": "Feed events find the button by call id; unknown ids are ignored."
+        },
+        {
+          "lines": [
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38
+          ],
+          "text": "The demo: a double press, a network failure, a reassignment and an arrival."
+        }
+      ]
+    },
+    {
+      "file": "HallPanel.jsx",
+      "lang": "js",
+      "title": "HallPanel component",
+      "run": "static",
+      "illustrative": true,
+      "caption": "A React component that renders reducer state and calls the API. Not run here.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "text": "The reducer state lives here; a server-sent feed dispatches status events."
+        },
+        {
+          "lines": [
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17
+          ],
+          "text": "A press checks the light, dispatches PRESS, then calls the API once."
+        },
+        {
+          "lines": [
+            18,
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "text": "Each button shows its car and reports its pressed state to screen readers."
+        },
+        {
+          "lines": [
+            28
+          ],
+          "text": "Errors render in an alert region so screen readers announce them."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Two fast clicks can both see OFF; the server's 200 replay is the backstop.",
+    "Do not turn the light off on a 200; the call is still open.",
+    "Interview follow-up: one feed per floor at scale needs fan-out through pub-sub."
+  ],
+  "quiz": {
+    "q": "In the run, what does the UP button show after ASSIGNED HC-1?",
+    "options": [
+      "UP:LIT(E2)",
+      "UP:LIT(E1)",
+      "UP:OFF",
+      "UP:SENDING"
+    ],
+    "answer": 1,
+    "why": "The feed reports HC-1 moved to E1. The reducer finds the button holding HC-1 and swaps its car label."
+  },
+  "takeaway": "One reducer owns the lights; the server dedupes presses and pushes status.",
+  "chat": {
+    "starters": [
+      "Should the panel use server-sent events or WebSockets?",
+      "How would the operator dashboard show live car positions?",
+      "What changes with a destination keypad instead of UP and DOWN buttons?"
+    ]
+  }
+}

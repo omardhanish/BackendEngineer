@@ -1,0 +1,216 @@
+{
+  "title": "Plugins and ServiceLoader",
+  "idea": "A plugin architecture lets you add features as new classes behind a stable interface, discovered at startup, without editing the host code.",
+  "points": [
+    "The host owns a small interface, the extension point; plugins only implement it.",
+    "A registry maps each plugin to a key and rejects duplicates loudly.",
+    "`ServiceLoader` finds implementations listed in `META-INF/services` files on the class path.",
+    "Discovery order is not a contract: sort plugins, or give them an explicit priority."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "How ServiceLoader finds a plugin",
+    "nodes": [
+      {
+        "id": "host",
+        "label": "Host application",
+        "sub": "uses Codec only"
+      },
+      {
+        "id": "spi",
+        "label": "Codec interface",
+        "sub": "name(), encode()"
+      },
+      {
+        "id": "sl",
+        "label": "ServiceLoader",
+        "sub": "load(Codec.class)"
+      },
+      {
+        "id": "file",
+        "label": "META-INF/services file",
+        "sub": "one class per line"
+      },
+      {
+        "id": "jar",
+        "label": "Plugin jar",
+        "sub": "ReverseCodec, UpperCodec"
+      }
+    ],
+    "edges": [
+      {
+        "from": "host",
+        "to": "sl",
+        "label": "load",
+        "caption": "The host asks `ServiceLoader` for every `Codec`. It names no concrete class."
+      },
+      {
+        "from": "sl",
+        "to": "file",
+        "label": "read",
+        "caption": "The loader reads each `META-INF/services` file named after the interface on the class path."
+      },
+      {
+        "from": "jar",
+        "to": "file",
+        "label": "ships",
+        "dashed": true,
+        "caption": "A plugin jar ships that file listing its implementation classes. Adding the jar adds the plugin."
+      },
+      {
+        "from": "sl",
+        "to": "jar",
+        "label": "instantiate",
+        "caption": "For each listed name the loader loads the class and calls its public no-arg constructor."
+      },
+      {
+        "from": "jar",
+        "to": "spi",
+        "label": "implements",
+        "caption": "Each plugin implements the interface, so the dependency points from plugin to host."
+      },
+      {
+        "from": "sl",
+        "to": "host",
+        "label": "Codec list",
+        "back": true,
+        "caption": "The host receives instances typed as `Codec`, sorts them, and uses them like any object."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "PluginRegistryDemo.java",
+      "lang": "java",
+      "title": "An explicit plugin registry",
+      "run": "captured",
+      "caption": "The host knows only `Exporter`. A new format is a new class plus one `register` call.",
+      "walk": [
+        {
+          "lines": [
+            32,
+            35
+          ],
+          "text": "The extension point: a key and one operation. Keep it small so plugins stay easy to write."
+        },
+        {
+          "lines": [
+            40,
+            46
+          ],
+          "text": "`putIfAbsent` registers once; a second plugin claiming the same key fails at startup."
+        },
+        {
+          "lines": [
+            47,
+            52
+          ],
+          "text": "An unknown key fails with a message that lists what is available."
+        },
+        {
+          "lines": [
+            38,
+            38
+          ],
+          "text": "A `TreeMap` gives a stable, sorted order for listing and for printing."
+        },
+        {
+          "lines": [
+            9,
+            17
+          ],
+          "text": "Adding JSON needed no change to the registry: the Open/Closed Principle (OCP) in practice."
+        },
+        {
+          "lines": [
+            56,
+            67
+          ],
+          "text": "Each plugin is a small `final` class with no knowledge of the others."
+        }
+      ]
+    },
+    {
+      "file": "ServiceLoaderDemo.java",
+      "lang": "java",
+      "title": "Discovery with ServiceLoader",
+      "run": "captured",
+      "caption": "With no services file nothing is found. Writing the file, as a plugin jar would, makes both plugins appear.",
+      "walk": [
+        {
+          "lines": [
+            22,
+            28
+          ],
+          "text": "`ServiceLoader.load` returns lazy providers; `get` creates each instance when asked."
+        },
+        {
+          "lines": [
+            25,
+            25
+          ],
+          "text": "Sort by name: the order files are found in is not guaranteed."
+        },
+        {
+          "lines": [
+            30,
+            35
+          ],
+          "text": "The services file is named after the interface and lists one provider class per line."
+        },
+        {
+          "lines": [
+            36,
+            40
+          ],
+          "text": "Temp files are deleted at exit. A child class loader over the folder stands in for a jar."
+        },
+        {
+          "lines": [
+            43,
+            53
+          ],
+          "text": "Providers must be public with a public no-arg constructor."
+        },
+        {
+          "lines": [
+            15,
+            16
+          ],
+          "text": "The services file needs binary names: a nested class is `Outer$Inner`."
+        },
+        {
+          "lines": [
+            11,
+            19
+          ],
+          "text": "The host code is identical in both calls. Try-with-resources closes each class loader."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Giving a provider only a constructor with arguments: `ServiceLoader` fails with a `ServiceConfigurationError`.",
+    "Relying on discovery order: two jars on a different class path can swap which plugin wins.",
+    "Letting plugins reach into host internals: every host refactor then breaks third-party plugins."
+  ],
+  "quiz": {
+    "q": "A team adds a new `Codec` jar, but `ServiceLoader` does not find it. What is the most likely cause?",
+    "options": [
+      "No services file named after the `Codec` interface",
+      "`ServiceLoader` only finds classes in the host's own jar",
+      "The plugin class is `final`",
+      "The host must call `Class.forName` first"
+    ],
+    "answer": 0,
+    "why": "Without a module descriptor, `ServiceLoader` discovers providers only through `META-INF/services/<interface name>` files on the class path. No file, no provider."
+  },
+  "takeaway": "Own the interface, let plugins implement it, and register them by key.",
+  "chat": {
+    "starters": [
+      "How does `provides ... with` in module-info replace the services file?",
+      "Should a plugin registry use ServiceLoader or dependency injection?",
+      "How do I version a plugin interface without breaking old plugins?"
+    ]
+  }
+}

@@ -1,0 +1,257 @@
+{
+  "title": "Event bus service in Node.js",
+  "idea": "A Node.js event bus service writes each event to an outbox table in the business transaction; a relay publishes it, and subscribers dedupe.",
+  "points": [
+    "The order and its outbox row commit together, so no event is lost.",
+    "A relay locks unpublished rows in id order, delivers them, then marks them.",
+    "A crash before marking redelivers; the `processed_event` inbox makes repeats harmless.",
+    "Follow-ups: partition the outbox by key, one relay each, or a real broker."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "Outbox, relay and inbox",
+    "actors": [
+      {
+        "id": "client",
+        "label": "Client"
+      },
+      {
+        "id": "api",
+        "label": "Express API"
+      },
+      {
+        "id": "db",
+        "label": "PostgreSQL"
+      },
+      {
+        "id": "relay",
+        "label": "Relay"
+      },
+      {
+        "id": "sub",
+        "label": "Loyalty subscriber"
+      }
+    ],
+    "messages": [
+      {
+        "from": "client",
+        "to": "api",
+        "label": "POST /orders + key",
+        "note": "The request carries an Idempotency-Key, so a retried click cannot create two orders."
+      },
+      {
+        "from": "api",
+        "to": "db",
+        "label": "order + outbox row",
+        "note": "One transaction inserts both rows. Either both commit or neither does."
+      },
+      {
+        "from": "api",
+        "to": "client",
+        "label": "201 order",
+        "dashed": true,
+        "note": "The client gets its answer without waiting for any subscriber."
+      },
+      {
+        "from": "relay",
+        "to": "db",
+        "label": "FOR UPDATE SKIP LOCKED",
+        "note": "The relay locks unpublished rows in id order. A second relay would skip them and could reorder a key."
+      },
+      {
+        "from": "relay",
+        "to": "sub",
+        "label": "deliver event",
+        "note": "Each subscriber receives the event with its outbox id."
+      },
+      {
+        "from": "sub",
+        "to": "db",
+        "label": "inbox row + points",
+        "note": "The subscriber records the event id and applies its effect in one transaction."
+      },
+      {
+        "from": "relay",
+        "to": "db",
+        "label": "crash before marking",
+        "dashed": true,
+        "note": "The relay crashes before setting published_at, so the rows stay unpublished."
+      },
+      {
+        "from": "relay",
+        "to": "sub",
+        "label": "redeliver",
+        "dashed": true,
+        "note": "The inbox insert conflicts, so the subscriber skips the repeat."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "service.mjs",
+      "lang": "js",
+      "title": "Outbox relay on PostgreSQL",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "An Express order API with an outbox, a relay that crashes once on purpose, and an inbox that absorbs the redelivery.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "text": "Orders with a unique key, the outbox, the inbox table and a loyalty balance."
+        },
+        {
+          "lines": [
+            17,
+            18,
+            19
+          ],
+          "text": "The in-process bus: a map from topic to subscriber functions."
+        },
+        {
+          "lines": [
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43
+          ],
+          "text": "One transaction writes the order and its outbox row; a replay returns the stored order."
+        },
+        {
+          "lines": [
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59,
+            60,
+            61
+          ],
+          "text": "The relay locks unpublished rows by id, delivers, marks them. Ids follow insert order, not commit order."
+        },
+        {
+          "lines": [
+            62,
+            63,
+            64,
+            65,
+            66,
+            67,
+            68,
+            69,
+            70,
+            71,
+            72,
+            73,
+            74,
+            75,
+            76
+          ],
+          "text": "Email has no dedupe. Loyalty records the event id and adds points together."
+        },
+        {
+          "lines": [
+            80,
+            81,
+            82,
+            83,
+            84,
+            85,
+            86,
+            87,
+            88,
+            89,
+            90,
+            91
+          ],
+          "text": "The controller checks the key and validates with zod; middleware maps errors to codes."
+        },
+        {
+          "lines": [
+            100,
+            101,
+            102,
+            103,
+            104,
+            105,
+            106,
+            107,
+            108,
+            109,
+            110,
+            111
+          ],
+          "text": "Create, replay, reused key, missing key, bad body; then a relay crash and two reruns."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Never publish to a broker inside the request before commit; a rollback leaves a ghost event.",
+    "Subscribers without an inbox, like email here, repeat their side effects on redelivery.",
+    "Two SKIP LOCKED relays can reorder one key; give each relay its own key partition."
+  ],
+  "quiz": {
+    "q": "What does the last line of the service demo print?",
+    "options": [
+      "C-1 loyalty points: 370",
+      "C-1 loyalty points: 740",
+      "C-1 loyalty points: 250",
+      "C-1 loyalty points: 0"
+    ],
+    "answer": 0,
+    "why": "The crashed relay still delivered both events, and loyalty committed them. On redelivery the inbox insert conflicts, so points are added once: 250 plus 120."
+  },
+  "takeaway": "Outbox in the same transaction, relay at least once, inbox to dedupe.",
+  "chat": {
+    "starters": [
+      "How would I scale the relay without losing per-key order?",
+      "When should I replace the outbox relay with Kafka or another broker?",
+      "Could LISTEN and NOTIFY replace polling the outbox table?"
+    ]
+  }
+}

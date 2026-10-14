@@ -1,0 +1,11 @@
+{
+  "stdout": "handled=20 sum=210 left in queue=0",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java JobQueueDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "4cbf5d7bc1f7b077",
+  "at": "2026-10-12T11:33:49.493Z"
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "[d] / 1550\n  [d] docs 1500\n    [f] cv.pdf 1200\n    [f] notes.txt 300\n  [f] todo.md 50\nsize of / = 1550\npath of notes = /docs/notes.txt\nrefused: cv.pdf already exists\nrefused: bad name 'a/b'\nrefused: would create a cycle or two parents\nrefused: negative size",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java FsModel.java",
+  "tool": "Java 17.0.17",
+  "hash": "34fbc76019cded46",
+  "at": "2026-10-14T08:43:17.480Z"
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "2019-report -> archived 2019-report\n2019-report -> (missing)",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java RoleInterfacesDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "908802d39874cf29",
+  "at": "2026-10-12T11:15:02.909Z"
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "PASS plain invoice\nPASS vip over 1000 gets 10% off\nPASS vip at exactly 1000 pays full",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java InvoiceBefore.java",
+  "tool": "Java 17.0.17",
+  "hash": "85088e40267a0488",
+  "at": "2026-10-12T11:23:43.615Z"
+}

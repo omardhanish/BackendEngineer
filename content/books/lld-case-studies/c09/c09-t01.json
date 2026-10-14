@@ -1,0 +1,74 @@
+{
+  "title": "Hotel booking requirements",
+  "idea": "Scoping a hotel booking system means naming who books, what they book (a room type for a range of nights), the no-overbooking rule, and what v1 skips.",
+  "points": [
+    "Guests search dates, pick a room type, pay, and may cancel later.",
+    "The core rule: never sell more rooms of a type than exist per night.",
+    "Guests book a room type; the front desk assigns a room at check-in.",
+    "Assume many searches per booking, and spikes around holidays and weekends."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Who does what in v1",
+    "nodes": [
+      { "id": "guest", "label": "Guest", "sub": "signed-in user" },
+      { "id": "search", "label": "Search availability", "sub": "city, dates, guests" },
+      { "id": "reserve", "label": "Reserve and pay", "sub": "room type, nights" },
+      { "id": "cancel", "label": "Cancel reservation", "sub": "refund by policy" },
+      { "id": "desk", "label": "Front desk", "sub": "hotel staff" },
+      { "id": "stay", "label": "Check in, out", "sub": "assign a Room" },
+      { "id": "sys", "label": "System jobs", "sub": "expire holds, no-shows" },
+      { "id": "out", "label": "Out of scope", "sub": "dynamic rates, loyalty" }
+    ],
+    "edges": [
+      { "from": "guest", "to": "search", "caption": "The guest starts with dates and a guest count, and sees room types with nightly prices." },
+      { "from": "search", "to": "reserve", "caption": "Choosing a room type holds one unit of it for every night of the stay." },
+      { "from": "reserve", "to": "cancel", "caption": "A confirmed reservation can be cancelled. The CancellationPolicy decides the refund." },
+      { "from": "desk", "to": "stay", "caption": "At arrival the front desk picks a real Room of the booked type and checks the guest in." },
+      { "from": "reserve", "to": "stay", "dashed": true, "label": "later", "caption": "The reservation only names a type. The room number is chosen on the day." },
+      { "from": "sys", "to": "reserve", "dashed": true, "label": "expires", "caption": "The system is an actor too: it frees unpaid holds and marks guests who never arrive." },
+      { "from": "guest", "to": "out", "dashed": true, "caption": "Demand-based pricing, loyalty points and rate management screens wait for a later version." }
+    ]
+  },
+  "code": [
+    {
+      "file": "HotelScope.java",
+      "lang": "java",
+      "title": "Use cases and the stay rule",
+      "run": "captured",
+      "caption": "The scope as code: each use case has one actor, v1 is a named range, and a stay is a half-open date range.",
+      "walk": [
+        { "lines": [7], "text": "v1 is the use cases from SEARCH to NO_SHOW. The rest are out." },
+        { "lines": [8, 9, 10, 11], "text": "Print each use case with its actor and an IN or OUT tag." },
+        { "lines": [20], "text": "Four actors: guest, front desk, the system itself, and hotel admin." },
+        { "lines": [22, 23, 24, 25, 26, 27, 28, 29, 30, 31], "text": "Seven use cases in v1, then two that are listed but cut." },
+        { "lines": [12, 13, 14, 15, 16], "text": "Stay a ends on the day stay b starts. Do they clash?" },
+        { "lines": [37, 38, 39, 40, 41, 42, 43, 44, 45, 46], "text": "Check-out is exclusive, so back-to-back stays share no night." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not book a room number at search time; book a room type and assign later.",
+    "Agree that check-out is exclusive, or back-to-back stays look like overlaps.",
+    "Forgetting the system actor hides hold expiry and no-shows until late in design."
+  ],
+  "quiz": {
+    "q": "Why do guests reserve a room type instead of a room number?",
+    "options": [
+      "Room numbers are secret from guests",
+      "Any free room of that type can serve them",
+      "Room types are cheaper to store in the database",
+      "Payment gateways cannot charge for a specific room"
+    ],
+    "answer": 1,
+    "why": "Counting units per type per night keeps rooms interchangeable. The desk can then fit stays together on the day, instead of fragmenting specific rooms."
+  },
+  "takeaway": "Book a room type per night; assign the real room at check-in.",
+  "chat": {
+    "starters": [
+      "Should overbooking on purpose be in scope, like some hotels do?",
+      "Why is check-out exclusive in the date range?",
+      "Which scale assumptions should I state for a hotel system in an interview?"
+    ]
+  }
+}

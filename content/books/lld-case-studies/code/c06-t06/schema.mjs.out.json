@@ -1,0 +1,11 @@
+{
+  "stdout": "second open loan on CP-1 -> 23505 loan_one_open\ndue before borrow -> 23514 loan_check\nunknown member -> 23503 loan_member_id_fkey\nM-2 reserves ISBN-1 again -> 23505 reservation_one_live\nnegative fine -> 23514 member_fine_due_minor_check\noverdue on 2026-01-23: [{\"id\":\"LN-1\",\"member_id\":\"M-1\",\"days_late\":4}]",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node schema.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "b8390ecfa4fb4337",
+  "at": "2026-10-14T10:23:22.015Z"
+}

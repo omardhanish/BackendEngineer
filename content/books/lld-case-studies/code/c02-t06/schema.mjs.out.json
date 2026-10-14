@@ -1,0 +1,11 @@
+{
+  "stdout": "second car in F1-C1: 23505 one_car_per_spot\nsame plate twice: 23505 one_visit_per_plate\nunknown spot: 23503 ticket_spot_id_fkey\nspot type typo: 23514 parking_spot_spot_type_check\nEXITED, no exit_at: 23514 exit_matches_status\nsame payment key: 23505 payment_idempotency_key_key\nF1-C1 KA01AB1234 EXITED\nF1-C1 KA05CD5678 ACTIVE",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node schema.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "10948944b4b4720d",
+  "at": "2026-10-14T10:22:49.280Z"
+}

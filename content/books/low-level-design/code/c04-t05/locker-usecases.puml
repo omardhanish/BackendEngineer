@@ -1,0 +1,22 @@
+@startuml
+left to right direction
+actor Sender
+actor Recipient
+actor Courier
+actor "Payment Gateway" as Pay
+rectangle "Parcel Locker System" {
+  usecase "Drop off parcel" as Drop
+  usecase "Pay postage" as Postage
+  usecase "Collect parcel" as Collect
+  usecase "Verify pickup code" as Verify
+  usecase "Pay overdue fee" as Late
+  usecase "Clear expired lockers" as Sweep
+}
+Sender --> Drop
+Recipient --> Collect
+Postage --> Pay
+Drop ..> Postage : <<include>>
+Collect ..> Verify : <<include>>
+Late ..> Collect : <<extend>>
+Courier --> Sweep
+@enduml

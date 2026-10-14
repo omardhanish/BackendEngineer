@@ -1,0 +1,5 @@
+classDiagram
+    Album "0..*" --> "1" Artist : by
+    Album "1" *-- "0..*" Track : owns
+    Playlist "0..*" o-- "0..*" Track : lists
+    Player ..> Track : plays

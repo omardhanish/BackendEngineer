@@ -1,0 +1,11 @@
+{
+  "stdout": "send ann SHIPPED\n  email -> ann\nsend ann PAY_FAILED\n  attempt 1 failed\n  sms -> ann\n  push -> ann\nskip bob SHIPPED: opted out\nskip ann SHIPPED: duplicate\nskip cat DELAYED: quiet hours",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java NotificationSystemDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "5ca49086f28539cc",
+  "at": "2026-10-12T11:18:26.443Z"
+}

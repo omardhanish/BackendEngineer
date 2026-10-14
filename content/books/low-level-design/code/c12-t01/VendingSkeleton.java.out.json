@@ -1,0 +1,11 @@
+{
+  "stdout": "Outcome[status=NEED_MORE, cents=20]\nOutcome[status=VENDED, cents=30]\nOutcome[status=SOLD_OUT, cents=0]\nRefund: 200",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java VendingSkeleton.java",
+  "tool": "Java 17.0.17",
+  "hash": "41d0a5c640af9e78",
+  "at": "2026-10-12T11:34:16.090Z"
+}

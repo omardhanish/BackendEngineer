@@ -1,0 +1,334 @@
+{
+  "title": "Bridge pattern",
+  "idea": "The Bridge pattern splits one class hierarchy into two, an abstraction and an implementation, joined by a field, so each side can grow independently.",
+  "analogy": {
+    "text": "Camera bodies and lenses: any lens fits any body through one standard mount, so a new lens works with every body.",
+    "breaks": "A mount is set by one maker; you design the implementor interface yourself."
+  },
+  "points": [
+    "Two dimensions in one hierarchy multiply classes: M reports times N formats.",
+    "The abstraction holds an implementor field and calls only its small primitive methods.",
+    "A new format or a new report is one class; neither side is edited.",
+    "JDBC is often cited as a bridge: one `Connection` API, many vendor drivers."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Two hierarchies, one bridge",
+    "nodes": [
+      {
+        "id": "client",
+        "label": "Client",
+        "sub": "builds report + renderer"
+      },
+      {
+        "id": "report",
+        "label": "Report",
+        "sub": "abstract · Renderer out"
+      },
+      {
+        "id": "inv",
+        "label": "InvoiceReport",
+        "sub": "adds a TOTAL row"
+      },
+      {
+        "id": "stock",
+        "label": "StockReport",
+        "sub": "flags LOW stock"
+      },
+      {
+        "id": "renderer",
+        "label": "Renderer",
+        "sub": "interface · header(), row()"
+      },
+      {
+        "id": "csv",
+        "label": "CsvRenderer",
+        "sub": "quotes commas"
+      },
+      {
+        "id": "md",
+        "label": "MarkdownRenderer",
+        "sub": "pipes and dashes"
+      }
+    ],
+    "edges": [
+      {
+        "from": "inv",
+        "to": "report",
+        "label": "extends"
+      },
+      {
+        "from": "stock",
+        "to": "report",
+        "label": "extends"
+      },
+      {
+        "from": "csv",
+        "to": "renderer",
+        "label": "implements"
+      },
+      {
+        "from": "md",
+        "to": "renderer",
+        "label": "implements"
+      },
+      {
+        "from": "report",
+        "to": "renderer",
+        "label": "has-a (bridge)"
+      },
+      {
+        "from": "client",
+        "to": "stock",
+        "label": "new StockReport(md, …)"
+      }
+    ],
+    "steps": [
+      {
+        "caption": "The abstraction side says WHAT a report contains. Subclasses add report logic, not formatting.",
+        "active": [
+          "report",
+          "inv",
+          "stock"
+        ],
+        "edges": [
+          0,
+          1
+        ]
+      },
+      {
+        "caption": "The implementor side says HOW to draw a header and a row. It knows nothing about invoices.",
+        "active": [
+          "renderer",
+          "csv",
+          "md"
+        ],
+        "edges": [
+          2,
+          3
+        ]
+      },
+      {
+        "caption": "The bridge is one field: `Report` holds a `Renderer` passed in through its constructor.",
+        "active": [
+          "report",
+          "renderer"
+        ],
+        "edges": [
+          4
+        ]
+      },
+      {
+        "caption": "The client picks one of each and joins them. Any report pairs with any renderer.",
+        "active": [
+          "client",
+          "stock",
+          "md"
+        ],
+        "edges": [
+          5
+        ]
+      },
+      {
+        "caption": "`StockReport.render()` decides the rows, then calls `out.row()`; the Markdown renderer draws them.",
+        "active": [
+          "stock",
+          "report",
+          "renderer",
+          "md"
+        ],
+        "edges": [
+          1,
+          4,
+          3
+        ]
+      },
+      {
+        "caption": "Adding an HTML format is one new `Renderer` class. Both reports gain it with no edits.",
+        "active": [
+          "renderer",
+          "csv",
+          "md"
+        ],
+        "edges": [
+          2,
+          3
+        ]
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "SubclassGrid.java",
+      "lang": "java",
+      "title": "The problem: class grid",
+      "run": "captured",
+      "caption": "Report type and output format welded into one hierarchy: one class per pair, and copies drift.",
+      "walk": [
+        {
+          "lines": [
+            18
+          ],
+          "text": "Two reports times two formats is four classes. A third format makes six, a third report nine."
+        },
+        {
+          "lines": [
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "text": "The CSV invoice quotes the item, because it contains a comma."
+        },
+        {
+          "lines": [
+            24,
+            25,
+            26,
+            27,
+            28
+          ],
+          "text": "The CSV stock report was copied from it and lost the quoting: its row now has three columns."
+        },
+        {
+          "lines": [
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39
+          ],
+          "text": "The Markdown table syntax is repeated in every Markdown class."
+        },
+        {
+          "lines": [
+            5,
+            6,
+            7,
+            8,
+            9,
+            10
+          ],
+          "text": "Run it and compare the CSV rows: one format, two different rules."
+        }
+      ]
+    },
+    {
+      "file": "BridgeReportDemo.java",
+      "lang": "java",
+      "title": "The fix: a bridge",
+      "run": "captured",
+      "caption": "Reports decide content, renderers decide format; a field joins them, so any pair works.",
+      "walk": [
+        {
+          "lines": [
+            17,
+            18,
+            19,
+            20,
+            21
+          ],
+          "text": "The implementor interface is small and primitive: a header and a row. Keep it that way."
+        },
+        {
+          "lines": [
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31
+          ],
+          "text": "The abstraction holds the bridge as a `final` field and defensively copies its data."
+        },
+        {
+          "lines": [
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42
+          ],
+          "text": "`InvoiceReport` owns the total logic and never mentions commas or pipes."
+        },
+        {
+          "lines": [
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53
+          ],
+          "text": "`StockReport` owns the low-stock rule, again with no formatting code."
+        },
+        {
+          "lines": [
+            55,
+            56,
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63,
+            64,
+            65
+          ],
+          "text": "CSV quoting now lives in exactly one place, so every report gets it right."
+        },
+        {
+          "lines": [
+            8,
+            9,
+            10,
+            11
+          ],
+          "text": "The client composes pairs at runtime. M reports plus N formats is M + N classes."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "An implementor with report-level methods like `renderInvoice` couples the sides again; keep its operations primitive.",
+    "Using Bridge for one dimension that varies adds an interface for nothing; wait for the second.",
+    "Calling it Strategy in an interview is incomplete: Bridge means both sides are hierarchies that vary."
+  ],
+  "quiz": {
+    "q": "A bridge has 3 report types and 4 formats. Adding a fifth format needs how many new classes?",
+    "options": [
+      "1",
+      "3",
+      "4",
+      "5"
+    ],
+    "answer": 0,
+    "why": "Formats live only on the implementor side. One new `Renderer` class pairs with all three reports through the existing field."
+  },
+  "takeaway": "Bridge turns M times N subclasses into M plus N classes.",
+  "chat": {
+    "starters": [
+      "How is the Bridge pattern different from the Strategy pattern?",
+      "How does Bridge differ from Adapter if both involve an interface and a wrapper?",
+      "When should I design a bridge up front instead of refactoring to one later?"
+    ]
+  }
+}

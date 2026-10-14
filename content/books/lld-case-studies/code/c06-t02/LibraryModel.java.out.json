@@ -1,0 +1,11 @@
+{
+  "stdout": "Quiet Rivers: CP-1 ON_LOAN, CP-2 AVAILABLE\nLN-1 CP-1 -> M-1 due 2026-01-19 ACTIVE\nfine, back 2026-01-23: 4000\nfine, 30 days late: 10000\nReservation[id=RS-1, isbn=978-1-4028-9462-6, memberId=M-2, seq=1]\nrejected: due date must be after borrow\nrejected: isbn needed",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java LibraryModel.java",
+  "tool": "Java 17.0.17",
+  "hash": "880bd4dea0d4ee18",
+  "at": "2026-10-14T08:32:48.908Z"
+}

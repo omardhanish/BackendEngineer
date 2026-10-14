@@ -1,0 +1,11 @@
+{
+  "stdout": "reads that saw half a move: 0\na=[x.txt] b=[y.txt]\nrefused: x.txt not in b",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java TreeLock.java",
+  "tool": "Java 17.0.17",
+  "hash": "a4b57acc1abb1d10",
+  "at": "2026-10-14T08:44:27.648Z"
+}

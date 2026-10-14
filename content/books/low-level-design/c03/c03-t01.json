@@ -1,210 +1,244 @@
 {
-  "title": "Parking lot design",
-  "idea": "A parking lot design matches each vehicle to a free spot of the right size, issues a ticket on entry, and prices the stay on exit.",
-  "analogy": {
-    "text": "A cloakroom attendant hangs your coat on a hook that fits, hands you a numbered tag, and returns the coat when you show it.",
-    "breaks": "A cloakroom rarely sorts hooks by size or charges by the hour."
-  },
+  "title": "The five SOLID principles",
+  "idea": "SOLID is five design rules for classes; each one guards against a specific way code becomes hard to change, test or extend.",
   "points": [
-    "Nouns in the requirements become classes: lot, floor, spot, vehicle, ticket, gate.",
-    "One ordered `Size` enum compares vehicles with spots in a single line.",
-    "`ParkingLot` alone allocates spots; gates only call it, so rules live once.",
-    "Pricing sits behind a `FeeRule` interface, so a new tariff needs no edits."
+    "Single Responsibility (SRP) and Open/Closed (OCP) decide where code lives and how behaviour arrives.",
+    "Liskov Substitution (LSP) and Interface Segregation (ISP) keep contracts honest and interfaces small.",
+    "Dependency Inversion (DIP) makes policy depend on interfaces, so details plug in from outside.",
+    "They are smell detectors, not laws; apply one when its pain actually appears."
   ],
   "hero": {
-    "type": "flow",
-    "title": "From entry gate to exit gate",
-    "nodes": [
-      {
-        "id": "entry",
-        "label": "Entry gate",
-        "sub": "reads the plate"
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "One change request, five questions",
+    "scenario": {
+      "token": {
+        "label": "add SMS welcome",
+        "tone": "req"
       },
-      {
-        "id": "lot",
-        "label": "ParkingLot",
-        "sub": "owns allocation"
-      },
-      {
-        "id": "floor",
-        "label": "Floor",
-        "sub": "list of spots"
-      },
-      {
-        "id": "spot",
-        "label": "Spot",
-        "sub": "id and size"
-      },
-      {
-        "id": "ticket",
-        "label": "Ticket",
-        "sub": "plate, spot, entry time"
-      },
-      {
-        "id": "exit",
-        "label": "Exit gate",
-        "sub": "reads the ticket"
-      },
-      {
-        "id": "fee",
-        "label": "FeeRule",
-        "sub": "strategy for price"
-      }
-    ],
-    "edges": [
-      {
-        "from": "entry",
-        "to": "lot",
-        "label": "park(vehicle)",
-        "caption": "A vehicle arrives. The gate asks `ParkingLot` for a spot; the gate itself holds no parking rules."
-      },
-      {
-        "from": "lot",
-        "to": "floor",
-        "label": "search",
-        "caption": "The lot walks its floors in order and asks each one for a free spot that fits."
-      },
-      {
-        "from": "floor",
-        "to": "spot",
-        "label": "smallest fit",
-        "caption": "The smallest free spot that fits wins, so large spots stay free for large vehicles."
-      },
-      {
-        "from": "lot",
-        "to": "ticket",
-        "label": "issue",
-        "caption": "The lot marks the spot taken and returns a `Ticket` with plate, spot and entry time."
-      },
-      {
-        "from": "exit",
-        "to": "fee",
-        "label": "fee(hours)",
-        "caption": "On exit the gate asks the configured `FeeRule` for a price. It never knows which rule it holds."
-      },
-      {
-        "from": "exit",
-        "to": "lot",
-        "label": "leave(ticket)",
-        "dashed": true,
-        "caption": "After payment the gate calls `leave`, and the spot is free for the next vehicle."
-      }
-    ]
+      "stages": [
+        {
+          "id": "s",
+          "label": "S: who asks?",
+          "sub": "one actor per class"
+        },
+        {
+          "id": "o",
+          "label": "O: add, not edit",
+          "sub": "new class, same callers"
+        },
+        {
+          "id": "l",
+          "label": "L: safe swap",
+          "sub": "subtype keeps promises"
+        },
+        {
+          "id": "i",
+          "label": "I: small contract",
+          "sub": "only methods used"
+        },
+        {
+          "id": "d",
+          "label": "D: inject parts",
+          "sub": "depend on abstractions"
+        },
+        {
+          "id": "ship",
+          "label": "Shipped",
+          "sub": "tested code untouched",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "A request arrives: welcome new users by SMS. SRP asks which actor (team asking for changes) wants it; only welcome code should change.",
+          "at": "s",
+          "slot": "top",
+          "state": {
+            "s": "active"
+          }
+        },
+        {
+          "caption": "OCP asks whether SMS can arrive as a new `SmsWelcome` class, leaving `Registration` and its tests untouched.",
+          "at": "o",
+          "slot": "top",
+          "state": {
+            "s": "done",
+            "o": "active"
+          }
+        },
+        {
+          "caption": "LSP asks whether `SmsWelcome` keeps the `Welcome` promise: return text, never null or a surprise exception.",
+          "at": "l",
+          "slot": "top",
+          "state": {
+            "s": "done",
+            "o": "done",
+            "l": "active"
+          }
+        },
+        {
+          "caption": "ISP asks whether registration sees only what it needs. `UserWriter` has one method, so a list can stand in.",
+          "at": "i",
+          "slot": "top",
+          "state": {
+            "s": "done",
+            "o": "done",
+            "l": "done",
+            "i": "active"
+          }
+        },
+        {
+          "caption": "DIP asks who creates the parts. The caller injects policy, writer and welcomes, so a test can pass fakes.",
+          "at": "d",
+          "slot": "top",
+          "state": {
+            "s": "done",
+            "o": "done",
+            "l": "done",
+            "i": "done",
+            "d": "active"
+          }
+        },
+        {
+          "caption": "Five questions, one result: one new class and one wiring line. No tested class was reopened.",
+          "at": "ship",
+          "slot": "top",
+          "token": {
+            "label": "SMS shipped",
+            "tone": "ok"
+          },
+          "state": {
+            "s": "done",
+            "o": "done",
+            "l": "done",
+            "i": "done",
+            "d": "done",
+            "ship": "active"
+          }
+        }
+      ]
+    }
   },
   "code": [
     {
-      "file": "ParkingLotDemo.java",
+      "file": "RegistrationSmells.java",
       "lang": "java",
-      "title": "Allocate spots",
+      "title": "The problem",
       "run": "captured",
-      "caption": "One flat floor of three spots. Two cars arrive, a bus waits, then a spot frees up. Entry time is left out to keep it short.",
+      "caption": "A small sign-up service with one smell per letter, each marked in a comment.",
       "walk": [
         {
           "lines": [
-            21,
-            24
+            18,
+            23
           ],
-          "text": "An enum and three records carry the data. Records have no setters."
+          "text": "S: the password rule, storage and welcome text change for different teams, yet share one class."
         },
         {
           "lines": [
-            26,
-            29
+            24,
+            28
           ],
-          "text": "`ParkingLot` owns the spots and a map of which spot ids are taken."
+          "text": "O: each welcome channel is a `switch` branch, so a new channel reopens tested code."
         },
         {
           "lines": [
-            31,
-            36
+            46,
+            51
           ],
-          "text": "Keep free spots the vehicle fits, then pick the smallest by enum order."
+          "text": "L: `ArchivedUsers` is a `UserStore` that throws on `save`. Callers cannot trust the parent type."
         },
         {
           "lines": [
             32,
-            32
+            37
           ],
-          "text": "`synchronized`: two gates calling at once cannot both win one spot."
+          "text": "I: sign-up needs only `save`, but the interface also forces `delete` and `all`."
         },
         {
           "lines": [
-            37,
-            38
+            20,
+            20
           ],
-          "text": "Mark the spot taken and return a ticket. An empty `Optional` means full."
-        },
-        {
-          "lines": [
-            41,
-            41
-          ],
-          "text": "`leave` frees the spot named on the ticket."
-        },
-        {
-          "lines": [
-            11,
-            17
-          ],
-          "text": "Two medium vehicles arrive, a bus is turned away, then retries after one leaves."
+          "text": "D: the service builds its own concrete store, so a test cannot swap in a fake."
         }
       ]
     },
     {
-      "file": "ParkingFeeDemo.java",
+      "file": "SolidRegistration.java",
       "lang": "java",
-      "title": "Price the stay",
+      "title": "The fix",
       "run": "captured",
-      "caption": "Three tariffs behind one interface. The lot would call `fee` without asking which one it holds.",
+      "caption": "Each smell gets its own small fix. SMS arrives as a new class, and a list stands in for storage.",
       "walk": [
         {
           "lines": [
-            14,
-            19
+            18,
+            22
           ],
-          "text": "`FeeRule` is the pricing contract; a default method gives each rule a name."
+          "text": "S: the password rule is its own type, so changing it never touches registration."
         },
         {
           "lines": [
-            21,
-            31
+            24,
+            25
           ],
-          "text": "Each tariff is a small `record` that carries its numbers as data."
+          "text": "I: `UserWriter` asks for one method, so `saved::add` fits."
         },
         {
           "lines": [
-            5,
-            10
+            27,
+            34
           ],
-          "text": "`main` prices a short and a long stay under every rule."
+          "text": "O + L: each channel is a class behind `Welcome`, and each keeps the promise to return text."
+        },
+        {
+          "lines": [
+            36,
+            46
+          ],
+          "text": "D: policy, writer and channels arrive through the constructor; the map is copied."
+        },
+        {
+          "lines": [
+            47,
+            53
+          ],
+          "text": "Unknown channels fail before the user is saved, so no half-registered user exists."
+        },
+        {
+          "lines": [
+            7,
+            15
+          ],
+          "text": "Main wires the parts. A list replaces the database, which is what DIP buys in tests."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Lock allocation: two gates calling `park` together must never get one spot.",
-    "Skip a subclass per vehicle type when only its size changes behaviour.",
-    "Keep tariffs out of `Ticket` and `ParkingLot`; prices change more often than spots."
+    "An interface for every class with one implementation doubles your files and buys nothing.",
+    "Reciting the five letters in an interview without naming the change each protects sounds memorised.",
+    "Applying all five to a 50-line script slows you down; wait until a change hurts."
   ],
   "quiz": {
-    "q": "What is the second line `ParkingLotDemo` prints?",
+    "q": "A `PaymentService` gains a new `if` branch for every payment method. Which principle does that break first?",
     "options": [
-      "Ticket[plate=VAN-1, spotId=M1]",
-      "Ticket[plate=VAN-1, spotId=S1]",
-      "Ticket[plate=VAN-1, spotId=L1]",
-      "bus: Optional.empty"
+      "Liskov Substitution",
+      "Interface Segregation",
+      "Dependency Inversion",
+      "Open/Closed"
     ],
-    "answer": 2,
-    "why": "The car took M1 and S1 is too small for a medium van. The only free spot that fits is L1.",
-    "code": "// spots: S1 SMALL, M1 MEDIUM, L1 LARGE\nTicket car = lot.park(new Vehicle(\"CAR-1\", Size.MEDIUM)).orElseThrow();\nTicket van = lot.park(new Vehicle(\"VAN-1\", Size.MEDIUM)).orElseThrow();\nSystem.out.println(car + \"\\n\" + van);",
-    "lang": "java"
+    "answer": 3,
+    "why": "Each new payment method edits tested code. OCP wants new methods to arrive as new classes behind one interface, leaving the service closed."
   },
-  "takeaway": "Nouns become classes; one owner allocates; pricing is a swappable strategy.",
+  "takeaway": "SOLID names five pains of change; fix the one you feel.",
   "chat": {
     "starters": [
-      "How would I add floors and a display board of free spots?",
-      "Should electric-vehicle charging spots be a new size or a separate flag?",
-      "How do I keep allocation fast when the lot has thousands of spots?"
+      "Which SOLID principle matters most in an LLD interview?",
+      "How do I tell when SOLID is overkill for my class?",
+      "Are SOLID principles still relevant with records and lambdas?"
     ]
   }
 }

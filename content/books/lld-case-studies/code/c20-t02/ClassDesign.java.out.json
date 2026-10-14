@@ -1,0 +1,11 @@
+{
+  "stdout": "email <- EV-1 O-1 placed\nemail <- EV-2 O-1 cancelled\nrefunds <- EV-2 O-1 cancelled\nemail <- EV-3 O-2 cancelled\nrefused: no topic payments",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ClassDesign.java",
+  "tool": "Java 17.0.17",
+  "hash": "07743809a338c7e8",
+  "at": "2026-10-14T10:23:00.245Z"
+}

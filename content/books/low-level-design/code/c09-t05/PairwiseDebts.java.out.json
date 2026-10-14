@@ -1,0 +1,11 @@
+{
+  "stdout": "Asha pays Dev 2000\nBen pays Asha 3000\nChen pays Asha 3000\nChen pays Ben 3000\nDev pays Asha 3000\npairwise transfers: 5\nnet: {Asha=7000, Ben=0, Chen=-6000, Dev=-1000}, sum 0",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java PairwiseDebts.java",
+  "tool": "Java 17.0.17",
+  "hash": "186de91cc8ead566",
+  "at": "2026-10-12T11:23:38.856Z"
+}

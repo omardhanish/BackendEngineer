@@ -1,0 +1,313 @@
+{
+  "title": "Facade pattern",
+  "idea": "The Facade pattern gives a set of collaborating classes one simple entry point that runs their steps in the right order, so callers stop orchestrating the parts themselves.",
+  "points": [
+    "Without a facade, every caller repeats the call order and the cleanup on failure.",
+    "The facade owns the workflow: `placeOrder` reserves, charges, ships and undoes on failure.",
+    "Subsystem classes stay usable directly; a facade adds a shortcut, not a wall.",
+    "SLF4J is a logging facade. Skip one when callers only touch one class."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "One call, three subsystems, one cleanup",
+    "nodes": [
+      {
+        "id": "web",
+        "label": "Web controller",
+        "sub": "calls placeOrder"
+      },
+      {
+        "id": "mobile",
+        "label": "Mobile controller",
+        "sub": "calls placeOrder"
+      },
+      {
+        "id": "facade",
+        "label": "Checkout",
+        "sub": "placeOrder(item, cents, postcode)"
+      },
+      {
+        "id": "inv",
+        "label": "Inventory",
+        "sub": "reserve / release"
+      },
+      {
+        "id": "pay",
+        "label": "Payments",
+        "sub": "charge / refund"
+      },
+      {
+        "id": "ship",
+        "label": "Shipping",
+        "sub": "book"
+      }
+    ],
+    "edges": [
+      {
+        "from": "web",
+        "to": "facade",
+        "label": "placeOrder"
+      },
+      {
+        "from": "mobile",
+        "to": "facade",
+        "label": "placeOrder"
+      },
+      {
+        "from": "facade",
+        "to": "inv",
+        "label": "1 reserve"
+      },
+      {
+        "from": "facade",
+        "to": "pay",
+        "label": "2 charge"
+      },
+      {
+        "from": "facade",
+        "to": "ship",
+        "label": "3 book"
+      },
+      {
+        "from": "facade",
+        "to": "pay",
+        "label": "refund",
+        "dashed": true
+      },
+      {
+        "from": "facade",
+        "to": "inv",
+        "label": "release",
+        "dashed": true
+      }
+    ],
+    "steps": [
+      {
+        "caption": "Both controllers make one call. Neither knows which subsystems exist behind `Checkout`.",
+        "active": [
+          "web",
+          "mobile",
+          "facade"
+        ],
+        "edges": [
+          0,
+          1
+        ]
+      },
+      {
+        "caption": "Step 1: the facade reserves one unit. If none is left, it stops here.",
+        "active": [
+          "facade",
+          "inv"
+        ],
+        "edges": [
+          2
+        ]
+      },
+      {
+        "caption": "Step 2: it charges the card. A decline releases the reserved unit at once.",
+        "active": [
+          "facade",
+          "pay",
+          "inv"
+        ],
+        "edges": [
+          3,
+          6
+        ]
+      },
+      {
+        "caption": "Step 3: it books shipping. Success returns one `OrderResult` to the caller.",
+        "active": [
+          "facade",
+          "ship"
+        ],
+        "edges": [
+          4
+        ]
+      },
+      {
+        "caption": "A shipping failure refunds the charge and releases stock. The cleanup lives in one place.",
+        "active": [
+          "facade",
+          "pay",
+          "inv"
+        ],
+        "edges": [
+          5,
+          6
+        ]
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "ScatteredCheckout.java",
+      "lang": "java",
+      "title": "The problem: copied steps",
+      "run": "captured",
+      "caption": "Two controllers each copy the checkout steps. One copy forgets to release stock.",
+      "walk": [
+        {
+          "lines": [
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32
+          ],
+          "text": "Three subsystems, each fine alone. The danger is in how callers combine them."
+        },
+        {
+          "lines": [
+            39,
+            40,
+            41,
+            42,
+            43,
+            44
+          ],
+          "text": "The web controller knows the order and the undo step. That knowledge is now copied."
+        },
+        {
+          "lines": [
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58
+          ],
+          "text": "The mobile copy drifted: on a decline it returns without releasing the reserved lamp."
+        },
+        {
+          "lines": [
+            9,
+            10,
+            11,
+            12
+          ],
+          "text": "One sale and one decline should leave 2 lamps. The leak shows in the output."
+        },
+        {
+          "lines": [
+            33,
+            46
+          ],
+          "text": "Each controller depends on three classes. A new step means editing every caller."
+        }
+      ]
+    },
+    {
+      "file": "CheckoutFacadeDemo.java",
+      "lang": "java",
+      "title": "The fix: a Checkout facade",
+      "run": "captured",
+      "caption": "One `placeOrder` call runs the steps in order and undoes them on failure.",
+      "walk": [
+        {
+          "lines": [
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29
+          ],
+          "text": "The facade gets its subsystems by constructor injection and rejects missing ones early."
+        },
+        {
+          "lines": [
+            31,
+            32
+          ],
+          "text": "Validate input first, then reserve. No stock is an expected outcome, not an exception."
+        },
+        {
+          "lines": [
+            33,
+            34,
+            35,
+            36,
+            37,
+            38
+          ],
+          "text": "A declined charge releases the reserved unit before returning a failed result."
+        },
+        {
+          "lines": [
+            39,
+            40,
+            41,
+            42,
+            43,
+            44
+          ],
+          "text": "A shipping failure undoes both earlier steps, newest first: refund, then release."
+        },
+        {
+          "lines": [
+            16,
+            17,
+            18,
+            19,
+            20
+          ],
+          "text": "Callers get one small value object, not three subsystem return types."
+        },
+        {
+          "lines": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13
+          ],
+          "text": "Every client path now shares one tested workflow, so stock stays correct."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "A facade that grows pricing, tax and email logic becomes a god class; keep it orchestrating.",
+    "Copying the facade's steps into a new caller brings back drift; route every caller through it.",
+    "Forcing all access through the facade blocks advanced callers; leave the subsystems usable directly."
+  ],
+  "quiz": {
+    "q": "`Checkout` calls `Inventory`, `Payments` and `Shipping`. `LegacyPaymentAdapter` wraps an old SDK. Which statement is right?",
+    "options": [
+      "Both are facades, since both wrap other code",
+      "`Checkout` is a facade; the adapter converts one interface",
+      "`Checkout` is an adapter, since callers see a new interface",
+      "Both are proxies, since both forward calls"
+    ],
+    "answer": 1,
+    "why": "A facade simplifies many classes behind one new entry point. An adapter makes one existing class fit an interface the caller already expects."
+  },
+  "takeaway": "A facade turns a multi-step workflow over many classes into one safe call.",
+  "chat": {
+    "starters": [
+      "How is a facade different from an adapter if both wrap other code?",
+      "Is a Spring service class that calls three repositories a facade?",
+      "When does a facade turn into a god class, and how do I split it?"
+    ]
+  }
+}

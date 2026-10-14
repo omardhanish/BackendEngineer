@@ -1,0 +1,11 @@
+{
+  "stdout": "member pays 9000\ncoupon holder pays 10500",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java FlagPricer.java",
+  "tool": "Java 17.0.17",
+  "hash": "a4a2c43d3da8ba72",
+  "at": "2026-10-12T11:23:15.508Z"
+}

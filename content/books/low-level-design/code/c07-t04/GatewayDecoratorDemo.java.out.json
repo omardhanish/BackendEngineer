@@ -1,0 +1,11 @@
+{
+  "stdout": "log: charge A-1\nretry 1: timeout\nlog: PAID A-1 2500\n-> PAID A-1 2500\nlog: charge A-2\nlog: DECLINED A-2 over limit\n-> DECLINED A-2 over limit",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java GatewayDecoratorDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "096d1a2025c30416",
+  "at": "2026-10-12T11:09:28.989Z"
+}

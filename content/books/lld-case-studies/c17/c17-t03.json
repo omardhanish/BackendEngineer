@@ -1,0 +1,277 @@
+{
+  "title": "LRU cache in Java",
+  "idea": "An LRU cache pairs a key-to-node HashMap with a doubly linked list in use order, so get, put and evict all run in O(1) average time.",
+  "analogy": {
+    "text": "Receipts on a spike: a receipt you use goes back on top, and when the spike is full the bottom one is thrown away.",
+    "breaks": "Finding a receipt mid-spike is slow; the map finds a node instantly."
+  },
+  "points": [
+    "The map finds a key's node directly, without walking the list.",
+    "Every hit or replace unlinks the node and relinks it at the head.",
+    "Sentinel head and tail nodes remove every null check from linking.",
+    "When full, the node just before the tail sentinel is the LRU victim."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "lanes",
+    "title": "Recency list, capacity 3",
+    "scenario": {
+      "lanes": [
+        {
+          "id": "list",
+          "label": "Recency list",
+          "kind": "queue",
+          "hint": "newest first"
+        },
+        {
+          "id": "gone",
+          "label": "Evicted or removed",
+          "kind": "area"
+        }
+      ],
+      "tokens": {
+        "tea": {
+          "label": "tea",
+          "tone": "sync"
+        },
+        "coffee": {
+          "label": "coffee",
+          "tone": "io"
+        },
+        "juice": {
+          "label": "juice",
+          "tone": "micro"
+        },
+        "soda": {
+          "label": "soda",
+          "tone": "timer"
+        }
+      },
+      "steps": [
+        {
+          "caption": "Three puts fill the cache. Each new node is linked right after the head.",
+          "at": {
+            "list": [
+              "juice",
+              "coffee",
+              "tea"
+            ],
+            "gone": []
+          }
+        },
+        {
+          "caption": "`get` on tea finds its node in the map and moves it to the front.",
+          "at": {
+            "list": [
+              "tea",
+              "juice",
+              "coffee"
+            ],
+            "gone": []
+          },
+          "active": "tea"
+        },
+        {
+          "caption": "Putting soda into a full cache unlinks the node before the tail: coffee.",
+          "at": {
+            "list": [
+              "soda",
+              "tea",
+              "juice"
+            ],
+            "gone": [
+              "coffee"
+            ]
+          },
+          "active": "soda"
+        },
+        {
+          "caption": "Putting juice again replaces its value and moves it to the front. Nothing is evicted.",
+          "at": {
+            "list": [
+              "juice",
+              "soda",
+              "tea"
+            ],
+            "gone": [
+              "coffee"
+            ]
+          },
+          "active": "juice"
+        },
+        {
+          "caption": "`remove` deletes tea from the map and unlinks its node.",
+          "at": {
+            "list": [
+              "juice",
+              "soda"
+            ],
+            "gone": [
+              "coffee",
+              "tea"
+            ]
+          },
+          "active": "tea"
+        },
+        {
+          "caption": "A later `get` on coffee misses: the map no longer has the key.",
+          "at": {
+            "list": [
+              "juice",
+              "soda"
+            ],
+            "gone": [
+              "coffee",
+              "tea"
+            ]
+          },
+          "active": "coffee"
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "HandBuiltLru.java",
+      "lang": "java",
+      "title": "Map plus linked list",
+      "run": "captured",
+      "caption": "The hand-built version interviewers ask for. It fuses store and LRU order in one class; `BoundedCache` keeps the pluggable route.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "text": "Fill a three-entry cache, then print the list after each step."
+        },
+        {
+          "lines": [
+            30,
+            31,
+            32,
+            33,
+            34
+          ],
+          "text": "A node keeps its key, so eviction can also delete it from the map."
+        },
+        {
+          "lines": [
+            36,
+            37,
+            38
+          ],
+          "text": "The map indexes nodes; two sentinels mark the newest and oldest ends."
+        },
+        {
+          "lines": [
+            47,
+            48,
+            49,
+            50,
+            51
+          ],
+          "text": "A hit moves the node to the front. A miss changes nothing."
+        },
+        {
+          "lines": [
+            55,
+            56,
+            57,
+            58,
+            59
+          ],
+          "text": "Replacing a key updates the value and refreshes it; no eviction."
+        },
+        {
+          "lines": [
+            61,
+            62,
+            63,
+            64
+          ],
+          "text": "Full: unlink the node before the tail and drop its key from the map."
+        },
+        {
+          "lines": [
+            78,
+            79,
+            80,
+            81,
+            82,
+            83,
+            84,
+            85,
+            86,
+            87
+          ],
+          "text": "Four pointer writes link a node; two unlink it. All O(1)."
+        }
+      ]
+    },
+    {
+      "file": "LinkedHashMapLru.java",
+      "lang": "java",
+      "title": "LinkedHashMap shortcut",
+      "run": "captured",
+      "caption": "The same trace with the JDK's access-ordered map. It prints keys oldest first.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12
+          ],
+          "text": "Replay the exact operations of the hand-built version."
+        },
+        {
+          "lines": [
+            20,
+            21,
+            22
+          ],
+          "text": "The third constructor argument true switches to access order."
+        },
+        {
+          "lines": [
+            24,
+            25,
+            26
+          ],
+          "text": "After each put of a new key the map asks whether to drop its eldest entry."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Forgetting to store the key in the node leaves evicted keys in the map.",
+    "A replace must move the node too, or a fresh value is evicted first.",
+    "In an interview, offer `LinkedHashMap` first, then build the list if asked."
+  ],
+  "quiz": {
+    "q": "What does the line starting with put soda print?",
+    "options": [
+      "put soda    [soda=30, juice=50, coffee=35]",
+      "put soda    [soda=30, tea=20, juice=50]",
+      "put soda    [soda=30, tea=20, coffee=35]"
+    ],
+    "answer": 1,
+    "why": "The get made tea most recent, so coffee sat just before the tail. Soda evicts coffee and goes to the front."
+  },
+  "takeaway": "Map for lookup, linked list for order: every LRU step is O(1).",
+  "chat": {
+    "starters": [
+      "Why a doubly linked list and not a singly linked one?",
+      "How does LinkedHashMap keep access order internally?",
+      "What would change to evict by total bytes instead of count?"
+    ]
+  }
+}

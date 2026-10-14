@@ -1,0 +1,11 @@
+{
+  "stdout": "R-1 -> APPROVED by auto\nR-2 -> APPROVED by auto\nR-3 -> APPROVED by agent\nR-4 -> REJECTED",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java RefundIfChain.java",
+  "tool": "Java 17.0.17",
+  "hash": "9692d89d42fb1951",
+  "at": "2026-10-12T11:25:05.168Z"
+}

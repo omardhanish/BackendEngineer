@@ -1,0 +1,373 @@
+{
+  "title": "Flight booking schema in PostgreSQL",
+  "idea": "The flight schema maps the Java model to tables so PostgreSQL enforces the rules: fare counts never drop below zero, and each seat gets one ticket per flight.",
+  "analogy": {
+    "text": "A box office tally board with one chalk number per price tier. Only one clerk may hold the chalk, and the number cannot drop below zero.",
+    "breaks": "The row lock lasts milliseconds; a HELD booking lasts fifteen minutes."
+  },
+  "points": [
+    "`fare_class.seats_left` has a CHECK, so overselling fails even if code forgets.",
+    "A UNIQUE on `(flight_id, seat_no)` gives each seat one ticket; NULL seats stay allowed.",
+    "One conditional UPDATE locks the fare row, checks the count, and subtracts.",
+    "Index `flight_search` serves search; a partial index on HELD serves the sweeper."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "Two holds, one seat left",
+    "scenario": {
+      "tiers": [
+        [
+          "ta",
+          "tb"
+        ],
+        [
+          "db"
+        ],
+        [
+          "sw"
+        ]
+      ],
+      "nodes": {
+        "ta": {
+          "label": "Tx PNR-7",
+          "sub": "1 x Y-SAVER",
+          "kind": "client"
+        },
+        "tb": {
+          "label": "Tx PNR-9",
+          "sub": "1 x Y-SAVER",
+          "kind": "client"
+        },
+        "db": {
+          "label": "fare_class",
+          "sub": "PostgreSQL",
+          "kind": "db"
+        },
+        "sw": {
+          "label": "Sweeper",
+          "sub": "expires holds",
+          "kind": "service"
+        }
+      },
+      "links": [
+        [
+          "ta",
+          "db"
+        ],
+        [
+          "tb",
+          "db"
+        ],
+        [
+          "sw",
+          "db",
+          {
+            "dashed": true
+          }
+        ]
+      ],
+      "steps": [
+        {
+          "caption": "Y-SAVER has one seat left. Two transactions want it at the same moment.",
+          "badge": {
+            "db": "left = 1"
+          },
+          "focus": [
+            "ta",
+            "tb"
+          ]
+        },
+        {
+          "caption": "PNR-7's UPDATE finds the row, locks it, sees 1 is enough, and writes 0.",
+          "send": [
+            {
+              "from": "ta",
+              "to": "db",
+              "label": "UPDATE if >=1",
+              "tone": "req"
+            }
+          ],
+          "state": {
+            "ta": "busy"
+          },
+          "badge": {
+            "db": "locked, 0"
+          }
+        },
+        {
+          "caption": "PNR-9's UPDATE reaches the same row and must wait for the lock.",
+          "send": [
+            {
+              "from": "tb",
+              "to": "db",
+              "label": "UPDATE if >=1",
+              "tone": "req"
+            }
+          ],
+          "state": {
+            "tb": "stale"
+          }
+        },
+        {
+          "caption": "PNR-7 inserts its HELD booking and commits. The lock is released.",
+          "send": [
+            {
+              "from": "db",
+              "to": "ta",
+              "label": "COMMIT",
+              "tone": "ok"
+            }
+          ],
+          "state": {
+            "ta": "ok"
+          },
+          "badge": {
+            "db": "left = 0"
+          }
+        },
+        {
+          "caption": "PNR-9 wakes and re-checks the condition on the new row: 0 is not enough.",
+          "send": [
+            {
+              "from": "db",
+              "to": "tb",
+              "label": "0 rows",
+              "tone": "warn"
+            }
+          ],
+          "focus": [
+            "tb"
+          ]
+        },
+        {
+          "caption": "Zero rows updated means refuse. PNR-9 rolls back and holds nothing.",
+          "send": [
+            {
+              "from": "tb",
+              "to": "db",
+              "label": "ROLLBACK",
+              "tone": "err"
+            }
+          ],
+          "state": {
+            "tb": "down"
+          }
+        },
+        {
+          "caption": "Fifteen minutes later PNR-7 has not paid. The sweeper expires it and adds the seat back.",
+          "send": [
+            {
+              "from": "sw",
+              "to": "db",
+              "label": "expire + return",
+              "tone": "info"
+            }
+          ],
+          "state": {
+            "sw": "busy"
+          },
+          "badge": {
+            "db": "left = 1"
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "schema.mjs",
+      "lang": "js",
+      "title": "Tables and constraints",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "The schema on a real PostgreSQL 18, then five bad writes that the database refuses by itself.",
+      "walk": [
+        {
+          "lines": [
+            4,
+            5,
+            6,
+            7
+          ],
+          "text": "Fixed layout: aircraft and its seats. Enums are TEXT with a CHECK."
+        },
+        {
+          "lines": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13
+          ],
+          "text": "A flight refuses loop routes; `flight_search` serves the search by route and time."
+        },
+        {
+          "lines": [
+            14,
+            15,
+            16,
+            17,
+            18,
+            19
+          ],
+          "text": "`fare_class` keeps money as BIGINT and bounds `seats_left` between 0 and total."
+        },
+        {
+          "lines": [
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28
+          ],
+          "text": "`booking` checks passenger count and status; the partial index serves the sweeper."
+        },
+        {
+          "lines": [
+            29,
+            30,
+            31,
+            32
+          ],
+          "text": "One ticket per passenger per PNR, and one ticket per seat per flight."
+        },
+        {
+          "lines": [
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63,
+            64
+          ],
+          "text": "Each bad write prints the Postgres error code and the constraint that stopped it."
+        },
+        {
+          "lines": [
+            65,
+            66,
+            67
+          ],
+          "text": "A second ticket with no seat is fine: UNIQUE treats NULLs as distinct."
+        }
+      ]
+    },
+    {
+      "file": "reserve.mjs",
+      "lang": "js",
+      "title": "Hold and sweep",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "Two parallel holds race for the last seat; then the sweeper returns expired seats. The tables are trimmed so the race stays short.",
+      "walk": [
+        {
+          "lines": [
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19
+          ],
+          "text": "The conditional UPDATE locks the fare row and subtracts only if enough seats remain."
+        },
+        {
+          "lines": [
+            20
+          ],
+          "text": "Zero rows updated means not enough seats: roll back and refuse."
+        },
+        {
+          "lines": [
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29
+          ],
+          "text": "Otherwise insert the HELD booking with a 15-minute deadline and commit; any error rolls back."
+        },
+        {
+          "lines": [
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45
+          ],
+          "text": "One statement expires old holds and adds their seats back per fare."
+        },
+        {
+          "lines": [
+            51,
+            52,
+            53,
+            54,
+            55
+          ],
+          "text": "Two clients race for one seat; print how many won, never who."
+        },
+        {
+          "lines": [
+            56,
+            57,
+            58,
+            59,
+            60,
+            61
+          ],
+          "text": "Three of four J-FLEX seats are held; two more are refused; sweeps return seats."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not `SELECT` the count and `UPDATE` later; put the check inside the UPDATE.",
+    "Keep the CHECK on `seats_left` anyway; it catches bugs your code missed.",
+    "Every index should name the query it serves; drop the ones that serve none."
+  ],
+  "quiz": {
+    "q": "What does reserve.mjs print for 2 pax on J-FLEX?",
+    "options": [
+      "2 pax on J-FLEX: false",
+      "2 pax on J-FLEX: true",
+      "An error with code 23514",
+      "2 pax on J-FLEX: 1"
+    ],
+    "answer": 0,
+    "why": "J-FLEX had 4 seats and PNR-10 took 3. The UPDATE condition `seats_left >= 2` fails on 1, so no row updates and `holdFare` returns false."
+  },
+  "takeaway": "Put the seat check inside the UPDATE; let constraints catch the rest.",
+  "chat": {
+    "starters": [
+      "Why does PNR-9 see 0 after waiting instead of the old 1?",
+      "Should seat assignment lock rows like the fare count does?",
+      "How would I add overbooking to this schema later?"
+    ]
+  }
+}

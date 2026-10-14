@@ -1,0 +1,11 @@
+{
+  "stdout": "PASS R1 a free copy can be lent\nPASS R2 a lent copy cannot be lent again\nPASS R3 a lost copy is never lent\nPASS R4 a reserved copy goes on loan or back\nPASS R5 every state has a rule\nPASS R6 two days late is free\nPASS R7 five days late costs 15\nall requirements hold",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java CopyStateChecks.java",
+  "tool": "Java 17.0.17",
+  "hash": "0efb2411917a2970",
+  "at": "2026-10-12T11:17:49.062Z"
+}

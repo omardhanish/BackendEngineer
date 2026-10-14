@@ -1,0 +1,11 @@
+{
+  "stdout": "held RS-1 [2026-03-13, 2026-03-14] 1560000 HELD\nG-9: no DLX for those nights\nconfirmed RS-1 [2026-03-13, 2026-03-14] 1560000 CONFIRMED\nfree DLX on 03-14: 0",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java CoreReservation.java",
+  "tool": "Java 17.0.17",
+  "hash": "4c22745a660c8ccd",
+  "at": "2026-10-14T08:44:33.926Z"
+}

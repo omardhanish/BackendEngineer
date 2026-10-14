@@ -1,0 +1,234 @@
+{
+  "title": "Domain model to PostgreSQL schema",
+  "idea": "Mapping a domain model to a schema means each entity becomes a table, each field a typed column, and each invariant a key or constraint.",
+  "analogy": {
+    "text": "The Java class is a house plan; the schema is the building inspector. Every rule on the plan is checked again on site.",
+    "breaks": "An inspector visits once; constraints check every single write."
+  },
+  "points": [
+    "Classes become snake_case tables; fields become columns of the closest exact type.",
+    "Money is BIGINT minor units, time is TIMESTAMPTZ, enums are TEXT with CHECK.",
+    "References become foreign keys; uniqueness rules become UNIQUE or partial indexes.",
+    "Add an index only for a query you can name, and say which."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "Java decision, database rule",
+    "head": [
+      "Java (domain model)",
+      "PostgreSQL (schema)",
+      "What it guarantees"
+    ],
+    "rows": [
+      [
+        "record Slot",
+        "table slot, id TEXT PRIMARY KEY",
+        "one row per slot id"
+      ],
+      [
+        "long feeMinor",
+        "fee_minor BIGINT, CHECK >= 0",
+        "exact money, never negative"
+      ],
+      [
+        "Instant startsAt, endsAt",
+        "TIMESTAMPTZ, CHECK ends after starts",
+        "absolute times, valid range"
+      ],
+      [
+        "String doctorId",
+        "doctor_id REFERENCES doctor",
+        "no slot without a doctor"
+      ],
+      [
+        "enum AppointmentStatus",
+        "status TEXT, CHECK IN the enum values",
+        "only known states"
+      ],
+      [
+        "one live booking per slot",
+        "UNIQUE index WHERE status is BOOKED",
+        "no double booking"
+      ]
+    ],
+    "highlight": {
+      "row": 5
+    },
+    "caption": "Each row repeats a Java rule in the database, so a bug in one layer cannot corrupt data."
+  },
+  "code": [
+    {
+      "file": "Model.java",
+      "lang": "java",
+      "title": "The Java model",
+      "run": "captured",
+      "caption": "Records with invariants in their constructors. The schema below enforces the same rules again.",
+      "walk": [
+        {
+          "lines": [
+            21
+          ],
+          "text": "Enum states become a TEXT column with a CHECK listing them."
+        },
+        {
+          "lines": [
+            25,
+            26
+          ],
+          "text": "Ids are String, money is long minor units, times are Instant."
+        },
+        {
+          "lines": [
+            27,
+            28,
+            29,
+            30,
+            31,
+            32
+          ],
+          "text": "The compact constructor refuses a bad slot before any SQL runs."
+        },
+        {
+          "lines": [
+            35,
+            36
+          ],
+          "text": "`version` is there for optimistic locking on page 5."
+        },
+        {
+          "lines": [
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17
+          ],
+          "text": "One valid slot prints; two invalid ones are refused."
+        }
+      ]
+    },
+    {
+      "file": "schema.mjs",
+      "lang": "js",
+      "title": "Schema and constraints",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "The same model as tables on a real PostgreSQL 18, then seven writes. The database refuses the bad ones by itself.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14
+          ],
+          "text": "`slot`: foreign key to doctor, BIGINT fee, named CHECKs, one slot per start time."
+        },
+        {
+          "lines": [
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21
+          ],
+          "text": "`appointment`: status as TEXT with a CHECK, plus a version column."
+        },
+        {
+          "lines": [
+            22,
+            23,
+            24
+          ],
+          "text": "Partial unique index: one BOOKED row per slot, while cancelled rows stay."
+        },
+        {
+          "lines": [
+            25,
+            26
+          ],
+          "text": "This index serves one named query: a patient's appointments."
+        },
+        {
+          "lines": [
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41
+          ],
+          "text": "Each attempt prints ok, or the Postgres error code and constraint name."
+        },
+        {
+          "lines": [
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55
+          ],
+          "text": "Double booking, cancel, rebook, bad times, bad fee, unknown doctor, made-up status."
+        },
+        {
+          "lines": [
+            57,
+            58,
+            59
+          ],
+          "text": "The final rows show the cancelled history and one live booking."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Never store money in a floating type; use BIGINT minor units like `fee_minor`.",
+    "Use TIMESTAMPTZ, not TIMESTAMP, so instants stay correct across time zones.",
+    "A plain UNIQUE on slot_id blocks rebooking after a cancel; make it partial."
+  ],
+  "quiz": {
+    "q": "What does schema.mjs print for book after cancel?",
+    "options": [
+      "23505 one_live_per_slot",
+      "23503 appointment_slot_id_fkey",
+      "ok",
+      "23514 known_status"
+    ],
+    "answer": 2,
+    "why": "The partial index covers only rows WHERE status = 'BOOKED'. After AP-1 is cancelled, no live row holds SL-1, so AP-2 inserts."
+  },
+  "takeaway": "Every invariant in the Java model needs a matching database constraint.",
+  "chat": {
+    "starters": [
+      "When should a Java enum be a PostgreSQL enum type instead of TEXT with CHECK?",
+      "Should ids be TEXT, BIGINT identity or UUID?",
+      "How do I map a one-to-many list field like Doctor.slots?"
+    ]
+  }
+}

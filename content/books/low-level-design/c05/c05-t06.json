@@ -1,159 +1,286 @@
 {
-  "title": "Patterns in the booking system",
-  "idea": "Incorporating design patterns means placing a known shape, like Strategy or Observer, exactly where a requirement varies or fans out.",
+  "title": "Dependency injection and IoC",
+  "idea": "Dependency injection (DI) means an object receives its collaborators, such as a clock, through its constructor; inversion of control (IoC) moves that wiring decision outside the class.",
+  "analogy": {
+    "text": "A camera body does not build its own lens. It has a standard mount, and the photographer attaches a wide or zoom lens for each shoot.",
+    "breaks": "A lens swaps mid-shoot; an object usually gets its collaborators once."
+  },
   "points": [
-    "Find the spots in the requirements that will change or grow.",
-    "Overlap rules differ per building, so `ConflictPolicy` becomes a Strategy.",
-    "Notify and audit react to a booking, so they become Observers.",
-    "`BookingService` depends only on the two interfaces, never on their implementations."
+    "c03-t06 showed who owns the interface; this page shows how objects receive it.",
+    "Time and randomness are hidden dependencies; inject a `Clock` and a seeded `Random`.",
+    "Constructor injection keeps fields `final`; setters allow half-built objects that fail later.",
+    "A service locator hides dependencies in a global map that leaks between tests."
   ],
   "hero": {
     "type": "flow",
-    "title": "Two patterns around one service",
+    "title": "Who decides the clock and the codes",
     "nodes": [
       {
-        "id": "call",
-        "label": "book() call",
-        "sub": "from an employee"
+        "id": "main",
+        "label": "Main",
+        "sub": "production root"
+      },
+      {
+        "id": "test",
+        "label": "Test",
+        "sub": "test root"
       },
       {
         "id": "svc",
-        "label": "BookingService",
-        "sub": "fixed core"
+        "label": "PassIssuer",
+        "sub": "(Clock, CodeSource)"
       },
       {
-        "id": "policy",
-        "label": "ConflictPolicy",
-        "sub": "Strategy"
+        "id": "clock",
+        "label": "Clock",
+        "sub": "system or fixed"
       },
       {
-        "id": "buffer",
-        "label": "BufferPolicy",
-        "sub": "one rule"
+        "id": "codes",
+        "label": "«interface» CodeSource",
+        "sub": "next()"
       },
       {
-        "id": "listen",
-        "label": "BookingListener",
-        "sub": "Observer"
+        "id": "rnd",
+        "label": "RandomCodes",
+        "sub": "wraps a Random"
       },
       {
-        "id": "notify",
-        "label": "NotificationService"
-      },
-      {
-        "id": "audit",
-        "label": "AuditLogger"
+        "id": "seq",
+        "label": "SequenceCodes",
+        "sub": "000001, 000002, ..."
       }
     ],
     "edges": [
       {
-        "from": "call",
+        "from": "svc",
+        "to": "clock",
+        "label": "asks now"
+      },
+      {
+        "from": "svc",
+        "to": "codes",
+        "label": "depends on"
+      },
+      {
+        "from": "rnd",
+        "to": "codes",
+        "label": "implements",
+        "dashed": true
+      },
+      {
+        "from": "seq",
+        "to": "codes",
+        "label": "implements",
+        "dashed": true
+      },
+      {
+        "from": "main",
         "to": "svc",
-        "caption": "A request reaches the service. Its own steps never change."
+        "label": "systemUTC, SecureRandom"
       },
       {
-        "from": "svc",
-        "to": "policy",
-        "label": "asks",
-        "caption": "The service asks the `ConflictPolicy` interface whether the slot clashes."
+        "from": "test",
+        "to": "svc",
+        "label": "fixed, Random(42)"
+      }
+    ],
+    "steps": [
+      {
+        "caption": "`PassIssuer` lists what it needs in its constructor: a `Clock` and a `CodeSource`. It creates neither.",
+        "active": [
+          "svc"
+        ],
+        "edges": []
       },
       {
-        "from": "policy",
-        "to": "buffer",
-        "label": "implemented by",
-        "dashed": true,
-        "caption": "Today the rule is `BufferPolicy`. Swap it in `main` without editing the service."
+        "caption": "Asking the clock for now, instead of calling `Instant.now()`, turns time into a dependency someone else picks.",
+        "active": [
+          "svc",
+          "clock"
+        ],
+        "edges": [
+          0
+        ]
       },
       {
-        "from": "svc",
-        "to": "listen",
-        "label": "tells",
-        "caption": "After a save, the service tells every `BookingListener` it was given."
+        "caption": "Codes come from a role. A seeded `Random` or a plain sequence both fit the same slot.",
+        "active": [
+          "svc",
+          "codes",
+          "rnd",
+          "seq"
+        ],
+        "edges": [
+          1,
+          2,
+          3
+        ]
       },
       {
-        "from": "listen",
-        "to": "notify",
-        "dashed": true,
-        "caption": "`NotificationService` messages the employee."
+        "caption": "In production, `main` passes `Clock.systemUTC()` and `RandomCodes` over a `SecureRandom`.",
+        "active": [
+          "main",
+          "svc",
+          "clock",
+          "rnd"
+        ],
+        "edges": [
+          4
+        ]
       },
       {
-        "from": "listen",
-        "to": "audit",
-        "dashed": true,
-        "caption": "`AuditLogger` records the booking. A third listener needs no change to the service."
+        "caption": "In a test, the test passes a fixed clock and `Random(42)`, so every run prints the same codes.",
+        "active": [
+          "test",
+          "svc",
+          "clock",
+          "rnd"
+        ],
+        "edges": [
+          5
+        ]
+      },
+      {
+        "caption": "Control is inverted: the roots decide the wiring, and `PassIssuer` never changes between them.",
+        "active": [
+          "main",
+          "test",
+          "svc"
+        ],
+        "edges": [
+          4,
+          5
+        ]
       }
     ]
   },
   "code": [
     {
-      "file": "PatternsDemo.java",
+      "file": "HiddenDependencies.java",
       "lang": "java",
-      "title": "Strategy plus Observer",
+      "title": "The problem",
       "run": "captured",
-      "caption": "The building wants a 15-minute gap between meetings. Only the policy knows that. Trimmed: a clash prints instead of throwing `RoomTakenException`, so the output shows the pattern at work.",
+      "caption": "Three ways to hide a dependency: reach for it, set it later, or look it up globally.",
       "walk": [
         {
           "lines": [
-            4,
-            5
+            32,
+            39
           ],
-          "text": "`main` picks the rule and the listeners; the service receives them through its constructor."
+          "text": "`new Random()` and `Instant.now()` are buried in the method. No caller can choose either."
         },
         {
           "lines": [
-            13,
-            15
+            11,
+            14
           ],
-          "text": "The Strategy interface: one question, answered by any rule."
+          "text": "So the test can check only that the code has six digits, never which code or expiry."
         },
         {
           "lines": [
-            16,
-            21
+            41,
+            48
           ],
-          "text": "`BufferPolicy` treats meetings closer than `gap` hours as a clash."
+          "text": "Setter injection: the field cannot be `final`, and nothing makes a caller call the setter."
         },
         {
           "lines": [
-            22,
-            28
+            15,
+            20
           ],
-          "text": "The Observer interface and two listeners that react to a booking."
+          "text": "The forgotten setter fails at first use, far from where the object was built."
         },
         {
           "lines": [
-            36,
-            44
+            50,
+            63
           ],
-          "text": "The service passes only this room's bookings to the policy, then saves and tells each listener."
+          "text": "Service locator: the issuer fetches its clock from a static map. Its constructor hides the need."
+        },
+        {
+          "lines": [
+            21,
+            26
+          ],
+          "text": "A clock left over from an earlier test leaks in: the pass expires in 2020."
+        }
+      ]
+    },
+    {
+      "file": "InjectedPasses.java",
+      "lang": "java",
+      "title": "The fix",
+      "run": "captured",
+      "caption": "Constructor injection of time and randomness. The test picks a fixed clock and a seeded generator.",
+      "walk": [
+        {
+          "lines": [
+            30,
+            31
+          ],
+          "text": "`CodeSource` makes randomness a role. `PassIssuer` compiles without knowing which generator runs."
+        },
+        {
+          "lines": [
+            33,
+            46
+          ],
+          "text": "`RandomCodes` wraps any `Random`, including `SecureRandom`. `SequenceCodes` is an id generator for readable tests."
+        },
+        {
+          "lines": [
+            48,
+            56
+          ],
+          "text": "Constructor injection: `final` fields, null rejected at once, so the object is complete."
+        },
+        {
+          "lines": [
+            57,
+            61
+          ],
+          "text": "`clock.instant()` asks the injected clock. Expiry is now exactly predictable."
+        },
+        {
+          "lines": [
+            10,
+            18
+          ],
+          "text": "The test is its own composition root. `Random(42)` gives the same codes on every run."
+        },
+        {
+          "lines": [
+            19,
+            24
+          ],
+          "text": "A missing dependency fails at construction with its name, not later inside `issue`."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Do not add a pattern without a requirement that varies; it only adds indirection.",
-    "Keep listener work out of the booking rules; a failing email must not refuse a booking.",
-    "Inject the policy and listeners; a `new BufferPolicy()` inside the service locks the rule in."
+    "Calling `Instant.now()` or `new Random()` inside logic leaves tests checking shapes, never values.",
+    "Field injection hides dependencies and blocks `final`; tests then need reflection to set fields.",
+    "A constructor with seven parameters signals an SRP problem; split the class instead of hiding them."
   ],
   "quiz": {
-    "q": "What does the second `book` call print?",
-    "code": "var svc = new BookingService(new BufferPolicy(0.25),\n    List.of(new NotificationService(), new AuditLogger()));\nsvc.book(\"E7\", \"R-101\", 10, 11);\nsvc.book(\"E9\", \"R-101\", 11, 12);",
-    "lang": "java",
+    "q": "Why does the fixed test print the same two codes on every run?",
     "options": [
-      "audit BK2",
-      "refused 11.0-12.0",
-      "Nothing at all",
-      "refused 11-12"
+      "`Random` caches its last value between runs",
+      "`Clock.fixed` also freezes every `Random`",
+      "`new Random(42)` always yields the same sequence",
+      "The JVM reuses codes for the same guest"
     ],
-    "answer": 1,
-    "why": "With a 0.25-hour gap, 11.0 is earlier than 11.0 + 0.25, so the slots clash. Doubles print as 11.0."
+    "answer": 2,
+    "why": "A `Random` built with a seed replays one fixed sequence. Injecting it lets the test choose that seed; production injects `SecureRandom` instead."
   },
-  "takeaway": "Put a pattern where the requirements vary, and nowhere else.",
+  "takeaway": "Ask for collaborators in the constructor; let the composition root choose them.",
   "chat": {
     "starters": [
-      "Would a Factory pattern help create the right ConflictPolicy per building?",
-      "Should listeners run synchronously or on a queue?",
-      "How do I explain these pattern choices in an interview?"
+      "What is the difference between DI and the Dependency Inversion Principle?",
+      "When is setter injection better than constructor injection?",
+      "Should I inject `SecureRandom` or `Random` for codes?"
     ]
   }
 }

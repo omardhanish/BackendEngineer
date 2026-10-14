@@ -1,0 +1,11 @@
+{
+  "stdout": "IN-1 KA01AB1234: T-1 at F1-C1\nIN-1 KA05CD5678: T-2 at F2-C1\nIN-1 TN09TR0001: T-3 at F1-L1\nIN-1 KA03EF9012: LOT_FULL, barrier stays down\nOUT-1 T-1: paid 15000\nIN-1 KA03EF9012: T-4 at F1-C1",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java CoreParking.java",
+  "tool": "Java 17.0.17",
+  "hash": "ab755475a76b561c",
+  "at": "2026-10-14T08:34:35.359Z"
+}

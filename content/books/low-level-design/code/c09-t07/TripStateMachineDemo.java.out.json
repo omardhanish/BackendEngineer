@@ -1,0 +1,11 @@
+{
+  "stdout": "T-1 D3 [REQUESTED, ASSIGNED, ARRIVED, IN_PROGRESS, COMPLETED] fare=1850\nT-2: IN_PROGRESS -> CANCELLED not allowed\nT-2: IN_PROGRESS -> ASSIGNED not allowed\nT-2 D4 [REQUESTED, ASSIGNED, ARRIVED, IN_PROGRESS] fare=0",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java TripStateMachineDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "e532baa87190d77f",
+  "at": "2026-10-12T11:17:59.012Z"
+}

@@ -1,0 +1,340 @@
+{
+  "title": "Notification system design",
+  "idea": "A notification system turns domain events into messages on the right channels; five patterns split that job so each part changes without touching the rest.",
+  "analogy": {
+    "text": "A hotel front desk: news arrives, a clerk checks the do-not-disturb list and the hour, picks a note or a call, and redials if the line is busy.",
+    "breaks": "A clerk improvises; each class here does one fixed job."
+  },
+  "points": [
+    "Observer decouples the order code: it publishes events and never names a channel.",
+    "Chain of Responsibility runs opt-out, quiet hours and dedup; any rule may veto.",
+    "A Strategy picks channels; a Factory builds them; a Decorator adds retry to each.",
+    "In interviews, justify each pattern by the change it absorbs, not just its name."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "One order event through five patterns",
+    "nodes": [
+      {
+        "id": "events",
+        "label": "OrderEvents",
+        "sub": "Observer subject"
+      },
+      {
+        "id": "service",
+        "label": "NotificationService",
+        "sub": "OrderListener"
+      },
+      {
+        "id": "rules",
+        "label": "Rule chain",
+        "sub": "opt-out, quiet, dedup"
+      },
+      {
+        "id": "policy",
+        "label": "ChannelPolicy",
+        "sub": "Strategy"
+      },
+      {
+        "id": "factory",
+        "label": "ChannelFactory",
+        "sub": "Factory, at startup"
+      },
+      {
+        "id": "retry",
+        "label": "Retrying",
+        "sub": "Decorator"
+      },
+      {
+        "id": "channel",
+        "label": "Channel",
+        "sub": "email, SMS, push"
+      }
+    ],
+    "edges": [
+      {
+        "from": "factory",
+        "to": "retry",
+        "label": "builds + wraps",
+        "dashed": true
+      },
+      {
+        "from": "events",
+        "to": "service",
+        "label": "on(note)"
+      },
+      {
+        "from": "service",
+        "to": "rules",
+        "label": "check(note)"
+      },
+      {
+        "from": "service",
+        "to": "policy",
+        "label": "pick(note)"
+      },
+      {
+        "from": "service",
+        "to": "retry",
+        "label": "send(note)"
+      },
+      {
+        "from": "retry",
+        "to": "channel",
+        "label": "send, retry"
+      }
+    ],
+    "steps": [
+      {
+        "caption": "At startup `ChannelFactory` builds one channel per type and wraps each in `Retrying`.",
+        "active": [
+          "factory",
+          "retry",
+          "channel"
+        ],
+        "edges": [
+          0
+        ]
+      },
+      {
+        "caption": "Observer: `OrderEvents` pushes each note to every subscriber. It knows no channel.",
+        "active": [
+          "events",
+          "service"
+        ],
+        "edges": [
+          1
+        ]
+      },
+      {
+        "caption": "Chain of Responsibility: each rule may block the note with a reason, or pass it on.",
+        "active": [
+          "service",
+          "rules"
+        ],
+        "edges": [
+          2
+        ]
+      },
+      {
+        "caption": "A veto ends the flow and is logged with its reason: opted out, quiet hours or duplicate.",
+        "active": [
+          "rules"
+        ],
+        "edges": []
+      },
+      {
+        "caption": "Strategy: the policy chooses channels. Urgent notes get SMS and push; others get email.",
+        "active": [
+          "service",
+          "policy"
+        ],
+        "edges": [
+          3
+        ]
+      },
+      {
+        "caption": "The service sends through the wrapped channel. It sees only the `Channel` interface.",
+        "active": [
+          "service",
+          "retry"
+        ],
+        "edges": [
+          4
+        ]
+      },
+      {
+        "caption": "Decorator: SMS times out once and `Retrying` tries again. The service never sees the failure.",
+        "active": [
+          "retry",
+          "channel"
+        ],
+        "edges": [
+          5
+        ]
+      },
+      {
+        "caption": "Each box changes alone: a new rule touches the chain; a new channel, the enum, factory and policy.",
+        "active": [
+          "events",
+          "service",
+          "rules",
+          "policy",
+          "factory",
+          "retry",
+          "channel"
+        ],
+        "edges": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "NaiveNotifier.java",
+      "lang": "java",
+      "title": "The problem: welded in",
+      "run": "captured",
+      "caption": "Notification code lives inside the order service. Every new rule, channel or event edits this method.",
+      "walk": [
+        {
+          "lines": [
+            16,
+            17
+          ],
+          "text": "Order logic and notifying share one method. Neither can change or be tested alone."
+        },
+        {
+          "lines": [
+            18
+          ],
+          "text": "The opt-out check returns silently. Support cannot tell why `bob` got nothing."
+        },
+        {
+          "lines": [
+            19,
+            20,
+            21,
+            22
+          ],
+          "text": "An if-else on strings picks the channel. A typo compiles and fails at runtime."
+        },
+        {
+          "lines": [
+            8,
+            23,
+            24
+          ],
+          "text": "Push was never wired in, so the message is dropped: see the output."
+        },
+        {
+          "lines": [
+            9
+          ],
+          "text": "No dedup: the same event sends the same email twice."
+        },
+        {
+          "lines": [
+            26
+          ],
+          "text": "No retry, and each new event type copies the whole block."
+        }
+      ]
+    },
+    {
+      "file": "NotificationSystemDemo.java",
+      "lang": "java",
+      "title": "The fix: five patterns",
+      "run": "captured",
+      "caption": "Each pattern owns one reason to change. The service only wires them together.",
+      "walk": [
+        {
+          "lines": [
+            26,
+            27,
+            28,
+            32
+          ],
+          "text": "Observer: order code publishes a `Note`. Adding an audit listener needs no edit here."
+        },
+        {
+          "lines": [
+            34,
+            41,
+            42,
+            43,
+            44
+          ],
+          "text": "Chain of Responsibility: the first rule that blocks returns its reason; else the next runs."
+        },
+        {
+          "lines": [
+            6,
+            7,
+            8,
+            9
+          ],
+          "text": "Dedup runs last, so vetoes stay unmarked. It marks before sending, so failed sends still count as sent."
+        },
+        {
+          "lines": [
+            48,
+            49,
+            50,
+            51,
+            52
+          ],
+          "text": "Strategy: swap `UrgencyPolicy` for a per-user preference policy without touching the service."
+        },
+        {
+          "lines": [
+            56,
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63
+          ],
+          "text": "Factory: an exhaustive `switch` on the `enum`; a new type will not compile until handled."
+        },
+        {
+          "lines": [
+            76,
+            82,
+            83,
+            84,
+            85,
+            86
+          ],
+          "text": "Decorator: retry wraps any channel and rethrows after the last attempt."
+        },
+        {
+          "lines": [
+            101,
+            102,
+            103,
+            104,
+            105,
+            106,
+            107,
+            108,
+            109
+          ],
+          "text": "The service is short glue: check, pick, send. It depends only on interfaces."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Listeners that throw stop later listeners in a plain loop; catch per listener or dispatch asynchronously.",
+    "Putting dedup before opt-out marks blocked notes as sent; later legitimate sends are wrongly skipped.",
+    "Retrying a non-idempotent send without an id can deliver duplicates; pass a message id downstream."
+  ],
+  "quiz": {
+    "q": "Product asks for WhatsApp as a new channel. In the fixed design, what must change?",
+    "options": [
+      "`NotificationService` and every rule in the chain",
+      "`OrderEvents` and each order event publisher",
+      "`ChannelType`, `ChannelFactory`, a new `Channel`, and the policy",
+      "Only `Retrying`, since it wraps every channel"
+    ],
+    "answer": 2,
+    "why": "Creation lives in the factory, keyed by the enum, and a `ChannelPolicy` must choose WhatsApp. The service, rules and events stay untouched."
+  },
+  "takeaway": "Give each kind of change its own pattern; the service just wires them.",
+  "chat": {
+    "starters": [
+      "How would I add per-user channel preferences to this design?",
+      "How do I make notification sending asynchronous with a queue?",
+      "Which of these patterns would an interviewer expect me to mention first?"
+    ]
+  }
+}

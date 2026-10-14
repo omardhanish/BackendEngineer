@@ -1,0 +1,11 @@
+{
+  "stdout": "no lock, 2 bookings -> left { places_left: 1, version: 1 }\nFOR UPDATE, 3 bookings -> FULL OK OK -> left { places_left: 0, version: 1 }\nA writes v1 OK\nB writes v1 CONFLICT\nB retries v2 OK\noptimistic end -> { places_left: 0, version: 3 }",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node locks.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "b7adafdee9c2573d",
+  "at": "2026-10-14T09:57:14.499Z"
+}

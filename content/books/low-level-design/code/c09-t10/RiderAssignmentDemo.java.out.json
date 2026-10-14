@@ -1,0 +1,11 @@
+{
+  "stdout": "  R1 declined O-7\nO-7 -> R2\n  R1 declined O-8\nO-8 -> R4\n  R1 declined O-9\nO-9 -> queued, retry later",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java RiderAssignmentDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "94119f6d223b7d1b",
+  "at": "2026-10-12T11:20:47.943Z"
+}

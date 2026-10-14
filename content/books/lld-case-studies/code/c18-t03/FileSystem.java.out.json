@@ -1,0 +1,11 @@
+{
+  "stdout": "ls /home/ada   [docs/, logs/, todo.txt]\ndu /home/ada   5550\nfind .txt      [/home/ada/docs/notes.txt, /home/ada/todo.txt]\ndu docs        1550\nls /home/ada   [docs/]\nerror          ALREADY_EXISTS /home/ada/docs/cv.pdf\nerror          NOT_A_DIRECTORY /home/ada/docs/cv.pdf\nerror          NOT_FOUND /home/bob\nerror          MOVE_INTO_ITSELF /home/ada/docs/home\nerror          NOT_ABSOLUTE home/ada",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java FileSystem.java",
+  "tool": "Java 17.0.17",
+  "hash": "e1760650cc01139d",
+  "at": "2026-10-14T10:22:16.473Z"
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "placements: 16000\nshared types: 12\nwhite rook at a1, white rook at h1\nsame type object: true\nJDK cache: true false",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java FlyweightChessDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "c7a2d333cd426358",
+  "at": "2026-10-12T11:23:41.372Z"
+}

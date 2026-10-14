@@ -1,0 +1,253 @@
+{
+  "title": "Court booking schema in PostgreSQL",
+  "idea": "The schema stores each booked court hour as its own row, so one partial unique index makes PostgreSQL refuse any second live booking for that hour.",
+  "analogy": {
+    "text": "A pigeonhole rack, one hole per court and hour. A live booking puts a card in its holes; a filled hole takes no second card.",
+    "breaks": "Cancelled cards stay in the rack, just marked inactive."
+  },
+  "points": [
+    "`booking` holds the money, status and deadline; `booking_slot` holds one row per hour.",
+    "The unique index covers only active rows, so cancelled hours can be rebooked.",
+    "CHECK constraints guard status values, time order and the PENDING deadline.",
+    "The reserve transaction expires stale holds first, then inserts every hour."
+  ],
+  "hero": {
+    "type": "anatomy",
+    "title": "The index that prevents double booking",
+    "parts": [
+      {
+        "text": "CREATE UNIQUE INDEX ",
+        "label": "unique",
+        "note": "Two rows with the same key cannot both exist. A second insert fails with code 23505."
+      },
+      {
+        "text": "one_live_booking_per_hour ",
+        "label": "name",
+        "note": "The name comes back in the error, so the API can map it to SLOT_TAKEN."
+      },
+      {
+        "text": "ON booking_slot ",
+        "label": "table",
+        "note": "One row per booked court hour, not per booking. A two-hour booking adds two rows."
+      },
+      {
+        "text": "(court_id, slot_start) ",
+        "label": "key",
+        "note": "The pair that must be unique: this court at this hour. It also serves the grid query."
+      },
+      {
+        "text": "WHERE active",
+        "label": "partial",
+        "note": "Only live rows count. Cancelling or expiring sets active to false and frees the hour."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "schema.mjs",
+      "lang": "js",
+      "title": "Tables and constraints",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "The schema on a real PostgreSQL 18, five writes it refuses by itself, and the availability grid for one evening.",
+      "walk": [
+        {
+          "lines": [
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10
+          ],
+          "text": "Fixed venue data. Sport is TEXT with a named CHECK instead of a database enum."
+        },
+        {
+          "lines": [
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21
+          ],
+          "text": "`booking`: BIGINT money, a status CHECK, a unique Idempotency-Key, and two named rules."
+        },
+        {
+          "lines": [
+            22,
+            23,
+            24
+          ],
+          "text": "One index serves 'my bookings'; a partial one lets the hold-expiry job find due holds."
+        },
+        {
+          "lines": [
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32
+          ],
+          "text": "`booking_slot` rows plus the partial unique index: the core invariant lives here."
+        },
+        {
+          "lines": [
+            46,
+            47,
+            48,
+            49
+          ],
+          "text": "Each bad write prints the Postgres error code and the constraint that stopped it."
+        },
+        {
+          "lines": [
+            63,
+            64,
+            65,
+            66
+          ],
+          "text": "Cancel BK-1 in one query string, which runs as one transaction. Now 19:00 is free for BK-2."
+        },
+        {
+          "lines": [
+            69,
+            70,
+            71,
+            72,
+            73,
+            74,
+            75,
+            76,
+            77
+          ],
+          "text": "The grid query: a series of hours left-joined to live slot rows."
+        }
+      ]
+    },
+    {
+      "file": "reserve.mjs",
+      "lang": "js",
+      "title": "The reserve transaction",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "Two parallel requests share 19:00 and exactly one wins; then an expired hold is taken over. A trimmed schema keeps the demo short.",
+      "walk": [
+        {
+          "lines": [
+            15,
+            16,
+            17,
+            18
+          ],
+          "text": "One client from the pool, one transaction per reserve call."
+        },
+        {
+          "lines": [
+            19,
+            20,
+            21,
+            22,
+            23,
+            24
+          ],
+          "text": "Expire this court's overdue holds and free their hours, in the same transaction."
+        },
+        {
+          "lines": [
+            25,
+            26,
+            27,
+            28
+          ],
+          "text": "Insert the booking as PENDING with a ten-minute deadline."
+        },
+        {
+          "lines": [
+            29,
+            30,
+            31,
+            32,
+            33,
+            34
+          ],
+          "text": "Insert one row per hour. A clash waits for the other transaction, then fails with 23505."
+        },
+        {
+          "lines": [
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59,
+            60
+          ],
+          "text": "Two clients race for overlapping hours. Print how many won, never who; the winner pays."
+        },
+        {
+          "lines": [
+            62,
+            63,
+            64,
+            65,
+            66,
+            67,
+            68
+          ],
+          "text": "BK-C's hold expires, BK-D takes 07:00, and BK-C's late confirm changes no rows."
+        },
+        {
+          "lines": [
+            70,
+            71,
+            72,
+            73,
+            74,
+            75
+          ],
+          "text": "Final counts prove the rules: one race winner, one expiry, three live hours."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Use c12's range exclusion for free-form times; whole-hour slots need only a unique key.",
+    "Do not check availability with SELECT and then insert; let the index decide.",
+    "Store times as TIMESTAMPTZ and convert to the ground's zone only for display."
+  ],
+  "quiz": {
+    "q": "What is the first line reserve.mjs prints?",
+    "options": [
+      "race winners: 2 | loser got: undefined",
+      "race winners: 1 | loser got: SLOT_TAKEN (23505)",
+      "race winners: 0 | loser got: SLOT_TAKEN (23505)",
+      "It changes from run to run"
+    ],
+    "answer": 1,
+    "why": "Both inserts need the 19:00 row. The second waits for the first transaction, then the partial unique index rejects it with 23505."
+  },
+  "takeaway": "One row per court hour plus a partial unique index stops double booking.",
+  "chat": {
+    "starters": [
+      "Why not use an exclusion constraint on a time range instead?",
+      "How does the sweeper use the pending_by_deadline index?",
+      "What changes if slots become 30 minutes long?"
+    ]
+  }
+}

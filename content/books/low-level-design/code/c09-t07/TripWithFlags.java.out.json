@@ -1,0 +1,11 @@
+{
+  "stdout": "T-1 status=COMPLETED charged=1850\nT-1 status=CANCELED charged=1850\nT-2 status=REQUESTED charged=0",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java TripWithFlags.java",
+  "tool": "Java 17.0.17",
+  "hash": "85a688c6fccaaac1",
+  "at": "2026-10-12T11:17:51.008Z"
+}

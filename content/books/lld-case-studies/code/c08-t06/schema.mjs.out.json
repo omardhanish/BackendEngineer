@@ -1,0 +1,11 @@
+{
+  "stdout": "A1 25000 AVAILABLE\nA2 25000 AVAILABLE\nP1 40000 AVAILABLE\nHELD without hold_id -> 23514 show_seat_check\nsecond row for A1 -> 23505 show_seat_pkey\nshow for unknown movie -> 23503 show_movie_id_fkey\nfirst booking -> ok\nsame Idempotency-Key -> 23505 booking_idempotency_key_key",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node schema.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "62777c98123f8919",
+  "at": "2026-10-12T11:24:20.787Z"
+}

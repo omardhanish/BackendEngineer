@@ -1,0 +1,239 @@
+{
+  "title": "File system API on PostgreSQL",
+  "idea": "As a Node.js service, the file tree becomes one `fs_node` table with parent links, behind an Express API; constraints settle races and a recursive query sums sizes.",
+  "points": [
+    "Each row stores `parent_id`, name, kind and size; the root has no parent.",
+    "`UNIQUE (parent_id, name)` makes duplicate names impossible, even for racing requests.",
+    "A recursive CTE sums a whole subtree in one query, like `du`.",
+    "Follow-up: a stored full-path column makes lookups one query but makes moves costly."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "A duplicate create loses at the database",
+    "scenario": {
+      "token": {
+        "label": "POST /files",
+        "tone": "req"
+      },
+      "stages": [
+        {
+          "id": "client",
+          "label": "Client",
+          "sub": "fetch",
+          "kind": "end"
+        },
+        {
+          "id": "ctrl",
+          "label": "Controller",
+          "sub": "zod parse"
+        },
+        {
+          "id": "svc",
+          "label": "Service",
+          "sub": "resolve parent"
+        },
+        {
+          "id": "repo",
+          "label": "Repository",
+          "sub": "INSERT"
+        },
+        {
+          "id": "db",
+          "label": "PostgreSQL",
+          "sub": "UNIQUE (parent_id, name)",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "Two identical requests to create `/docs/plan.txt` leave the client at once. Follow one.",
+          "at": "client",
+          "slot": "top"
+        },
+        {
+          "caption": "The controller parses the body with zod: an absolute path, a kind, a size.",
+          "at": "ctrl",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "ctrl": "active"
+          }
+        },
+        {
+          "caption": "The service resolves `/docs` one name at a time and checks it is a folder.",
+          "at": "svc",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "ctrl": "done",
+            "svc": "active"
+          }
+        },
+        {
+          "caption": "The repository sends one INSERT. No check-then-insert in code, so no gap to race in.",
+          "at": "repo",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "ctrl": "done",
+            "svc": "done",
+            "repo": "active"
+          }
+        },
+        {
+          "caption": "The twin request inserted first. The unique constraint refuses this row with code `23505`.",
+          "at": "db",
+          "slot": "top",
+          "token": {
+            "label": "23505",
+            "tone": "err"
+          },
+          "state": {
+            "client": "done",
+            "ctrl": "done",
+            "svc": "done",
+            "repo": "done",
+            "db": "error"
+          }
+        },
+        {
+          "caption": "The service maps `23505` to a domain error: ALREADY_EXISTS with status 409.",
+          "at": "svc",
+          "slot": "bottom",
+          "token": {
+            "label": "ALREADY_EXISTS",
+            "tone": "err"
+          }
+        },
+        {
+          "caption": "Error middleware turns it into a JSON body. The client sees 409; its twin saw 201.",
+          "at": "client",
+          "slot": "bottom",
+          "token": {
+            "label": "409",
+            "tone": "err"
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "fs-api.mjs",
+      "lang": "js",
+      "title": "Express + PostgreSQL",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "Repository, service, controllers and error mapping in one file, run against a real PostgreSQL with happy paths, a race and failures.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12
+          ],
+          "text": "BIGINT reads as a JS number, safe below 2^53. CHECKs refuse empty or slashed names; deletes cascade."
+        },
+        {
+          "lines": [
+            22,
+            23,
+            24,
+            25,
+            26
+          ],
+          "text": "The recursive CTE starts at one node and keeps joining children."
+        },
+        {
+          "lines": [
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39
+          ],
+          "text": "Resolve walks the path one query per name, failing with 404 or 409."
+        },
+        {
+          "lines": [
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47
+          ],
+          "text": "Create lets the database decide: 23505 means taken, 23503 means the parent vanished."
+        },
+        {
+          "lines": [
+            50,
+            51,
+            52,
+            53
+          ],
+          "text": "Zod accepts only absolute paths without dot segments; create also refuses the root."
+        },
+        {
+          "lines": [
+            69,
+            70,
+            71,
+            72
+          ],
+          "text": "Express 5 sends async errors here; map validation, domain and unknown errors to status codes."
+        },
+        {
+          "lines": [
+            82,
+            83,
+            84,
+            85,
+            86,
+            87,
+            88,
+            89
+          ],
+          "text": "Build a tree, try three bad paths, race a duplicate, then list, size and delete."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not check for a name, then insert; let the unique constraint decide.",
+    "Plain `UNIQUE` lets NULL parents repeat; `NULLS NOT DISTINCT` blocks duplicate top-level names only.",
+    "Follow-up: moving a folder is one `UPDATE` of `parent_id`, after a cycle check."
+  ],
+  "quiz": {
+    "q": "What does the `race statuses` line print?",
+    "options": [
+      "race statuses [201,201]",
+      "race statuses [409,409]",
+      "race statuses [201,409]",
+      "It changes from run to run"
+    ],
+    "answer": 2,
+    "why": "Both requests reach the INSERT. The unique constraint lets exactly one row in; the other gets 23505, which the service maps to 409. Sorting fixes the order."
+  },
+  "takeaway": "Let constraints settle races; let a recursive query walk the tree.",
+  "chat": {
+    "starters": [
+      "Interview follow-up: how would I store file contents, not only sizes?",
+      "Interview follow-up: how do I move a folder with one UPDATE and stay cycle-free?",
+      "Interview follow-up: would a materialized path column make lookups faster?"
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "Start:        Neon 2 | Intro | Night Drive\nAfter rename: Neon 2 | Intro | Night Drive (edit)\nAfter clear:  Neon 0",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java LeakyAlbum.java",
+  "tool": "Java 17.0.17",
+  "hash": "f6953785dba2a665",
+  "at": "2026-10-12T11:16:35.425Z"
+}

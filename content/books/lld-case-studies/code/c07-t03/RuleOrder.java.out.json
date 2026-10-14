@@ -1,0 +1,11 @@
+{
+  "stdout": "only 10% off:      206640\n3-for-2, then 10%: 179700\n10%, then 3-for-2: 156740",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java RuleOrder.java",
+  "tool": "Java 17.0.17",
+  "hash": "d935afcfe2e7b8df",
+  "at": "2026-10-14T08:42:18.907Z"
+}

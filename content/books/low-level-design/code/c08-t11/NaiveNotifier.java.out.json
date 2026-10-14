@@ -1,0 +1,11 @@
+{
+  "stdout": "email to ann: shipped\ndropped push for cat\nemail to ann: shipped",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java NaiveNotifier.java",
+  "tool": "Java 17.0.17",
+  "hash": "37c67724d01d3b10",
+  "at": "2026-10-12T11:18:25.696Z"
+}

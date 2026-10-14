@@ -1,0 +1,11 @@
+{
+  "stdout": "2 h weekday: 350\n2 h weekend: 525\nrejected: ride length must be positive, got PT0S",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java RentalPriceDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "5b78e95a42af57ba",
+  "at": "2026-10-12T11:22:47.378Z"
+}

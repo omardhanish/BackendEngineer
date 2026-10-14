@@ -1,0 +1,33 @@
+classDiagram
+    class Library {
+        -LoanPolicy policy
+        -List~Book~ books
+        -List~Loan~ loans
+        +addBook(String isbn, String title) Book
+        +lend(Book book, Member member, int days) Loan
+        +activeLoans() List~Loan~
+    }
+    class LoanPolicy {
+        <<interface>>
+        +maxDays() int
+    }
+    class StudentPolicy {
+        +maxDays() int
+    }
+    class Book {
+        -String isbn
+        -String title
+    }
+    class Member {
+        -String id
+        -String name
+    }
+    class Loan {
+        -int days
+    }
+    LoanPolicy <|.. StudentPolicy : implements
+    Library --> "1" LoanPolicy : asks
+    Library "1" --> "0..*" Book : stocks
+    Library "1" --> "0..*" Loan : records
+    Loan --> "1" Book
+    Loan --> "1" Member

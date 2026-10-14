@@ -1,0 +1,198 @@
+{
+  "title": "GRASP: Expert, Creator, Controller",
+  "idea": "GRASP is a set of rules for deciding which class gets a responsibility; Expert, Creator and Controller answer the three most common placement questions.",
+  "points": [
+    "Information Expert: give a job to the class that holds the data it needs.",
+    "Creator: let B create A when B contains, records or closely uses A.",
+    "Controller: one non-UI object receives each system operation and delegates the real work.",
+    "In interviews, say which principle placed each method; it shows deliberate design."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "One feature, three placement rules",
+    "actors": [
+      {
+        "id": "ui",
+        "label": "Web or mobile UI"
+      },
+      {
+        "id": "ctl",
+        "label": "PlaylistController"
+      },
+      {
+        "id": "pl",
+        "label": "Playlist"
+      },
+      {
+        "id": "tr",
+        "label": "Track"
+      }
+    ],
+    "messages": [
+      {
+        "from": "ui",
+        "to": "ctl",
+        "label": "addTrack(\"Intro\", 185)",
+        "note": "Controller: the UI hands the system operation to one object and knows nothing more."
+      },
+      {
+        "from": "ctl",
+        "to": "pl",
+        "label": "add(title, seconds)",
+        "note": "The controller delegates. It holds no rules about tracks or totals."
+      },
+      {
+        "from": "pl",
+        "to": "tr",
+        "label": "new Track(...)",
+        "note": "Creator: `Playlist` contains tracks, so it creates them. Nobody else calls `new Track`."
+      },
+      {
+        "from": "ui",
+        "to": "ctl",
+        "label": "length()",
+        "note": "A second system operation arrives through the same controller from any screen."
+      },
+      {
+        "from": "ctl",
+        "to": "pl",
+        "label": "totalSeconds()",
+        "note": "Information Expert: `Playlist` holds the tracks, so it computes their total."
+      },
+      {
+        "from": "pl",
+        "to": "tr",
+        "label": "seconds()",
+        "note": "Each `Track` reports its own length; the playlist only sums."
+      },
+      {
+        "from": "ctl",
+        "to": "ui",
+        "label": "\"m:ss\"",
+        "dashed": true,
+        "note": "Every screen gets the same answer because one class computes it."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "ScatteredPlaylist.java",
+      "lang": "java",
+      "title": "The problem",
+      "run": "captured",
+      "caption": "Screens create tracks and compute totals themselves. Two screens, two different answers.",
+      "walk": [
+        {
+          "lines": [
+            16,
+            19
+          ],
+          "text": "`Playlist` holds the data but has no behaviour. Others must reach in to use it."
+        },
+        {
+          "lines": [
+            23,
+            25
+          ],
+          "text": "Each screen calls `new Track` itself. Creation logic is copied, not owned."
+        },
+        {
+          "lines": [
+            26,
+            30
+          ],
+          "text": "The web screen sums seconds, then formats minutes and seconds."
+        },
+        {
+          "lines": [
+            37,
+            41
+          ],
+          "text": "The mobile screen divides each track first and loses the leftover seconds."
+        },
+        {
+          "lines": [
+            9,
+            10
+          ],
+          "text": "Compare the two lines: same playlist, two lengths. Duplicated logic drifts apart."
+        }
+      ]
+    },
+    {
+      "file": "GraspPlaylist.java",
+      "lang": "java",
+      "title": "The fix",
+      "run": "captured",
+      "caption": "Expert and Creator move behaviour into `Playlist`; a controller is the single entry point.",
+      "walk": [
+        {
+          "lines": [
+            20,
+            25
+          ],
+          "text": "`Track` rejects bad input, so an invalid track can never exist."
+        },
+        {
+          "lines": [
+            32,
+            36
+          ],
+          "text": "Creator: `Playlist` makes each `Track` because it contains them."
+        },
+        {
+          "lines": [
+            38,
+            40
+          ],
+          "text": "Expert: the class that holds the tracks computes their total."
+        },
+        {
+          "lines": [
+            44,
+            51
+          ],
+          "text": "Controller: receives system operations, gets its playlist by injection, and delegates."
+        },
+        {
+          "lines": [
+            53,
+            56
+          ],
+          "text": "Formatting lives once here, so every screen matches. Formatting is presentation, not a domain rule."
+        },
+        {
+          "lines": [
+            10,
+            16
+          ],
+          "text": "Both screens now agree, and the bad track is rejected at the domain boundary."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "A controller that computes totals or rules itself becomes a god class; delegate domain work.",
+    "Putting logic in UI handlers duplicates it per screen; totals then disagree between web and mobile.",
+    "Expert applied blindly can drag database or UI code into domain classes; split those out."
+  ],
+  "quiz": {
+    "q": "A `Library` holds `Loan` objects. Which class should compute a member's total overdue fine?",
+    "options": [
+      "The UI screen that shows the fine",
+      "A new FineUtils class with static helpers",
+      "The LibraryController, since it receives the request",
+      "Library, which holds the loans the fine needs"
+    ],
+    "answer": 3,
+    "why": "Information Expert: `Library` holds the loans and their due dates. The controller should only forward the request, and a static utility separates data from behaviour."
+  },
+  "takeaway": "Put each job where the data lives; route system operations through a controller.",
+  "chat": {
+    "starters": [
+      "How is a GRASP controller different from an MVC controller?",
+      "When does Creator conflict with using a factory?",
+      "What if the data a job needs is spread over several classes?"
+    ]
+  }
+}

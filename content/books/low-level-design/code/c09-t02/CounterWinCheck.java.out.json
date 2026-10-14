@@ -1,0 +1,11 @@
+{
+  "stdout": "X at 0,3 wins? false\nO at 0,0 wins? false\nX at 1,2 wins? false\nO at 1,1 wins? false\nX at 2,1 wins? false\nO at 2,2 wins? false\nX at 3,0 wins? true\nafter undo, O at 3,3 wins? true",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java CounterWinCheck.java",
+  "tool": "Java 17.0.17",
+  "hash": "6a0ce3d0e4de457e",
+  "at": "2026-10-12T11:18:11.930Z"
+}

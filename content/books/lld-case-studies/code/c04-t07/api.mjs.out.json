@@ -1,0 +1,11 @@
+{
+  "stdout": "POST /buildings/B1/hall-calls 201 {\"id\":\"HC-1\",\"floor\":5,\"direction\":\"UP\",\"status\":\"ASSIGNED\",\"elevatorId\":\"E2\"}\nPOST /buildings/B1/hall-calls 200 {\"id\":\"HC-1\",\"floor\":5,\"direction\":\"UP\",\"status\":\"ASSIGNED\",\"elevatorId\":\"E2\"}\nPOST /buildings/B1/hall-calls 400 {\"error\":\"VALIDATION\"}\nPOST /buildings/B1/hall-calls 404 {\"error\":\"FLOOR_NOT_FOUND\"}\nPATCH /elevators/E2/state 200 {\"id\":\"E2\",\"state\":\"OUT_OF_SERVICE\",\"version\":2,\"released\":1}\nPATCH /elevators/E2/state 409 {\"error\":\"STALE_VERSION\"}",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node api.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "7bd43fc7d4a5c080",
+  "at": "2026-10-14T10:22:42.123Z"
+}

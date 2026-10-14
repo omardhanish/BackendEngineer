@@ -1,0 +1,11 @@
+{
+  "stdout": "IN   USER     MAKE_DIRECTORY\nIN   USER     CREATE_FILE\nIN   USER     LIST_DIRECTORY\nIN   USER     MOVE_OR_RENAME\nIN   USER     DELETE_RECURSIVE\nIN   USER     TOTAL_SIZE\nIN   USER     FIND_BY_NAME\nOUT  OPERATOR PERMISSIONS\nOUT  USER     SYMBOLIC_LINKS\nOUT  OPERATOR DISK_PERSISTENCE\n/docs/cv.pdf   -> OK depth 2\ndocs/cv.pdf    -> REJECT not absolute\n/docs//cv.pdf  -> REJECT empty name\n/docs/../tmp   -> OK depth 1\n/../tmp        -> REJECT above root\n/              -> OK depth 0",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java FsScope.java",
+  "tool": "Java 17.0.17",
+  "hash": "07a5fff69c39782d",
+  "at": "2026-10-14T08:43:04.855Z"
+}

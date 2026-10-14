@@ -1,0 +1,211 @@
+{
+  "title": "Elevator API in Express",
+  "idea": "The elevator API turns button presses and operator actions into REST calls: the controller validates, the service decides inside a transaction, and the repository runs SQL.",
+  "analogy": {
+    "text": "A building's front desk. The receptionist checks the visitor's form, the manager decides, and the filing clerk only stores papers.",
+    "breaks": "A manager may bend rules; the service never does."
+  },
+  "points": [
+    "A hall call is `POST .../hall-calls`; a repeat press returns 200, not a duplicate.",
+    "The partial unique index makes presses idempotent without an Idempotency-Key header.",
+    "Operators change car state with a `version`; a stale version gets 409.",
+    "Bad input maps to 400, missing rows to 404, stale versions to 409."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "Endpoints",
+    "head": [
+      "Method",
+      "Path",
+      "Request",
+      "Success",
+      "Errors"
+    ],
+    "rows": [
+      [
+        "POST",
+        "/buildings/:buildingId/hall-calls",
+        "floor, direction",
+        "201 new; 200 already open",
+        "400, 404 floor"
+      ],
+      [
+        "POST",
+        "/elevators/:id/car-calls",
+        "floor",
+        "202 accepted",
+        "404, 409 out of service"
+      ],
+      [
+        "GET",
+        "/elevators/:id",
+        "none",
+        "200 floor, state, version",
+        "404"
+      ],
+      [
+        "PATCH",
+        "/elevators/:id/state",
+        "state, version",
+        "200 new version",
+        "400, 404, 409 stale"
+      ],
+      [
+        "GET",
+        "/buildings/:buildingId/elevators",
+        "none",
+        "200 all cars",
+        "404 building"
+      ]
+    ],
+    "highlight": {
+      "row": 0
+    },
+    "caption": "The snippet runs the hall-call POST and the state PATCH. The others follow the same layers."
+  },
+  "code": [
+    {
+      "file": "api.mjs",
+      "lang": "js",
+      "title": "Layered Express app",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "Repository, service, controllers and error mapping in one file, on a real PostgreSQL. `nearestCar` is a trimmed stand-in: the real choice comes from the SchedulingStrategy (page 3). A dispatcher could instead assign PENDING calls as on page 6.",
+      "walk": [
+        {
+          "lines": [
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14
+          ],
+          "text": "Demo schema: floors, cars with a version, and one open hall call per button."
+        },
+        {
+          "lines": [
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21
+          ],
+          "text": "AppError carries a status; `tx` gives each service call one transaction."
+        },
+        {
+          "lines": [
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39
+          ],
+          "text": "Repository: SQL only. The insert skips duplicates through the partial index."
+        },
+        {
+          "lines": [
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47
+          ],
+          "text": "hallCall: replay an open call with 200, else create it. `nearestCar` stands in for the SchedulingStrategy."
+        },
+        {
+          "lines": [
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55
+          ],
+          "text": "setState: version check, then 404 or 409, then release the car's open calls."
+        },
+        {
+          "lines": [
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63,
+            64,
+            65,
+            66,
+            67,
+            68,
+            69,
+            70
+          ],
+          "text": "Controllers parse with zod; Express 5 forwards async throws to the error middleware."
+        },
+        {
+          "lines": [
+            71,
+            72,
+            73,
+            74,
+            75,
+            76,
+            77
+          ],
+          "text": "Error mapping. Bad JSON is 400; foreign-key error 23503 means no such floor."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not demand an Idempotency-Key for presses; the floor and button already dedupe them.",
+    "Return 409 for a stale version so the dashboard reloads before retrying.",
+    "Releasing a car's calls is half the job; a dispatcher must reassign PENDING calls."
+  ],
+  "quiz": {
+    "q": "What status does the second PATCH to E2 print?",
+    "options": [
+      "200",
+      "404",
+      "409",
+      "400"
+    ],
+    "answer": 2,
+    "why": "The first PATCH raised E2's version to 2. The second still sends version 1, so the UPDATE matches no row and the service throws STALE_VERSION."
+  },
+  "takeaway": "Validate in the controller, decide in a transaction, dedupe with the database.",
+  "chat": {
+    "starters": [
+      "How does the controller process learn about a new hall call?",
+      "Should the car-calls endpoint return 202 or 201?",
+      "How would I add a dispatcher job for PENDING calls?"
+    ]
+  }
+}

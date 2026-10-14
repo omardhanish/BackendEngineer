@@ -1,0 +1,11 @@
+{
+  "stdout": "TOGGLE_SEAT   PICKING    [\"A1\"] -\nTOGGLE_SEAT   PICKING    [\"A1\",\"A2\"] -\nHOLD_CLICKED  HOLDING    [\"A1\",\"A2\"] -\nHOLD_CONFLICT PICKING    [] - Seats just taken. Pick again.\nTOGGLE_SEAT   PICKING    [\"B4\"] -\nHOLD_CLICKED  HOLDING    [\"B4\"] -\nHOLD_FAILED   PICKING    [\"B4\"] - Could not hold seats. Try again.\nHOLD_CLICKED  HOLDING    [\"B4\"] -\nHOLD_OK       PAYING     [\"B4\"] -\nPAY_CLICKED   SUBMITTING [\"B4\"] ck-1\nPAY_CLICKED   SUBMITTING [\"B4\"] ck-1\nPAY_FAILED    PAYING     [\"B4\"] ck-1 Payment failed. Try again.\nPAY_CLICKED   SUBMITTING [\"B4\"] ck-1\nBOOKED        DONE       [\"B4\"] ck-1\nHOLD_EXPIRED  DONE       [\"B4\"] ck-1",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node checkout.mjs",
+  "tool": null,
+  "hash": "283e40ae3b28f239",
+  "at": "2026-10-12T11:25:14.760Z"
+}

@@ -1,0 +1,224 @@
+{
+  "title": "Thread-safe cache design",
+  "idea": "A thread-safe cache keeps its map and recency order consistent under many threads and makes concurrent misses for one key share a single load.",
+  "analogy": {
+    "text": "A shared answer board. Two people see a blank and both phone the expert. A note saying \"calling now\" makes the second person wait instead.",
+    "breaks": "Threads may not see a note unless a thread-safe map holds it."
+  },
+  "points": [
+    "An LRU `get` reorders the list, so even reads need exclusive access.",
+    "One lock around the cache is simple and correct, but limits throughput.",
+    "Striping splits keys over several locked caches; eviction becomes per stripe.",
+    "Concurrent misses on one key should share one in-flight future, not reload."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "A cache stampede and its fix",
+    "actors": [
+      {
+        "id": "a",
+        "label": "Thread A"
+      },
+      {
+        "id": "b",
+        "label": "Thread B"
+      },
+      {
+        "id": "c",
+        "label": "Cache"
+      },
+      {
+        "id": "db",
+        "label": "Database"
+      }
+    ],
+    "messages": [
+      {
+        "from": "a",
+        "to": "c",
+        "label": "get user:42",
+        "note": "A misses: nothing is cached for this key yet."
+      },
+      {
+        "from": "b",
+        "to": "c",
+        "label": "get user:42",
+        "note": "B misses too, before A has loaded anything."
+      },
+      {
+        "from": "a",
+        "to": "db",
+        "label": "load user:42",
+        "note": "A goes to the database."
+      },
+      {
+        "from": "b",
+        "to": "db",
+        "label": "load user:42",
+        "note": "B loads the same row. With many readers, the database takes one query each."
+      },
+      {
+        "from": "a",
+        "to": "c",
+        "label": "computeIfAbsent",
+        "note": "Fix, replaying the same two reads: A asks the map to create one in-flight future for the key."
+      },
+      {
+        "from": "b",
+        "to": "c",
+        "label": "computeIfAbsent",
+        "note": "B finds the same future already there and waits on it."
+      },
+      {
+        "from": "c",
+        "to": "db",
+        "label": "load once",
+        "note": "Only the future's task queries the database."
+      },
+      {
+        "from": "db",
+        "to": "c",
+        "label": "row",
+        "dashed": true,
+        "note": "The row completes the future, and every waiting thread receives it."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "Stampede.java",
+      "lang": "java",
+      "title": "Prove the stampede",
+      "run": "captured",
+      "caption": "A barrier makes four threads look before any of them loads, so the duplicate loads show up every run.",
+      "walk": [
+        {
+          "lines": [
+            7,
+            8
+          ],
+          "text": "Run the same four-reader race twice: plain check, then single flight."
+        },
+        {
+          "lines": [
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "text": "A load counter, two maps, and a barrier for four threads."
+        },
+        {
+          "lines": [
+            22,
+            23,
+            24,
+            25,
+            26,
+            27
+          ],
+          "text": "Only the first `computeIfAbsent` creates the future; the rest join it."
+        },
+        {
+          "lines": [
+            29,
+            30,
+            31,
+            32,
+            33
+          ],
+          "text": "Plain version: all four see a miss, wait, then all four load."
+        },
+        {
+          "lines": [
+            43,
+            44
+          ],
+          "text": "Join every thread before reading the counter, so the output is stable."
+        }
+      ]
+    },
+    {
+      "file": "LockedLru.java",
+      "lang": "java",
+      "title": "One lock, LRU inside",
+      "run": "captured",
+      "caption": "Four threads hammer a five-entry LRU behind one lock. Every operation completes and the size stays at capacity. LinkedHashMap alone is not thread-safe, and access order makes every get a write.",
+      "walk": [
+        {
+          "lines": [
+            10,
+            11,
+            12,
+            13,
+            14
+          ],
+          "text": "Four workers each run 25,000 operations over ten keys."
+        },
+        {
+          "lines": [
+            15,
+            16,
+            17
+          ],
+          "text": "A miss loads the value; a hit checks it belongs to its key."
+        },
+        {
+          "lines": [
+            24,
+            25,
+            26
+          ],
+          "text": "After joining, print the operation count, wrong values and final size."
+        },
+        {
+          "lines": [
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40
+          ],
+          "text": "Inside sits the access-ordered LinkedHashMap from the previous page."
+        },
+        {
+          "lines": [
+            41,
+            42,
+            43,
+            44,
+            45
+          ],
+          "text": "`get` takes the same lock as `put`, because a read moves the key."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Never guard an LRU `get` with a read lock; it changes the order.",
+    "Do not run slow loads inside `computeIfAbsent`; store a future there instead.",
+    "Remove each future once it settles; keep finished values only in the bounded LRU."
+  ],
+  "quiz": {
+    "q": "What is the first line Stampede prints?",
+    "options": [
+      "get-then-load DB loads:   1",
+      "It changes from run to run",
+      "get-then-load DB loads:   4",
+      "get-then-load DB loads:   0"
+    ],
+    "answer": 2,
+    "why": "The barrier lets all four threads see a miss before any loads. Each then loads, so the counter reaches four."
+  },
+  "takeaway": "Lock reads too in LRU, and let one thread load each missing key.",
+  "chat": {
+    "starters": [
+      "Why is ConcurrentHashMap alone not enough for an LRU cache?",
+      "How does lock striping change eviction accuracy?",
+      "What happens to waiting threads if the shared load fails?"
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "BK-1 PENDING -> CONFIRMED (paid)\nBK-1 CONFIRMED -> COMPLETED (game played)\nBK-1 refused COMPLETED -> CANCELLED (player cancels after the game)\nBK-2 PENDING -> EXPIRED (hold ran out), court hours freed\nBK-2 refused EXPIRED -> CONFIRMED (late payment arrives)\nBK-3 PENDING -> CONFIRMED (paid)\nBK-3 CONFIRMED -> CANCELLED (player cancels early), court hours freed",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java BookingStates.java",
+  "tool": "Java 17.0.17",
+  "hash": "071dcaf7c8892432",
+  "at": "2026-10-14T10:21:53.873Z"
+}

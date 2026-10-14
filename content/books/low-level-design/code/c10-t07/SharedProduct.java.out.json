@@ -1,0 +1,11 @@
+{
+  "stdout": "shop: Blue mug 9.99\nstock: 50\nshop: Blue mug 4.00",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java SharedProduct.java",
+  "tool": "Java 17.0.17",
+  "hash": "b827cc93088c9604",
+  "at": "2026-10-12T11:22:31.061Z"
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "PASS FB-4 ended booking cannot cancel -> INVALID_SLOT\nPASS FB-4 upcoming booking still cancels -> OK\nall checks pass",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java FeedbackRegression.java",
+  "tool": "Java 17.0.17",
+  "hash": "a71f6b2ab444eb39",
+  "at": "2026-10-14T08:33:23.039Z"
+}

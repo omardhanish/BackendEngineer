@@ -1,0 +1,198 @@
+{
+  "title": "Room booking API in Express",
+  "idea": "The room booking API exposes free-room search and bookings as REST resources; the controller validates, the service decides in a transaction, and the database refuses overlaps.",
+  "analogy": {
+    "text": "A booking office. The counter checks your form is complete, the clerk applies the rules, and the ledger itself will not accept two clashing lines.",
+    "breaks": "The ledger's refusal is a code, 23P01; middleware turns it into 409."
+  },
+  "points": [
+    "`GET /rooms/available` takes a window and headcount and lists free rooms.",
+    "`POST /bookings` needs an Idempotency-Key; a replay returns 200 with the same booking.",
+    "An overlap raises 23P01 in PostgreSQL; the error middleware maps it to 409.",
+    "`zod` rejects bad bodies and reversed times with 400 before the service runs."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "Endpoints",
+    "head": [
+      "Method",
+      "Path",
+      "Request",
+      "Success",
+      "Errors"
+    ],
+    "rows": [
+      [
+        "GET",
+        "/rooms/available",
+        "start, end, attendees",
+        "200 room ids",
+        "400"
+      ],
+      [
+        "POST",
+        "/bookings",
+        "roomId, start, end, attendees + Idempotency-Key",
+        "201 booking; 200 on replay",
+        "400, 404 room, 409 taken, 422 too many"
+      ],
+      [
+        "GET",
+        "/rooms/:roomId/bookings",
+        "date",
+        "200 day calendar",
+        "404 room"
+      ],
+      [
+        "POST",
+        "/bookings/:id/check-in",
+        "none",
+        "200 CHECKED_IN",
+        "404, 409 state"
+      ],
+      [
+        "POST",
+        "/bookings/:id/cancel",
+        "none",
+        "200 CANCELLED",
+        "404, 409 state"
+      ]
+    ],
+    "highlight": {
+      "row": 1
+    },
+    "caption": "The snippet runs search, booking and cancel. Check-in and the calendar follow the same layers."
+  },
+  "code": [
+    {
+      "file": "api.mjs",
+      "lang": "js",
+      "title": "Layered Express app",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "Repository, service, controllers and error mapping in one file, on a real PostgreSQL. The organizer comes from the body here; production reads it from the session.",
+      "walk": [
+        {
+          "lines": [
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11
+          ],
+          "text": "Demo schema: rooms, bookings with a unique Idempotency-Key and the exclusion constraint."
+        },
+        {
+          "lines": [
+            13,
+            14,
+            15,
+            16,
+            17,
+            18
+          ],
+          "text": "`tx` gives each service call one transaction and rolls back on any error."
+        },
+        {
+          "lines": [
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34
+          ],
+          "text": "Repository: SQL only. The free-room query matches the one on the schema page."
+        },
+        {
+          "lines": [
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45
+          ],
+          "text": "Service `book`: replay a known key, 404 an unknown room, 422 too many people."
+        },
+        {
+          "lines": [
+            53,
+            54,
+            55,
+            56,
+            57,
+            58
+          ],
+          "text": "`zod` schemas: ISO times with offsets, and end must be after start."
+        },
+        {
+          "lines": [
+            62,
+            63,
+            64,
+            65,
+            66,
+            67
+          ],
+          "text": "The controller demands the key and returns 201 for new, 200 for replay."
+        },
+        {
+          "lines": [
+            73,
+            74,
+            75,
+            76,
+            77,
+            78,
+            79
+          ],
+          "text": "Error middleware maps validation, domain errors, 23P01 and 23505 to status codes."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not pre-check overlap and skip the constraint; two servers can both pass the check.",
+    "Return 409 for a taken room, not 500, so the client can offer other rooms.",
+    "Compare times as instants, not strings; offsets make string order wrong."
+  ],
+  "quiz": {
+    "q": "What status does the third POST /bookings print?",
+    "options": [
+      "201",
+      "200",
+      "409",
+      "400"
+    ],
+    "answer": 2,
+    "why": "It asks for R-1 from 10:30, overlapping BK-1. PostgreSQL raises 23P01, and the error middleware maps it to 409 ROOM_TAKEN."
+  },
+  "takeaway": "Validate at the edge, decide in a transaction, let PostgreSQL refuse overlaps.",
+  "chat": {
+    "starters": [
+      "Should the API suggest alternative rooms in the 409 response?",
+      "Where does the organizer id come from in a real deployment?",
+      "How would I add check-in with optimistic locking?"
+    ]
+  }
+}

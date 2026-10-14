@@ -1,0 +1,11 @@
+{
+  "stdout": "/entries 201 {\"ticketId\":1,\"spotId\":\"F1-C1\"}\n/entries 409 {\"error\":\"ALREADY_INSIDE\"}\n/entries 201 {\"ticketId\":3,\"spotId\":\"F1-L1\"}\n/entries 409 {\"error\":\"LOT_FULL\"}\n/entries 400 {\"error\":\"VALIDATION\"}\n/tickets/1/payments 201 {\"paymentId\":1,\"amountMinor\":15000}\n/tickets/1/payments 200 {\"paymentId\":1,\"amountMinor\":15000}\n/tickets/1/payments 409 {\"error\":\"NOT_PAYABLE\"}",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node api.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "3177b3a9251fee16",
+  "at": "2026-10-14T08:42:56.522Z"
+}

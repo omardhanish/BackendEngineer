@@ -1,0 +1,11 @@
+{
+  "stdout": "Team pack -0% 92250\n  Office kit -10% 46125\n    Desk set -5% 33250\n      Desk 20000\n      Chair 15000\n    Monitor 18000\n  Office kit -10% 46125\n    Desk set -5% 33250\n      Desk 20000\n      Chair 15000\n    Monitor 18000\nrejected: Desk set would contain itself",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java CompositeBundleDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "729d85e99f469e4d",
+  "at": "2026-10-12T11:24:03.906Z"
+}

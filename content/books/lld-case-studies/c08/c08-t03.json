@@ -1,0 +1,321 @@
+{
+  "title": "Booking service and strategies",
+  "idea": "The core design is one BookingService that runs the hold and confirm flows, and talks to seat locks, pricing and payment only through interfaces.",
+  "analogy": {
+    "text": "A box office clerk. The clerk follows the same steps every time, but asks the seating desk, the price board and the card machine.",
+    "breaks": "Swapping a Java strategy needs no retraining; clerks do."
+  },
+  "points": [
+    "BookingService is a facade: callers see `hold` and `confirm`, nothing else.",
+    "`SeatLockProvider` hides where locks live: memory now, PostgreSQL later.",
+    "`PricingStrategy` is the strategy pattern: new pricing rules are new classes.",
+    "`PaymentGateway` and `Clock` are injected, so tests control money and time."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "One booking through the service",
+    "scenario": {
+      "token": {
+        "label": "hold A2, P1",
+        "tone": "req"
+      },
+      "stages": [
+        {
+          "id": "client",
+          "label": "Caller",
+          "kind": "end"
+        },
+        {
+          "id": "svc",
+          "label": "BookingService",
+          "sub": "facade"
+        },
+        {
+          "id": "locks",
+          "label": "SeatLockProvider",
+          "sub": "all or nothing"
+        },
+        {
+          "id": "price",
+          "label": "PricingStrategy",
+          "sub": "per seat"
+        },
+        {
+          "id": "pay",
+          "label": "PaymentGateway",
+          "sub": "charge",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "U-7 asks to hold seats A2 and P1 for show SH-1.",
+          "at": "client",
+          "slot": "top",
+          "state": {
+            "client": "active"
+          }
+        },
+        {
+          "caption": "BookingService creates hold id `H-1` and asks for the locks.",
+          "at": "svc",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "svc": "active"
+          }
+        },
+        {
+          "caption": "The lock provider locks both seats or neither. Both are free.",
+          "at": "locks",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "svc": "done",
+            "locks": "active"
+          }
+        },
+        {
+          "caption": "The service stamps an expiry from the injected `Clock` and returns the hold.",
+          "at": "client",
+          "slot": "bottom",
+          "token": {
+            "label": "H-1 held",
+            "tone": "ok"
+          },
+          "state": {
+            "client": "active",
+            "svc": "done",
+            "locks": "done"
+          }
+        },
+        {
+          "caption": "U-9 asks for A1 and A2. A2 is taken, so nothing is locked.",
+          "at": "locks",
+          "slot": "bottom",
+          "token": {
+            "label": "A1, A2",
+            "tone": "err"
+          },
+          "state": {
+            "svc": "done",
+            "locks": "blocked"
+          }
+        },
+        {
+          "caption": "Later U-7 confirms `H-1`. The pricing strategy prices each seat.",
+          "at": "price",
+          "slot": "top",
+          "token": {
+            "label": "confirm H-1",
+            "tone": "req"
+          },
+          "state": {
+            "svc": "done",
+            "locks": "done",
+            "price": "active"
+          }
+        },
+        {
+          "caption": "The gateway charges the total. Success creates a CONFIRMED Booking.",
+          "at": "pay",
+          "slot": "top",
+          "token": {
+            "label": "charge total",
+            "tone": "req"
+          },
+          "state": {
+            "svc": "done",
+            "locks": "done",
+            "price": "done",
+            "pay": "active"
+          }
+        },
+        {
+          "caption": "The Booking returns to the caller. The service never knew how prices were set.",
+          "at": "client",
+          "slot": "bottom",
+          "token": {
+            "label": "BK-1",
+            "tone": "ok"
+          },
+          "state": {
+            "client": "active",
+            "svc": "done",
+            "locks": "done",
+            "price": "done",
+            "pay": "done"
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "CoreBooking.java",
+      "lang": "java",
+      "title": "Service and interfaces",
+      "run": "captured",
+      "caption": "The core flow. Every collaborator is an interface passed into the constructor. Booking is trimmed to a record here; page 4 adds the PENDING step and the transition rules.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7
+          ],
+          "text": "A fixed `Clock` makes the hold expiry the same on every run."
+        },
+        {
+          "lines": [
+            11,
+            12
+          ],
+          "text": "Wire the service with one implementation of each interface."
+        },
+        {
+          "lines": [
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20
+          ],
+          "text": "U-7 holds A2 and P1; U-9 then asks for A1 and A2 and gets neither."
+        },
+        {
+          "lines": [
+            33,
+            34,
+            35,
+            36,
+            37
+          ],
+          "text": "Three interfaces: seat locks, pricing, payment. Each is a swap point."
+        },
+        {
+          "lines": [
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48
+          ],
+          "text": "Locks are all or nothing: check every seat first, then claim them all."
+        },
+        {
+          "lines": [
+            74,
+            75,
+            76,
+            77,
+            78,
+            79,
+            80,
+            81,
+            82
+          ],
+          "text": "`hold` asks for locks, then records a SeatHold expiring ten minutes later."
+        },
+        {
+          "lines": [
+            83,
+            84,
+            85,
+            86,
+            87,
+            88,
+            89,
+            90,
+            91,
+            92,
+            93
+          ],
+          "text": "`confirm` rejects a missing or expired hold, prices seats, charges, and returns the Booking. Payment failures come later."
+        }
+      ]
+    },
+    {
+      "file": "MatineePricing.java",
+      "lang": "java",
+      "title": "A new strategy",
+      "run": "captured",
+      "caption": "A matinee discount added as a new class that wraps any strategy (the decorator pattern). No old class is edited.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7
+          ],
+          "text": "Wrap the standard pricing with a 20 percent matinee discount."
+        },
+        {
+          "lines": [
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "text": "Price seat A1 for a morning show and an evening show."
+        },
+        {
+          "lines": [
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34
+          ],
+          "text": "The decorator holds the inner strategy and its own percentage."
+        },
+        {
+          "lines": [
+            35,
+            36,
+            37,
+            38,
+            39
+          ],
+          "text": "Before 13:00 it discounts with integer math. A real theatre uses its own time zone."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not put `if (matinee)` branches inside BookingService; add a strategy class instead.",
+    "Never call `Instant.now()` inside the service; inject a `Clock` so tests are repeatable.",
+    "Lock all seats or none; a partial lock leaves orphan seats nobody can buy."
+  ],
+  "quiz": {
+    "q": "What does MatineePricing print for the morning show?",
+    "options": [
+      "SH-2 A1 = 25000",
+      "SH-2 A1 = 20000",
+      "SH-2 A1 = 5000",
+      "SH-2 A1 = 20000.0"
+    ],
+    "answer": 1,
+    "why": "The show starts at 10:00 UTC, before 13:00. The decorator takes 80 percent of 25000 with long math: 20000."
+  },
+  "takeaway": "One facade service, with every changing rule behind an injected interface.",
+  "chat": {
+    "starters": [
+      "Is MatineeDiscount a strategy or a decorator, and does it matter?",
+      "Where should the hold timeout come from in production?",
+      "How do I test BookingService without a real payment gateway?"
+    ]
+  }
+}

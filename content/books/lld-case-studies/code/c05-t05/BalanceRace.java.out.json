@@ -1,0 +1,11 @@
+{
+  "stdout": "check-then-debit: approved 2, balance -60000\ncompare-and-set:  approved 1, balance 20000",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java BalanceRace.java",
+  "tool": "Java 17.0.17",
+  "hash": "a4018c8bffed2069",
+  "at": "2026-10-14T08:33:34.202Z"
+}

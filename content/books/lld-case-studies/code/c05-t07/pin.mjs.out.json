@@ -1,0 +1,11 @@
+{
+  "stdout": "12a4 400 {\"error\":\"VALIDATION\"}\n0000 401 {\"error\":\"WRONG_PIN\",\"attemptsLeft\":2}\n1234 201 {\"sessionId\":\"S-1\"}\n9999 401 {\"error\":\"WRONG_PIN\",\"attemptsLeft\":2}\n9999 401 {\"error\":\"WRONG_PIN\",\"attemptsLeft\":1}\n9999 401 {\"error\":\"WRONG_PIN\",\"attemptsLeft\":0}\n1234 403 {\"error\":\"CARD_BLOCKED\"}",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node pin.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "95839264c7776857",
+  "at": "2026-10-14T08:36:39.141Z"
+}

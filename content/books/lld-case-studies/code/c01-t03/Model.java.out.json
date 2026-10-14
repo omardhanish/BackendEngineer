@@ -1,0 +1,11 @@
+{
+  "stdout": "Slot[id=SL-1, doctorId=D-1, startsAt=2026-03-02T09:00:00Z, endsAt=2026-03-02T09:30:00Z, feeMinor=50000]\nrefused: endsAt must be after startsAt\nrefused: feeMinor < 0",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java Model.java",
+  "tool": "Java 17.0.17",
+  "hash": "3342249541680be9",
+  "at": "2026-10-14T08:37:34.508Z"
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "v1 = ServerConfig[name=api, workers=4, tags=[eu, gpu]]\ntags().add -> UnsupportedOperationException\nlatest workers = 4004\nv1 still = ServerConfig[name=api, workers=4, tags=[eu, gpu]]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ImmutableDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "56a30ae3f70ad0ea",
+  "at": "2026-10-12T11:22:43.973Z"
+}

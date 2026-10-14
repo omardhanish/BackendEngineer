@@ -1,0 +1,11 @@
+{
+  "stdout": "window 1 allowed: 5 rejected: 5\nwindow 2 first call allowed: true\nstored: [{\"w\":\"10:00\",\"hits\":5},{\"w\":\"10:01\",\"hits\":1}]",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node shared.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "9f6033447b109b6a",
+  "at": "2026-10-14T08:40:14.793Z"
+}

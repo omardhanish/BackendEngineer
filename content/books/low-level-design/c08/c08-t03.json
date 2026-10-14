@@ -1,0 +1,340 @@
+{
+  "title": "Mediator pattern",
+  "idea": "The Mediator pattern routes all coordination between related objects through one mediator, so each colleague knows the mediator instead of every other colleague.",
+  "analogy": {
+    "text": "Planes near an airport talk to the control tower, never to each other. The tower decides who lands next.",
+    "breaks": "A tower improvises; a code mediator follows fixed rules."
+  },
+  "points": [
+    "Colleagues report changes to the mediator; the mediator decides who reacts and how.",
+    "Each colleague needs one link to the hub, not one to every sibling.",
+    "UI dialogs and MVC controllers often mediate between widgets and the model.",
+    "Skip it for two collaborators; one mediator for everything becomes a god class."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "Widgets report only to the form",
+    "scenario": {
+      "tiers": [
+        [
+          "qty",
+          "coupon"
+        ],
+        [
+          "form"
+        ],
+        [
+          "total",
+          "button"
+        ]
+      ],
+      "nodes": {
+        "qty": {
+          "label": "QuantityField",
+          "sub": "colleague",
+          "kind": "box"
+        },
+        "coupon": {
+          "label": "CouponField",
+          "sub": "colleague",
+          "kind": "box"
+        },
+        "form": {
+          "label": "CheckoutForm",
+          "sub": "mediator",
+          "kind": "service"
+        },
+        "total": {
+          "label": "TotalLabel",
+          "sub": "display",
+          "kind": "box"
+        },
+        "button": {
+          "label": "OrderButton",
+          "sub": "display",
+          "kind": "box"
+        }
+      },
+      "links": [
+        [
+          "qty",
+          "form"
+        ],
+        [
+          "coupon",
+          "form"
+        ],
+        [
+          "form",
+          "total"
+        ],
+        [
+          "form",
+          "button"
+        ]
+      ],
+      "steps": [
+        {
+          "caption": "Each input field holds one reference: the mediator. No field can reach a sibling.",
+          "focus": [
+            "form"
+          ]
+        },
+        {
+          "caption": "Quantity is set to 0. The field stores it and calls `changed(this)`, nothing more.",
+          "send": [
+            {
+              "from": "qty",
+              "to": "form",
+              "label": "set(0)",
+              "tone": "req"
+            }
+          ],
+          "badge": {
+            "qty": "qty 0"
+          }
+        },
+        {
+          "caption": "The mediator applies the rules in one place: recompute the total, switch ordering off.",
+          "send": [
+            {
+              "from": "form",
+              "to": "total",
+              "label": "show",
+              "tone": "info"
+            },
+            {
+              "from": "form",
+              "to": "button",
+              "label": "off",
+              "tone": "warn"
+            }
+          ],
+          "state": {
+            "button": "down"
+          }
+        },
+        {
+          "caption": "A coupon is entered. The coupon field also reports only to the mediator.",
+          "send": [
+            {
+              "from": "coupon",
+              "to": "form",
+              "label": "SAVE10",
+              "tone": "req"
+            }
+          ],
+          "badge": {
+            "coupon": "SAVE10"
+          }
+        },
+        {
+          "caption": "The same rules run again. The total cannot go negative and ordering stays off.",
+          "send": [
+            {
+              "from": "form",
+              "to": "total",
+              "label": "show",
+              "tone": "info"
+            },
+            {
+              "from": "form",
+              "to": "button",
+              "label": "off",
+              "tone": "warn"
+            }
+          ],
+          "focus": [
+            "form"
+          ]
+        },
+        {
+          "caption": "Quantity becomes 2. Again one report, one place that decides.",
+          "send": [
+            {
+              "from": "qty",
+              "to": "form",
+              "label": "set(2)",
+              "tone": "req"
+            }
+          ],
+          "badge": {
+            "qty": "qty 2"
+          }
+        },
+        {
+          "caption": "Now there is something to buy, so the mediator turns the order button on.",
+          "send": [
+            {
+              "from": "form",
+              "to": "total",
+              "label": "show",
+              "tone": "info"
+            },
+            {
+              "from": "form",
+              "to": "button",
+              "label": "on",
+              "tone": "ok"
+            }
+          ],
+          "state": {
+            "button": "up"
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "TangledForm.java",
+      "lang": "java",
+      "title": "The problem: wired widgets",
+      "run": "captured",
+      "caption": "Each widget calls the others directly, so one rule is copied into two places.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7
+          ],
+          "text": "Every field is built with references to its siblings; the two fields even point at each other."
+        },
+        {
+          "lines": [
+            31,
+            32,
+            33,
+            34,
+            35
+          ],
+          "text": "The quantity field owns the total and button rules itself."
+        },
+        {
+          "lines": [
+            46,
+            47,
+            48,
+            49,
+            50
+          ],
+          "text": "The coupon field copies those rules, and the copy forgot the `qty > 0` check."
+        },
+        {
+          "lines": [
+            8,
+            9,
+            10
+          ],
+          "text": "After quantity 0 and a coupon, the total goes negative and ordering is enabled."
+        }
+      ]
+    },
+    {
+      "file": "CheckoutMediatorDemo.java",
+      "lang": "java",
+      "title": "The fix: one mediator",
+      "run": "captured",
+      "caption": "Widgets report changes; one mediator holds every rule that spans widgets.",
+      "walk": [
+        {
+          "lines": [
+            11
+          ],
+          "text": "The mediator interface has one method: a colleague says it changed."
+        },
+        {
+          "lines": [
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18
+          ],
+          "text": "The base widget knows only `FormMediator`. It has no way to reach a sibling."
+        },
+        {
+          "lines": [
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27
+          ],
+          "text": "A field validates its own input, stores it and reports. It holds no form rules."
+        },
+        {
+          "lines": [
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50
+          ],
+          "text": "The concrete mediator owns every widget and attaches itself to the two input fields."
+        },
+        {
+          "lines": [
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59
+          ],
+          "text": "Every cross-widget rule lives here once: discount, clamped total, when ordering is allowed."
+        },
+        {
+          "lines": [
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "text": "The same steps as before now keep the total sane and the button honest."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Letting a widget call a sibling \"just once\" rebuilds the tangle; route everything through the mediator.",
+    "Putting a whole screen's business logic in one mediator creates a god class; split by feature.",
+    "A mediator that updates a colleague which reports back can loop forever; guard re-entrant changes."
+  ],
+  "quiz": {
+    "q": "Five services each call the other four to coordinate a checkout. Which change applies the Mediator pattern?",
+    "options": [
+      "Add a coordinator that all five report to",
+      "Put an interface on each service",
+      "Make every service a singleton",
+      "Merge the five services into one class"
+    ],
+    "answer": 0,
+    "why": "A mediator replaces many-to-many calls with one hub. Interfaces and singletons keep every link; merging throws away the separate responsibilities."
+  },
+  "takeaway": "Colleagues talk to the mediator, never to each other.",
+  "chat": {
+    "starters": [
+      "How is the Mediator pattern different from the Observer pattern?",
+      "How do I stop a mediator from turning into a god class?",
+      "Where would a mediator appear in a backend service rather than a UI?"
+    ]
+  }
+}

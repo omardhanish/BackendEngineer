@@ -1,0 +1,94 @@
+{
+  "title": "Tic-tac-toe class model",
+  "idea": "A tic-tac-toe model is a handful of small types (game, board, player, move, symbol) where one owner, the `Game`, checks every rule before any state changes.",
+  "points": [
+    "Nouns in the requirements become types: `Game`, `Player`, `Move`, `Symbol`, the board.",
+    "Values with no identity are records or enums: a `Move` is just two coordinates.",
+    "`Game` owns the cells privately, so every rule lives in one method.",
+    "A rejected move throws and keeps the turn; only legal moves change state."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "The classes and who owns what",
+    "nodes": [
+      { "id": "ui", "label": "Caller", "sub": "UI, bot or test" },
+      { "id": "game", "label": "Game", "sub": "play(Move), current()" },
+      { "id": "board", "label": "Board cells", "sub": "Symbol[n][n], private" },
+      { "id": "player", "label": "Player (record)", "sub": "name, symbol" },
+      { "id": "move", "label": "Move (record)", "sub": "row, col" },
+      { "id": "symbol", "label": "Symbol (enum)", "sub": "X, O" }
+    ],
+    "edges": [
+      { "from": "ui", "to": "game", "label": "play(move)" },
+      { "from": "ui", "to": "move", "label": "creates", "dashed": true },
+      { "from": "game", "to": "board", "label": "owns" },
+      { "from": "game", "to": "player", "label": "has two" },
+      { "from": "player", "to": "symbol", "label": "plays as" },
+      { "from": "board", "to": "symbol", "label": "holds" }
+    ],
+    "steps": [
+      { "caption": "Read the requirements for nouns: game, board, player, move, mark. Each becomes a type.", "active": ["game", "board", "player", "move", "symbol"], "edges": [] },
+      { "caption": "The caller builds a `Move` value and hands it over. It never touches the cells.", "active": ["ui", "move", "game"], "edges": [0, 1] },
+      { "caption": "`Game` owns the cells. Range, free cell and turn checks all happen inside `play`.", "active": ["game", "board"], "edges": [2] },
+      { "caption": "`Game` holds two players in turn order. The constructor rejects two players with one symbol.", "active": ["game", "player"], "edges": [3] },
+      { "caption": "`Symbol` is an enum, so a cell can only hold X, O or nothing. No stray characters.", "active": ["player", "symbol", "board"], "edges": [4, 5] }
+    ]
+  },
+  "code": [
+    {
+      "file": "NaiveTicTacToe.java",
+      "lang": "java",
+      "title": "The problem: no owner",
+      "run": "captured",
+      "caption": "An unguarded array and an unchecked `play`: moves steal cells, strangers write, bad input crashes.",
+      "walk": [
+        { "lines": [22, 23], "text": "The board and turn are package-visible fields. Nothing guards them." },
+        { "lines": [25, 26, 27], "text": "`play` writes first and never asks whether the cell is free or on the board." },
+        { "lines": [4, 5, 6, 7], "text": "X overwrites O's centre cell. The game accepts it silently." },
+        { "lines": [8], "text": "Any code can write a third symbol, because a `char` allows any character." },
+        { "lines": [9, 10, 11, 12, 13], "text": "An off-board move surfaces as an array crash, not a clear rule message." },
+        { "lines": [17], "text": "The illegal steal still counted as X's turn. Legal and illegal moves look the same." }
+      ]
+    },
+    {
+      "file": "TicTacToeModel.java",
+      "lang": "java",
+      "title": "The fix: types and rules",
+      "run": "captured",
+      "caption": "Small value types plus one `Game` that checks every rule before it changes anything.",
+      "walk": [
+        { "lines": [22, 23, 24, 25, 26], "text": "Values are an enum and records: immutable, with `equals` and readable `toString` for free." },
+        { "lines": [29, 30, 31], "text": "All state is private and final where possible. Only `Game` can change the cells." },
+        { "lines": [33, 34, 35, 36, 37, 38], "text": "The constructor enforces setup rules: a real board size and two different symbols." },
+        { "lines": [43, 44, 45, 46, 47, 48], "text": "Every move is checked first. A clear message names the broken rule." },
+        { "lines": [49, 50], "text": "State changes only after all checks pass, so a rejected move keeps the turn." },
+        { "lines": [52, 53, 54, 55, 56, 57, 58], "text": "Callers get a text copy of the board, never the array itself." },
+        { "lines": [8, 9, 10, 11, 12, 13, 14, 15], "text": "The caller sees each rejection. The next legal move still belongs to the right player." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Returning the `Symbol[][]` array lets callers write cells; return a copy or text.",
+    "Checking 'cell taken' only in the UI breaks once a bot or API sends moves.",
+    "Switching turns before validating hands the opponent a free move after a rejection."
+  ],
+  "quiz": {
+    "q": "An interviewer asks where the rule 'a cell can be played only once' belongs. Best answer?",
+    "options": [
+      "In the UI, before it calls `play`",
+      "In the `Move` record's compact constructor",
+      "In `Game.play`, which owns the board state",
+      "In `Player`, since players make the moves"
+    ],
+    "answer": 2,
+    "why": "The rule depends on board state. Only the class that owns the cells can check it, and every caller passes through `play`."
+  },
+  "takeaway": "One owner checks every rule; everything else is a small value type.",
+  "chat": {
+    "starters": [
+      "Should Board be its own class or stay inside Game?",
+      "Why use an enum for Symbol instead of a char?",
+      "What should play return instead of throwing an exception?"
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "FreeUntilDaysBefore 10d before: 1300000\nFreeUntilDaysBefore 3d before: 1300000\nFreeUntilDaysBefore 0d before: 0\nTiered 10d before: 1300000\nTiered 3d before: 650000\nTiered 0d before: 0\nNonRefundable 10d before: 0\nNonRefundable 3d before: 0\nNonRefundable 0d before: 0",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java TieredRefund.java",
+  "tool": "Java 17.0.17",
+  "hash": "3cfff3a41a0ca644",
+  "at": "2026-10-14T08:44:34.516Z"
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "OR-1 placed, onHand=5 reserved=2\nOR-1 PENDING_PAYMENT -> PAID, onHand=3 reserved=0\nOR-1 PAID -> SHIPPED, onHand=3 reserved=0\nOR-1 refused SHIPPED -> CANCELLED\nOR-2 placed, onHand=3 reserved=1\nOR-2 PENDING_PAYMENT -> CANCELLED, onHand=3 reserved=0\nOR-2 refused CANCELLED -> PAID\nOR-3 placed, onHand=3 reserved=2\nOR-3 PENDING_PAYMENT -> PAID, onHand=1 reserved=0\nOR-3 PAID -> CANCELLED, onHand=3 reserved=0, refund",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java OrderLifecycle.java",
+  "tool": "Java 17.0.17",
+  "hash": "30bf07c5afade1d3",
+  "at": "2026-10-14T08:43:04.468Z"
+}

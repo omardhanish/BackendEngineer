@@ -1,0 +1,11 @@
+{
+  "stdout": "M-1 /loans 201 {\"loanId\":\"LN-1\",\"copyId\":\"CP-1\",\"dueOn\":\"2026-01-19\"}\nM-1 /loans 200 {\"loanId\":\"LN-1\",\"copyId\":\"CP-1\",\"dueOn\":\"2026-01-19\"}\nM-2 /loans 409 {\"error\":\"NO_COPY_AVAILABLE\"}\nM-2 /loans 400 {\"error\":\"VALIDATION\"}\nM-1 /loans/LN-1/return 200 {\"fineMinor\":3000,\"heldFor\":\"M-2\"}\nM-1 /loans/LN-1/return 404 {\"error\":\"OPEN_LOAN_NOT_FOUND\"}",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node api.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "0da904ab5cf7f50a",
+  "at": "2026-10-14T10:23:13.753Z"
+}

@@ -1,302 +1,272 @@
 {
-  "title": "Composite and Decorator",
-  "idea": "Composite lets a group stand in for one object, so callers treat a tree like a leaf. Decorator wraps an object to add behaviour behind the same interface.",
+  "title": "Composition over inheritance",
+  "idea": "Composition over inheritance means a class gets behaviour by holding objects (has-a) and calling them, not by extending a parent (is-a).",
   "analogy": {
-    "text": "A parcel can hold items or smaller parcels, and you weigh each the same way. Gift wrap adds a layer around a present, yet it is still that present.",
-    "breaks": "Wrap only hides the gift; a decorator adds work, and may answer itself."
+    "text": "A shop hires a courier firm rather than becoming one. It can switch couriers tomorrow, and customers still see only the shop counter.",
+    "breaks": "In code, every forwarded call is a method you write."
   },
   "points": [
-    "In Composite, leaf and group implement one interface, such as `Item`.",
-    "A group stores children by that interface and loops over them to answer.",
-    "A decorator implements the interface and holds another instance of it in a field.",
-    "A decorator works before or after delegating; a cache may skip delegating."
+    "Extending a class makes every public parent method part of your API.",
+    "A private field plus forwarding methods exposes only the calls you choose.",
+    "Type the field as an interface, so constructor injection can swap behaviour.",
+    "Interviewers expect has-a by default; justify each `extends` with a true is-a."
   ],
   "hero": {
-    "type": "anim",
-    "engine": "pipeline",
-    "title": "One call through two decorators",
-    "scenario": {
-      "token": {
-        "label": "price(\"tea\")",
-        "tone": "req"
+    "type": "flow",
+    "title": "is-a leaks, has-a controls",
+    "nodes": [
+      {
+        "id": "inh",
+        "label": "AuditedStock",
+        "sub": "extends, overrides add()"
       },
-      "stages": [
-        {
-          "id": "main",
-          "label": "main",
-          "sub": "caller",
-          "kind": "end"
-        },
-        {
-          "id": "log",
-          "label": "Logging",
-          "sub": "decorator"
-        },
-        {
-          "id": "cache",
-          "label": "Caching",
-          "sub": "decorator"
-        },
-        {
-          "id": "cat",
-          "label": "Catalog",
-          "sub": "real object",
-          "kind": "end"
-        }
-      ],
-      "steps": [
-        {
-          "caption": "`main` holds a `PriceLookup`. It cannot tell that it is a stack of wrappers.",
-          "at": "main",
-          "slot": "top",
-          "state": {
-            "main": "active"
-          }
-        },
-        {
-          "caption": "`Logging` prints the request, then calls the object it wraps.",
-          "at": "log",
-          "slot": "top",
-          "state": {
-            "main": "done",
-            "log": "active"
-          }
-        },
-        {
-          "caption": "`Caching` has no entry for `tea` yet, so it passes the call inward.",
-          "at": "cache",
-          "slot": "top",
-          "state": {
-            "main": "done",
-            "log": "done",
-            "cache": "active"
-          }
-        },
-        {
-          "caption": "`Catalog` does the real, slow read and returns the price.",
-          "at": "cat",
-          "slot": "top",
-          "state": {
-            "main": "done",
-            "log": "done",
-            "cache": "done",
-            "cat": "active"
-          }
-        },
-        {
-          "caption": "On the way back, `Caching` stores the result under `tea`.",
-          "at": "cache",
-          "slot": "bottom",
-          "token": {
-            "label": "3.75",
-            "tone": "ok"
-          },
-          "state": {
-            "main": "done",
-            "log": "done",
-            "cache": "active",
-            "cat": "done"
-          }
-        },
-        {
-          "caption": "`Logging` prints the result and hands it to `main`.",
-          "at": "log",
-          "slot": "bottom",
-          "token": {
-            "label": "3.75",
-            "tone": "ok"
-          },
-          "state": {
-            "main": "done",
-            "log": "active",
-            "cache": "done",
-            "cat": "done"
-          }
-        },
-        {
-          "caption": "Second call for `tea`: `Logging` runs again, as before.",
-          "at": "log",
-          "slot": "top",
-          "token": {
-            "label": "price(\"tea\")",
-            "tone": "req"
-          },
-          "state": {
-            "main": "done",
-            "log": "active",
-            "cache": "done",
-            "cat": "done"
-          }
-        },
-        {
-          "caption": "`Caching` finds `tea` and answers itself. `Catalog` is never reached.",
-          "at": "cache",
-          "slot": "bottom",
-          "token": {
-            "label": "3.75",
-            "tone": "ok"
-          },
-          "state": {
-            "main": "done",
-            "log": "done",
-            "cache": "active",
-            "cat": "blocked"
-          }
-        },
-        {
-          "caption": "`Logging` prints the result again; only `Catalog` was skipped.",
-          "at": "log",
-          "slot": "bottom",
-          "token": {
-            "label": "3.75",
-            "tone": "ok"
-          },
-          "state": {
-            "main": "done",
-            "log": "active",
-            "cache": "done",
-            "cat": "blocked"
-          }
-        },
-        {
-          "caption": "Each layer added one job. None of them changed `Catalog` or the caller.",
-          "at": "main",
-          "slot": "top",
-          "token": {
-            "label": "3.75",
-            "tone": "ok"
-          },
-          "state": {
-            "main": "active",
-            "log": "done",
-            "cache": "done",
-            "cat": "done"
-          }
-        }
-      ]
-    }
+      {
+        "id": "al",
+        "label": "ArrayList<String>",
+        "sub": "add, addAll, set, removeIf…"
+      },
+      {
+        "id": "stock",
+        "label": "Stock",
+        "sub": "add, addAll, remove, items"
+      },
+      {
+        "id": "list",
+        "label": "List<String> skus",
+        "sub": "private field"
+      },
+      {
+        "id": "sink",
+        "label": "AuditSink",
+        "sub": "record(String event)"
+      },
+      {
+        "id": "mem",
+        "label": "MemoryAudit",
+        "sub": "keeps lines in memory"
+      },
+      {
+        "id": "file",
+        "label": "FileAudit",
+        "sub": "a later swap"
+      }
+    ],
+    "edges": [
+      {
+        "from": "inh",
+        "to": "al",
+        "label": "is-a"
+      },
+      {
+        "from": "stock",
+        "to": "list",
+        "label": "has-a"
+      },
+      {
+        "from": "stock",
+        "to": "sink",
+        "label": "has-a"
+      },
+      {
+        "from": "mem",
+        "to": "sink",
+        "label": "implements",
+        "dashed": true
+      },
+      {
+        "from": "file",
+        "to": "sink",
+        "label": "implements",
+        "dashed": true
+      }
+    ],
+    "steps": [
+      {
+        "caption": "`AuditedStock` extends `ArrayList` and overrides `add` to write an audit line.",
+        "active": [
+          "inh",
+          "al"
+        ],
+        "edges": [
+          0
+        ]
+      },
+      {
+        "caption": "It also inherits `addAll`, `set`, `removeIf` and the rest. None of them pass through its `add`.",
+        "active": [
+          "al"
+        ],
+        "edges": [
+          0
+        ]
+      },
+      {
+        "caption": "`Stock` holds the list as a private field. Callers cannot reach it.",
+        "active": [
+          "stock",
+          "list"
+        ],
+        "edges": [
+          1
+        ]
+      },
+      {
+        "caption": "Its few methods forward to the list and always record the change.",
+        "active": [
+          "stock",
+          "list",
+          "sink"
+        ],
+        "edges": [
+          1,
+          2
+        ]
+      },
+      {
+        "caption": "The audit is an `AuditSink` field. `Stock` knows the role, not the class.",
+        "active": [
+          "stock",
+          "sink"
+        ],
+        "edges": [
+          2
+        ]
+      },
+      {
+        "caption": "Pass `MemoryAudit` in tests and a file-backed sink later. `Stock` does not change.",
+        "active": [
+          "sink",
+          "mem",
+          "file"
+        ],
+        "edges": [
+          3,
+          4
+        ]
+      }
+    ]
   },
   "code": [
     {
-      "file": "CompositeDemo.java",
+      "file": "InheritedBackdoor.java",
       "lang": "java",
-      "title": "Composite",
+      "title": "The problem",
       "run": "captured",
-      "caption": "A bundle can hold products or other bundles. `print` and `price` work at any depth.",
+      "caption": "Extending `ArrayList` to add an audit rule. Most changes skip the rule.",
       "walk": [
         {
           "lines": [
             16,
-            19
+            18
           ],
-          "text": "One interface for leaf and group: the caller sees only `Item`."
+          "text": "The goal is an audit line per change. Extending `ArrayList` looks like the shortest path."
         },
         {
           "lines": [
             21,
             25
           ],
-          "text": "A `Product` is a leaf. Its `record` accessor already satisfies `price()`."
+          "text": "Only `add` is overridden. The class now relies on the parent calling it."
         },
         {
           "lines": [
-            27,
-            33
+            8,
+            8
           ],
-          "text": "A `Bundle` keeps children typed as `Item`, so a child may be a bundle."
+          "text": "`addAll` in `ArrayList` copies the batch directly, so two items skip the override."
         },
         {
           "lines": [
-            35,
-            39
+            9,
+            10
           ],
-          "text": "The group's price is the sum of its children's prices: recursion through the tree."
+          "text": "`set` and `removeIf` are inherited public methods too. Each changes the data with no audit."
         },
         {
           "lines": [
-            41,
-            44
-          ],
-          "text": "`print` shows itself, then asks each child to print one level deeper."
-        },
-        {
-          "lines": [
-            6,
+            11,
             12
           ],
-          "text": "`main` nests a bundle inside a bundle and calls one method on the root."
+          "text": "The list and the audit disagree. Nothing failed to compile, so review is the only guard."
         }
       ]
     },
     {
-      "file": "DecoratorDemo.java",
+      "file": "ComposedStock.java",
       "lang": "java",
-      "title": "Decorator",
+      "title": "The fix",
       "run": "captured",
-      "caption": "Logging and caching are added by wrapping, not by editing `Catalog`.",
+      "caption": "`Stock` has a list and an `AuditSink`. Every change goes through one path.",
       "walk": [
         {
           "lines": [
-            13,
-            15
+            22,
+            25
           ],
-          "text": "The shared contract. The real object and every wrapper implement it."
-        },
-        {
-          "lines": [
-            17,
-            22
-          ],
-          "text": "`Catalog` is the real work. It prints each time it is reached."
-        },
-        {
-          "lines": [
-            24,
-            32
-          ],
-          "text": "`Caching` holds an inner `PriceLookup` and calls it only on a miss."
+          "text": "`AuditSink` names the role `Stock` needs. Any implementation can fill it."
         },
         {
           "lines": [
             34,
-            45
+            40
           ],
-          "text": "`Logging` prints before and after, and delegates in between."
+          "text": "The list is private and the sink arrives by constructor injection, checked for null."
         },
         {
           "lines": [
-            6,
-            9
+            41,
+            48
           ],
-          "text": "`main` stacks the wrappers and asks twice. The order of wrapping matters."
+          "text": "`add` validates, stores and records. `addAll` reuses `add`, so no path skips the audit."
+        },
+        {
+          "lines": [
+            49,
+            53
+          ],
+          "text": "`remove` records only a real removal, so the trail matches the data."
+        },
+        {
+          "lines": [
+            54,
+            56
+          ],
+          "text": "`items` returns a read-only copy. Callers cannot edit the list behind the class."
+        },
+        {
+          "lines": [
+            14,
+            18
+          ],
+          "text": "The attempt to edit the copy fails, proving the backdoor is closed."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Keep child-management methods like `add` off leaves, or leaves must throw on them.",
-    "Check wrapper order: a cache outside a logger hides repeat calls from the log.",
-    "Do not decorate when one subclass would do and no layers will be mixed."
+    "Extending `ArrayList` or `HashMap` to add a rule: inherited methods bypass it silently.",
+    "Typing the field as a concrete class keeps the coupling; type it as an interface.",
+    "Wrapping a true is-a type adds forwarding code and buys no flexibility."
   ],
   "quiz": {
-    "q": "With this wrapping order, what does the second call print?",
+    "q": "Same `AuditedStock` as above. What does this print?",
+    "code": "var s = new AuditedStock();\ns.addAll(List.of(\"A\", \"B\"));\ns.add(\"C\");\nSystem.out.println(s.size() + \" \" + s.audit().size());",
+    "lang": "java",
     "options": [
-      "ask tea, catalog reads tea, got tea = 3.75",
-      "Nothing at all",
-      "ask tea, then got tea = 3.75",
-      "catalog reads tea only"
+      "3 3",
+      "3 1",
+      "1 1",
+      "3 0"
     ],
     "answer": 1,
-    "why": "`Caching` is now outermost. On a hit it returns from its map and never calls `Logging`, so no line prints.",
-    "code": "PriceLookup lookup =\n    new Caching(new Logging(new Catalog()));\nlookup.price(\"tea\");\nlookup.price(\"tea\");  // what prints here?",
-    "lang": "java"
+    "why": "`ArrayList.addAll` copies the batch without calling `add`. Only `add(\"C\")` runs the override, so three items but one audit line."
   },
-  "takeaway": "Composite treats a tree as one object; Decorator adds behaviour by wrapping.",
+  "takeaway": "Hold what you need behind an interface; extend only for true is-a.",
   "chat": {
     "starters": [
-      "How is Decorator different from just subclassing?",
-      "Where does Java's own library use the Decorator pattern?",
-      "Should `add` live on the `Item` interface or only on the group?"
+      "How do I tell a true is-a relationship from a convenient one?",
+      "Is writing many forwarding methods a sign composition is wrong here?",
+      "How does composition relate to the Strategy and Decorator patterns?"
     ]
   }
 }

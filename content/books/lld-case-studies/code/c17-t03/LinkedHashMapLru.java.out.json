@@ -1,0 +1,11 @@
+{
+  "stdout": "oldest first [soda, juice]\ncoffee -> -1",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java LinkedHashMapLru.java",
+  "tool": "Java 17.0.17",
+  "hash": "24c4cef26ea3b221",
+  "at": "2026-10-14T08:50:49.660Z"
+}

@@ -1,101 +1,266 @@
 {
-  "title": "Meeting room booking capstone",
-  "idea": "The capstone is one system you design end to end, a meeting room booking service, grown page by page from requirements to a design you defend.",
+  "title": "Checked and unchecked exceptions",
+  "idea": "A checked exception is one the compiler makes every caller catch or declare; an unchecked exception extends `RuntimeException` and needs no declaration.",
   "points": [
-    "You build one system across the chapter: the Meeting Room Booking System.",
-    "The must-haves: search free rooms, book, cancel, no double booking, notify attendees.",
-    "Each must-have gets one owning class, so scope and design stay traceable.",
-    "Recurring bookings are a stretch goal; finish the must-haves before touching them."
+    "Subclasses of `Exception` are checked, except the `RuntimeException` branch.",
+    "Use checked when the caller can recover: retry, fall back, or ask the user.",
+    "Use unchecked for broken contracts like a null argument; fix the caller instead.",
+    "Interview signal: catch the narrowest type, and never let a catch hide a bug."
   ],
   "hero": {
-    "type": "timeline",
-    "title": "The capstone, stage by stage",
-    "items": [
+    "type": "flow",
+    "dir": "TB",
+    "title": "Where each exception sits in Java",
+    "nodes": [
       {
-        "label": "Requirements",
-        "text": "Turn the brief into use cases and entities: Room, Booking, Employee, Building."
+        "id": "thr",
+        "label": "Throwable",
+        "sub": "anything you can throw"
       },
       {
-        "label": "Class design",
-        "text": "Draw the class diagram and fix the interfaces before writing any logic."
+        "id": "err",
+        "label": "Error",
+        "sub": "JVM trouble: do not catch"
       },
       {
-        "label": "Core build",
-        "text": "Implement BookingService on top of two repositories and a ConflictPolicy."
+        "id": "exc",
+        "label": "Exception",
+        "sub": "checked"
       },
       {
-        "label": "Hardening",
-        "text": "Add error codes, logs and counters, then patterns and tests."
+        "id": "rte",
+        "label": "RuntimeException",
+        "sub": "unchecked"
       },
       {
-        "label": "Review and present",
-        "text": "Refine after peer review, document with UML, and defend each choice."
+        "id": "io",
+        "label": "IOException",
+        "sub": "checked: plan a recovery"
+      },
+      {
+        "id": "pnf",
+        "label": "FeedDownException",
+        "sub": "checked, from the demo"
+      },
+      {
+        "id": "iae",
+        "label": "IllegalArgumentException",
+        "sub": "unchecked: caller bug"
+      },
+      {
+        "id": "npe",
+        "label": "NullPointerException",
+        "sub": "unchecked: caller bug"
+      }
+    ],
+    "edges": [
+      {
+        "from": "err",
+        "to": "thr",
+        "label": "extends"
+      },
+      {
+        "from": "exc",
+        "to": "thr",
+        "label": "extends"
+      },
+      {
+        "from": "io",
+        "to": "exc",
+        "label": "extends"
+      },
+      {
+        "from": "pnf",
+        "to": "exc",
+        "label": "extends"
+      },
+      {
+        "from": "rte",
+        "to": "exc",
+        "label": "extends"
+      },
+      {
+        "from": "iae",
+        "to": "rte",
+        "label": "extends"
+      },
+      {
+        "from": "npe",
+        "to": "rte",
+        "label": "extends"
+      }
+    ],
+    "steps": [
+      {
+        "caption": "Anything you can `throw` is a `Throwable`. Its subclasses decide what the compiler checks.",
+        "active": [
+          "thr"
+        ],
+        "edges": []
+      },
+      {
+        "caption": "`Error` covers JVM failures such as running out of memory. Application code should let them propagate.",
+        "active": [
+          "err",
+          "thr"
+        ],
+        "edges": [
+          0
+        ]
+      },
+      {
+        "caption": "`Exception` and its subclasses are checked. A method that throws one must catch it or declare `throws`.",
+        "active": [
+          "exc",
+          "thr"
+        ],
+        "edges": [
+          1
+        ]
+      },
+      {
+        "caption": "`IOException` and your own `FeedDownException` are checked: failures the caller can recover from by retrying or falling back.",
+        "active": [
+          "io",
+          "pnf",
+          "exc"
+        ],
+        "edges": [
+          2,
+          3
+        ]
+      },
+      {
+        "caption": "`RuntimeException` is the exception to the rule. It and its subclasses are unchecked.",
+        "active": [
+          "rte",
+          "exc"
+        ],
+        "edges": [
+          4
+        ]
+      },
+      {
+        "caption": "`IllegalArgumentException` and `NullPointerException` mean a caller broke the contract. Fix the code; do not catch them.",
+        "active": [
+          "iae",
+          "npe",
+          "rte"
+        ],
+        "edges": [
+          5,
+          6
+        ]
       }
     ]
   },
   "code": [
     {
-      "file": "ScopeDemo.java",
+      "file": "SwallowDemo.java",
       "lang": "java",
-      "title": "Scope with owners",
+      "title": "The problem",
       "run": "captured",
-      "caption": "The brief as data: every requirement has a priority and an owning class.",
+      "caption": "`throws Exception` forces a catch-all, and the catch-all hides a missing price and a bug alike.",
       "walk": [
         {
           "lines": [
-            5,
-            17
+            20,
+            21
           ],
-          "text": "Each requirement names its owner: the class that will answer for it."
+          "text": "`throws Exception` is the widest checked type. It tells callers nothing about what can actually fail."
         },
         {
           "lines": [
-            27,
-            27
+            22,
+            22
           ],
-          "text": "An `enum` makes priority a closed set: must-have or stretch."
+          "text": "A null `sku` throws `NullPointerException` here. That is a bug, not a missing price."
         },
         {
           "lines": [
             29,
             35
           ],
-          "text": "A `record` holds one requirement; its `toString` prints one tidy line."
+          "text": "Forced to catch something, the caller catches everything and returns 0."
         },
         {
           "lines": [
-            18,
-            23
+            5,
+            9
           ],
-          "text": "Looping over `Priority.values()` lists the must-haves first and the stretch goal last."
+          "text": "Compare the coffee and null lines: a missing price and a bug are now indistinguishable."
+        }
+      ]
+    },
+    {
+      "file": "PricingDemo.java",
+      "lang": "java",
+      "title": "The fix",
+      "run": "captured",
+      "caption": "A specific checked exception for a recoverable outage; an unchecked one for the bug.",
+      "walk": [
+        {
+          "lines": [
+            22,
+            25
+          ],
+          "text": "`FeedDownException` extends `Exception`, so it is checked. An outage is temporary and recoverable."
+        },
+        {
+          "lines": [
+            36,
+            39
+          ],
+          "text": "`price` declares the specific type. A null `sku` fails fast with an unchecked exception."
+        },
+        {
+          "lines": [
+            40,
+            42
+          ],
+          "text": "A simple not-found is better as Optional (c05-t03); checked exceptions suit failures the caller can recover from."
+        },
+        {
+          "lines": [
+            55,
+            65
+          ],
+          "text": "`Checkout` catches only the checked type and recovers: the last known price, or a retry message."
+        },
+        {
+          "lines": [
+            13,
+            18
+          ],
+          "text": "The bug is not caught by `describe`. It travels up to a last-resort handler and gets noticed."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Do not write classes before the must-have requirements are written down and agreed.",
-    "Avoid starting recurring bookings early; they reshape the overlap rules everything uses.",
-    "Keep the core class names fixed; renaming midway breaks every later step."
+    "An empty `catch (Exception e)` turns bugs like a null key into silent defaults.",
+    "Declaring `throws Exception` forces every caller to catch everything; declare the specific type.",
+    "Wrapping without passing the cause loses the original stack trace; use `new X(msg, e)`."
   ],
   "quiz": {
-    "q": "What does this print?",
-    "code": "var r = new Requirement(\"R4\", \"no double booking\",\n    Priority.MUST, \"ConflictPolicy\");\nSystem.out.println(r);",
+    "q": "What happens when you compile this method?",
+    "code": "void save(Path file) {\n    Files.writeString(file, \"done\");\n}",
     "lang": "java",
     "options": [
-      "MUST R4 no double booking",
-      "R4 no double booking -> ConflictPolicy",
-      "Requirement[id=R4, text=no double booking, priority=MUST, owner=ConflictPolicy]",
-      "R4 -> ConflictPolicy"
+      "It compiles; any IOException surfaces only at runtime",
+      "It compiles with an unchecked warning",
+      "Compile error: unreported exception IOException",
+      "It compiles because IOException is a RuntimeException"
     ],
-    "answer": 1,
-    "why": "The record overrides `toString`, so `println` uses that method instead of the generated `Requirement[...]` form."
+    "answer": 2,
+    "why": "`Files.writeString` declares `IOException`, which is checked. The method must catch it or add `throws IOException` to its signature."
   },
-  "takeaway": "One system, fixed names, must-haves first, each requirement owned by a class.",
+  "takeaway": "Checked for failures callers can handle; unchecked for bugs callers must fix.",
   "chat": {
     "starters": [
-      "Why does every requirement need an owning class?",
-      "How do I decide what is a must-have and what is a stretch goal?",
-      "What should I ask the interviewer before I start designing?"
+      "Why do Spring and many modern libraries prefer unchecked exceptions?",
+      "When should I wrap a checked exception in an unchecked one?",
+      "Is it ever right to catch NullPointerException?"
     ]
   }
 }

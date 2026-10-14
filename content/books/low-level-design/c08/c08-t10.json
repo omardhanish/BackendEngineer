@@ -1,0 +1,297 @@
+{
+  "title": "Memento pattern",
+  "idea": "The Memento pattern lets an object save its state into an opaque snapshot and later restore it, so undo works without exposing the object's internals.",
+  "points": [
+    "The originator creates snapshots (mementos) of its own state and restores from them.",
+    "The caretaker stores snapshots it cannot read; only the originator opens them.",
+    "Snapshots must copy mutable state, or later edits rewrite the saved past.",
+    "For huge state, store small inverse commands instead (the Command pattern, c08)."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "lanes",
+    "title": "Checkpoints and undo with capacity 2",
+    "scenario": {
+      "code": [
+        "for (String line : List.of(\"a\", \"b\", \"c\")) {",
+        "    history.checkpoint();",
+        "    editor.type(line);",
+        "}",
+        "while (history.undo()) print(editor);"
+      ],
+      "lanes": [
+        {
+          "id": "ed",
+          "label": "Editor (originator)",
+          "kind": "area",
+          "hint": "live state"
+        },
+        {
+          "id": "hist",
+          "label": "History (caretaker)",
+          "kind": "stack",
+          "hint": "opaque snapshots"
+        }
+      ],
+      "tokens": {
+        "e0": {
+          "label": "[ ]",
+          "tone": "sync"
+        },
+        "e1": {
+          "label": "[a]",
+          "tone": "sync"
+        },
+        "e2": {
+          "label": "[a, b]",
+          "tone": "sync"
+        },
+        "e3": {
+          "label": "[a, b, c]",
+          "tone": "sync"
+        },
+        "m0": {
+          "label": "snap [ ]",
+          "tone": "neutral"
+        },
+        "m1": {
+          "label": "snap [a]",
+          "tone": "neutral"
+        },
+        "m2": {
+          "label": "snap [a, b]",
+          "tone": "neutral"
+        }
+      },
+      "steps": [
+        {
+          "caption": "The editor starts empty. The history holds nothing yet.",
+          "at": {
+            "ed": [
+              "e0"
+            ],
+            "hist": []
+          }
+        },
+        {
+          "caption": "`checkpoint()` asks the editor for a snapshot and pushes it. Then `a` is typed.",
+          "line": 1,
+          "at": {
+            "ed": [
+              "e1"
+            ],
+            "hist": [
+              "m0"
+            ]
+          },
+          "active": "m0"
+        },
+        {
+          "caption": "Before `b`, another snapshot. It is a copy, so typing `b` cannot change it.",
+          "line": 1,
+          "at": {
+            "ed": [
+              "e2"
+            ],
+            "hist": [
+              "m0",
+              "m1"
+            ]
+          },
+          "active": "m1"
+        },
+        {
+          "caption": "Before `c`, a third snapshot. Capacity is 2, so the oldest is dropped.",
+          "line": 1,
+          "at": {
+            "ed": [
+              "e3"
+            ],
+            "hist": [
+              "m1",
+              "m2"
+            ]
+          },
+          "active": "m2"
+        },
+        {
+          "caption": "`undo()` pops the newest snapshot and hands it back to the editor to restore.",
+          "line": 4,
+          "at": {
+            "ed": [
+              "e2"
+            ],
+            "hist": [
+              "m1"
+            ]
+          },
+          "active": "e2"
+        },
+        {
+          "caption": "A second undo restores `[a]`. The history is now empty.",
+          "line": 4,
+          "at": {
+            "ed": [
+              "e1"
+            ],
+            "hist": []
+          },
+          "active": "e1"
+        },
+        {
+          "caption": "With nothing left, `undo()` returns false. The empty state was lost to the capacity limit.",
+          "line": 4,
+          "at": {
+            "ed": [
+              "e1"
+            ],
+            "hist": []
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "AliasedUndo.java",
+      "lang": "java",
+      "title": "The problem: aliased getters",
+      "run": "captured",
+      "caption": "The caller saves state through getters. It saves a reference, not a copy, so undo does nothing.",
+      "walk": [
+        {
+          "lines": [
+            30,
+            31,
+            32,
+            33,
+            34
+          ],
+          "text": "Getters and setters exist only for saving. Every field is now public in all but name."
+        },
+        {
+          "lines": [
+            10,
+            11
+          ],
+          "text": "The caller must know which fields make up the state. Add a field and undo misses it."
+        },
+        {
+          "lines": [
+            31
+          ],
+          "text": "`getLines` returns the live list. The saved value and the editor share one object."
+        },
+        {
+          "lines": [
+            13,
+            14
+          ],
+          "text": "Typing mutates that shared list, so the 'saved' lines change too."
+        },
+        {
+          "lines": [
+            17,
+            18,
+            19,
+            20
+          ],
+          "text": "Undo restores the same two lines with cursor 1: the state is now inconsistent."
+        }
+      ]
+    },
+    {
+      "file": "EditorUndoDemo.java",
+      "lang": "java",
+      "title": "The fix: opaque snapshots",
+      "run": "captured",
+      "caption": "The editor makes and reads its own snapshots. The history only stacks them, up to a limit.",
+      "walk": [
+        {
+          "lines": [
+            33,
+            34,
+            35,
+            36
+          ],
+          "text": "Private fields and a private constructor: only `Editor` can build or read a snapshot."
+        },
+        {
+          "lines": [
+            37
+          ],
+          "text": "`List.copyOf` takes an immutable copy, so later typing cannot rewrite history."
+        },
+        {
+          "lines": [
+            25,
+            26,
+            27,
+            28,
+            29,
+            30
+          ],
+          "text": "Save and restore live in the originator. Add a field and only this class changes."
+        },
+        {
+          "lines": [
+            43,
+            44
+          ],
+          "text": "The caretaker holds `Editor.Snapshot` values but has no way to look inside them."
+        },
+        {
+          "lines": [
+            53,
+            54,
+            55
+          ],
+          "text": "A capacity bound stops unlimited growth; the oldest snapshot is dropped first."
+        },
+        {
+          "lines": [
+            57,
+            58,
+            59,
+            60
+          ],
+          "text": "Undo on an empty history returns false instead of throwing."
+        },
+        {
+          "lines": [
+            7,
+            8,
+            9
+          ],
+          "text": "Checkpoint before each change, so each undo returns to the state before it."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Storing a mutable list in a snapshot without copying makes undo restore today's state, not yesterday's.",
+    "A `record` snapshot exposes its fields through accessors; the caretaker can read and depend on them.",
+    "An unbounded undo stack of full snapshots grows memory with every keystroke; cap it or diff."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "record Snap(List<String> lines) {}\nList<String> live = new ArrayList<>(List.of(\"a\"));\nSnap s = new Snap(live);\nlive.add(\"b\");\nSystem.out.println(s.lines());",
+    "lang": "java",
+    "options": [
+      "[a]",
+      "UnsupportedOperationException",
+      "[a, b]",
+      "Snap[lines=[a]]"
+    ],
+    "answer": 2,
+    "why": "A record stores the reference it is given. It does not copy, so the snapshot and `live` share one list; copy in the constructor."
+  },
+  "takeaway": "Snapshot by copy, keep it opaque, and let only the originator restore.",
+  "chat": {
+    "starters": [
+      "How do I add redo to this undo history?",
+      "When should undo use Memento instead of Command?",
+      "How do I keep snapshots small when the state is large?"
+    ]
+  }
+}

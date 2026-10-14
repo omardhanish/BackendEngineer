@@ -1,0 +1,11 @@
+{
+  "stdout": "Loaded Asha\nCrash at runtime: ClassCastException",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java RawRepository.java",
+  "tool": "Java 17.0.17",
+  "hash": "8d4e177964d2929c",
+  "at": "2026-10-12T11:16:52.510Z"
+}

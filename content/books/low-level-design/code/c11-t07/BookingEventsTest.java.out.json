@@ -1,0 +1,11 @@
+{
+  "stdout": "PASS success emits one event\nPASS rejection emits nothing\nPASS cancel emits after booked\nevents seen: [booked B1, cancelled B1]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java BookingEventsTest.java",
+  "tool": "Java 17.0.17",
+  "hash": "c6e05690bd26e4ed",
+  "at": "2026-10-12T11:25:34.712Z"
+}

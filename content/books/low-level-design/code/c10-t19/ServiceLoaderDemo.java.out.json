@@ -1,0 +1,11 @@
+{
+  "stdout": "found []\nfound [reverse:baaa, upper:AAAB]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ServiceLoaderDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "26079b0d422da82b",
+  "at": "2026-10-12T11:33:50.200Z"
+}

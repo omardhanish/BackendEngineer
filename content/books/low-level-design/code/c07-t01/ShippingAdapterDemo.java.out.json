@@ -1,0 +1,11 @@
+{
+  "stdout": "Parcel[grams=2500, country=GB] -> 600\nParcel[grams=800, country=IE] -> 396\nParcel[grams=500, country=US] -> refused: unsupported USA",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ShippingAdapterDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "b1597d4b307bd1a1",
+  "at": "2026-10-12T11:22:35.627Z"
+}

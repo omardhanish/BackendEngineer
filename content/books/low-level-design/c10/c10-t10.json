@@ -1,0 +1,91 @@
+{
+  "title": "Test doubles and mocking",
+  "idea": "A test double is a stand-in object you pass where a real dependency would go, so a unit test runs fast, repeatably and without the outside world.",
+  "analogy": {
+    "text": "A film shoot uses a stunt double for the dangerous scene and a cardboard prop in the background. Each stands in for one job only.",
+    "breaks": "A film double is unseen; a test may inspect what the double saw."
+  },
+  "points": [
+    "Dummy fills a parameter; stub returns canned answers; fake is a working in-memory version.",
+    "A spy records calls for later checks; a mock knows expected calls upfront.",
+    "Doubles are easiest when a class receives its dependencies, ideally interfaces, through its constructor.",
+    "Prefer checking state through fakes; mock only where the call itself is the behaviour."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "One checkout test, four doubles",
+    "actors": [
+      { "id": "test", "label": "Test" },
+      { "id": "sut", "label": "Checkout" },
+      { "id": "gw", "label": "Gateway stub" },
+      { "id": "store", "label": "Orders fake" },
+      { "id": "spy", "label": "Sender spy" }
+    ],
+    "messages": [
+      { "from": "test", "to": "sut", "label": "new Checkout(stub, fake, spy, dummy)", "note": "Arrange: the test builds the class with doubles. The dummy audit log is passed but must never be called." },
+      { "from": "test", "to": "sut", "label": "pay(\"O-1\", 1999)", "note": "Act: one call to the class under test." },
+      { "from": "sut", "to": "gw", "label": "charge(\"O-1\", 1999)", "note": "The stub ignores its inputs. No network, no card, no flakiness." },
+      { "from": "gw", "to": "sut", "label": "true", "dashed": true, "note": "It returns the canned answer the test chose: approved." },
+      { "from": "sut", "to": "store", "label": "save(\"O-1\", PAID)", "note": "The fake really stores the row, in a map instead of a database." },
+      { "from": "sut", "to": "spy", "label": "send(\"O-1\")", "note": "The spy sends nothing. It only writes the call down." },
+      { "from": "test", "to": "store", "label": "status(\"O-1\")?", "note": "Assert on state: ask the fake what was saved." },
+      { "from": "test", "to": "spy", "label": "sent()?", "note": "Assert on the interaction that matters: exactly one receipt, for O-1." }
+    ]
+  },
+  "code": [
+    {
+      "file": "DoublesDemo.java",
+      "lang": "java",
+      "title": "Stub, fake, spy and dummy",
+      "run": "captured",
+      "caption": "Hand-written doubles test both payment outcomes in milliseconds, with no gateway, database or mail server.",
+      "walk": [
+        { "lines": [19, 22], "text": "Each dependency is an interface, so any stand-in can be plugged in." },
+        { "lines": [24, 34], "text": "Constructor injection: the class never creates its collaborators itself." },
+        { "lines": [7, 8], "text": "Stubs as lambdas: one canned answer each, chosen by the test." },
+        { "lines": [45, 50], "text": "The fake is a real store backed by a map; tests read its state." },
+        { "lines": [51, 56], "text": "The spy records each call; `sent` exposes a copy for assertions." },
+        { "lines": [57, 60], "text": "The dummy fails loudly if touched, proving the happy path skips auditing." },
+        { "lines": [11, 13], "text": "Assertions check outcomes: saved status and who got a receipt." }
+      ]
+    },
+    {
+      "file": "OverSpecifiedMock.java",
+      "lang": "java",
+      "title": "When a mock over-specifies",
+      "run": "captured",
+      "caption": "A refactor batches receipts. Customers see no change, yet the strict mock fails while the fake-based test passes.",
+      "walk": [
+        { "lines": [26, 38], "text": "Two versions with identical results: one call per order, or one batch call." },
+        { "lines": [39, 49], "text": "The mock holds an exact script of expected calls and compares afterwards." },
+        { "lines": [7, 9], "text": "The mock test passes for v1 and breaks on v2: it tested how, not what." },
+        { "lines": [50, 56], "text": "The fake keeps the outcome: which orders received a receipt." },
+        { "lines": [10, 14], "text": "The state test passes for both versions, so the refactor stays safe." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Mocking every collaborator makes tests fail on harmless refactors while real bugs still pass.",
+    "Mocking types you do not own, like a vendor SDK, tests your guess of its behaviour.",
+    "A stub returning the value the test asserts proves only that the stub works."
+  ],
+  "quiz": {
+    "q": "A class sends an SMS alert after a failed login. Which double should test it?",
+    "options": [
+      "A dummy, since SMS is outside the unit",
+      "A spy that records the alert sent",
+      "A stub returning the SMS gateway's status code",
+      "The real SMS client pointed at a test number"
+    ],
+    "answer": 1,
+    "why": "Sending the alert is the behaviour itself, so the test must see the call. A spy records it; a dummy or stub cannot, and real SMS is slow and costly."
+  },
+  "takeaway": "Stub inputs, fake stores, spy on effects; mock sparingly.",
+  "chat": {
+    "starters": [
+      "How would these doubles look with Mockito?",
+      "When is a fake better than a mock?",
+      "Should I mock a class or only interfaces?"
+    ]
+  }
+}

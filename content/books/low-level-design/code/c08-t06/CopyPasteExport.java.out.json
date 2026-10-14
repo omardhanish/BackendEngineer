@@ -1,0 +1,11 @@
+{
+  "stdout": "item,qty\npen,3\n--\n| item | qty |\n|---|---|\n| pen | 3 |\n| ink | -1 |",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java CopyPasteExport.java",
+  "tool": "Java 17.0.17",
+  "hash": "62598e190ce764cc",
+  "at": "2026-10-12T11:18:42.466Z"
+}

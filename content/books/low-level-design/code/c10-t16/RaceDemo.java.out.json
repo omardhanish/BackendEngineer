@@ -1,0 +1,11 @@
+{
+  "stdout": "unsafe: paid=160 balance=-60\nsafe:   paid=80 balance=20",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java RaceDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "871b672228364f44",
+  "at": "2026-10-12T11:22:43.375Z"
+}

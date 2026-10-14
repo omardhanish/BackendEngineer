@@ -1,0 +1,79 @@
+{
+  "title": "API client class design",
+  "idea": "The API client design puts one `ApiClient` in front of a `Transport` and gives each changeable decision, retry, timeout and breaker, its own small type.",
+  "analogy": {
+    "text": "A courier desk. The clerk takes your parcel, the van is the transport, and a rule card says how often to redeliver.",
+    "breaks": "A courier sees delivery; the client often cannot tell if a request arrived."
+  },
+  "points": [
+    "Callers see one method: `execute(request)` returns a `Response`.",
+    "`Transport` does one attempt; the client owns the loop around it.",
+    "`RetryPolicy` decides whether to try again and how long to wait.",
+    "Time comes in through `Sleeper` and a clock, so tests never really wait."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Class diagram",
+    "nodes": [
+      { "id": "client", "label": "ApiClient", "sub": "execute(req): Response" },
+      { "id": "req", "label": "Request", "sub": "method, path, idempotencyKey" },
+      { "id": "res", "label": "Response", "sub": "status, isTransient()" },
+      { "id": "tr", "label": "Transport", "sub": "send(req, timeoutMs)" },
+      { "id": "rp", "label": "RetryPolicy", "sub": "shouldRetry, delayMs" },
+      { "id": "to", "label": "Timeout", "sub": "perAttemptMs, totalMs" },
+      { "id": "cb", "label": "CircuitBreaker", "sub": "allowRequest, onSuccess, onFailure" },
+      { "id": "sl", "label": "Sleeper", "sub": "sleep(ms)" }
+    ],
+    "edges": [
+      { "from": "client", "to": "req", "label": "takes", "caption": "A Request is an immutable record. It knows whether it is safe to repeat." },
+      { "from": "client", "to": "res", "label": "returns", "caption": "The caller gets the final Response, after however many attempts it took." },
+      { "from": "client", "to": "tr", "label": "has 1", "caption": "The Transport sends one attempt. A real one wraps an HTTP library; tests pass a fake." },
+      { "from": "client", "to": "rp", "label": "has 1", "caption": "The RetryPolicy is a strategy. Fixed delay here; exponential backoff with jitter next page." },
+      { "from": "client", "to": "to", "label": "has 1", "caption": "Timeout is a value object that rejects a total smaller than one attempt." },
+      { "from": "client", "to": "cb", "label": "has 1", "caption": "The CircuitBreaker is asked before each attempt and told how each attempt went." },
+      { "from": "client", "to": "sl", "label": "uses", "dashed": true, "caption": "The client waits through Sleeper. Production sleeps for real; tests move a manual clock." }
+    ]
+  },
+  "code": [
+    {
+      "file": "ClassDesign.java",
+      "lang": "java",
+      "title": "Types and the retry loop",
+      "run": "captured",
+      "caption": "Every type the chapter builds on, with a fixed-delay policy and a fake transport that fails twice.",
+      "walk": [
+        { "lines": [7, 8, 9, 10, 11, 12], "text": "A fake transport answers 503, 503, then 200, and each call costs 40 ms." },
+        { "lines": [13, 14, 15], "text": "Three attempts, 250 ms apart, with a breaker that never opens yet." },
+        { "lines": [20, 21, 22, 23, 24, 25], "text": "Idempotent methods, or any request with a key, are safe to repeat." },
+        { "lines": [31, 32, 33, 34, 35, 36, 37], "text": "Timeout refuses values that could never work." },
+        { "lines": [39, 40, 42, 43, 44, 45, 47, 48, 49, 50, 51], "text": "Four small interfaces: each one is a seam for a test or a new policy." },
+        { "lines": [65, 66, 67, 68, 69, 70, 71], "text": "Ask the breaker, send one attempt, then report the outcome to the breaker." },
+        { "lines": [72, 73], "text": "The policy decides whether to stop; otherwise sleep and loop." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not put the retry loop inside `Transport`; then nothing above can count attempts.",
+    "Do not call `Thread.sleep` directly in the client; inject a `Sleeper`.",
+    "Do not let a policy retry without checking `safeToRepeat` on the request."
+  ],
+  "quiz": {
+    "q": "What does the last line of ClassDesign print?",
+    "options": [
+      "result Response[status=200] at t=120",
+      "result Response[status=200] at t=620",
+      "result Response[status=503] at t=580",
+      "result Response[status=200] at t=750"
+    ],
+    "answer": 1,
+    "why": "Three calls cost 40 ms each and two waits cost 250 ms each: 120 plus 500 gives 620."
+  },
+  "takeaway": "One client loop; every changeable decision lives behind its own small interface.",
+  "chat": {
+    "starters": [
+      "Why is the breaker asked before every attempt, not once per call?",
+      "Should Response hold exceptions such as connection refused?",
+      "Where would authentication headers fit in this design?"
+    ]
+  }
+}

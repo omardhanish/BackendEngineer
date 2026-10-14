@@ -1,0 +1,11 @@
+{
+  "stdout": "Total before promo: 4500\nPromo discount: 400\nTotal after promo: 4500\nItems left: 2",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java CohesiveCart.java",
+  "tool": "Java 17.0.17",
+  "hash": "579201887fdefd8e",
+  "at": "2026-10-12T11:17:41.314Z"
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "POST /docs 201 {\"path\":\"/docs\",\"kind\":\"DIR\",\"sizeBytes\":0}\nPOST /docs/cv.pdf 201 {\"path\":\"/docs/cv.pdf\",\"kind\":\"FILE\",\"sizeBytes\":1200}\nPOST /docs/notes.txt 201 {\"path\":\"/docs/notes.txt\",\"kind\":\"FILE\",\"sizeBytes\":300}\nPOST /docs/cv.pdf/x 409 {\"error\":\"NOT_A_DIRECTORY\"}\nPOST /tmp/a.txt 404 {\"error\":\"NOT_FOUND\"}\nPOST docs/../etc 400 {\"error\":\"VALIDATION\"}\nrace statuses [201,409]\nGET /ls?path=/docs 200 [{\"name\":\"cv.pdf\",\"kind\":\"FILE\",\"sizeBytes\":1200},{\"name\":\"notes.txt\",\"kind\":\"FILE\",\"sizeBytes\":300},{\"name\":\"plan.txt\",\"kind\":\"FILE\",\"sizeBytes\":50}]\nGET /du?path=/ 200 {\"totalBytes\":1550,\"nodes\":5}\nDELETE /files?path=/docs 200 {\"deleted\":\"/docs\"}\nGET /du?path=/ 200 {\"totalBytes\":0,\"nodes\":1}",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node fs-api.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "7bd98da1bcbc01a7",
+  "at": "2026-10-14T10:26:21.990Z"
+}

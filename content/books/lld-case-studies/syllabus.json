@@ -1,0 +1,1673 @@
+{
+  "version": 1,
+  "chapters": [
+    {
+      "id": "c01",
+      "n": 1,
+      "title": "Production LLD Playbook",
+      "tagline": "The template every system in this book follows, from requirements to UI.",
+      "outcomes": [
+        "Go from requirements to a layered design",
+        "Map a Java domain model to a PostgreSQL schema",
+        "Design REST APIs with clear errors and idempotency",
+        "Prevent double booking with transactions and locks",
+        "Design the frontend's components, state and API client"
+      ],
+      "hue": 274,
+      "topics": [
+        "c01-t01",
+        "c01-t02",
+        "c01-t03",
+        "c01-t04",
+        "c01-t05",
+        "c01-t06"
+      ]
+    },
+    {
+      "id": "c02",
+      "n": 2,
+      "title": "Parking Lot System",
+      "tagline": "Beginner: spot allocation, vehicle entry and exit, parking fees.",
+      "outcomes": [
+        "Turn the requirements into Java classes",
+        "Handle concurrency and failure cases",
+        "Design the PostgreSQL schema and Node.js API",
+        "Design the frontend screens and data flow"
+      ],
+      "hue": 298,
+      "topics": [
+        "c02-t01",
+        "c02-t02",
+        "c02-t03",
+        "c02-t04",
+        "c02-t05",
+        "c02-t06",
+        "c02-t07",
+        "c02-t08"
+      ]
+    },
+    {
+      "id": "c03",
+      "n": 3,
+      "title": "Payment System",
+      "tagline": "Intermediate: payment methods, status, failures, retries and refunds.",
+      "outcomes": [
+        "Turn the requirements into Java classes",
+        "Handle concurrency and failure cases",
+        "Design the PostgreSQL schema and Node.js API",
+        "Design the frontend screens and data flow"
+      ],
+      "hue": 322,
+      "topics": [
+        "c03-t01",
+        "c03-t02",
+        "c03-t03",
+        "c03-t04",
+        "c03-t05",
+        "c03-t06",
+        "c03-t07",
+        "c03-t08"
+      ]
+    },
+    {
+      "id": "c04",
+      "n": 4,
+      "title": "Elevator System",
+      "tagline": "Intermediate: request scheduling, direction and elevator selection.",
+      "outcomes": [
+        "Turn the requirements into Java classes",
+        "Handle concurrency and failure cases",
+        "Design the PostgreSQL schema and Node.js API",
+        "Design the frontend screens and data flow"
+      ],
+      "hue": 346,
+      "topics": [
+        "c04-t01",
+        "c04-t02",
+        "c04-t03",
+        "c04-t04",
+        "c04-t05",
+        "c04-t06",
+        "c04-t07",
+        "c04-t08"
+      ]
+    },
+    {
+      "id": "c05",
+      "n": 5,
+      "title": "ATM System",
+      "tagline": "Beginner: authentication, balance checks, cash withdrawal, insufficient funds.",
+      "outcomes": [
+        "Turn the requirements into Java classes",
+        "Handle concurrency and failure cases",
+        "Design the PostgreSQL schema and Node.js API",
+        "Design the frontend screens and data flow"
+      ],
+      "hue": 10,
+      "topics": [
+        "c05-t01",
+        "c05-t02",
+        "c05-t03",
+        "c05-t04",
+        "c05-t05",
+        "c05-t06",
+        "c05-t07",
+        "c05-t08"
+      ]
+    },
+    {
+      "id": "c06",
+      "n": 6,
+      "title": "Library Management System",
+      "tagline": "Beginner: borrowing, returning, availability, reservations and overdue fines.",
+      "outcomes": [
+        "Turn the requirements into Java classes",
+        "Handle concurrency and failure cases",
+        "Design the PostgreSQL schema and Node.js API",
+        "Design the frontend screens and data flow"
+      ],
+      "hue": 34,
+      "topics": [
+        "c06-t01",
+        "c06-t02",
+        "c06-t03",
+        "c06-t04",
+        "c06-t05",
+        "c06-t06",
+        "c06-t07",
+        "c06-t08"
+      ]
+    },
+    {
+      "id": "c07",
+      "n": 7,
+      "title": "E-commerce Shopping Cart",
+      "tagline": "Intermediate: cart, pricing, stock checks, checkout and cancellation.",
+      "outcomes": [
+        "Turn the requirements into Java classes",
+        "Handle concurrency and failure cases",
+        "Design the PostgreSQL schema and Node.js API",
+        "Design the frontend screens and data flow"
+      ],
+      "hue": 58,
+      "topics": [
+        "c07-t01",
+        "c07-t02",
+        "c07-t03",
+        "c07-t04",
+        "c07-t05",
+        "c07-t06",
+        "c07-t07",
+        "c07-t08"
+      ]
+    },
+    {
+      "id": "c08",
+      "n": 8,
+      "title": "Movie Ticket Booking",
+      "tagline": "Seats, shows, seat locking and booking confirmation.",
+      "outcomes": [
+        "Turn the requirements into Java classes",
+        "Handle concurrency and failure cases",
+        "Design the PostgreSQL schema and Node.js API",
+        "Design the frontend screens and data flow"
+      ],
+      "hue": 82,
+      "topics": [
+        "c08-t01",
+        "c08-t02",
+        "c08-t03",
+        "c08-t04",
+        "c08-t05",
+        "c08-t06",
+        "c08-t07",
+        "c08-t08"
+      ]
+    },
+    {
+      "id": "c09",
+      "n": 9,
+      "title": "Hotel Booking",
+      "tagline": "Rooms, availability, reservations and cancellation.",
+      "outcomes": [
+        "Turn the requirements into Java classes",
+        "Handle concurrency and failure cases",
+        "Design the PostgreSQL schema and Node.js API",
+        "Design the frontend screens and data flow"
+      ],
+      "hue": 106,
+      "topics": [
+        "c09-t01",
+        "c09-t02",
+        "c09-t03",
+        "c09-t04",
+        "c09-t05",
+        "c09-t06",
+        "c09-t07",
+        "c09-t08"
+      ]
+    },
+    {
+      "id": "c10",
+      "n": 10,
+      "title": "Flight Booking",
+      "tagline": "Flights, passengers, seat assignment and tickets.",
+      "outcomes": [
+        "Turn the requirements into Java classes",
+        "Handle concurrency and failure cases",
+        "Design the PostgreSQL schema and Node.js API",
+        "Design the frontend screens and data flow"
+      ],
+      "hue": 130,
+      "topics": [
+        "c10-t01",
+        "c10-t02",
+        "c10-t03",
+        "c10-t04",
+        "c10-t05",
+        "c10-t06",
+        "c10-t07",
+        "c10-t08"
+      ]
+    },
+    {
+      "id": "c11",
+      "n": 11,
+      "title": "Restaurant Table Reservation",
+      "tagline": "Tables, time slots and reservation conflicts.",
+      "outcomes": [
+        "Turn the requirements into Java classes",
+        "Handle concurrency and failure cases",
+        "Design the PostgreSQL schema and Node.js API",
+        "Design the frontend screens and data flow"
+      ],
+      "hue": 154,
+      "topics": [
+        "c11-t01",
+        "c11-t02",
+        "c11-t03",
+        "c11-t04",
+        "c11-t05",
+        "c11-t06",
+        "c11-t07",
+        "c11-t08"
+      ]
+    },
+    {
+      "id": "c12",
+      "n": 12,
+      "title": "Meeting Room Booking",
+      "tagline": "Calendars, room availability and overlapping bookings.",
+      "outcomes": [
+        "Turn the requirements into Java classes",
+        "Handle concurrency and failure cases",
+        "Design the PostgreSQL schema and Node.js API",
+        "Design the frontend screens and data flow"
+      ],
+      "hue": 178,
+      "topics": [
+        "c12-t01",
+        "c12-t02",
+        "c12-t03",
+        "c12-t04",
+        "c12-t05",
+        "c12-t06",
+        "c12-t07",
+        "c12-t08"
+      ]
+    },
+    {
+      "id": "c13",
+      "n": 13,
+      "title": "Sports Ground Booking",
+      "tagline": "Time slots, pricing and booking cancellation.",
+      "outcomes": [
+        "Turn the requirements into Java classes",
+        "Handle concurrency and failure cases",
+        "Design the PostgreSQL schema and Node.js API",
+        "Design the frontend screens and data flow"
+      ],
+      "hue": 202,
+      "topics": [
+        "c13-t01",
+        "c13-t02",
+        "c13-t03",
+        "c13-t04",
+        "c13-t05",
+        "c13-t06",
+        "c13-t07",
+        "c13-t08"
+      ]
+    },
+    {
+      "id": "c14",
+      "n": 14,
+      "title": "Notification System",
+      "tagline": "Email, SMS and push notifications across multiple providers.",
+      "outcomes": [
+        "Turn the requirements into Java classes",
+        "Make the design thread-safe",
+        "Extend it without editing core code",
+        "Expose it as a Node.js service"
+      ],
+      "hue": 226,
+      "topics": [
+        "c14-t01",
+        "c14-t02",
+        "c14-t03",
+        "c14-t04",
+        "c14-t05",
+        "c14-t06"
+      ]
+    },
+    {
+      "id": "c15",
+      "n": 15,
+      "title": "Logger System",
+      "tagline": "Log levels, console and file output, formatting.",
+      "outcomes": [
+        "Turn the requirements into Java classes",
+        "Make the design thread-safe",
+        "Extend it without editing core code",
+        "Expose it as a Node.js service"
+      ],
+      "hue": 250,
+      "topics": [
+        "c15-t01",
+        "c15-t02",
+        "c15-t03",
+        "c15-t04",
+        "c15-t05",
+        "c15-t06"
+      ]
+    },
+    {
+      "id": "c16",
+      "n": 16,
+      "title": "Rate Limiter",
+      "tagline": "Request limits, time windows and throttling.",
+      "outcomes": [
+        "Turn the requirements into Java classes",
+        "Make the design thread-safe",
+        "Extend it without editing core code",
+        "Expose it as a Node.js service"
+      ],
+      "hue": 274,
+      "topics": [
+        "c16-t01",
+        "c16-t02",
+        "c16-t03",
+        "c16-t04",
+        "c16-t05",
+        "c16-t06"
+      ]
+    },
+    {
+      "id": "c17",
+      "n": 17,
+      "title": "Cache System",
+      "tagline": "LRU cache, eviction policies and key-value storage.",
+      "outcomes": [
+        "Turn the requirements into Java classes",
+        "Make the design thread-safe",
+        "Extend it without editing core code",
+        "Expose it as a Node.js service"
+      ],
+      "hue": 298,
+      "topics": [
+        "c17-t01",
+        "c17-t02",
+        "c17-t03",
+        "c17-t04",
+        "c17-t05",
+        "c17-t06"
+      ]
+    },
+    {
+      "id": "c18",
+      "n": 18,
+      "title": "File System",
+      "tagline": "Files, folders, directories and recursive traversal.",
+      "outcomes": [
+        "Turn the requirements into Java classes",
+        "Make the design thread-safe",
+        "Extend it without editing core code",
+        "Expose it as a Node.js service"
+      ],
+      "hue": 322,
+      "topics": [
+        "c18-t01",
+        "c18-t02",
+        "c18-t03",
+        "c18-t04",
+        "c18-t05",
+        "c18-t06"
+      ]
+    },
+    {
+      "id": "c19",
+      "n": 19,
+      "title": "Task Scheduler",
+      "tagline": "Jobs, execution times, retries and priorities.",
+      "outcomes": [
+        "Turn the requirements into Java classes",
+        "Make the design thread-safe",
+        "Extend it without editing core code",
+        "Expose it as a Node.js service"
+      ],
+      "hue": 346,
+      "topics": [
+        "c19-t01",
+        "c19-t02",
+        "c19-t03",
+        "c19-t04",
+        "c19-t05",
+        "c19-t06"
+      ]
+    },
+    {
+      "id": "c20",
+      "n": 20,
+      "title": "Pub-Sub Event Bus",
+      "tagline": "Publishers, subscribers and event delivery.",
+      "outcomes": [
+        "Turn the requirements into Java classes",
+        "Make the design thread-safe",
+        "Extend it without editing core code",
+        "Expose it as a Node.js service"
+      ],
+      "hue": 10,
+      "topics": [
+        "c20-t01",
+        "c20-t02",
+        "c20-t03",
+        "c20-t04",
+        "c20-t05",
+        "c20-t06"
+      ]
+    },
+    {
+      "id": "c21",
+      "n": 21,
+      "title": "API Client and Retry Manager",
+      "tagline": "Requests, retry policies and timeout handling.",
+      "outcomes": [
+        "Turn the requirements into Java classes",
+        "Make the design thread-safe",
+        "Extend it without editing core code",
+        "Expose it as a Node.js service"
+      ],
+      "hue": 34,
+      "topics": [
+        "c21-t01",
+        "c21-t02",
+        "c21-t03",
+        "c21-t04",
+        "c21-t05",
+        "c21-t06"
+      ]
+    }
+  ],
+  "topics": [
+    {
+      "id": "c01-t01",
+      "chapter": "c01",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "From Requirements to a Production Design"
+    },
+    {
+      "id": "c01-t02",
+      "chapter": "c01",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Layered Architecture: Frontend, API, Service, Domain, Database"
+    },
+    {
+      "id": "c01-t03",
+      "chapter": "c01",
+      "n": 3,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "From Java Domain Model to PostgreSQL Schema"
+    },
+    {
+      "id": "c01-t04",
+      "chapter": "c01",
+      "n": 4,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "REST API Design: Resources, Errors, Pagination, Idempotency"
+    },
+    {
+      "id": "c01-t05",
+      "chapter": "c01",
+      "n": 5,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Consistency Toolkit: Transactions, Row Locks, Optimistic Locking"
+    },
+    {
+      "id": "c01-t06",
+      "chapter": "c01",
+      "n": 6,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Frontend LLD: Components, State and API Client"
+    },
+    {
+      "id": "c02-t01",
+      "chapter": "c02",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Parking Lot System: Requirements and Scope"
+    },
+    {
+      "id": "c02-t02",
+      "chapter": "c02",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Parking Lot System: Domain Model and Class Diagram"
+    },
+    {
+      "id": "c02-t03",
+      "chapter": "c02",
+      "n": 3,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Parking Lot System: Core Design in Java"
+    },
+    {
+      "id": "c02-t04",
+      "chapter": "c02",
+      "n": 4,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Parking Lot System: Key Flows and State Machine"
+    },
+    {
+      "id": "c02-t05",
+      "chapter": "c02",
+      "n": 5,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Parking Lot System: Concurrency and Edge Cases"
+    },
+    {
+      "id": "c02-t06",
+      "chapter": "c02",
+      "n": 6,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Parking Lot System: Database Schema and Queries"
+    },
+    {
+      "id": "c02-t07",
+      "chapter": "c02",
+      "n": 7,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Parking Lot System: Backend API in Node.js"
+    },
+    {
+      "id": "c02-t08",
+      "chapter": "c02",
+      "n": 8,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Parking Lot System: Frontend Design and End-to-End Flow"
+    },
+    {
+      "id": "c03-t01",
+      "chapter": "c03",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Payment System: Requirements and Scope"
+    },
+    {
+      "id": "c03-t02",
+      "chapter": "c03",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Payment System: Domain Model and Class Diagram"
+    },
+    {
+      "id": "c03-t03",
+      "chapter": "c03",
+      "n": 3,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Payment System: Core Design in Java"
+    },
+    {
+      "id": "c03-t04",
+      "chapter": "c03",
+      "n": 4,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Payment System: Key Flows and State Machine"
+    },
+    {
+      "id": "c03-t05",
+      "chapter": "c03",
+      "n": 5,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Payment System: Concurrency and Edge Cases"
+    },
+    {
+      "id": "c03-t06",
+      "chapter": "c03",
+      "n": 6,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Payment System: Database Schema and Queries"
+    },
+    {
+      "id": "c03-t07",
+      "chapter": "c03",
+      "n": 7,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Payment System: Backend API in Node.js"
+    },
+    {
+      "id": "c03-t08",
+      "chapter": "c03",
+      "n": 8,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Payment System: Frontend Design and End-to-End Flow"
+    },
+    {
+      "id": "c04-t01",
+      "chapter": "c04",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Elevator System: Requirements and Scope"
+    },
+    {
+      "id": "c04-t02",
+      "chapter": "c04",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Elevator System: Domain Model and Class Diagram"
+    },
+    {
+      "id": "c04-t03",
+      "chapter": "c04",
+      "n": 3,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Elevator System: Core Design in Java"
+    },
+    {
+      "id": "c04-t04",
+      "chapter": "c04",
+      "n": 4,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Elevator System: Key Flows and State Machine"
+    },
+    {
+      "id": "c04-t05",
+      "chapter": "c04",
+      "n": 5,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Elevator System: Concurrency and Edge Cases"
+    },
+    {
+      "id": "c04-t06",
+      "chapter": "c04",
+      "n": 6,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Elevator System: Database Schema and Queries"
+    },
+    {
+      "id": "c04-t07",
+      "chapter": "c04",
+      "n": 7,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Elevator System: Backend API in Node.js"
+    },
+    {
+      "id": "c04-t08",
+      "chapter": "c04",
+      "n": 8,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Elevator System: Frontend Design and End-to-End Flow"
+    },
+    {
+      "id": "c05-t01",
+      "chapter": "c05",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "ATM System: Requirements and Scope"
+    },
+    {
+      "id": "c05-t02",
+      "chapter": "c05",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "ATM System: Domain Model and Class Diagram"
+    },
+    {
+      "id": "c05-t03",
+      "chapter": "c05",
+      "n": 3,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "ATM System: Core Design in Java"
+    },
+    {
+      "id": "c05-t04",
+      "chapter": "c05",
+      "n": 4,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "ATM System: Key Flows and State Machine"
+    },
+    {
+      "id": "c05-t05",
+      "chapter": "c05",
+      "n": 5,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "ATM System: Concurrency and Edge Cases"
+    },
+    {
+      "id": "c05-t06",
+      "chapter": "c05",
+      "n": 6,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "ATM System: Database Schema and Queries"
+    },
+    {
+      "id": "c05-t07",
+      "chapter": "c05",
+      "n": 7,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "ATM System: Backend API in Node.js"
+    },
+    {
+      "id": "c05-t08",
+      "chapter": "c05",
+      "n": 8,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "ATM System: Frontend Design and End-to-End Flow"
+    },
+    {
+      "id": "c06-t01",
+      "chapter": "c06",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Library Management System: Requirements and Scope"
+    },
+    {
+      "id": "c06-t02",
+      "chapter": "c06",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Library Management System: Domain Model and Class Diagram"
+    },
+    {
+      "id": "c06-t03",
+      "chapter": "c06",
+      "n": 3,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Library Management System: Core Design in Java"
+    },
+    {
+      "id": "c06-t04",
+      "chapter": "c06",
+      "n": 4,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Library Management System: Key Flows and State Machine"
+    },
+    {
+      "id": "c06-t05",
+      "chapter": "c06",
+      "n": 5,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Library Management System: Concurrency and Edge Cases"
+    },
+    {
+      "id": "c06-t06",
+      "chapter": "c06",
+      "n": 6,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Library Management System: Database Schema and Queries"
+    },
+    {
+      "id": "c06-t07",
+      "chapter": "c06",
+      "n": 7,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Library Management System: Backend API in Node.js"
+    },
+    {
+      "id": "c06-t08",
+      "chapter": "c06",
+      "n": 8,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Library Management System: Frontend Design and End-to-End Flow"
+    },
+    {
+      "id": "c07-t01",
+      "chapter": "c07",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "E-commerce Shopping Cart: Requirements and Scope"
+    },
+    {
+      "id": "c07-t02",
+      "chapter": "c07",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "E-commerce Shopping Cart: Domain Model and Class Diagram"
+    },
+    {
+      "id": "c07-t03",
+      "chapter": "c07",
+      "n": 3,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "E-commerce Shopping Cart: Core Design in Java"
+    },
+    {
+      "id": "c07-t04",
+      "chapter": "c07",
+      "n": 4,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "E-commerce Shopping Cart: Key Flows and State Machine"
+    },
+    {
+      "id": "c07-t05",
+      "chapter": "c07",
+      "n": 5,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "E-commerce Shopping Cart: Concurrency and Edge Cases"
+    },
+    {
+      "id": "c07-t06",
+      "chapter": "c07",
+      "n": 6,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "E-commerce Shopping Cart: Database Schema and Queries"
+    },
+    {
+      "id": "c07-t07",
+      "chapter": "c07",
+      "n": 7,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "E-commerce Shopping Cart: Backend API in Node.js"
+    },
+    {
+      "id": "c07-t08",
+      "chapter": "c07",
+      "n": 8,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "E-commerce Shopping Cart: Frontend Design and End-to-End Flow"
+    },
+    {
+      "id": "c08-t01",
+      "chapter": "c08",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Movie Ticket Booking: Requirements and Scope"
+    },
+    {
+      "id": "c08-t02",
+      "chapter": "c08",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Movie Ticket Booking: Domain Model and Class Diagram"
+    },
+    {
+      "id": "c08-t03",
+      "chapter": "c08",
+      "n": 3,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Movie Ticket Booking: Core Design in Java"
+    },
+    {
+      "id": "c08-t04",
+      "chapter": "c08",
+      "n": 4,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Movie Ticket Booking: Key Flows and State Machine"
+    },
+    {
+      "id": "c08-t05",
+      "chapter": "c08",
+      "n": 5,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Movie Ticket Booking: Concurrency and Edge Cases"
+    },
+    {
+      "id": "c08-t06",
+      "chapter": "c08",
+      "n": 6,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Movie Ticket Booking: Database Schema and Queries"
+    },
+    {
+      "id": "c08-t07",
+      "chapter": "c08",
+      "n": 7,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Movie Ticket Booking: Backend API in Node.js"
+    },
+    {
+      "id": "c08-t08",
+      "chapter": "c08",
+      "n": 8,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Movie Ticket Booking: Frontend Design and End-to-End Flow"
+    },
+    {
+      "id": "c09-t01",
+      "chapter": "c09",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Hotel Booking: Requirements and Scope"
+    },
+    {
+      "id": "c09-t02",
+      "chapter": "c09",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Hotel Booking: Domain Model and Class Diagram"
+    },
+    {
+      "id": "c09-t03",
+      "chapter": "c09",
+      "n": 3,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Hotel Booking: Core Design in Java"
+    },
+    {
+      "id": "c09-t04",
+      "chapter": "c09",
+      "n": 4,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Hotel Booking: Key Flows and State Machine"
+    },
+    {
+      "id": "c09-t05",
+      "chapter": "c09",
+      "n": 5,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Hotel Booking: Concurrency and Edge Cases"
+    },
+    {
+      "id": "c09-t06",
+      "chapter": "c09",
+      "n": 6,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Hotel Booking: Database Schema and Queries"
+    },
+    {
+      "id": "c09-t07",
+      "chapter": "c09",
+      "n": 7,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Hotel Booking: Backend API in Node.js"
+    },
+    {
+      "id": "c09-t08",
+      "chapter": "c09",
+      "n": 8,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Hotel Booking: Frontend Design and End-to-End Flow"
+    },
+    {
+      "id": "c10-t01",
+      "chapter": "c10",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Flight Booking: Requirements and Scope"
+    },
+    {
+      "id": "c10-t02",
+      "chapter": "c10",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Flight Booking: Domain Model and Class Diagram"
+    },
+    {
+      "id": "c10-t03",
+      "chapter": "c10",
+      "n": 3,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Flight Booking: Core Design in Java"
+    },
+    {
+      "id": "c10-t04",
+      "chapter": "c10",
+      "n": 4,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Flight Booking: Key Flows and State Machine"
+    },
+    {
+      "id": "c10-t05",
+      "chapter": "c10",
+      "n": 5,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Flight Booking: Concurrency and Edge Cases"
+    },
+    {
+      "id": "c10-t06",
+      "chapter": "c10",
+      "n": 6,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Flight Booking: Database Schema and Queries"
+    },
+    {
+      "id": "c10-t07",
+      "chapter": "c10",
+      "n": 7,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Flight Booking: Backend API in Node.js"
+    },
+    {
+      "id": "c10-t08",
+      "chapter": "c10",
+      "n": 8,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Flight Booking: Frontend Design and End-to-End Flow"
+    },
+    {
+      "id": "c11-t01",
+      "chapter": "c11",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Restaurant Table Reservation: Requirements and Scope"
+    },
+    {
+      "id": "c11-t02",
+      "chapter": "c11",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Restaurant Table Reservation: Domain Model and Class Diagram"
+    },
+    {
+      "id": "c11-t03",
+      "chapter": "c11",
+      "n": 3,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Restaurant Table Reservation: Core Design in Java"
+    },
+    {
+      "id": "c11-t04",
+      "chapter": "c11",
+      "n": 4,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Restaurant Table Reservation: Key Flows and State Machine"
+    },
+    {
+      "id": "c11-t05",
+      "chapter": "c11",
+      "n": 5,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Restaurant Table Reservation: Concurrency and Edge Cases"
+    },
+    {
+      "id": "c11-t06",
+      "chapter": "c11",
+      "n": 6,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Restaurant Table Reservation: Database Schema and Queries"
+    },
+    {
+      "id": "c11-t07",
+      "chapter": "c11",
+      "n": 7,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Restaurant Table Reservation: Backend API in Node.js"
+    },
+    {
+      "id": "c11-t08",
+      "chapter": "c11",
+      "n": 8,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Restaurant Table Reservation: Frontend Design and End-to-End Flow"
+    },
+    {
+      "id": "c12-t01",
+      "chapter": "c12",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Meeting Room Booking: Requirements and Scope"
+    },
+    {
+      "id": "c12-t02",
+      "chapter": "c12",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Meeting Room Booking: Domain Model and Class Diagram"
+    },
+    {
+      "id": "c12-t03",
+      "chapter": "c12",
+      "n": 3,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Meeting Room Booking: Core Design in Java"
+    },
+    {
+      "id": "c12-t04",
+      "chapter": "c12",
+      "n": 4,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Meeting Room Booking: Key Flows and State Machine"
+    },
+    {
+      "id": "c12-t05",
+      "chapter": "c12",
+      "n": 5,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Meeting Room Booking: Concurrency and Edge Cases"
+    },
+    {
+      "id": "c12-t06",
+      "chapter": "c12",
+      "n": 6,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Meeting Room Booking: Database Schema and Queries"
+    },
+    {
+      "id": "c12-t07",
+      "chapter": "c12",
+      "n": 7,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Meeting Room Booking: Backend API in Node.js"
+    },
+    {
+      "id": "c12-t08",
+      "chapter": "c12",
+      "n": 8,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Meeting Room Booking: Frontend Design and End-to-End Flow"
+    },
+    {
+      "id": "c13-t01",
+      "chapter": "c13",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Sports Ground Booking: Requirements and Scope"
+    },
+    {
+      "id": "c13-t02",
+      "chapter": "c13",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Sports Ground Booking: Domain Model and Class Diagram"
+    },
+    {
+      "id": "c13-t03",
+      "chapter": "c13",
+      "n": 3,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Sports Ground Booking: Core Design in Java"
+    },
+    {
+      "id": "c13-t04",
+      "chapter": "c13",
+      "n": 4,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Sports Ground Booking: Key Flows and State Machine"
+    },
+    {
+      "id": "c13-t05",
+      "chapter": "c13",
+      "n": 5,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Sports Ground Booking: Concurrency and Edge Cases"
+    },
+    {
+      "id": "c13-t06",
+      "chapter": "c13",
+      "n": 6,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Sports Ground Booking: Database Schema and Queries"
+    },
+    {
+      "id": "c13-t07",
+      "chapter": "c13",
+      "n": 7,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Sports Ground Booking: Backend API in Node.js"
+    },
+    {
+      "id": "c13-t08",
+      "chapter": "c13",
+      "n": 8,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Sports Ground Booking: Frontend Design and End-to-End Flow"
+    },
+    {
+      "id": "c14-t01",
+      "chapter": "c14",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Notification System: Requirements and Scope"
+    },
+    {
+      "id": "c14-t02",
+      "chapter": "c14",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Notification System: Class Design"
+    },
+    {
+      "id": "c14-t03",
+      "chapter": "c14",
+      "n": 3,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Notification System: Core Implementation in Java"
+    },
+    {
+      "id": "c14-t04",
+      "chapter": "c14",
+      "n": 4,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Notification System: Concurrency and Thread Safety"
+    },
+    {
+      "id": "c14-t05",
+      "chapter": "c14",
+      "n": 5,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Notification System: Extensibility and Configuration"
+    },
+    {
+      "id": "c14-t06",
+      "chapter": "c14",
+      "n": 6,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Notification System: Node.js Service and Interview Follow-ups"
+    },
+    {
+      "id": "c15-t01",
+      "chapter": "c15",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Logger System: Requirements and Scope"
+    },
+    {
+      "id": "c15-t02",
+      "chapter": "c15",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Logger System: Class Design"
+    },
+    {
+      "id": "c15-t03",
+      "chapter": "c15",
+      "n": 3,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Logger System: Core Implementation in Java"
+    },
+    {
+      "id": "c15-t04",
+      "chapter": "c15",
+      "n": 4,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Logger System: Concurrency and Thread Safety"
+    },
+    {
+      "id": "c15-t05",
+      "chapter": "c15",
+      "n": 5,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Logger System: Extensibility and Configuration"
+    },
+    {
+      "id": "c15-t06",
+      "chapter": "c15",
+      "n": 6,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Logger System: Node.js Service and Interview Follow-ups"
+    },
+    {
+      "id": "c16-t01",
+      "chapter": "c16",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Rate Limiter: Requirements and Scope"
+    },
+    {
+      "id": "c16-t02",
+      "chapter": "c16",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Rate Limiter: Class Design"
+    },
+    {
+      "id": "c16-t03",
+      "chapter": "c16",
+      "n": 3,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Rate Limiter: Core Implementation in Java"
+    },
+    {
+      "id": "c16-t04",
+      "chapter": "c16",
+      "n": 4,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Rate Limiter: Concurrency and Thread Safety"
+    },
+    {
+      "id": "c16-t05",
+      "chapter": "c16",
+      "n": 5,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Rate Limiter: Extensibility and Configuration"
+    },
+    {
+      "id": "c16-t06",
+      "chapter": "c16",
+      "n": 6,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Rate Limiter: Node.js Service and Interview Follow-ups"
+    },
+    {
+      "id": "c17-t01",
+      "chapter": "c17",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Cache System: Requirements and Scope"
+    },
+    {
+      "id": "c17-t02",
+      "chapter": "c17",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Cache System: Class Design"
+    },
+    {
+      "id": "c17-t03",
+      "chapter": "c17",
+      "n": 3,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Cache System: Core Implementation in Java"
+    },
+    {
+      "id": "c17-t04",
+      "chapter": "c17",
+      "n": 4,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Cache System: Concurrency and Thread Safety"
+    },
+    {
+      "id": "c17-t05",
+      "chapter": "c17",
+      "n": 5,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Cache System: Extensibility and Configuration"
+    },
+    {
+      "id": "c17-t06",
+      "chapter": "c17",
+      "n": 6,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Cache System: Node.js Service and Interview Follow-ups"
+    },
+    {
+      "id": "c18-t01",
+      "chapter": "c18",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "File System: Requirements and Scope"
+    },
+    {
+      "id": "c18-t02",
+      "chapter": "c18",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "File System: Class Design"
+    },
+    {
+      "id": "c18-t03",
+      "chapter": "c18",
+      "n": 3,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "File System: Core Implementation in Java"
+    },
+    {
+      "id": "c18-t04",
+      "chapter": "c18",
+      "n": 4,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "File System: Concurrency and Thread Safety"
+    },
+    {
+      "id": "c18-t05",
+      "chapter": "c18",
+      "n": 5,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "File System: Extensibility and Configuration"
+    },
+    {
+      "id": "c18-t06",
+      "chapter": "c18",
+      "n": 6,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "File System: Node.js Service and Interview Follow-ups"
+    },
+    {
+      "id": "c19-t01",
+      "chapter": "c19",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Task Scheduler: Requirements and Scope"
+    },
+    {
+      "id": "c19-t02",
+      "chapter": "c19",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Task Scheduler: Class Design"
+    },
+    {
+      "id": "c19-t03",
+      "chapter": "c19",
+      "n": 3,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Task Scheduler: Core Implementation in Java"
+    },
+    {
+      "id": "c19-t04",
+      "chapter": "c19",
+      "n": 4,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Task Scheduler: Concurrency and Thread Safety"
+    },
+    {
+      "id": "c19-t05",
+      "chapter": "c19",
+      "n": 5,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Task Scheduler: Extensibility and Configuration"
+    },
+    {
+      "id": "c19-t06",
+      "chapter": "c19",
+      "n": 6,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Task Scheduler: Node.js Service and Interview Follow-ups"
+    },
+    {
+      "id": "c20-t01",
+      "chapter": "c20",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Pub-Sub Event Bus: Requirements and Scope"
+    },
+    {
+      "id": "c20-t02",
+      "chapter": "c20",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Pub-Sub Event Bus: Class Design"
+    },
+    {
+      "id": "c20-t03",
+      "chapter": "c20",
+      "n": 3,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Pub-Sub Event Bus: Core Implementation in Java"
+    },
+    {
+      "id": "c20-t04",
+      "chapter": "c20",
+      "n": 4,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "Pub-Sub Event Bus: Concurrency and Thread Safety"
+    },
+    {
+      "id": "c20-t05",
+      "chapter": "c20",
+      "n": 5,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Pub-Sub Event Bus: Extensibility and Configuration"
+    },
+    {
+      "id": "c20-t06",
+      "chapter": "c20",
+      "n": 6,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "Pub-Sub Event Bus: Node.js Service and Interview Follow-ups"
+    },
+    {
+      "id": "c21-t01",
+      "chapter": "c21",
+      "n": 1,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "API Client and Retry Manager: Requirements and Scope"
+    },
+    {
+      "id": "c21-t02",
+      "chapter": "c21",
+      "n": 2,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "API Client and Retry Manager: Class Design"
+    },
+    {
+      "id": "c21-t03",
+      "chapter": "c21",
+      "n": 3,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "API Client and Retry Manager: Core Implementation in Java"
+    },
+    {
+      "id": "c21-t04",
+      "chapter": "c21",
+      "n": 4,
+      "kind": "lecture",
+      "depth": 3,
+      "source": "API Client and Retry Manager: Concurrency and Thread Safety"
+    },
+    {
+      "id": "c21-t05",
+      "chapter": "c21",
+      "n": 5,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "API Client and Retry Manager: Extensibility and Configuration"
+    },
+    {
+      "id": "c21-t06",
+      "chapter": "c21",
+      "n": 6,
+      "kind": "lecture",
+      "depth": 2,
+      "source": "API Client and Retry Manager: Node.js Service and Interview Follow-ups"
+    }
+  ]
+}

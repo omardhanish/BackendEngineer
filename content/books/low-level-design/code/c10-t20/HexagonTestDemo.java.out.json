@@ -1,0 +1,11 @@
+{
+  "stdout": "PASS returns the generated code\nPASS saves code and url through the port\nPASS rejects plain http\nPASS saves nothing for a bad url\nall passed",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java HexagonTestDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "f7e7a51611b5fb78",
+  "at": "2026-10-12T11:33:50.836Z"
+}

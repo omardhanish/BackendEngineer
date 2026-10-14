@@ -1,0 +1,360 @@
+{
+  "title": "Thread-safe logging",
+  "idea": "A thread-safe logger writes each line as one indivisible unit, and an async appender lets many threads hand lines to one writer thread through a bounded queue.",
+  "analogy": {
+    "text": "A shared notebook. If two people alternate half-sentences, the page is garbage. Better: everyone drops finished notes in a tray, and one scribe copies them in.",
+    "breaks": "A real tray never refuses notes; a full queue does."
+  },
+  "points": [
+    "Two writes per line let another thread slip in between, tearing the line.",
+    "Format the full line first, then write it in one locked call.",
+    "An async appender queues lines; one writer thread owns the output.",
+    "A bounded queue caps memory; here a full queue drops and counts, not blocks."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "lanes",
+    "title": "Async appender with a bounded queue",
+    "scenario": {
+      "lanes": [
+        {
+          "id": "prod",
+          "label": "App threads",
+          "kind": "area",
+          "hint": "call append"
+        },
+        {
+          "id": "q",
+          "label": "Queue (capacity 2)",
+          "kind": "queue"
+        },
+        {
+          "id": "w",
+          "label": "log-writer thread",
+          "kind": "area",
+          "hint": "only writer"
+        },
+        {
+          "id": "disk",
+          "label": "Disk / dropped",
+          "kind": "area"
+        }
+      ],
+      "tokens": {
+        "r1": {
+          "label": "r1",
+          "tone": "io"
+        },
+        "r2": {
+          "label": "r2",
+          "tone": "io"
+        },
+        "r3": {
+          "label": "r3",
+          "tone": "io"
+        },
+        "r4": {
+          "label": "r4",
+          "tone": "err"
+        },
+        "d4": {
+          "label": "r4 dropped",
+          "tone": "neutral"
+        },
+        "w1": {
+          "label": "r1 written",
+          "tone": "micro"
+        },
+        "w2": {
+          "label": "r2 written",
+          "tone": "micro"
+        },
+        "w3": {
+          "label": "r3 written",
+          "tone": "micro"
+        },
+        "stop": {
+          "label": "STOP",
+          "tone": "timer"
+        }
+      },
+      "steps": [
+        {
+          "caption": "An app thread calls `append(r1)`. `offer` puts it in the queue and returns at once.",
+          "at": {
+            "q": [
+              "r1"
+            ]
+          },
+          "active": "r1"
+        },
+        {
+          "caption": "The writer takes r1 and starts a slow disk write. The queue is empty again.",
+          "at": {
+            "w": [
+              "r1"
+            ]
+          },
+          "active": "r1"
+        },
+        {
+          "caption": "While the disk stalls, threads append r2 and r3. The queue is now full.",
+          "at": {
+            "q": [
+              "r2",
+              "r3"
+            ],
+            "w": [
+              "r1"
+            ]
+          }
+        },
+        {
+          "caption": "r4 arrives. `offer` returns false instead of blocking the request thread.",
+          "at": {
+            "prod": [
+              "r4"
+            ],
+            "q": [
+              "r2",
+              "r3"
+            ],
+            "w": [
+              "r1"
+            ]
+          },
+          "active": "r4"
+        },
+        {
+          "caption": "The appender counts r4 as dropped. A metric on that count tells operators.",
+          "at": {
+            "q": [
+              "r2",
+              "r3"
+            ],
+            "w": [
+              "r1"
+            ],
+            "disk": [
+              "d4"
+            ]
+          },
+          "active": "d4"
+        },
+        {
+          "caption": "The disk recovers. The writer finishes r1, then writes r2 and r3 in queue order.",
+          "at": {
+            "disk": [
+              "d4",
+              "w1",
+              "w2",
+              "w3"
+            ]
+          }
+        },
+        {
+          "caption": "`close` puts a STOP marker behind every line already queued; producers should stop before close, or a late line can land after STOP.",
+          "at": {
+            "q": [
+              "stop"
+            ],
+            "disk": [
+              "d4",
+              "w1",
+              "w2",
+              "w3"
+            ]
+          },
+          "active": "stop"
+        },
+        {
+          "caption": "The writer takes STOP and exits. `close` joins it before returning.",
+          "at": {
+            "w": [
+              "stop"
+            ],
+            "disk": [
+              "d4",
+              "w1",
+              "w2",
+              "w3"
+            ]
+          },
+          "active": "stop"
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "TornLines.java",
+      "lang": "java",
+      "title": "Prove torn lines",
+      "run": "captured",
+      "caption": "A barrier forces the bad interleaving every run. A thread-safe buffer does not help when one line takes two calls.",
+      "walk": [
+        {
+          "lines": [
+            5
+          ],
+          "text": "A good line has one prefix and the same thread name in its body."
+        },
+        {
+          "lines": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14
+          ],
+          "text": "Each thread writes its prefix, waits for the other, then writes its body."
+        },
+        {
+          "lines": [
+            15
+          ],
+          "text": "Both lines come out mangled, though every single append was thread-safe."
+        },
+        {
+          "lines": [
+            17,
+            18,
+            19,
+            20,
+            21,
+            22
+          ],
+          "text": "Fix: build the whole line, then append it once. The lock matters only for unsafe streams."
+        },
+        {
+          "lines": [
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39
+          ],
+          "text": "Start the threads, then join them all before counting lines."
+        }
+      ]
+    },
+    {
+      "file": "AsyncAppender.java",
+      "lang": "java",
+      "title": "Async appender",
+      "run": "captured",
+      "caption": "Many producers, one writer thread, a bounded queue, a drop counter and a clean shutdown.",
+      "walk": [
+        {
+          "lines": [
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17
+          ],
+          "text": "Three threads append 200 lines each into a queue of 1000."
+        },
+        {
+          "lines": [
+            18,
+            19,
+            20,
+            21
+          ],
+          "text": "`close` drains everything; order per thread holds; late lines are refused."
+        },
+        {
+          "lines": [
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31
+          ],
+          "text": "A stalled disk and a queue of 2: the extra lines are dropped, not blocked."
+        },
+        {
+          "lines": [
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63,
+            64,
+            65,
+            66,
+            67
+          ],
+          "text": "The single writer thread loops on `take` until it sees STOP."
+        },
+        {
+          "lines": [
+            69,
+            70,
+            71,
+            72,
+            73,
+            74
+          ],
+          "text": "`offer` never waits: a full queue means drop and count."
+        },
+        {
+          "lines": [
+            78,
+            79,
+            80,
+            81,
+            82
+          ],
+          "text": "`put` waits for space, so STOP lands after every queued line."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Never write prefix and message in separate calls to a shared stream.",
+    "Do not use an unbounded queue; a slow disk then eats all memory.",
+    "Always close the async appender on shutdown, or queued lines are lost."
+  ],
+  "quiz": {
+    "q": "What is the last line AsyncAppender prints?",
+    "options": [
+      "stalled disk dropped 0",
+      "stalled disk dropped 4",
+      "stalled disk dropped 2",
+      "It changes from run to run"
+    ],
+    "answer": 2,
+    "why": "The writer is stuck holding r1, so the queue starts empty. r2 and r3 fill both slots; `offer` refuses r4 and r5."
+  },
+  "takeaway": "One line, one write; many producers, one writer, a bounded queue.",
+  "chat": {
+    "starters": [
+      "When should ERROR lines block instead of being dropped?",
+      "Why is a single writer thread simpler than locking the file?",
+      "What happens to queued lines if the JVM is killed with SIGKILL?"
+    ]
+  }
+}

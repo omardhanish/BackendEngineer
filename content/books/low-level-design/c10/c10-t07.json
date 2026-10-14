@@ -1,0 +1,100 @@
+{
+  "title": "Bounded contexts and domain events",
+  "idea": "A bounded context is a boundary inside which each word has one meaning; a domain event is a past-tense fact one context publishes so others can react.",
+  "points": [
+    "Sales and Warehouse may both say `Product` yet need different fields and rules.",
+    "Each context owns its model; contexts share only ids and small event records.",
+    "An aggregate records events like `OrderPlaced`; the application publishes them after saving.",
+    "Subscribers translate the event into their own model, so the publisher never knows them."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "One fact, three contexts",
+    "scenario": {
+      "tiers": [["client"], ["sales"], ["bus"], ["wh", "bill"]],
+      "nodes": {
+        "client": { "label": "Checkout", "kind": "user" },
+        "sales": { "label": "Sales", "sub": "Order, Product(price)", "kind": "service" },
+        "bus": { "label": "EventBus", "sub": "OrderPlaced", "kind": "topic" },
+        "wh": { "label": "Warehouse", "sub": "Product(onHand, cost)", "kind": "service" },
+        "bill": { "label": "Billing", "sub": "Ledger", "kind": "service" }
+      },
+      "links": [
+        ["client", "sales"],
+        ["sales", "bus", { "label": "publish" }],
+        ["bus", "wh", { "label": "subscribe", "dashed": true }],
+        ["bus", "bill", { "label": "subscribe", "dashed": true }]
+      ],
+      "groups": [
+        { "label": "Sales context", "nodes": ["sales"] },
+        { "label": "Warehouse context", "nodes": ["wh"] },
+        { "label": "Billing context", "nodes": ["bill"] }
+      ],
+      "steps": [
+        { "caption": "Three contexts, each with its own model. None imports another's classes.", "focus": ["sales", "wh", "bill"] },
+        { "caption": "A customer places order O-1. Sales checks its own rules inside the `Order` aggregate.", "send": [{ "from": "client", "to": "sales", "label": "place", "tone": "req" }], "state": { "sales": "busy" } },
+        { "caption": "The aggregate records a fact: `OrderPlaced` with ids and values, never the `Order` object.", "state": { "sales": "ok" }, "badge": { "sales": "OrderPlaced" } },
+        { "caption": "After the order is saved, the application hands the event to the bus.", "send": [{ "from": "sales", "to": "bus", "label": "OrderPlaced", "tone": "info" }], "state": { "bus": "busy" } },
+        { "caption": "Each subscriber receives the same fact. Sales does not know who is listening.", "send": [{ "from": "bus", "to": "wh", "label": "O-1", "tone": "info" }, { "from": "bus", "to": "bill", "label": "O-1", "tone": "info" }], "state": { "bus": "ok" } },
+        { "caption": "Warehouse translates it into its own model and reserves units on the shelf.", "state": { "wh": "ok" }, "badge": { "wh": "reserved" }, "focus": ["wh"] },
+        { "caption": "Billing reads only the total. Adding a Loyalty context later is one more subscriber.", "state": { "bill": "ok" }, "badge": { "bill": "invoiced" }, "focus": ["bill"] }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "SharedProduct.java",
+      "lang": "java",
+      "title": "The problem: one shared model",
+      "run": "captured",
+      "caption": "Sales and warehouse share one `Product`. Receiving stock silently changes the shop price.",
+      "walk": [
+        { "lines": [15, 19], "text": "One class for the whole company; `price` has no single meaning." },
+        { "lines": [31, 37], "text": "Sales code reads `price` as what the customer pays." },
+        { "lines": [38, 45], "text": "Warehouse code writes the supplier's unit cost into the same field." },
+        { "lines": [8, 12], "text": "Each team's code is correct alone. Together they corrupt the shop label." },
+        { "lines": [10, 10], "text": "No exception fires; the bug shows only as a wrong price in the output." }
+      ]
+    },
+    {
+      "file": "ContextsAndEvents.java",
+      "lang": "java",
+      "title": "The fix: contexts + events",
+      "run": "captured",
+      "caption": "Each context has its own `Product`. Sales publishes `OrderPlaced`; Warehouse and Billing react in their own terms.",
+      "walk": [
+        { "lines": [19, 20], "text": "The event is an immutable record, named in the past tense, holding ids and values." },
+        { "lines": [21, 25], "text": "A tiny in-process bus. Handlers run in subscription order, so output is repeatable." },
+        { "lines": [26, 42], "text": "The aggregate records the event; `pullEvents` hands it over once, then clears." },
+        { "lines": [44, 46], "text": "Warehouse has its own `Product`: stock and cost, no sales price at all." },
+        { "lines": [50, 59], "text": "The handler translates the fact into a local change, or a backorder." },
+        { "lines": [12, 15], "text": "Publish only after the order is saved, or subscribers react to a rolled-back fact." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Putting the whole `Order` in an event couples subscribers to the publisher's internal model.",
+    "Publishing before the save commits lets subscribers act on an order that never existed.",
+    "Naming events as commands, like `ReserveStock`, hides that the publisher should not care who reacts."
+  ],
+  "quiz": {
+    "q": "Billing must invoice when an order is placed. What should `OrderPlaced` carry?",
+    "options": [
+      "The Sales `Order` object so Billing can read any field",
+      "A reference to the Sales repository for lookups",
+      "Nothing; Billing queries the Sales tables directly",
+      "The order id and the plain values Billing needs"
+    ],
+    "answer": 3,
+    "why": "Plain ids and values are a stable contract. Objects, repositories or shared tables tie Billing to Sales internals and break the context boundary."
+  },
+  "takeaway": "One meaning per context; contexts talk through small past-tense events.",
+  "chat": {
+    "starters": [
+      "How do I find where one bounded context ends?",
+      "What is an anti-corruption layer between contexts?",
+      "How do I avoid losing events if the app crashes after saving?"
+    ]
+  }
+}

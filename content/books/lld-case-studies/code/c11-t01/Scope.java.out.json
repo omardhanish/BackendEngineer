@@ -1,0 +1,11 @@
+{
+  "stdout": "IN  CUSTOMER: SEARCH_SLOTS\nIN  CUSTOMER: BOOK_TABLE\nIN  CUSTOMER: CANCEL\nIN  HOST: SEAT_PARTY\nIN  HOST: FINISH_MEAL\nIN  SYSTEM: MARK_NO_SHOW\nOUT CUSTOMER: WAITLIST\nOUT CUSTOMER: PAY_DEPOSIT\nOUT HOST: JOIN_TABLES\nRules[diningMinutes=90, slotStepMinutes=15, maxParty=8, graceMinutes=15]\nparty of 10 allowed? false",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java Scope.java",
+  "tool": "Java 17.0.17",
+  "hash": "8bfad8d34d5ff279",
+  "at": "2026-10-14T08:43:51.421Z"
+}

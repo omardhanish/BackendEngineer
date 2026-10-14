@@ -1,0 +1,11 @@
+{
+  "stdout": "10:00 claims: 5 distinct: 5\n10:01 claims: 2 distinct: 2\n10:05 claims: 1 distinct: 1\nreport-a SUCCEEDED 1\nreport-b SUCCEEDED 1\ncharge SUCCEEDED 1\nflaky SUCCEEDED 2\nbroken FAILED 2\nlater SUCCEEDED 1",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node worker.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "4d4ffd9f136457a2",
+  "at": "2026-10-14T08:46:19.359Z"
+}

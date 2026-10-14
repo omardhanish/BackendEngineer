@@ -1,0 +1,11 @@
+{
+  "stdout": "c1 -> example.com\nc2 -> no-domain\nc3 -> no-domain\nstrict: no domain for c2",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java OptionalDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "ab663020bdd607a4",
+  "at": "2026-10-12T11:22:07.143Z"
+}

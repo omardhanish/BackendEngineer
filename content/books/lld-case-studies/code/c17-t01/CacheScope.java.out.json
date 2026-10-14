@@ -1,0 +1,11 @@
+{
+  "stdout": "IN  functional     get(key) returns the value or a miss\nIN  functional     put(key, value) inserts or replaces\nIN  functional     remove(key) deletes one entry\nIN  functional     a full cache evicts by a policy, LRU first\nIN  functional     an entry can expire after a time-to-live\nIN  functional     count hits, misses and evictions\nIN  non-functional get and put in O(1) average time\nIN  non-functional never hold more than capacity entries\nIN  non-functional correct under many threads at once\nOUT functional     survive a process restart\nOUT non-functional share one cache across many servers",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java CacheScope.java",
+  "tool": "Java 17.0.17",
+  "hash": "a9ae99f87cdf4263",
+  "at": "2026-10-14T08:36:28.686Z"
+}

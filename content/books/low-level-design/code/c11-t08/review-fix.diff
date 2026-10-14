@@ -1,0 +1,13 @@
+ // Review comment (design, blocking): "BookingService sends email
+ // itself. Who changes this class when HR wants a Slack alert?"
+ Booking book(String employeeId, String roomId, double start, double end) {
+     Booking candidate = newBooking(employeeId, roomId, start, end);
+     if (policy.conflicts(candidate, bookings.forRoom(roomId))) {
+         throw new RoomTakenException(roomId);
+     }
+     bookings.save(candidate);
+-    emailClient.send(employeeId, "Booked " + roomId);
+-    System.out.println("AUDIT booked " + candidate.id());
++    listeners.forEach(listener -> listener.onBooked(candidate));
+     return candidate;
+ }

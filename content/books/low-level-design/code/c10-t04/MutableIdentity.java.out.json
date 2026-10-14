@@ -1,0 +1,11 @@
+{
+  "stdout": "price: 600\n500 equals 500? false\nada still VIP? false",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java MutableIdentity.java",
+  "tool": "Java 17.0.17",
+  "hash": "57fda3e1681f9225",
+  "at": "2026-10-12T11:19:14.716Z"
+}

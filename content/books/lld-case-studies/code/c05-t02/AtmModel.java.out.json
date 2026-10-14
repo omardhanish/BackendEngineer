@@ -1,0 +1,11 @@
+{
+  "stdout": "card ****4444 -> AC-1, expired in 2028-04? true\nAC-1 balance 300000\nATM-7 IDLE 2000x1 500x4 100x10 total 500000\nTX-1 WITHDRAWAL 200000 COMPLETED\nrejected: insufficient funds in AC-1\nrejected: withdrawal must be positive",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java AtmModel.java",
+  "tool": "Java 17.0.17",
+  "hash": "91119d91b7030d22",
+  "at": "2026-10-14T10:24:00.759Z"
+}

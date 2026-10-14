@@ -1,0 +1,11 @@
+{
+  "stdout": "race results: [ 'OUT_OF_STOCK SKU-TEE', 'placed' ]\nOR-3: OUT_OF_STOCK SKU-TEE\nOR-4: placed\n[{\"sku\":\"SKU-MUG\",\"on_hand\":5,\"reserved\":2},{\"sku\":\"SKU-TEE\",\"on_hand\":1,\"reserved\":1}]\nsweep updated inventory rows: 2 [{\"sku\":\"SKU-MUG\",\"on_hand\":5,\"reserved\":0},{\"sku\":\"SKU-TEE\",\"on_hand\":1,\"reserved\":0}]\non-time payment for cancelled OR-4: 0",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node reserve.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "0be01c869b02afb9",
+  "at": "2026-10-14T10:25:01.070Z"
+}

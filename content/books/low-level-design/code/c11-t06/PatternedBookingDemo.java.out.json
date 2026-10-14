@@ -1,0 +1,11 @@
+{
+  "stdout": "email: ana got R1\naudit: B1 at 9.0\nrejected raj: ROOM_TAKEN\nemail: raj got R1\naudit: B2 at 10.25",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java PatternedBookingDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "b57ba667ab3d0134",
+  "at": "2026-10-12T11:24:27.595Z"
+}

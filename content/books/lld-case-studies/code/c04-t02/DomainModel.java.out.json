@@ -1,0 +1,11 @@
+{
+  "stdout": "HALL call: floor 3 UP\nCAR call: floor 7\nE1 at 0 IDLE IDLE stops=[3, 7]\nE2 at 6 IDLE IDLE stops=[]\nrejected: no UP button on floor 9\nrejected: no floor 12",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java DomainModel.java",
+  "tool": "Java 17.0.17",
+  "hash": "619a738e08d05376",
+  "at": "2026-10-14T10:22:37.234Z"
+}

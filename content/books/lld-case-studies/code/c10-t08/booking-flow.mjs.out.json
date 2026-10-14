@@ -1,0 +1,11 @@
+{
+  "stdout": "SELECT_FARE        PASSENGERS hk-1 -\nSUBMIT_PAX         HOLDING    hk-1 -\nHOLD_SOLD_OUT      RESULTS    - - Y-SAVER just sold out.\nSELECT_FARE        PASSENGERS hk-2 -\nPAX_INVALID        PASSENGERS hk-2 - Every passenger needs a name.\nSUBMIT_PAX         HOLDING    hk-2 -\nSUBMIT_PAX         HOLDING    hk-2 -\nHOLD_FAILED        PASSENGERS hk-2 - Could not hold. Retry.\nSUBMIT_PAX         HOLDING    hk-2 -\nHOLD_OK            PAYING     hk-2 pk-3\nPAY_CLICKED        SUBMITTING hk-2 pk-3\nPAY_FAILED         PAYING     hk-2 pk-3 Payment failed. Try again.\nPAY_CLICKED        SUBMITTING hk-2 pk-3\nTICKETED           DONE       hk-2 pk-3\nHOLD_EXPIRED       DONE       hk-2 pk-3",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node booking-flow.mjs",
+  "tool": null,
+  "hash": "ea53ad24ab04a00e",
+  "at": "2026-10-14T10:25:43.637Z"
+}

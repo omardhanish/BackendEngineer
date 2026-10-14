@@ -1,0 +1,11 @@
+{
+  "stdout": "POST /tasks 201 {\"id\":\"T-1\",\"name\":\"send-report\",\"runAt\":\"2026-01-15T10:00:00.000Z\",\"priority\":2,\"status\":\"SCHEDULED\"}\nPOST /tasks 200 {\"id\":\"T-1\",\"name\":\"send-report\",\"runAt\":\"2026-01-15T10:00:00.000Z\",\"priority\":2,\"status\":\"SCHEDULED\"}\nPOST /tasks 400 {\"error\":\"VALIDATION\"}\nGET /tasks/T-1 200 {\"id\":\"T-1\",\"name\":\"send-report\",\"runAt\":\"2026-01-15T10:00:00.000Z\",\"priority\":2,\"status\":\"SCHEDULED\"}\nGET /tasks/T-99 404 {\"error\":\"TASK_NOT_FOUND\"}\nDELETE /tasks/T-1 200 {\"id\":\"T-1\",\"name\":\"send-report\",\"runAt\":\"2026-01-15T10:00:00.000Z\",\"priority\":2,\"status\":\"CANCELLED\"}\nDELETE /tasks/T-1 409 {\"error\":\"TASK_NOT_CANCELLABLE\"}",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node api.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "9cd960db93d89c55",
+  "at": "2026-10-14T08:46:18.822Z"
+}

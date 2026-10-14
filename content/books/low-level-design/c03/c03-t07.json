@@ -1,201 +1,168 @@
 {
-  "title": "Shopping cart and checkout",
-  "idea": "A shopping cart design keeps one line per product, prices lines through ordered discount rules, and makes an immutable order only when stock covers every line.",
+  "title": "Refactoring with all five principles",
+  "idea": "A SOLID refactor finds where a class keeps changing, then applies only the principle that moves each change into its own small, replaceable piece.",
   "points": [
-    "A `Cart` holds one line per SKU; adding the same product again merges quantities.",
-    "Each discount is a `PriceRule` class, applied in fixed order to a running total.",
-    "Checkout checks every line's stock first, then takes them all, under one lock.",
-    "The `Order` snapshots each line and its price; later changes cannot alter it."
+    "Start from real change requests, not from the list of five principles.",
+    "One god class usually breaks SRP, OCP and DIP at once; fix them together.",
+    "Refactor in small, behaviour-preserving steps, running the same output check after each.",
+    "Stop when every expected change touches one class; more splitting is overkill."
   ],
   "hero": {
-    "type": "flow",
-    "title": "From cart to order",
-    "nodes": [
+    "type": "timeline",
+    "title": "From god class to plug-in parts",
+    "items": [
       {
-        "id": "user",
-        "label": "Customer"
+        "label": "Map the change axes",
+        "text": "List who asks for changes: new formats, new data sources, new upload targets."
       },
       {
-        "id": "cart",
-        "label": "Cart",
-        "sub": "one line per SKU"
+        "label": "SRP: split by job",
+        "text": "Separate loading, rendering and delivery. `ExportJob` keeps only the order of steps."
       },
       {
-        "id": "rules",
-        "label": "PriceRule chain",
-        "sub": "ordered discounts"
+        "label": "OCP: formats as classes",
+        "text": "Replace the `if` chain with `ExportFormat`. A new format is a new class."
       },
       {
-        "id": "inv",
-        "label": "Inventory",
-        "sub": "checkout under lock"
+        "label": "LSP: honour the contract",
+        "text": "Every format returns text for valid orders and never throws unexpectedly."
       },
       {
-        "id": "order",
-        "label": "Order",
-        "sub": "immutable snapshot"
+        "label": "ISP: narrow ports",
+        "text": "`Destination` has one method, so a test fake or an S3 adapter is tiny."
       },
       {
-        "id": "pay",
-        "label": "PaymentMethod",
-        "sub": "strategy"
-      }
-    ],
-    "edges": [
-      {
-        "from": "user",
-        "to": "cart",
-        "label": "add, remove",
-        "caption": "The customer adds products. A second add of the same SKU merges into one line."
-      },
-      {
-        "from": "cart",
-        "to": "rules",
-        "label": "subtotal",
-        "caption": "Each rule sees the cart and the running total, and returns a discount."
-      },
-      {
-        "from": "rules",
-        "to": "cart",
-        "label": "total",
-        "back": true,
-        "caption": "Order matters: a percentage taken after a free item gives a smaller discount."
-      },
-      {
-        "from": "cart",
-        "to": "inv",
-        "label": "checkout",
-        "caption": "Inventory checks every line first. One short line fails the whole checkout."
-      },
-      {
-        "from": "inv",
-        "to": "order",
-        "label": "all lines taken",
-        "caption": "Only then is stock reduced, the cart cleared and an `Order` record created."
-      },
-      {
-        "from": "order",
-        "to": "pay",
-        "label": "charge",
-        "dashed": true,
-        "caption": "Payment is a strategy behind an interface. If it fails, put the taken stock back."
+        "label": "DIP: inject the details",
+        "text": "The job receives source, format and destination; `main` decides which ones."
       }
     ]
   },
   "code": [
     {
-      "file": "CartDemo.java",
+      "file": "ExportBefore.java",
       "lang": "java",
-      "title": "Cart and price rules",
+      "title": "The problem",
       "run": "captured",
-      "caption": "Money is in cents as `long`. Two rules run in order over a running total.",
+      "caption": "`OrderExportJob` loads, formats and uploads in one method. Each change edits it, and a bug hides inside.",
       "walk": [
         {
           "lines": [
-            21,
-            21
-          ],
-          "text": "`Product` is a value: a SKU and a price in whole cents."
-        },
-        {
-          "lines": [
-            26,
-            30
-          ],
-          "text": "`add` rejects bad quantities and merges repeat adds into one line."
-        },
-        {
-          "lines": [
-            39,
-            39
-          ],
-          "text": "The extension point: a new promotion is a new `PriceRule` class."
-        },
-        {
-          "lines": [
-            41,
-            46
-          ],
-          "text": "Buy 3 get 1: every fourth unit of that SKU is free."
-        },
-        {
-          "lines": [
-            11,
-            17
-          ],
-          "text": "Rules apply in list order; each one sees the total left by the last."
-        }
-      ]
-    },
-    {
-      "file": "CheckoutDemo.java",
-      "lang": "java",
-      "title": "All-or-nothing checkout",
-      "run": "captured",
-      "caption": "Two carts want the last book. The first wins; the second fails and changes nothing.",
-      "walk": [
-        {
-          "lines": [
-            19,
+            16,
             20
           ],
-          "text": "`Line` carries the unit price, and both are records: the order cannot change after checkout."
+          "text": "SRP and DIP break here: the data is hard-wired into the job, so tests cannot replace it."
         },
         {
           "lines": [
             22,
-            31
+            28
           ],
-          "text": "A cut-down `Cart` of priced lines, with no `Product` or rules, to keep checkout in focus."
+          "text": "OCP breaks: formats live in an `if` chain that every new format must edit."
+        },
+        {
+          "lines": [
+            29,
+            33
+          ],
+          "text": "Tangled string building drops `cents` and leaves a trailing comma: the JSON is broken."
+        },
+        {
+          "lines": [
+            34,
+            36
+          ],
+          "text": "An unknown format fails only at runtime, after callers already depend on strings."
         },
         {
           "lines": [
             37,
-            41
+            37
           ],
-          "text": "Pass one checks every line. A short line throws before any stock moves."
+          "text": "DIP breaks again: the job calls `new FtpUploader()`, welding policy to transport."
         },
         {
           "lines": [
-            42,
-            44
+            6,
+            12
           ],
-          "text": "Pass two takes the stock and clears the cart. `synchronized` makes both passes one step."
+          "text": "Run all three formats and compare the output with what a reader would expect."
+        }
+      ]
+    },
+    {
+      "file": "ExportAfter.java",
+      "lang": "java",
+      "title": "The fix",
+      "run": "captured",
+      "caption": "Same feature, split into ports and plug-ins. Each principle names a line you can point to in an interview.",
+      "walk": [
+        {
+          "lines": [
+            16,
+            21
+          ],
+          "text": "`Order` is a validated record instead of a loose `String[]` row."
         },
         {
           "lines": [
-            8,
-            15
+            22,
+            24
           ],
-          "text": "Ben's checkout fails on BOOK, so his PEN is not taken and his cart is kept."
+          "text": "Two one-method ports, owned by the job. Lambdas or adapters can implement them."
+        },
+        {
+          "lines": [
+            25,
+            29
+          ],
+          "text": "`ExportFormat` is the extension point. Its comment states the contract every format must keep."
+        },
+        {
+          "lines": [
+            31,
+            48
+          ],
+          "text": "Each format is its own class. The JSON fixes are a separate, deliberate step after the split."
+        },
+        {
+          "lines": [
+            49,
+            60
+          ],
+          "text": "`ExportJob` validates its parts and only sequences load, render and put."
+        },
+        {
+          "lines": [
+            6,
+            13
+          ],
+          "text": "`main` wires concrete pieces. Adding XML means one new class plus one list entry."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Store prices as `long` cents or `BigDecimal`; `double` drifts on sums like 0.1 + 0.2.",
-    "Check every line's stock before taking any; a mid-way failure leaves a partial order.",
-    "Copy the price into the order at checkout; reading the product later shows today's price."
+    "Refactoring without a before-and-after output check silently changes behaviour; capture output first.",
+    "Adding interfaces for code nobody changes or tests creates indirection without payoff.",
+    "Mixing structure changes and bug fixes in one step hides which one changed the output."
   ],
   "quiz": {
-    "q": "Swap the rules to `PercentOff(10)` then `BuyNGetOne(\"PEN\", 3)`. What is the final total?",
-    "code": "// subtotal 1800, the cart holds 4 PEN at 150\nList.of(new PercentOff(10), new BuyNGetOne(\"PEN\", 3))",
-    "lang": "java",
+    "q": "A 40-line script exports one fixed CSV, once, with one owner. What should you do?",
     "options": [
-      "1485",
-      "1470",
-      "1620",
-      "1650"
+      "Split it into ports and adapters right away",
+      "Add an `ExportFormat` interface with one implementation",
+      "Move it into a Strategy pattern with a factory",
+      "Keep it; refactor when a second format or owner appears"
     ],
-    "answer": 1,
-    "why": "Ten percent of 1800 is 180, leaving 1620. The free pen still removes its full 150, so 1470. Rule order changes the result."
+    "answer": 3,
+    "why": "SOLID pays off when change arrives. With one format, one owner and no tests needing seams, extra interfaces add indirection and no benefit."
   },
-  "takeaway": "Lines by SKU, ordered price rules, all-or-nothing checkout, immutable order.",
+  "takeaway": "Refactor toward the changes you see, then stop.",
   "chat": {
     "starters": [
-      "How do I stop two rules like coupons from stacking when they should not?",
-      "Should stock be reserved when the item is added to the cart?",
-      "How would a guest cart merge with the cart after login?"
+      "How do I refactor safely when there are no tests?",
+      "Which SOLID principle should I fix first in a god class?",
+      "How do I explain this refactor in an LLD interview?"
     ]
   }
 }

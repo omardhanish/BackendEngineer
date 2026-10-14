@@ -1,0 +1,11 @@
+{
+  "stdout": "GET /flaky\n  #1 503\n  wait 18ms\n  #2 503\n  wait 35ms\n  #3 200\n  -> 200 {\"ok\":true,\"hits\":3}\nGET /slow\n  #1 TIMEOUT\n  wait 17ms\n  #2 TIMEOUT\n  wait 38ms\n  #3 TIMEOUT\n  -> TIMEOUT {}\nPOST /charges\n  #1 503\n  wait 17ms\n  #2 200\n  -> 200 {\"id\":\"CH-1\",\"amountMinor\":4999}\nPOST /charges\n  #1 503\n  -> 503 {\"error\":\"REPLY_LOST\"}\ncharges created on the server: 2",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node retry-client.mjs",
+  "tool": null,
+  "hash": "99c0f0e09c2907b2",
+  "at": "2026-10-14T10:31:24.962Z"
+}

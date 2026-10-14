@@ -1,0 +1,209 @@
+{
+  "title": "Cache class design",
+  "idea": "The cache class design splits storage from the eviction decision: `BoundedCache` stores entries, and an `EvictionPolicy` names which key to drop when it is full.",
+  "analogy": {
+    "text": "A small reading desk holds a few books. A rule card on the desk says which book goes back to the shelf when a new one arrives.",
+    "breaks": "The rule card sees only key events, never the book contents."
+  },
+  "points": [
+    "`Cache<K,V>` is the interface callers use: get, put, remove, size.",
+    "`BoundedCache` owns the map and the capacity check, nothing about order.",
+    "`EvictionPolicy` hears every put, hit and removal, then names a victim.",
+    "An eviction listener lets callers react without the cache knowing them."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Class diagram",
+    "nodes": [
+      {
+        "id": "caller",
+        "label": "Caller",
+        "sub": "service code"
+      },
+      {
+        "id": "cache",
+        "label": "Cache<K,V>",
+        "sub": "interface: get, put, remove"
+      },
+      {
+        "id": "bounded",
+        "label": "BoundedCache",
+        "sub": "capacity, store"
+      },
+      {
+        "id": "store",
+        "label": "HashMap<K,V>",
+        "sub": "the entries"
+      },
+      {
+        "id": "policy",
+        "label": "EvictionPolicy<K>",
+        "sub": "recordPut, recordGet, victim"
+      },
+      {
+        "id": "lru",
+        "label": "LruPolicy",
+        "sub": "LinkedHashSet order"
+      },
+      {
+        "id": "lfu",
+        "label": "LfuPolicy",
+        "sub": "use counts, added later"
+      },
+      {
+        "id": "listener",
+        "label": "onEvict listener",
+        "sub": "Consumer<K>"
+      }
+    ],
+    "edges": [
+      {
+        "from": "caller",
+        "to": "cache",
+        "label": "uses",
+        "caption": "Callers depend only on the interface, so any implementation can be swapped in."
+      },
+      {
+        "from": "bounded",
+        "to": "cache",
+        "label": "is-a",
+        "caption": "BoundedCache implements Cache and enforces the capacity."
+      },
+      {
+        "from": "bounded",
+        "to": "store",
+        "label": "has 1",
+        "caption": "A HashMap gives O(1) average lookups. It knows nothing about recency."
+      },
+      {
+        "from": "bounded",
+        "to": "policy",
+        "label": "uses 1",
+        "caption": "BoundedCache reports each event to its policy and asks it for a victim when full."
+      },
+      {
+        "from": "lru",
+        "to": "policy",
+        "label": "is-a",
+        "caption": "LruPolicy keeps keys in use order and names the oldest as the victim."
+      },
+      {
+        "from": "lfu",
+        "to": "policy",
+        "label": "is-a",
+        "dashed": true,
+        "caption": "LfuPolicy plugs into the same slot later, without editing BoundedCache."
+      },
+      {
+        "from": "bounded",
+        "to": "listener",
+        "label": "notifies",
+        "caption": "After each eviction the cache calls the listener, for logs, metrics or cleanup."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "ClassDesign.java",
+      "lang": "java",
+      "title": "Interfaces and core",
+      "run": "captured",
+      "caption": "The whole design in one file: two interfaces, one policy, one bounded store, and a short demo.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7
+          ],
+          "text": "Build a two-entry cache with LRU and a listener that prints evictions."
+        },
+        {
+          "lines": [
+            10,
+            11
+          ],
+          "text": "Reading dish:1 makes it recent, so the next full put drops dish:2."
+        },
+        {
+          "lines": [
+            15,
+            16,
+            17,
+            18,
+            19
+          ],
+          "text": "A zero capacity is refused when the cache is built."
+        },
+        {
+          "lines": [
+            30,
+            31,
+            32,
+            33,
+            34
+          ],
+          "text": "The policy contract: three events in, one victim out."
+        },
+        {
+          "lines": [
+            37,
+            38,
+            39,
+            40,
+            41,
+            42
+          ],
+          "text": "LRU keeps keys oldest first; touching a key moves it to the end."
+        },
+        {
+          "lines": [
+            57,
+            58,
+            59,
+            60
+          ],
+          "text": "Only a hit is reported to the policy; a miss changes nothing."
+        },
+        {
+          "lines": [
+            62,
+            63,
+            64,
+            65,
+            66,
+            67,
+            68,
+            69,
+            70,
+            71
+          ],
+          "text": "A new key in a full cache evicts the victim first, then stores and records."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not put recency logic in the store; it blocks adding LFU later.",
+    "Refuse null values, or a stored null looks the same as a miss.",
+    "Replacing an existing key must not evict anything; check `containsKey` first."
+  ],
+  "quiz": {
+    "q": "What is the first line ClassDesign prints?",
+    "options": [
+      "evicted dish:1",
+      "dish:1 -> Dosa",
+      "evicted dish:2",
+      "refused: capacity < 1"
+    ],
+    "answer": 2,
+    "why": "The get on dish:1 makes it most recent. When dish:3 arrives the cache is full, so LRU evicts dish:2 and the listener prints it."
+  },
+  "takeaway": "Store entries in one class; let a pluggable policy choose the victim.",
+  "chat": {
+    "starters": [
+      "Why is EvictionPolicy generic only in K and not V?",
+      "Should the policy or the cache own the capacity?",
+      "How would I add a weight per entry instead of a count?"
+    ]
+  }
+}

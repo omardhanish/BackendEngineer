@@ -1,0 +1,396 @@
+{
+  "title": "Prototype pattern",
+  "idea": "The Prototype pattern creates new objects by copying a ready-made, configured instance, so callers never repeat the setup or need the concrete class.",
+  "points": [
+    "Use it when setup is costly; if `new` is cheap, a constructor is simpler.",
+    "A registry maps keys to prototypes; `create(key)` returns a fresh copy each time.",
+    "A shallow copy shares mutable fields; deep-copy them, share immutable ones.",
+    "Prefer copy constructors like `new ArrayList<>(list)` to the fragile `Object.clone()`."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "memory",
+    "title": "Shallow copy versus deep copy",
+    "scenario": {
+      "code": [
+        "Template base = new Template(\"Invoice\");",
+        "base.addSection(\"Header\");",
+        "Template a = base.clone(); // shallow, like ShallowCloneBug",
+        "Template b = base.copy();  // deep, like the registry fix",
+        "a.addSection(\"Notes\");"
+      ],
+      "steps": [
+        {
+          "caption": "The prototype is a `Template` that holds a reference to its own section list.",
+          "line": 0,
+          "stack": [
+            {
+              "name": "main",
+              "vars": {
+                "base": {
+                  "ref": "t1"
+                }
+              }
+            }
+          ],
+          "heap": [
+            {
+              "id": "t1",
+              "label": "Template",
+              "props": {
+                "title": "\"Invoice\"",
+                "sections": {
+                  "ref": "l1"
+                }
+              }
+            },
+            {
+              "id": "l1",
+              "label": "ArrayList",
+              "props": {}
+            }
+          ]
+        },
+        {
+          "caption": "Configuring the prototype adds a section to its list.",
+          "line": 1,
+          "stack": [
+            {
+              "name": "main",
+              "vars": {
+                "base": {
+                  "ref": "t1"
+                }
+              }
+            }
+          ],
+          "heap": [
+            {
+              "id": "t1",
+              "label": "Template",
+              "props": {
+                "title": "\"Invoice\"",
+                "sections": {
+                  "ref": "l1"
+                }
+              }
+            },
+            {
+              "id": "l1",
+              "label": "ArrayList",
+              "props": {
+                "[0]": "\"Header\""
+              }
+            }
+          ]
+        },
+        {
+          "caption": "`clone()` copies each field value. The list reference is copied, so both objects point at one list.",
+          "line": 2,
+          "stack": [
+            {
+              "name": "main",
+              "vars": {
+                "base": {
+                  "ref": "t1"
+                },
+                "a": {
+                  "ref": "t2"
+                }
+              }
+            }
+          ],
+          "heap": [
+            {
+              "id": "t1",
+              "label": "Template",
+              "props": {
+                "title": "\"Invoice\"",
+                "sections": {
+                  "ref": "l1"
+                }
+              }
+            },
+            {
+              "id": "l1",
+              "label": "ArrayList",
+              "props": {
+                "[0]": "\"Header\""
+              }
+            },
+            {
+              "id": "t2",
+              "label": "Template (shallow)",
+              "props": {
+                "title": "\"Invoice\"",
+                "sections": {
+                  "ref": "l1"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "caption": "`copy()` builds a new list with the same elements. Copy `b` owns its sections.",
+          "line": 3,
+          "stack": [
+            {
+              "name": "main",
+              "vars": {
+                "base": {
+                  "ref": "t1"
+                },
+                "a": {
+                  "ref": "t2"
+                },
+                "b": {
+                  "ref": "t3"
+                }
+              }
+            }
+          ],
+          "heap": [
+            {
+              "id": "t1",
+              "label": "Template",
+              "props": {
+                "title": "\"Invoice\"",
+                "sections": {
+                  "ref": "l1"
+                }
+              }
+            },
+            {
+              "id": "l1",
+              "label": "ArrayList",
+              "props": {
+                "[0]": "\"Header\""
+              }
+            },
+            {
+              "id": "t2",
+              "label": "Template (shallow)",
+              "props": {
+                "title": "\"Invoice\"",
+                "sections": {
+                  "ref": "l1"
+                }
+              }
+            },
+            {
+              "id": "t3",
+              "label": "Template (deep)",
+              "props": {
+                "title": "\"Invoice\"",
+                "sections": {
+                  "ref": "l2"
+                }
+              }
+            },
+            {
+              "id": "l2",
+              "label": "ArrayList",
+              "props": {
+                "[0]": "\"Header\""
+              }
+            }
+          ]
+        },
+        {
+          "caption": "Editing the shallow copy edits the shared list. The prototype changed too; the deep copy did not.",
+          "line": 4,
+          "stack": [
+            {
+              "name": "main",
+              "vars": {
+                "base": {
+                  "ref": "t1"
+                },
+                "a": {
+                  "ref": "t2"
+                },
+                "b": {
+                  "ref": "t3"
+                }
+              }
+            }
+          ],
+          "heap": [
+            {
+              "id": "t1",
+              "label": "Template",
+              "props": {
+                "title": "\"Invoice\"",
+                "sections": {
+                  "ref": "l1"
+                }
+              }
+            },
+            {
+              "id": "l1",
+              "label": "ArrayList",
+              "props": {
+                "[0]": "\"Header\"",
+                "[1]": "\"Notes\""
+              }
+            },
+            {
+              "id": "t2",
+              "label": "Template (shallow)",
+              "props": {
+                "title": "\"Invoice\"",
+                "sections": {
+                  "ref": "l1"
+                }
+              }
+            },
+            {
+              "id": "t3",
+              "label": "Template (deep)",
+              "props": {
+                "title": "\"Invoice\"",
+                "sections": {
+                  "ref": "l2"
+                }
+              }
+            },
+            {
+              "id": "l2",
+              "label": "ArrayList",
+              "props": {
+                "[0]": "\"Header\""
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "ShallowCloneBug.java",
+      "lang": "java",
+      "title": "The problem: shallow clone",
+      "run": "captured",
+      "caption": "`super.clone()` copies fields one by one, so a mutable list ends up shared.",
+      "walk": [
+        {
+          "lines": [
+            21,
+            22,
+            23
+          ],
+          "text": "`Cloneable` is a marker interface. Without it, `Object.clone()` throws `CloneNotSupportedException`."
+        },
+        {
+          "lines": [
+            31,
+            32,
+            33,
+            34
+          ],
+          "text": "`super.clone()` copies each field value. For the list, that value is a reference."
+        },
+        {
+          "lines": [
+            10,
+            11
+          ],
+          "text": "Changing the title is safe: it replaces a field the copy owns."
+        },
+        {
+          "lines": [
+            12
+          ],
+          "text": "Adding a section mutates the one list both objects point to."
+        },
+        {
+          "lines": [
+            14,
+            15,
+            16,
+            17
+          ],
+          "text": "The prototype now carries the Acme section, and the identity check confirms one shared list."
+        }
+      ]
+    },
+    {
+      "file": "TemplateRegistryDemo.java",
+      "lang": "java",
+      "title": "The fix: copy plus registry",
+      "run": "captured",
+      "caption": "A copy constructor decides field by field what to share and what to copy; a registry hands out copies.",
+      "walk": [
+        {
+          "lines": [
+            44,
+            45,
+            46,
+            47,
+            48
+          ],
+          "text": "The private copy constructor shares the immutable `Style` and copies the mutable list."
+        },
+        {
+          "lines": [
+            31
+          ],
+          "text": "A `record` with immutable components is safe to share, so copying it would waste memory."
+        },
+        {
+          "lines": [
+            62
+          ],
+          "text": "`register` stores a copy, so the caller cannot change the prototype later through its reference."
+        },
+        {
+          "lines": [
+            64,
+            65,
+            66,
+            67,
+            68,
+            69
+          ],
+          "text": "`create` returns a fresh copy each time and fails fast on an unknown key."
+        },
+        {
+          "lines": [
+            15,
+            16,
+            17,
+            19
+          ],
+          "text": "The Acme copy gains a section; a new copy from the registry shows the prototype untouched."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Overriding `clone()` without copying mutable fields shares lists and maps between copies.",
+    "Handing out the registry's own prototype lets one caller corrupt every later copy.",
+    "Deep-copying immutable values like `String` or records with immutable components wastes memory; share them."
+  ],
+  "quiz": {
+    "q": "Same `Template` as `ShallowCloneBug`. What does this print?",
+    "code": "Template a = new Template(\"A\");\na.addSection(\"x\");\nTemplate b = a.clone();\nb.setTitle(\"B\");\nb.addSection(\"y\");\nSystem.out.println(a);",
+    "lang": "java",
+    "options": [
+      "A [x]",
+      "B [x, y]",
+      "A [x, y]",
+      "B [x]"
+    ],
+    "answer": 2,
+    "why": "`setTitle` replaces only the copy's own field. Both objects share one list, so adding `y` through `b` shows up in `a`."
+  },
+  "takeaway": "Copy a configured prototype; deep-copy mutable fields, share immutable ones.",
+  "chat": {
+    "starters": [
+      "Why do many Java developers avoid Cloneable and Object.clone()?",
+      "How deep should a deep copy go when objects nest other objects?",
+      "When is a Prototype better than a Factory Method or a Builder?"
+    ]
+  }
+}

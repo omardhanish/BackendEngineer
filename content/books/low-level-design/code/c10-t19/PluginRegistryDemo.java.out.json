@@ -1,0 +1,11 @@
+{
+  "stdout": "formats=[csv, json]\ncsv -> ada,linus\njson -> [\"ada\",\"linus\"]\nerror: duplicate format csv\nerror: no exporter for xml, have [csv, json]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java PluginRegistryDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "6820abd3da742539",
+  "at": "2026-10-12T11:24:00.422Z"
+}

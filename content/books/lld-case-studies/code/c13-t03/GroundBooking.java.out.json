@@ -1,0 +1,11 @@
+{
+  "stdout": "booked  BK-1 P-1 C-1 2026-03-06T18:00 x2h = 160000\nrefused BK-2 SLOT_TAKEN 2026-03-06T19:00\nbooked  BK-3 P-2 C-1 2026-03-03T16:00 x2h = 130000\nrefused BK-4 PAYMENT_DECLINED\nbooked  BK-5 P-4 C-1 2026-03-06T20:00 x1h = 80000",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java GroundBooking.java",
+  "tool": "Java 17.0.17",
+  "hash": "de62913aee230b3a",
+  "at": "2026-10-14T08:34:47.409Z"
+}

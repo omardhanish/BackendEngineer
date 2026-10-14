@@ -1,0 +1,11 @@
+{
+  "stdout": "item,qty\npen,3\npad,2\n--\n| item | qty |\n|---|---|\n| pen | 3 |\n| pad | 2 |\n| total | 5 |\n--",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java TemplateExportDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "c1b1b04723f66abd",
+  "at": "2026-10-12T11:18:43.127Z"
+}

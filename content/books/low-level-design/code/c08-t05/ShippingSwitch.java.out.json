@@ -1,0 +1,11 @@
+{
+  "stdout": "standard 2kg: 800\nexpress  2kg: 2300\npickup   2kg: 0\nExpress  2kg: 800",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ShippingSwitch.java",
+  "tool": "Java 17.0.17",
+  "hash": "dd97ba631e7afe3c",
+  "at": "2026-10-12T11:18:41.169Z"
+}

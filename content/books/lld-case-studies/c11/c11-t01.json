@@ -1,0 +1,186 @@
+{
+  "title": "Table reservation requirements",
+  "idea": "Scoping a restaurant table reservation system means naming who books, seats and marks no-shows, the one rule that must never break, and what v1 leaves out.",
+  "points": [
+    "Customers search free times for a party size, book, and cancel.",
+    "The host seats arriving parties and frees the table when they leave.",
+    "The core rule: one table never holds two overlapping reservations.",
+    "Assume busy evening peaks; state every number as an assumption."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Actors and use cases in v1",
+    "nodes": [
+      {
+        "id": "cust",
+        "label": "Customer",
+        "sub": "books online"
+      },
+      {
+        "id": "search",
+        "label": "Search slots",
+        "sub": "date, time, party"
+      },
+      {
+        "id": "book",
+        "label": "Book a table",
+        "sub": "table picked for you"
+      },
+      {
+        "id": "cancel",
+        "label": "Cancel",
+        "sub": "table freed"
+      },
+      {
+        "id": "host",
+        "label": "Host",
+        "sub": "at the door"
+      },
+      {
+        "id": "seat",
+        "label": "Seat and finish",
+        "sub": "party arrives, leaves"
+      },
+      {
+        "id": "sys",
+        "label": "System timer",
+        "sub": "marks no-shows"
+      },
+      {
+        "id": "out",
+        "label": "Out of scope",
+        "sub": "waitlist, deposits"
+      }
+    ],
+    "edges": [
+      {
+        "from": "cust",
+        "to": "search",
+        "caption": "The customer gives a date, a time and a party size, and sees which start times are free."
+      },
+      {
+        "from": "search",
+        "to": "book",
+        "caption": "Choosing a time books it. The system, not the customer, picks the table."
+      },
+      {
+        "from": "book",
+        "to": "cancel",
+        "caption": "A customer can cancel before the meal, which frees the table for others."
+      },
+      {
+        "from": "host",
+        "to": "seat",
+        "caption": "The host seats the party on arrival and closes the reservation when they leave."
+      },
+      {
+        "from": "seat",
+        "to": "book",
+        "label": "updates",
+        "dashed": true,
+        "caption": "Seating and finishing change the reservation, so the table's schedule stays true."
+      },
+      {
+        "from": "sys",
+        "to": "book",
+        "label": "no-show",
+        "dashed": true,
+        "caption": "The system is an actor too: after a grace period it marks absent parties as no-shows."
+      },
+      {
+        "from": "cust",
+        "to": "out",
+        "dashed": true,
+        "caption": "A waitlist, paid deposits and joining tables wait for later. Say so before you design."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "Scope.java",
+      "lang": "java",
+      "title": "Scope and assumptions",
+      "run": "captured",
+      "caption": "Use cases with their actor, the v1 cut, and the stated assumptions kept in one record.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7
+          ],
+          "text": "v1 is an explicit set. Anything not listed is out of scope."
+        },
+        {
+          "lines": [
+            8,
+            9,
+            10,
+            11
+          ],
+          "text": "Print each use case with its actor and an IN or OUT tag."
+        },
+        {
+          "lines": [
+            12,
+            13,
+            14
+          ],
+          "text": "The assumptions become one object that later code can ask questions."
+        },
+        {
+          "lines": [
+            18
+          ],
+          "text": "Three actors: the customer, the host at the door, and the system."
+        },
+        {
+          "lines": [
+            21,
+            22,
+            23,
+            24,
+            25
+          ],
+          "text": "Waitlist, deposits and joined tables are named, so the cut is visible."
+        },
+        {
+          "lines": [
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37
+          ],
+          "text": "Seating length, start step, largest party and grace period, all in minutes or people."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not let customers pick a table; the system allocates it by party size.",
+    "Agree on how long a party keeps a table before designing any overlap check.",
+    "Forgetting the system actor hides the no-show rule until late in the design."
+  ],
+  "quiz": {
+    "q": "Which requirement shapes the reservation design the most?",
+    "options": [
+      "Customers can browse the menu while booking",
+      "A table is never booked twice for overlapping times",
+      "Search results load in under 5 ms",
+      "Hosts can print a daily seating sheet"
+    ],
+    "answer": 1,
+    "why": "Two parties arriving for one table breaks the core promise. Allocation, locks and database constraints all exist to protect this one rule."
+  },
+  "takeaway": "Agree on actors, seating length and the no-overlap rule before designing.",
+  "chat": {
+    "starters": [
+      "Should seating length depend on party size?",
+      "Why is joining two tables out of scope for v1?",
+      "Which scale assumptions should I state in an interview?"
+    ]
+  }
+}

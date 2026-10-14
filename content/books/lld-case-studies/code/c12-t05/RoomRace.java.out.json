@@ -1,0 +1,11 @@
+{
+  "stdout": "unsafe winners: 2\nlocked winners: 1",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java RoomRace.java",
+  "tool": "Java 17.0.17",
+  "hash": "d3a49d0676e20f7c",
+  "at": "2026-10-14T08:33:53.246Z"
+}

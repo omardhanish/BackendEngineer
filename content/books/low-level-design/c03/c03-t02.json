@@ -1,320 +1,276 @@
 {
-  "title": "Elevator system design",
-  "idea": "An elevator design keeps pending stops per direction, serves them in one sweep before turning, and lets a dispatcher pick which car answers a call.",
+  "title": "One reason to change",
+  "idea": "The Single Responsibility Principle (SRP) says a class should have one reason to change: it serves one actor, so one team's request cannot break another's.",
   "analogy": {
-    "text": "A delivery van heading north drops every parcel on its northbound streets first, then turns round and serves the southbound ones.",
-    "breaks": "Van routes are planned ahead; elevator stops arrive while it moves."
+    "text": "A restaurant keeps its menu designer and its accountant apart. A new menu font never changes how the till adds tax to the bill.",
+    "breaks": "People split by job title; classes split by who requests changes."
   },
   "points": [
-    "A request above the car joins `upStops`; a request below joins `downStops`.",
-    "Both sets are sorted `TreeSet`s, so the next stop is first or last.",
-    "The car keeps its direction while stops remain ahead, then turns.",
-    "A `DispatchStrategy` picks which car takes a hall call; swap it to change policy."
+    "An actor is one team or role that asks for changes to the code.",
+    "Group code that changes for one reason; split code with different reasons.",
+    "Symptom: unrelated tickets keep editing one file, and each fix breaks another feature.",
+    "In interviews, name each class's actor aloud before adding a method to it."
   ],
   "hero": {
-    "type": "anim",
-    "engine": "lanes",
-    "title": "One car, two sorted stop sets",
-    "scenario": {
-      "code": [
-        "Elevator car = new Elevator(0);",
-        "car.request(5);",
-        "car.request(2);",
-        "car.step();",
-        "car.request(1);",
-        "car.request(8);",
-        "while (car.hasWork()) car.step();"
-      ],
-      "lanes": [
-        {
-          "id": "up",
-          "label": "upStops",
-          "kind": "queue",
-          "hint": "above the car, lowest first"
-        },
-        {
-          "id": "car",
-          "label": "Car",
-          "kind": "area",
-          "hint": "floor and direction"
-        },
-        {
-          "id": "down",
-          "label": "downStops",
-          "kind": "queue",
-          "hint": "below the car, highest first"
-        }
-      ],
-      "tokens": {
-        "c0": {
-          "label": "floor 0 · IDLE",
-          "tone": "neutral"
-        },
-        "c2": {
-          "label": "floor 2 · UP",
-          "tone": "sync"
-        },
-        "c5": {
-          "label": "floor 5 · UP",
-          "tone": "sync"
-        },
-        "c8": {
-          "label": "floor 8 · UP",
-          "tone": "sync"
-        },
-        "c1": {
-          "label": "floor 1 · DOWN",
-          "tone": "macro"
-        },
-        "s2": {
-          "label": "2",
-          "tone": "io"
-        },
-        "s5": {
-          "label": "5",
-          "tone": "io"
-        },
-        "s8": {
-          "label": "8",
-          "tone": "io"
-        },
-        "s1": {
-          "label": "1",
-          "tone": "timer"
-        }
+    "type": "flow",
+    "title": "Each team owns exactly one rule",
+    "nodes": [
+      {
+        "id": "finance",
+        "label": "Finance team",
+        "sub": "sets tax rules"
       },
-      "steps": [
-        {
-          "caption": "The car rests at floor 0. Both stop sets are empty.",
-          "line": 0,
-          "at": {
-            "car": [
-              "c0"
-            ]
-          }
-        },
-        {
-          "caption": "Calls for 5 and 2 are above the car, so both join `upStops`, kept sorted.",
-          "line": 2,
-          "at": {
-            "up": [
-              "s2",
-              "s5"
-            ],
-            "car": [
-              "c0"
-            ]
-          },
-          "active": "s2"
-        },
-        {
-          "caption": "`step` takes the lowest up stop. The car moves up to floor 2.",
-          "line": 3,
-          "at": {
-            "up": [
-              "s5"
-            ],
-            "car": [
-              "c2"
-            ]
-          },
-          "active": "c2"
-        },
-        {
-          "caption": "A call for 1 arrives. It is below the car, so it waits in `downStops`.",
-          "line": 4,
-          "at": {
-            "up": [
-              "s5"
-            ],
-            "car": [
-              "c2"
-            ],
-            "down": [
-              "s1"
-            ]
-          },
-          "active": "s1"
-        },
-        {
-          "caption": "A call for 8 is above the car, so it joins the current upward sweep.",
-          "line": 5,
-          "at": {
-            "up": [
-              "s5",
-              "s8"
-            ],
-            "car": [
-              "c2"
-            ],
-            "down": [
-              "s1"
-            ]
-          },
-          "active": "s8"
-        },
-        {
-          "caption": "Stops remain ahead, so the car keeps going up to 5.",
-          "line": 6,
-          "at": {
-            "up": [
-              "s8"
-            ],
-            "car": [
-              "c5"
-            ],
-            "down": [
-              "s1"
-            ]
-          },
-          "active": "c5"
-        },
-        {
-          "caption": "Then 8. Now no stops remain above the car.",
-          "line": 6,
-          "at": {
-            "car": [
-              "c8"
-            ],
-            "down": [
-              "s1"
-            ]
-          },
-          "active": "c8"
-        },
-        {
-          "caption": "Only now does it turn and serve floor 1 going down.",
-          "line": 6,
-          "at": {
-            "car": [
-              "c1"
-            ]
-          },
-          "active": "c1"
-        }
-      ]
-    }
+      {
+        "id": "design",
+        "label": "Receipt team",
+        "sub": "shapes customer text"
+      },
+      {
+        "id": "books",
+        "label": "Accounting",
+        "sub": "books revenue"
+      },
+      {
+        "id": "svc",
+        "label": "CheckoutService",
+        "sub": "complete(Order)"
+      },
+      {
+        "id": "fmt",
+        "label": "ReceiptFormatter",
+        "sub": "format(Order)"
+      },
+      {
+        "id": "vat",
+        "label": "VatCalculator",
+        "sub": "grossCents(long net)"
+      },
+      {
+        "id": "ledger",
+        "label": "Ledger",
+        "sub": "recordRevenue(long net)"
+      }
+    ],
+    "edges": [
+      {
+        "from": "finance",
+        "to": "vat",
+        "label": "changes",
+        "dashed": true
+      },
+      {
+        "from": "design",
+        "to": "fmt",
+        "label": "changes",
+        "dashed": true
+      },
+      {
+        "from": "books",
+        "to": "ledger",
+        "label": "changes",
+        "dashed": true
+      },
+      {
+        "from": "svc",
+        "to": "fmt",
+        "label": "format"
+      },
+      {
+        "from": "svc",
+        "to": "ledger",
+        "label": "record net"
+      },
+      {
+        "from": "fmt",
+        "to": "vat",
+        "label": "gross price"
+      }
+    ],
+    "steps": [
+      {
+        "caption": "`CheckoutService` only sequences the steps. It changes when the checkout flow changes, not when a rule does.",
+        "active": [
+          "svc"
+        ],
+        "edges": []
+      },
+      {
+        "caption": "It books the net total in `Ledger`. Only accounting decides how that class works.",
+        "active": [
+          "svc",
+          "ledger"
+        ],
+        "edges": [
+          4
+        ]
+      },
+      {
+        "caption": "It asks `ReceiptFormatter` for the customer's text. Layout requests land here and nowhere else.",
+        "active": [
+          "svc",
+          "fmt"
+        ],
+        "edges": [
+          3
+        ]
+      },
+      {
+        "caption": "The formatter asks `VatCalculator` for the gross price. It uses the tax rule but does not own it.",
+        "active": [
+          "fmt",
+          "vat"
+        ],
+        "edges": [
+          5
+        ]
+      },
+      {
+        "caption": "A new VAT rule edits only `VatCalculator`. Receipts pick it up; the ledger stays net.",
+        "active": [
+          "finance",
+          "vat"
+        ],
+        "edges": [
+          0
+        ]
+      },
+      {
+        "caption": "Each rule has one owning team. `CheckoutService` changes only when the checkout flow itself changes. That map is SRP made visible.",
+        "active": [
+          "finance",
+          "design",
+          "books",
+          "vat",
+          "fmt",
+          "ledger"
+        ],
+        "edges": [
+          0,
+          1,
+          2
+        ]
+      }
+    ]
   },
   "code": [
     {
-      "file": "ElevatorDemo.java",
+      "file": "OrderGodClass.java",
       "lang": "java",
-      "title": "One car sweeps",
+      "title": "The problem",
       "run": "captured",
-      "caption": "The scenario from the animation. Each `step` prints where the car stops and its direction.",
+      "caption": "One `Order` class serves three teams. A harmless receipt request corrupts the books.",
       "walk": [
         {
           "lines": [
-            15,
-            15
+            17,
+            20
           ],
-          "text": "An `enum` names the only three directions a car can have."
-        },
-        {
-          "lines": [
-            18,
-            21
-          ],
-          "text": "Two sorted sets of pending stops, plus the car's floor and direction."
-        },
-        {
-          "lines": [
-            25,
-            28
-          ],
-          "text": "A request lands in the set on its side of the car's current floor."
-        },
-        {
-          "lines": [
-            33,
-            37
-          ],
-          "text": "Keep the current direction while it has stops; otherwise turn."
-        },
-        {
-          "lines": [
-            37,
-            37
-          ],
-          "text": "`pollFirst` gives the nearest stop above; `pollLast` the nearest below."
-        },
-        {
-          "lines": [
-            5,
-            11
-          ],
-          "text": "Calls for 1 and 8 arrive after the car has left floor 0."
-        }
-      ]
-    },
-    {
-      "file": "DispatchDemo.java",
-      "lang": "java",
-      "title": "Pick a car",
-      "run": "captured",
-      "caption": "Three cars, three hall calls. The strategy prefers the nearest car already heading that way.",
-      "walk": [
-        {
-          "lines": [
-            19,
-            25
-          ],
-          "text": "A car is approaching if it is idle or the call lies ahead of it."
+          "text": "Pricing, receipt layout and bookkeeping all live in one class, sharing one list."
         },
         {
           "lines": [
             28,
-            30
+            32
           ],
-          "text": "The dispatch contract: given the cars and a floor, return one car."
+          "text": "The receipt team wanted VAT-inclusive prices, so someone edited the shared `totalCents()`."
         },
         {
           "lines": [
-            33,
-            37
+            34,
+            36
           ],
-          "text": "Pick the car with the lowest cost."
+          "text": "The receipt now shows the gross amount. The request that drove the edit is met."
         },
         {
           "lines": [
-            40,
-            43
+            38,
+            41
           ],
-          "text": "A car moving away gets a large penalty instead of being excluded."
+          "text": "Bookkeeping reuses the same method, so VAT is silently booked as revenue."
         },
         {
           "lines": [
-            9,
+            10,
             13
           ],
-          "text": "`main` sends three calls through the same strategy."
+          "text": "Compare the ledger with what accounting expects. It compiles and runs; only the numbers are wrong."
+        }
+      ]
+    },
+    {
+      "file": "CheckoutDemo.java",
+      "lang": "java",
+      "title": "The fix",
+      "run": "captured",
+      "caption": "Split by actor: each class has one owner, and `CheckoutService` only wires them.",
+      "walk": [
+        {
+          "lines": [
+            18,
+            28
+          ],
+          "text": "`Order` is an immutable record that rejects negative prices. Its net total is the fact every team shares."
+        },
+        {
+          "lines": [
+            30,
+            36
+          ],
+          "text": "`VatCalculator` owns the tax rule and rejects a negative rate. Only finance changes it."
+        },
+        {
+          "lines": [
+            38,
+            46
+          ],
+          "text": "`ReceiptFormatter` builds the customer's text from the gross price. Layout changes stop here."
+        },
+        {
+          "lines": [
+            48,
+            55
+          ],
+          "text": "`Ledger` books net revenue and returns a copy, never its internal list."
+        },
+        {
+          "lines": [
+            57,
+            69
+          ],
+          "text": "`CheckoutService` gets collaborators by constructor injection. It decides step order, no business rules."
+        },
+        {
+          "lines": [
+            6,
+            11
+          ],
+          "text": "Now the receipt shows VAT while the ledger stays net. Both teams get what they asked."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Do not serve calls in arrival order; the car zigzags and riders wait longer.",
-    "Guard `request` and `step` with one lock when buttons and the motor run concurrently.",
-    "Model doors and motion as `enum` states so a moving car never opens doors."
+    "Splitting by method count, not by actor, gives tiny classes that still change together.",
+    "A `Manager` or `Utils` class that every team edits is a violation; watch its merge conflicts.",
+    "Splitting a small script with one owner adds indirection for nothing; wait for a second actor."
   ],
   "quiz": {
-    "q": "What does `DispatchDemo` print for the call at floor 1?",
+    "q": "After the split, finance changes how VAT is rounded. Which classes change?",
     "options": [
-      "call at 1 -> car A",
-      "call at 1 -> car B",
-      "call at 1 -> car C"
+      "Only VatCalculator",
+      "VatCalculator and ReceiptFormatter",
+      "VatCalculator and Ledger",
+      "CheckoutService"
     ],
-    "answer": 1,
-    "why": "A climbs away from floor 1, so it pays the penalty. B descends from 6 toward 1, cost 5, beating idle C at cost 8.",
-    "code": "// A at 2 going UP, B at 6 going DOWN, C at 9 IDLE\n// cost = distance, + 1000 if the car moves away\nstrategy.pick(cars, 1).id()",
-    "lang": "java"
+    "answer": 0,
+    "why": "Rounding lives in `grossCents`. `ReceiptFormatter` only asks `VatCalculator` for the gross price, and `Ledger` books net, so neither changes."
   },
-  "takeaway": "Sort stops per direction, sweep before turning, and dispatch through a strategy.",
+  "takeaway": "One class, one actor: split when two teams' changes collide.",
   "chat": {
     "starters": [
-      "How would I add a State pattern for doors open, moving and maintenance?",
-      "What changes when the building has eight cars instead of three?",
-      "How do I make the elevator thread-safe with real button presses?"
+      "How do I find the actors of a class I inherited?",
+      "Is a service class with many methods always an SRP violation?",
+      "How small should a class be before SRP becomes overkill?"
     ]
   }
 }

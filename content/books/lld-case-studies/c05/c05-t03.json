@@ -1,0 +1,316 @@
+{
+  "title": "ATM service and dispense strategy",
+  "idea": "The core design is one ATM facade that runs authenticate and withdraw, and reaches the bank and the note planner only through injected interfaces.",
+  "analogy": {
+    "text": "A cashier at a bank counter. The cashier follows one routine, but phones head office to approve and follows a rule card to pick notes.",
+    "breaks": "A cashier can bend the rule card; a Java strategy cannot."
+  },
+  "points": [
+    "`ATM` is a facade: the screen calls `insertCard`, `enterPin` and `withdraw`.",
+    "`BankService` hides the network call to the bank, so tests use memory.",
+    "`DispensePlanner` is the strategy pattern: each note-picking rule is a class.",
+    "Plan notes first, debit second, dispense last; a failed plan moves no money."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "One withdrawal through the ATM",
+    "scenario": {
+      "token": {
+        "label": "withdraw 2600",
+        "tone": "req"
+      },
+      "stages": [
+        {
+          "id": "screen",
+          "label": "Screen",
+          "kind": "end"
+        },
+        {
+          "id": "atm",
+          "label": "ATM",
+          "sub": "facade"
+        },
+        {
+          "id": "plan",
+          "label": "DispensePlanner",
+          "sub": "which notes"
+        },
+        {
+          "id": "bank",
+          "label": "BankService",
+          "sub": "debit"
+        },
+        {
+          "id": "cash",
+          "label": "CashDispenser",
+          "sub": "notes out",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "The customer, already authenticated, asks for Rs 2,600.",
+          "at": "screen",
+          "slot": "top",
+          "state": {
+            "screen": "active"
+          }
+        },
+        {
+          "caption": "The `ATM` facade checks the session and starts the withdrawal.",
+          "at": "atm",
+          "slot": "top",
+          "state": {
+            "screen": "done",
+            "atm": "active"
+          }
+        },
+        {
+          "caption": "The planner picks notes from stock: one 2000, one 500, one 100. No money has moved yet.",
+          "at": "plan",
+          "slot": "top",
+          "state": {
+            "screen": "done",
+            "atm": "done",
+            "plan": "active"
+          }
+        },
+        {
+          "caption": "Only now does the bank debit the account and return a transaction id.",
+          "at": "bank",
+          "slot": "top",
+          "token": {
+            "label": "debit 2600",
+            "tone": "req"
+          },
+          "state": {
+            "screen": "done",
+            "atm": "done",
+            "plan": "done",
+            "bank": "active"
+          }
+        },
+        {
+          "caption": "The dispenser lowers its note counts and pushes the notes out.",
+          "at": "cash",
+          "slot": "top",
+          "token": {
+            "label": "TX-1",
+            "tone": "ok"
+          },
+          "state": {
+            "screen": "done",
+            "atm": "done",
+            "plan": "done",
+            "bank": "done",
+            "cash": "active"
+          }
+        },
+        {
+          "caption": "The screen shows TX-1 and the notes. The facade hid every step.",
+          "at": "screen",
+          "slot": "bottom",
+          "token": {
+            "label": "TX-1 done",
+            "tone": "ok"
+          },
+          "state": {
+            "screen": "active",
+            "atm": "done",
+            "plan": "done",
+            "bank": "done",
+            "cash": "done"
+          }
+        },
+        {
+          "caption": "Next the customer asks for Rs 9,000. The notes left cannot make it, so the ATM refuses before calling the bank.",
+          "at": "plan",
+          "slot": "bottom",
+          "token": {
+            "label": "9000",
+            "tone": "err"
+          },
+          "state": {
+            "screen": "done",
+            "atm": "done",
+            "plan": "blocked",
+            "bank": "done",
+            "cash": "done"
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "CoreAtm.java",
+      "lang": "java",
+      "title": "Facade and interfaces",
+      "run": "captured",
+      "caption": "The core flow. Bank and planner are interfaces passed in. The demo PIN check is a stand-in; page 7 checks a salted hash.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "text": "Wire the ATM with an in-memory bank, a greedy planner and loaded notes."
+        },
+        {
+          "lines": [
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "text": "Wrong PIN, right PIN, then three withdrawals and the final state."
+        },
+        {
+          "lines": [
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29
+          ],
+          "text": "Two interfaces: the bank and the note planner. Each is a swap point."
+        },
+        {
+          "lines": [
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41
+          ],
+          "text": "Greedy takes as many large notes as fit, then moves to smaller ones."
+        },
+        {
+          "lines": [
+            72,
+            73,
+            74,
+            75,
+            76,
+            77,
+            78,
+            79,
+            80,
+            81,
+            82,
+            83
+          ],
+          "text": "`withdraw` plans first, debits second, dispenses last. A bank refusal dispenses nothing."
+        },
+        {
+          "lines": [
+            99,
+            100,
+            101,
+            102,
+            103,
+            104
+          ],
+          "text": "The bank's `debit` is `synchronized` and refuses to overdraw. Page 5 explains why."
+        }
+      ]
+    },
+    {
+      "file": "ExactChange.java",
+      "lang": "java",
+      "title": "A new strategy",
+      "run": "captured",
+      "caption": "Greedy can miss an amount that the notes can make. A backtracking planner is added as a new class; ATM is not edited.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7
+          ],
+          "text": "Stock: one 500 note and three 200 notes. Ask both planners for Rs 600."
+        },
+        {
+          "lines": [
+            8,
+            9,
+            10,
+            11
+          ],
+          "text": "Each planner gets the same stock; print its plan or a refusal."
+        },
+        {
+          "lines": [
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40
+          ],
+          "text": "A new class implements the same interface, so nothing else changes."
+        },
+        {
+          "lines": [
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51
+          ],
+          "text": "Try the most of each note first, then fewer, until the rest fits exactly."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not debit before checking the notes can make the amount; it forces a reversal.",
+    "Do not add `if (greedy)` branches inside ATM; add a new planner class.",
+    "Keep the bank behind an interface; tests must not need a real network."
+  ],
+  "quiz": {
+    "q": "What does ExactChange print for GreedyPlanner?",
+    "options": [
+      "GreedyPlanner 60000 -> {20000=3}",
+      "GreedyPlanner 60000 -> {50000=1, 20000=1}",
+      "GreedyPlanner 60000 -> refused",
+      "GreedyPlanner 60000 -> {50000=1}"
+    ],
+    "answer": 2,
+    "why": "Greedy takes the 500 first. Rs 100 is left, and no 100 notes exist, so it refuses. Three 200s would have worked."
+  },
+  "takeaway": "One facade for the screen; every changing rule behind an injected interface.",
+  "chat": {
+    "starters": [
+      "Is backtracking fast enough with four note types?",
+      "Should the planner also prefer to keep large notes in stock?",
+      "How would I test the ATM without a bank connection?"
+    ]
+  }
+}

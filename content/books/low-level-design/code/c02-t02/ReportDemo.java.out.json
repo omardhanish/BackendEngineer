@@ -1,0 +1,11 @@
+{
+  "stdout": "== Sales ==\n2 orders, total 200\n== Stock ==\n3 items low\nrejected: lowItems < 0",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ReportDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "2e4ca84c68d64e22",
+  "at": "2026-10-12T11:14:39.366Z"
+}

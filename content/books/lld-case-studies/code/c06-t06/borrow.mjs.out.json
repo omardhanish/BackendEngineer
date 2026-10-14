@@ -1,0 +1,11 @@
+{
+  "stdout": "last copy, two members: [ 'NO_COPY', 'loan' ]\nM-3 at 1 of 2, two borrows: [ 'LIMIT', 'loan' ]\nreturn CP-1: { fineMinor: 3000, heldFor: 'M-4' }\nreturn CP-1 again: NOT_ON_LOAN\nM-1 borrows: NO_COPY\nM-4 borrows: LN-3\n[{\"status\":\"AVAILABLE\",\"n\":1},{\"status\":\"ON_LOAN\",\"n\":3}]",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node borrow.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "04965d7eee1fd72b",
+  "at": "2026-10-14T10:23:10.676Z"
+}

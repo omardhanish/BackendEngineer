@@ -1,0 +1,11 @@
+{
+  "stdout": "07:00 hall C-2=50000 turf C-1=50000\n17:00 hall C-2=80000 turf C-1=80000\n19:00 hall C-2=80000 turf C-1=95000",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java FloodlightSurcharge.java",
+  "tool": "Java 17.0.17",
+  "hash": "8ea2b577e140d38b",
+  "at": "2026-10-14T08:34:48.489Z"
+}

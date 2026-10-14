@@ -1,0 +1,11 @@
+{
+  "stdout": "/reservations 201 {\"id\":\"RS-1\",\"roomType\":\"DLX\",\"status\":\"HELD\",\"amountMinor\":1300000}\n/reservations 200 {\"id\":\"RS-1\",\"roomType\":\"DLX\",\"status\":\"HELD\",\"amountMinor\":1300000}\n/reservations 409 {\"error\":\"SOLD_OUT\"}\n/reservations 400 {\"error\":\"VALIDATION\"}\n/reservations/RS-1/cancel 200 {\"id\":\"RS-1\",\"roomType\":\"DLX\",\"status\":\"CANCELLED\",\"amountMinor\":1300000,\"refundMinor\":0}\n/reservations/RS-1/cancel 409 {\"error\":\"NOT_CANCELLABLE\"}\n/reservations/RS-9/cancel 404 {\"error\":\"RESERVATION_NOT_FOUND\"}",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node api.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "b4d0be3c4237d571",
+  "at": "2026-10-14T10:24:04.504Z"
+}

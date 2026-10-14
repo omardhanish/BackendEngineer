@@ -1,0 +1,11 @@
+{
+  "stdout": "get-then-load DB loads:   4\ncomputeIfAbsent DB loads: 1",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java Stampede.java",
+  "tool": "Java 17.0.17",
+  "hash": "2f9c554210569dec",
+  "at": "2026-10-14T08:37:09.152Z"
+}

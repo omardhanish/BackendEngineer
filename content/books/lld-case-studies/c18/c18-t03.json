@@ -1,0 +1,314 @@
+{
+  "title": "File system core in Java",
+  "idea": "The core is a `FileSystem` facade: it parses each path into names, walks from the root to the target, and checks everything before changing the tree.",
+  "analogy": {
+    "text": "A postal sorter reads an address one line at a time: country, city, street, house. A missing line stops delivery with a clear reason.",
+    "breaks": "Mail never moves a whole street to a new city."
+  },
+  "points": [
+    "`parse` turns a path into names and folds away `.` and `..` safely.",
+    "`resolve` walks names from the root and fails with a precise error code.",
+    "`move` checks everything before it detaches a node, so a refusal changes nothing.",
+    "`find` walks with an explicit stack; `size()` and `path()` still recurse."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "lanes",
+    "title": "find .txt under /home/ada",
+    "scenario": {
+      "lanes": [
+        {
+          "id": "stack",
+          "label": "Stack to visit",
+          "kind": "stack",
+          "hint": "top is last"
+        },
+        {
+          "id": "now",
+          "label": "Visiting now",
+          "kind": "area"
+        },
+        {
+          "id": "hits",
+          "label": "Matches",
+          "kind": "area",
+          "hint": "in visit order"
+        }
+      ],
+      "tokens": {
+        "ada": {
+          "label": "ada/",
+          "tone": "neutral"
+        },
+        "docs": {
+          "label": "docs/",
+          "tone": "neutral"
+        },
+        "logs": {
+          "label": "logs/",
+          "tone": "neutral"
+        },
+        "todo": {
+          "label": "todo.txt",
+          "tone": "io"
+        },
+        "cv": {
+          "label": "cv.pdf",
+          "tone": "sync"
+        },
+        "notes": {
+          "label": "notes.txt",
+          "tone": "io"
+        },
+        "app": {
+          "label": "app.log",
+          "tone": "sync"
+        }
+      },
+      "steps": [
+        {
+          "caption": "`find` resolves the start path and pushes that one node on the stack.",
+          "at": {
+            "stack": [
+              "ada"
+            ]
+          },
+          "active": "ada"
+        },
+        {
+          "caption": "Pop `ada/`. It is not a match. Push its children in reverse, so `docs/` ends on top.",
+          "at": {
+            "stack": [
+              "todo",
+              "logs",
+              "docs"
+            ],
+            "now": [
+              "ada"
+            ]
+          },
+          "active": "docs"
+        },
+        {
+          "caption": "Pop `docs/` and push its two files, again reversed to keep sorted order.",
+          "at": {
+            "stack": [
+              "todo",
+              "logs",
+              "notes",
+              "cv"
+            ],
+            "now": [
+              "docs"
+            ]
+          },
+          "active": "cv"
+        },
+        {
+          "caption": "Pop `cv.pdf`. The test fails, and a file has no children to push.",
+          "at": {
+            "stack": [
+              "todo",
+              "logs",
+              "notes"
+            ],
+            "now": [
+              "cv"
+            ]
+          },
+          "active": "cv"
+        },
+        {
+          "caption": "Pop `notes.txt`. The test passes, so its full path joins the matches.",
+          "at": {
+            "stack": [
+              "todo",
+              "logs"
+            ],
+            "hits": [
+              "notes"
+            ],
+            "now": [
+              "notes"
+            ]
+          },
+          "active": "notes"
+        },
+        {
+          "caption": "Pop `logs/` and push its one child, `app.log`.",
+          "at": {
+            "stack": [
+              "todo",
+              "app"
+            ],
+            "now": [
+              "logs"
+            ],
+            "hits": [
+              "notes"
+            ]
+          },
+          "active": "app"
+        },
+        {
+          "caption": "Pop `app.log`. The test fails.",
+          "at": {
+            "stack": [
+              "todo"
+            ],
+            "now": [
+              "app"
+            ],
+            "hits": [
+              "notes"
+            ]
+          },
+          "active": "app"
+        },
+        {
+          "caption": "Pop `todo.txt`. It matches. The stack is empty, so `find` returns both paths.",
+          "at": {
+            "hits": [
+              "notes",
+              "todo"
+            ],
+            "now": [
+              "todo"
+            ]
+          },
+          "active": "todo"
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "FileSystem.java",
+      "lang": "java",
+      "title": "FileSystem facade",
+      "run": "captured",
+      "caption": "Path parsing, resolution, mkdir -p, create, list, size, find, move and recursive delete, with one error type.",
+      "walk": [
+        {
+          "lines": [
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "text": "Build a home folder, then list it, size it and find the text files."
+        },
+        {
+          "lines": [
+            17,
+            18,
+            19,
+            20
+          ],
+          "text": "Move and rename in one call, size through `..`, then delete a folder."
+        },
+        {
+          "lines": [
+            21,
+            22,
+            23,
+            24,
+            25
+          ],
+          "text": "Five calls that must fail, each with its own error code."
+        },
+        {
+          "lines": [
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42
+          ],
+          "text": "Like `mkdir -p`: reuse folders that exist, create the rest."
+        },
+        {
+          "lines": [
+            74,
+            75,
+            76,
+            77,
+            78,
+            79,
+            80,
+            81,
+            82,
+            83,
+            84,
+            85,
+            86
+          ],
+          "text": "`move` runs every check first; only then does it detach, rename and attach."
+        },
+        {
+          "lines": [
+            96,
+            97,
+            98,
+            99,
+            100,
+            101,
+            102,
+            103,
+            104,
+            105,
+            106,
+            107,
+            108
+          ],
+          "text": "`parse` rejects relative paths and empty names, and stops `..` at the root."
+        },
+        {
+          "lines": [
+            110,
+            111,
+            112,
+            113,
+            114,
+            115,
+            116,
+            117
+          ],
+          "text": "`resolve` walks one name at a time; a file in the middle is an error."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Parse a path once into names, then walk; never re-split strings at each level.",
+    "Check that a folder is not moved into its own subtree, or it vanishes.",
+    "Detach a node only after every check passes, or a failed move loses data."
+  ],
+  "quiz": {
+    "q": "What does the fourth `error` line of FileSystem print?",
+    "options": [
+      "error          NOT_FOUND /home/ada/docs/home",
+      "error          MOVE_INTO_ITSELF /home/ada/docs/home",
+      "error          ALREADY_EXISTS /home/ada/docs/home",
+      "error          ROOT_IS_FIXED /home"
+    ],
+    "answer": 1,
+    "why": "The target's parent, `docs`, sits inside `/home`. Walking up from `docs` reaches `/home`, so `isInside` is true and the move is refused before anything changes."
+  },
+  "takeaway": "Parse once, resolve from the root, check everything, then mutate.",
+  "chat": {
+    "starters": [
+      "How would I add a current working directory and relative paths?",
+      "Why is lexical handling of .. different from what a real OS does?",
+      "How do I make delete refuse non-empty folders unless asked to recurse?"
+    ]
+  }
+}

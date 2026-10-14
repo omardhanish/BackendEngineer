@@ -1,0 +1,11 @@
+{
+  "stdout": "SmallestFitStrategy -> Orion\nNearestFloorStrategy -> Lyra",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java NearestFloor.java",
+  "tool": "Java 17.0.17",
+  "hash": "10bcdee72a5e605f",
+  "at": "2026-10-14T08:33:49.228Z"
+}

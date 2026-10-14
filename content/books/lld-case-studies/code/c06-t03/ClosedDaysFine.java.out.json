@@ -1,0 +1,11 @@
+{
+  "stdout": "due MONDAY, back TUESDAY\nPerDayFine -> 8000\nOpenDaysOnly -> 7000",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ClosedDaysFine.java",
+  "tool": "Java 17.0.17",
+  "hash": "ff82d927961b420b",
+  "at": "2026-10-14T10:23:07.942Z"
+}

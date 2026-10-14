@@ -1,0 +1,206 @@
+{
+  "title": "Reservation API in Express",
+  "idea": "The reservation API exposes search, book and cancel as REST endpoints, with Express controllers, a service that owns the transaction, and a repository that holds the SQL.",
+  "analogy": {
+    "text": "A restaurant phone line. The receptionist takes the details, the manager checks the book and decides, and the booking ledger records the line.",
+    "breaks": "A receptionist forgets repeat calls; the Idempotency-Key does not."
+  },
+  "points": [
+    "Controllers parse input with `zod` and map results to status codes only.",
+    "The service runs best fit and insert in one transaction, retrying 23P01 or 40P01.",
+    "A repeated Idempotency-Key returns the first reservation with 200, not a new one.",
+    "One error middleware maps validation, domain and database errors to HTTP codes."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "Endpoints",
+    "head": [
+      "Method",
+      "Path",
+      "Request",
+      "Success",
+      "Errors"
+    ],
+    "rows": [
+      [
+        "GET",
+        "/restaurants/:rid/availability",
+        "date, partySize",
+        "200 free start times",
+        "400, 404"
+      ],
+      [
+        "POST",
+        "/restaurants/:rid/reservations",
+        "customerId, partySize, startsAt + Idempotency-Key",
+        "201 reservation; 200 on replay",
+        "400, 404, 409 no table"
+      ],
+      [
+        "GET",
+        "/reservations/:id",
+        "none",
+        "200 reservation",
+        "404"
+      ],
+      [
+        "POST",
+        "/reservations/:id/cancel",
+        "none",
+        "200 CANCELLED",
+        "404, 409 state"
+      ],
+      [
+        "POST",
+        "/reservations/:id/seat",
+        "host only",
+        "200 SEATED",
+        "403, 409 state"
+      ]
+    ],
+    "highlight": {
+      "row": 1
+    },
+    "caption": "The snippet runs the booking route. The others follow the same layers and use page 4's state rules."
+  },
+  "code": [
+    {
+      "file": "api.mjs",
+      "lang": "js",
+      "title": "Layered Express app",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "Repository, service, controller and error mapping in one file, on a real PostgreSQL 18.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "text": "Demo schema: one restaurant, a two-seat and a four-seat table, and the overlap constraint."
+        },
+        {
+          "lines": [
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22
+          ],
+          "text": "`tx` gives each service call one transaction and always releases the client."
+        },
+        {
+          "lines": [
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40
+          ],
+          "text": "Repository: seating length, key lookup, best-fit table, and the insert. SQL only."
+        },
+        {
+          "lines": [
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54
+          ],
+          "text": "Service: replay a known key, 404 for an unknown restaurant, 409 when no table fits."
+        },
+        {
+          "lines": [
+            55,
+            56,
+            57,
+            58
+          ],
+          "text": "Losing the table (23P01) or a deadlock (40P01) reruns the whole transaction, three attempts at most."
+        },
+        {
+          "lines": [
+            61,
+            62,
+            63,
+            64,
+            65,
+            66,
+            67,
+            68,
+            69,
+            70
+          ],
+          "text": "Controller: demand the key, parse the body, 201 for new and 200 for a replay."
+        },
+        {
+          "lines": [
+            71,
+            72,
+            73,
+            74,
+            75,
+            76
+          ],
+          "text": "Error middleware maps each error kind to one status and a stable error code."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not choose the table in the controller; the service owns rules and the transaction.",
+    "Scope keys per customer and reject reuse with a different body; this demo skips both.",
+    "Never return raw database errors; map them to stable codes like NO_TABLE."
+  ],
+  "quiz": {
+    "q": "What status does the request with key k-2 print?",
+    "options": [
+      "201",
+      "200",
+      "409",
+      "400"
+    ],
+    "answer": 2,
+    "why": "T2 already holds k-1's 19:00 reservation and T1 seats only two. Best fit finds no table, so the service throws NO_TABLE, mapped to 409."
+  },
+  "takeaway": "Controllers validate, services decide inside a transaction, repositories hold the SQL.",
+  "chat": {
+    "starters": [
+      "How should the availability endpoint compute free start times?",
+      "Where would I check that only a host can seat a party?",
+      "How long should idempotency keys be kept in the table?"
+    ]
+  }
+}

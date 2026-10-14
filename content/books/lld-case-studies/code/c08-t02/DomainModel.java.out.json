@@ -1,0 +1,11 @@
+{
+  "stdout": "City Plaza > Audi 1 > Night Train\nhold expired? false\nBK-1 [A1, P1] 65000 PENDING\nrejected: no seat Z9 in Audi 1\nrejected: a hold needs at least one seat",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java DomainModel.java",
+  "tool": "Java 17.0.17",
+  "hash": "74d05614d6299c31",
+  "at": "2026-10-12T11:17:25.361Z"
+}

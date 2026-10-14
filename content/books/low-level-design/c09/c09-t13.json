@@ -1,0 +1,36 @@
+{
+  "title": "Design peer review",
+  "idea": "A design peer review is a short session where a colleague tests your class model against the requirements and against likely changes, and you record each decision.",
+  "points": [
+    "Present in order: requirements, class diagram, one lifecycle, then the demo output.",
+    "Reviewers ask change questions: what must you edit to add a new channel?",
+    "Answer with the class that changes; if many classes change, note a design fix.",
+    "Swap roles afterwards; reviewing another design shows you what interviewers look for."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "What a reviewer checks",
+    "head": ["Area", "Question to ask", "Red flag"],
+    "rows": [
+      ["Coverage", "Which class serves requirement R3?", "No class or check traces to it"],
+      ["Responsibility", "Who asks for changes to this class?", "One service edited for every ticket"],
+      ["Lifecycle", "Which moves are illegal, and where is that enforced?", "Status set by boolean flags"],
+      ["Change", "What edits does a new pricing rule need?", "An if-else grows in the service"],
+      ["Errors", "What does the caller see when a slot is taken?", "Null returns or generic exceptions"],
+      ["Proof", "Which output shows the failure path ran?", "Only the happy path was run"]
+    ],
+    "caption": "Ask one row at a time. Write down each red flag found and the class that would fix it."
+  },
+  "pitfalls": [
+    "Defending every choice; log the feedback and decide later with the requirements in hand.",
+    "Reviewing style or naming first; check responsibilities and change cost before cosmetics."
+  ],
+  "takeaway": "A good review asks what changes, and which class absorbs it.",
+  "chat": {
+    "starters": [
+      "Can you act as a reviewer and question my food delivery class model?",
+      "How do I give design feedback without sounding like I'm attacking the author?",
+      "Which review questions do LLD interviewers ask most often after the first design?"
+    ]
+  }
+}

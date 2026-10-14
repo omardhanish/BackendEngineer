@@ -1,0 +1,11 @@
+{
+  "stdout": "T-2 heartbeat at=0 p=0\nT-3 charge-card at=1000 p=5\nT-1 send-report at=1000 p=1\nbackoff: 100 200 400 800 1000\nheartbeat next: 500\nrefused: T-4 SUCCEEDED -> RUNNING",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ClassDesign.java",
+  "tool": "Java 17.0.17",
+  "hash": "b259beef657afccc",
+  "at": "2026-10-14T10:23:24.383Z"
+}

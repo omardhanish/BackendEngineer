@@ -1,0 +1,74 @@
+{
+  "title": "API client requirements",
+  "idea": "Scoping an API client means deciding which failures to retry, which requests are safe to repeat, how long a call may take, and when to stop calling.",
+  "points": [
+    "Retry only transient failures: timeouts, connection errors, 503 and similar.",
+    "Repeat a request only if it is idempotent or carries an Idempotency-Key.",
+    "Every call has a per-attempt timeout and a total time budget.",
+    "A circuit breaker fails fast while a downstream service keeps failing."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Actors and use cases in v1",
+    "nodes": [
+      { "id": "caller", "label": "Caller", "sub": "service code" },
+      { "id": "send", "label": "Send request", "sub": "one logical call" },
+      { "id": "retry", "label": "Retry transient failure", "sub": "backoff with jitter" },
+      { "id": "budget", "label": "Enforce timeout", "sub": "per attempt and total" },
+      { "id": "breaker", "label": "Open circuit", "sub": "fail fast when sick" },
+      { "id": "op", "label": "Operator", "sub": "owns the policies" },
+      { "id": "config", "label": "Configure per service", "sub": "attempts, delays, limits" },
+      { "id": "out", "label": "Out of scope", "sub": "caching, hedging, shared state" }
+    ],
+    "edges": [
+      { "from": "caller", "to": "send", "caption": "The caller asks for one logical call. It should not care how many attempts happen underneath." },
+      { "from": "send", "to": "retry", "label": "on failure", "caption": "A transient failure on a safe request triggers another attempt after a growing, randomised wait." },
+      { "from": "send", "to": "budget", "label": "always", "caption": "Each attempt has its own timeout, and all attempts together share one total budget." },
+      { "from": "retry", "to": "breaker", "label": "feeds", "caption": "Repeated failures trip the breaker. Later calls fail at once instead of piling onto a sick service." },
+      { "from": "op", "to": "config", "caption": "An operator sets policies per downstream service, for example fewer attempts for a slow one." },
+      { "from": "config", "to": "send", "label": "used by", "dashed": true, "caption": "The client reads the policy for the service it is calling." },
+      { "from": "op", "to": "out", "label": "defers", "dashed": true, "caption": "Caching, hedging and cross-host breaker state are cut from v1. Say so out loud." }
+    ]
+  },
+  "code": [
+    {
+      "file": "Scope.java",
+      "lang": "java",
+      "title": "The retry rule as code",
+      "run": "captured",
+      "caption": "Six failed calls run through the v1 retry rule, then the use cases are listed with their actor and scope.",
+      "walk": [
+        { "lines": [6, 7, 8, 9, 10, 11, 12], "text": "Six failed calls: method, failure kind, and whether an Idempotency-Key was sent." },
+        { "lines": [23, 24, 25, 26, 27, 28, 29], "text": "Each failure kind says whether it may succeed if tried again." },
+        { "lines": [32, 33, 34, 35, 36, 37], "text": "A request is safe to repeat if its method is idempotent or it has a key." },
+        { "lines": [39, 40], "text": "Retry needs both: a transient failure and a request safe to repeat." },
+        { "lines": [46, 47, 48, 49, 50], "text": "Five use cases form v1, across caller, client and operator." },
+        { "lines": [51, 52, 53], "text": "Three are named and cut, so the boundary is visible in the design." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Never retry a plain POST; a lost response may hide a completed charge.",
+    "Do not retry 400 or 404; the same request fails the same way.",
+    "Agree on a total time budget, or retries can outlast the caller's own timeout."
+  ],
+  "quiz": {
+    "q": "A POST to create a payment times out. No Idempotency-Key was sent. What should v1 do?",
+    "options": [
+      "Retry it up to the maximum attempts",
+      "Return the timeout to the caller without retrying",
+      "Retry once, since timeouts are transient",
+      "Switch the request to PUT and retry"
+    ],
+    "answer": 1,
+    "why": "The server may have charged before the timeout. Without a key it cannot spot the repeat, so a retry risks a double charge."
+  },
+  "takeaway": "Retry only transient failures, and only requests that are safe to repeat.",
+  "chat": {
+    "starters": [
+      "Why is PUT idempotent but POST is not?",
+      "Should 429 Too Many Requests be retried?",
+      "Who should own the total timeout, the client or the caller?"
+    ]
+  }
+}

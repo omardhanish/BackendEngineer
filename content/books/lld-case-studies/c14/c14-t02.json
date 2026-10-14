@@ -1,0 +1,225 @@
+{
+  "title": "Notification classes and relationships",
+  "idea": "The class design splits a notification into who receives it, what it says, which channel carries it, and which provider delivers it, each in its own type.",
+  "analogy": {
+    "text": "A post office. The form letter is the template, the address book is the recipient, and couriers are providers.",
+    "breaks": "A post office picks one courier; we fail over to another."
+  },
+  "points": [
+    "`Notification` owns its id, idempotency key, rendered message and status.",
+    "`Recipient` maps each `Channel` to an address, which may be missing.",
+    "`Template` belongs to one channel and fails loudly on a missing value.",
+    "`Provider` is an interface; each vendor is one class behind it."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Class diagram",
+    "nodes": [
+      {
+        "id": "svc",
+        "label": "NotificationService",
+        "sub": "send(request): Notification"
+      },
+      {
+        "id": "notif",
+        "label": "Notification",
+        "sub": "id, key, status, sentVia"
+      },
+      {
+        "id": "recip",
+        "label": "Recipient",
+        "sub": "email, phone, deviceToken"
+      },
+      {
+        "id": "tmpl",
+        "label": "Template",
+        "sub": "channel, subject, body"
+      },
+      {
+        "id": "msg",
+        "label": "Message",
+        "sub": "to, subject, body"
+      },
+      {
+        "id": "chan",
+        "label": "Channel",
+        "sub": "enum: EMAIL, SMS, PUSH"
+      },
+      {
+        "id": "prov",
+        "label": "Provider",
+        "sub": "interface: send(Message)"
+      },
+      {
+        "id": "smsa",
+        "label": "SmsProviderA",
+        "sub": "one vendor adapter"
+      }
+    ],
+    "edges": [
+      {
+        "from": "svc",
+        "to": "notif",
+        "label": "creates",
+        "caption": "The service creates one Notification per accepted request and keeps it by id and key."
+      },
+      {
+        "from": "notif",
+        "to": "recip",
+        "label": "uses 1",
+        "caption": "Each Notification is built for one Recipient. It keeps only the resolved address, inside its Message."
+      },
+      {
+        "from": "notif",
+        "to": "tmpl",
+        "label": "uses 1",
+        "caption": "It is rendered from one Template. Rendering happens once, at creation."
+      },
+      {
+        "from": "notif",
+        "to": "msg",
+        "label": "has-a 1",
+        "caption": "The rendered result is an immutable Message: address, subject and body."
+      },
+      {
+        "from": "tmpl",
+        "to": "chan",
+        "label": "has-a 1",
+        "caption": "A Template belongs to one Channel, so an SMS template never goes out as email."
+      },
+      {
+        "from": "svc",
+        "to": "prov",
+        "label": "uses 1..* per channel",
+        "caption": "The service holds an ordered list of Providers per Channel. Order means failover order."
+      },
+      {
+        "from": "smsa",
+        "to": "prov",
+        "label": "is-a",
+        "caption": "Each vendor is a class that implements Provider. The service never sees vendor details."
+      },
+      {
+        "from": "prov",
+        "to": "msg",
+        "label": "sends",
+        "dashed": true,
+        "caption": "A Provider only gets the Message. It knows nothing about templates or users."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "ClassModel.java",
+      "lang": "java",
+      "title": "The domain model",
+      "run": "captured",
+      "caption": "Records for values, one class with state, and the provider interface. The service arrives on the next page.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7,
+            8,
+            9,
+            10,
+            11
+          ],
+          "text": "Ana has email and phone but no device token. Build an OTP notification."
+        },
+        {
+          "lines": [
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18
+          ],
+          "text": "Print the address, the rendered body, the missing push address, and the SENT state."
+        },
+        {
+          "lines": [
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "text": "Leaving out the code value makes construction fail, so no half-filled message exists."
+        },
+        {
+          "lines": [
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37
+          ],
+          "text": "`Recipient.address` returns an Optional: a channel address may not exist."
+        },
+        {
+          "lines": [
+            42,
+            43,
+            45,
+            48,
+            49,
+            50,
+            51
+          ],
+          "text": "`Template.fill` replaces each name in braces and throws on a missing value."
+        },
+        {
+          "lines": [
+            58,
+            59,
+            60,
+            61
+          ],
+          "text": "`Provider` is the swap point: one method that sends a Message."
+        },
+        {
+          "lines": [
+            70,
+            74,
+            75,
+            76,
+            77,
+            80,
+            81,
+            82
+          ],
+          "text": "The constructor resolves the address and renders once; `markSent` allows only PENDING to SENT."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not render templates inside the provider; render once so retries send identical text.",
+    "Never silently send an empty value when a template parameter is missing.",
+    "Do not make channel subclasses of Notification; channel is data, delivery is the provider."
+  ],
+  "quiz": {
+    "q": "What is the last line ClassModel prints?",
+    "options": [
+      "rejected: missing name",
+      "rejected: missing code",
+      "body: Hi Ana, your code is ",
+      "rejected: no SMS"
+    ],
+    "answer": 1,
+    "why": "Ana has a phone, so the address resolves. The params hold `name` but not `code`, so `fill` throws with \"missing code\"."
+  },
+  "takeaway": "Recipient, Template, Message and Provider each own one reason to change.",
+  "chat": {
+    "starters": [
+      "Should Channel be an enum or an interface with one class per channel?",
+      "Where should user preferences live in this class design?",
+      "Why store the rendered Message instead of rendering at send time?"
+    ]
+  }
+}

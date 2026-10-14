@@ -1,0 +1,11 @@
+{
+  "stdout": "SEDAN: 2540\nBIKE:  370\nXL failed: no price for XL",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java FareIfElse.java",
+  "tool": "Java 17.0.17",
+  "hash": "2500b5e74caacd9d",
+  "at": "2026-10-12T11:18:52.295Z"
+}

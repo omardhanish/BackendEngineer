@@ -1,0 +1,460 @@
+{
+  "title": "Entities and value objects",
+  "idea": "In domain-driven design (DDD), an entity is defined by a lasting identity, while a value object is defined only by its values and never changes.",
+  "analogy": {
+    "text": "You stay the same person after moving house; your passport number tracks you. A ten-euro note is any ten-euro note; nobody cares which.",
+    "breaks": "Collectors do care about serial numbers; your domain decides what matters."
+  },
+  "points": [
+    "Entity: equality and `hashCode` use the id only; other fields may change over time.",
+    "Value object: immutable, validated in its constructor, equal when all its values are equal.",
+    "Java `record` gives value objects field-based `equals` and `hashCode` for free.",
+    "Wrap raw amounts and emails in value objects so their rules live once."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "memory",
+    "title": "Equal by value, equal by identity",
+    "scenario": {
+      "code": [
+        "Money a = new Money(500, \"EUR\");",
+        "Money b = new Money(500, \"EUR\");",
+        "boolean sameValue = a.equals(b);",
+        "Customer ada = new Customer(id7, oldMail);",
+        "ada.changeEmail(newMail);",
+        "Customer loaded = new Customer(id7, newMail);",
+        "boolean samePerson = ada.equals(loaded);"
+      ],
+      "steps": [
+        {
+          "caption": "`a` points to a new `Money` record on the heap.",
+          "line": 0,
+          "stack": [
+            {
+              "name": "main",
+              "vars": {
+                "a": {
+                  "ref": "m1"
+                }
+              }
+            }
+          ],
+          "heap": [
+            {
+              "id": "m1",
+              "label": "Money",
+              "props": {
+                "cents": "500",
+                "currency": "\"EUR\""
+              }
+            }
+          ]
+        },
+        {
+          "caption": "`b` is a second, separate object with the same values. So `a == b` is false.",
+          "line": 1,
+          "stack": [
+            {
+              "name": "main",
+              "vars": {
+                "a": {
+                  "ref": "m1"
+                },
+                "b": {
+                  "ref": "m2"
+                }
+              }
+            }
+          ],
+          "heap": [
+            {
+              "id": "m1",
+              "label": "Money",
+              "props": {
+                "cents": "500",
+                "currency": "\"EUR\""
+              }
+            },
+            {
+              "id": "m2",
+              "label": "Money",
+              "props": {
+                "cents": "500",
+                "currency": "\"EUR\""
+              }
+            }
+          ]
+        },
+        {
+          "caption": "A record's `equals` compares fields, so the two values are equal. Which object you hold does not matter.",
+          "line": 2,
+          "stack": [
+            {
+              "name": "main",
+              "vars": {
+                "a": {
+                  "ref": "m1"
+                },
+                "b": {
+                  "ref": "m2"
+                },
+                "sameValue": "true"
+              }
+            }
+          ],
+          "heap": [
+            {
+              "id": "m1",
+              "label": "Money",
+              "props": {
+                "cents": "500",
+                "currency": "\"EUR\""
+              }
+            },
+            {
+              "id": "m2",
+              "label": "Money",
+              "props": {
+                "cents": "500",
+                "currency": "\"EUR\""
+              }
+            }
+          ]
+        },
+        {
+          "caption": "`ada` is an entity. Its id 7 is what makes it this customer.",
+          "line": 3,
+          "stack": [
+            {
+              "name": "main",
+              "vars": {
+                "a": {
+                  "ref": "m1"
+                },
+                "b": {
+                  "ref": "m2"
+                },
+                "sameValue": "true",
+                "ada": {
+                  "ref": "c1"
+                }
+              }
+            }
+          ],
+          "heap": [
+            {
+              "id": "m1",
+              "label": "Money",
+              "props": {
+                "cents": "500",
+                "currency": "\"EUR\""
+              }
+            },
+            {
+              "id": "m2",
+              "label": "Money",
+              "props": {
+                "cents": "500",
+                "currency": "\"EUR\""
+              }
+            },
+            {
+              "id": "c1",
+              "label": "Customer",
+              "props": {
+                "id": "7",
+                "email": "\"ada@old.io\""
+              }
+            }
+          ]
+        },
+        {
+          "caption": "The email changes inside the same object. The id does not, so it is still the same customer.",
+          "line": 4,
+          "stack": [
+            {
+              "name": "main",
+              "vars": {
+                "a": {
+                  "ref": "m1"
+                },
+                "b": {
+                  "ref": "m2"
+                },
+                "sameValue": "true",
+                "ada": {
+                  "ref": "c1"
+                }
+              }
+            }
+          ],
+          "heap": [
+            {
+              "id": "m1",
+              "label": "Money",
+              "props": {
+                "cents": "500",
+                "currency": "\"EUR\""
+              }
+            },
+            {
+              "id": "m2",
+              "label": "Money",
+              "props": {
+                "cents": "500",
+                "currency": "\"EUR\""
+              }
+            },
+            {
+              "id": "c1",
+              "label": "Customer",
+              "props": {
+                "id": "7",
+                "email": "\"ada@new.io\""
+              }
+            }
+          ]
+        },
+        {
+          "caption": "Loading the customer again builds a second object, as a repository would.",
+          "line": 5,
+          "stack": [
+            {
+              "name": "main",
+              "vars": {
+                "a": {
+                  "ref": "m1"
+                },
+                "b": {
+                  "ref": "m2"
+                },
+                "sameValue": "true",
+                "ada": {
+                  "ref": "c1"
+                },
+                "loaded": {
+                  "ref": "c2"
+                }
+              }
+            }
+          ],
+          "heap": [
+            {
+              "id": "m1",
+              "label": "Money",
+              "props": {
+                "cents": "500",
+                "currency": "\"EUR\""
+              }
+            },
+            {
+              "id": "m2",
+              "label": "Money",
+              "props": {
+                "cents": "500",
+                "currency": "\"EUR\""
+              }
+            },
+            {
+              "id": "c1",
+              "label": "Customer",
+              "props": {
+                "id": "7",
+                "email": "\"ada@new.io\""
+              }
+            },
+            {
+              "id": "c2",
+              "label": "Customer",
+              "props": {
+                "id": "7",
+                "email": "\"ada@new.io\""
+              }
+            }
+          ]
+        },
+        {
+          "caption": "`Customer.equals` compares ids only, so both objects are the same person.",
+          "line": 6,
+          "stack": [
+            {
+              "name": "main",
+              "vars": {
+                "a": {
+                  "ref": "m1"
+                },
+                "b": {
+                  "ref": "m2"
+                },
+                "sameValue": "true",
+                "ada": {
+                  "ref": "c1"
+                },
+                "loaded": {
+                  "ref": "c2"
+                },
+                "samePerson": "true"
+              }
+            }
+          ],
+          "heap": [
+            {
+              "id": "m1",
+              "label": "Money",
+              "props": {
+                "cents": "500",
+                "currency": "\"EUR\""
+              }
+            },
+            {
+              "id": "m2",
+              "label": "Money",
+              "props": {
+                "cents": "500",
+                "currency": "\"EUR\""
+              }
+            },
+            {
+              "id": "c1",
+              "label": "Customer",
+              "props": {
+                "id": "7",
+                "email": "\"ada@new.io\""
+              }
+            },
+            {
+              "id": "c2",
+              "label": "Customer",
+              "props": {
+                "id": "7",
+                "email": "\"ada@new.io\""
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "MutableIdentity.java",
+      "lang": "java",
+      "title": "The problem",
+      "run": "captured",
+      "caption": "A mutable `Money` and an entity whose equality uses its email. Both lie.",
+      "walk": [
+        {
+          "lines": [
+            22,
+            27
+          ],
+          "text": "`Money` is mutable and has no `equals`, so it compares by memory address."
+        },
+        {
+          "lines": [
+            7,
+            10
+          ],
+          "text": "`fee` is an alias, not a copy. Adding to it also changes the price."
+        },
+        {
+          "lines": [
+            11,
+            12
+          ],
+          "text": "Two equal amounts are not equal. Every caller must compare fields by hand."
+        },
+        {
+          "lines": [
+            29,
+            38
+          ],
+          "text": "`Customer` puts the changing email into `equals` and `hashCode`."
+        },
+        {
+          "lines": [
+            14,
+            18
+          ],
+          "text": "After the email change her hash differs, so the set cannot find her."
+        }
+      ]
+    },
+    {
+      "file": "EntityValueDemo.java",
+      "lang": "java",
+      "title": "The fix",
+      "run": "captured",
+      "caption": "Records for values, id-based equality for the entity. Each rule lives in one type.",
+      "walk": [
+        {
+          "lines": [
+            25,
+            30
+          ],
+          "text": "`Money` is a record: immutable, validated, and equal by its fields."
+        },
+        {
+          "lines": [
+            31,
+            35
+          ],
+          "text": "`plus` returns a new value and refuses to mix currencies. No aliasing is possible."
+        },
+        {
+          "lines": [
+            38,
+            44
+          ],
+          "text": "`Email` validates and normalises once, so the rest of the code trusts it."
+        },
+        {
+          "lines": [
+            46,
+            46
+          ],
+          "text": "A `CustomerId` type stops you passing an order id where a customer id belongs."
+        },
+        {
+          "lines": [
+            56,
+            60
+          ],
+          "text": "The entity's `equals` and `hashCode` use the id only, so mutation is safe in sets."
+        },
+        {
+          "lines": [
+            8,
+            21
+          ],
+          "text": "The price stays put, equal values are equal, and the set still finds Ada."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Putting mutable fields into an entity's `hashCode` loses it inside a `HashSet` or `HashMap`.",
+    "Setters on a value object cause aliasing bugs; return a new instance from each operation instead.",
+    "Passing raw `long` ids and `String` emails everywhere repeats validation and invites mix-ups."
+  ],
+  "quiz": {
+    "q": "What does this print? `Customer` uses only its id in `equals` and `hashCode`.",
+    "code": "var ada = new Customer(new CustomerId(7), new Email(\"a@x.io\"));\nSet<Customer> s = new HashSet<>(Set.of(ada));\nada.changeEmail(new Email(\"b@x.io\"));\nSystem.out.println(s.contains(ada));",
+    "lang": "java",
+    "options": [
+      "false",
+      "throws",
+      "true"
+    ],
+    "answer": 2,
+    "why": "`hashCode` uses only the id, which never changes, so the set still looks in the same bucket and finds `ada`."
+  },
+  "takeaway": "Entities are equal by id; value objects by value, and never change.",
+  "chat": {
+    "starters": [
+      "Should an address be an entity or a value object?",
+      "How do I map value objects to database columns with JPA?",
+      "Can an entity hold a list of value objects?"
+    ]
+  }
+}

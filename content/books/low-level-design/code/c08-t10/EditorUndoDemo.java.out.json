@@ -1,0 +1,11 @@
+{
+  "stdout": "now:  [a, b, c] @3\nundo: [a, b] @2\nundo: [a] @1\nnothing to undo, still [a] @1",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java EditorUndoDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "788d45479e6cbfce",
+  "at": "2026-10-12T11:16:20.654Z"
+}

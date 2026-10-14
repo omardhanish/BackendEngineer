@@ -1,0 +1,11 @@
+{
+  "stdout": "/bookings 201 {\"id\":\"BK-1\",\"status\":\"PENDING\",\"amountMinor\":130000}\n/bookings 200 {\"id\":\"BK-1\",\"status\":\"PENDING\",\"amountMinor\":130000}\n/bookings 409 {\"error\":\"SLOT_TAKEN\"}\n/bookings 400 {\"error\":\"VALIDATION\"}\n/bookings 404 {\"error\":\"COURT_NOT_FOUND\"}\n/bookings/BK-1/cancel 200 {\"id\":\"BK-1\",\"status\":\"CANCELLED\",\"amountMinor\":130000}\n/bookings 201 {\"id\":\"BK-4\",\"status\":\"PENDING\",\"amountMinor\":80000}",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node api.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "dd5b69aabf71ed58",
+  "at": "2026-10-14T10:21:33.212Z"
+}

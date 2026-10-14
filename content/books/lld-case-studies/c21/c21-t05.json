@@ -1,0 +1,66 @@
+{
+  "title": "Pluggable interceptors and policies",
+  "idea": "An extensible `ApiClient` is assembled by a builder from a base transport, a chain of interceptors and a retry strategy, so new behaviour arrives as a new class.",
+  "points": [
+    "An `Interceptor` wraps each attempt: logging, request ids, auth, or a breaker.",
+    "The builder wraps the transport inside-out, so the first interceptor added runs first.",
+    "A policy decorator such as `RetryAfterPolicy` adds rules around an existing strategy.",
+    "`build()` rejects incomplete configuration before any request is sent."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "Extension points and their patterns",
+    "head": ["Extension point", "Pattern", "Added without edits"],
+    "rows": [
+      ["Interceptor", "Chain of responsibility", "Logging, request id, auth header"],
+      ["RetryPolicy", "Strategy", "Fixed delay, exponential backoff"],
+      ["RetryAfterPolicy", "Decorator", "Honour 429 and the server's wait hint"],
+      ["CircuitBreaker", "Interceptor in the chain", "One breaker per downstream service"],
+      ["ApiClient.Builder", "Builder", "Per-service attempts, timeouts, chain"]
+    ],
+    "highlight": { "row": 2 },
+    "caption": "Each row is a seam. A new provider or rule is a new class plugged into a seam; the retry loop never changes."
+  },
+  "code": [
+    {
+      "file": "Extensible.java",
+      "lang": "java",
+      "title": "Builder, chain, decorator",
+      "run": "captured",
+      "caption": "A payments client gets request ids, logging and Retry-After support, all added as classes. A client with no policy is refused. Backoff still checks safeToRepeat.",
+      "walk": [
+        { "lines": [11, 12, 13], "text": "The fake server answers 429 with a 2000 ms hint, then 200." },
+        { "lines": [14, 15, 16, 17, 18, 19], "text": "Configuration reads as a sentence: transport, two interceptors, and a wrapped policy with a 5000 ms hint cap." },
+        { "lines": [58, 59, 60, 61, 62, 63, 64], "text": "A trimmed loop: prints the wait instead of sleeping, and has no deadline. It knows nothing about 429." },
+        { "lines": [76, 77, 78, 79], "text": "Refuse a client with no retry policy at build time." },
+        { "lines": [80, 81, 82, 83, 84, 85], "text": "Wrap from the last interceptor to the first, so the first added runs outermost." },
+        { "lines": [101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111], "text": "The decorator treats 429 as retryable and prefers the server's wait, capped, over its own." },
+        { "lines": [114, 115, 116, 117, 118, 119], "text": "Each attempt gets a fresh request id on a copied request." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not add `if (service == ...)` branches to the loop; configure a different client.",
+    "Cap any server Retry-After hint; a huge value can stall your own caller.",
+    "Mind interceptor order: a breaker outside logging hides refused calls from the log."
+  ],
+  "quiz": {
+    "q": "What does the first line of Extensible print?",
+    "options": [
+      "GET /charges/9 {} -> 429",
+      "GET /charges/9 {X-Request-Id=req-1} -> 429",
+      "GET /charges/9 {X-Request-Id=req-1} -> 200",
+      "wait 2000ms"
+    ],
+    "answer": 1,
+    "why": "RequestId was added first, so it runs outside Logging. Logging sees the stamped request, and prints after the 429 arrives."
+  },
+  "takeaway": "Extend the client with new classes, never new branches in the loop.",
+  "chat": {
+    "starters": [
+      "How would I add an auth interceptor that refreshes tokens?",
+      "Where should metrics go: interceptor or retry loop?",
+      "How do I load these settings from a config file per service?"
+    ]
+  }
+}

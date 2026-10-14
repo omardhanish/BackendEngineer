@@ -1,0 +1,11 @@
+{
+  "stdout": "SubscriptionOptions[retry=ExponentialBackoff[maxAttempts=6, baseMs=100, capMs=1000], lanes=1, dedupIds=1000]\ndelays: [100, 200, 400, 800, 1000]\ncharged O-1\ncharged O-2\nwaited [100, 200] ms; calls=5 failures=2\nrefused: lanes must be >= 1",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java Extensions.java",
+  "tool": "Java 17.0.17",
+  "hash": "0d26e62e34651cef",
+  "at": "2026-10-14T08:52:54.388Z"
+}

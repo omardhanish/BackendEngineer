@@ -1,0 +1,11 @@
+{
+  "stdout": "prototype: Invoice [Header, Line items, Acme discount]\ncopy:      Invoice for Acme [Header, Line items, Acme discount]\nsame list? true",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ShallowCloneBug.java",
+  "tool": "Java 17.0.17",
+  "hash": "909a40730ba15f9b",
+  "at": "2026-10-12T11:21:39.478Z"
+}

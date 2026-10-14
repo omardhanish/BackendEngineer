@@ -1,0 +1,11 @@
+{
+  "stdout": "Loan[id=LN-1, copyId=CP-1, memberId=M-1, dueOn=2026-01-19]\nrefused: no copy for M-2\n  notify M-2: ISBN-1 ready at the desk\nfine 3000\nrefused: no copy for M-3\nLoan[id=LN-2, copyId=CP-1, memberId=M-2, dueOn=2026-02-05]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java CoreLibrary.java",
+  "tool": "Java 17.0.17",
+  "hash": "bff841620e10ea84",
+  "at": "2026-10-14T08:33:48.383Z"
+}

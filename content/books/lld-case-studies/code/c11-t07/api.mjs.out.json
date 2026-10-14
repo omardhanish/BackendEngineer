@@ -1,0 +1,11 @@
+{
+  "stdout": "RS-1 k-1 201 {\"id\":\"RV-1\",\"tableId\":\"T2\",\"partySize\":3,\"startsAt\":\"2026-03-06T19:00:00.000Z\",\"status\":\"CONFIRMED\"}\nRS-1 k-1 200 {\"id\":\"RV-1\",\"tableId\":\"T2\",\"partySize\":3,\"startsAt\":\"2026-03-06T19:00:00.000Z\",\"status\":\"CONFIRMED\"}\nRS-1 k-2 409 {\"error\":\"NO_TABLE\"}\nRS-1 k-3 400 {\"error\":\"VALIDATION\"}\nRS-9 k-4 404 {\"error\":\"RESTAURANT_NOT_FOUND\"}",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node api.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "f422576278ed7510",
+  "at": "2026-10-14T10:24:57.995Z"
+}

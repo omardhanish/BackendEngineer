@@ -1,0 +1,230 @@
+{
+  "title": "Room booking schema in PostgreSQL",
+  "idea": "The schema stores each booking's time as a `tstzrange`, and an exclusion constraint makes PostgreSQL itself refuse two active bookings of one room that overlap.",
+  "analogy": {
+    "text": "A wall planner where each booking is a strip of tape. The planner physically refuses a strip that would cover another strip in the same row.",
+    "breaks": "Cancelled strips stay on the wall but stop blocking."
+  },
+  "points": [
+    "`during` is a half-open `tstzrange`; a CHECK forbids empty, closed or unbounded ranges.",
+    "The restaurant's exclusion constraint again, now per room: `=` on room, `&&` on time.",
+    "Its GiST index can also serve the free-room query for a window.",
+    "`booking_organizer_idx` serves the my-meetings screen for one employee."
+  ],
+  "hero": {
+    "type": "anatomy",
+    "title": "The no-overlap constraint, part by part",
+    "parts": [
+      {
+        "text": "EXCLUDE USING gist ",
+        "label": "Constraint kind",
+        "note": "An exclusion constraint refuses a row that conflicts with any existing row, using a GiST index.",
+        "tone": "a"
+      },
+      {
+        "text": "(room_id WITH =, ",
+        "label": "Same room",
+        "note": "Rows conflict only when room_id is equal. Using = in GiST needs the btree_gist extension.",
+        "tone": "b"
+      },
+      {
+        "text": "during WITH &&) ",
+        "label": "Overlapping time",
+        "note": "&& is true when two ranges share any instant. Half-open ranges let 11:00 follow 11:00.",
+        "tone": "c"
+      },
+      {
+        "text": "WHERE (status IN ('BOOKED','CHECKED_IN'))",
+        "label": "Active only",
+        "note": "Cancelled, completed and released rows are ignored, so they never block a new booking.",
+        "tone": "d"
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "schema.mjs",
+      "lang": "js",
+      "title": "Tables and constraints",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "The schema on a real PostgreSQL 18, then eight writes: the database refuses four of them by itself.",
+      "walk": [
+        {
+          "lines": [
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "text": "Enable btree_gist; employee and room tables with UNIQUE email and a capacity CHECK."
+        },
+        {
+          "lines": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13
+          ],
+          "text": "Foreign keys to room and employee; `during` must be a bounded, non-empty [start, end) range."
+        },
+        {
+          "lines": [
+            14,
+            15,
+            16
+          ],
+          "text": "Status is TEXT with a CHECK; `version` supports optimistic locking on edits."
+        },
+        {
+          "lines": [
+            17,
+            18,
+            19
+          ],
+          "text": "No overlap among active bookings per room; an index for each organizer's meetings."
+        },
+        {
+          "lines": [
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31
+          ],
+          "text": "Insert via `tstzrange`, printing error codes; reversed times fail there with 22000, before any CHECK."
+        },
+        {
+          "lines": [
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48
+          ],
+          "text": "Overlap, back-to-back, other room, cancelled overlap, reversed times, bad room, bad status."
+        },
+        {
+          "lines": [
+            49,
+            50,
+            51,
+            52,
+            53,
+            54
+          ],
+          "text": "Free rooms for four: big enough, and no active booking overlapping the window."
+        }
+      ]
+    },
+    {
+      "file": "race.mjs",
+      "lang": "js",
+      "title": "Two clients at once",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "Two transactions insert overlapping bookings in parallel; then two editors move one booking with optimistic locking.",
+      "walk": [
+        {
+          "lines": [
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18
+          ],
+          "text": "Each attempt uses its own client and transaction, and returns ok or the error code."
+        },
+        {
+          "lines": [
+            19,
+            20,
+            21,
+            22
+          ],
+          "text": "Both run in parallel. Sorting hides who won; only the outcome counts."
+        },
+        {
+          "lines": [
+            23,
+            24,
+            25
+          ],
+          "text": "Count the rows: the constraint decided, not the timing."
+        },
+        {
+          "lines": [
+            26,
+            27,
+            28,
+            29,
+            30
+          ],
+          "text": "Each editor updates only if `version` is still 0, and bumps it."
+        },
+        {
+          "lines": [
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37
+          ],
+          "text": "The second update re-checks `version` after the first commits and matches no row."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not store start and end without a constraint; app checks alone race across servers.",
+    "Forgetting the WHERE clause makes cancelled bookings block the room forever.",
+    "Use `[)` ranges; inclusive ends make back-to-back meetings clash."
+  ],
+  "quiz": {
+    "q": "Which error code does BK-2 print in schema.mjs?",
+    "options": [
+      "23505",
+      "23P01",
+      "23514",
+      "22000"
+    ],
+    "answer": 1,
+    "why": "BK-2 overlaps BK-1 in R-1 while both are BOOKED. The exclusion constraint refuses it with exclusion violation 23P01."
+  },
+  "takeaway": "Let an exclusion constraint guarantee no overlapping active bookings per room.",
+  "chat": {
+    "starters": [
+      "How is an exclusion constraint different from a unique index?",
+      "Would SELECT ... FOR UPDATE work instead of the constraint here?",
+      "How should recurring series be stored in this schema?"
+    ]
+  }
+}

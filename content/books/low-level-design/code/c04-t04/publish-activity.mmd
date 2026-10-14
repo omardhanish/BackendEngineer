@@ -1,0 +1,12 @@
+flowchart TD
+    start((start)) --> write(Write draft)
+    write --> submit(Submit for review)
+    submit --> review{Reviewer approves?}
+    review -- no --> revise(Revise draft)
+    revise --> submit
+    review -- yes --> fork[[fork]]
+    fork --> notify(Email subscribers)
+    fork --> index(Update search index)
+    notify --> join[[join]]
+    index --> join
+    join --> done((end))

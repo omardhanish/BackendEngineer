@@ -1,0 +1,11 @@
+{
+  "stdout": "RV-1 T1 x2 at 19:00\nRV-2 T2 x3 at 19:00\nRV-3 T3 x4 at 19:00\nRV-4 T4 x4 at 19:00\nparty of 3 refused: NO_TABLE\nRV-5 T1 x2 at 20:30\nrefused: start is in the past",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java CoreReservation.java",
+  "tool": "Java 17.0.17",
+  "hash": "ee9c3d974f7bda5a",
+  "at": "2026-10-14T08:45:48.691Z"
+}

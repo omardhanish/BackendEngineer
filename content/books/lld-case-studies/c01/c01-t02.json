@@ -1,0 +1,248 @@
+{
+  "title": "Layered architecture",
+  "idea": "Layered architecture splits a system into frontend, API, service, domain and database. Each layer has one job, and calls point inward, never outward.",
+  "analogy": {
+    "text": "A theatre: the box office deals with the audience, the director decides what happens, and stagehands move props. The box office never walks onto the stage.",
+    "breaks": "Here each layer can be swapped for a fake in a test."
+  },
+  "points": [
+    "The controller turns HTTP into a method call and back; it holds no rules.",
+    "The service runs one use case, usually inside one transaction.",
+    "Domain classes hold state and invariants and know nothing of HTTP or SQL.",
+    "The repository is an interface: memory in tests, PostgreSQL in production."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "One request through the layers",
+    "scenario": {
+      "token": {
+        "label": "POST /appointments",
+        "tone": "req"
+      },
+      "stages": [
+        {
+          "id": "ui",
+          "label": "Frontend",
+          "sub": "React screen"
+        },
+        {
+          "id": "api",
+          "label": "Controller",
+          "sub": "Express route"
+        },
+        {
+          "id": "svc",
+          "label": "Service",
+          "sub": "use case + tx"
+        },
+        {
+          "id": "dom",
+          "label": "Domain",
+          "sub": "entities + rules"
+        },
+        {
+          "id": "db",
+          "label": "Repository",
+          "sub": "SQL on PostgreSQL",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "The frontend sends a slot and a patient. It never talks to the database.",
+          "at": "ui",
+          "slot": "top",
+          "state": {
+            "ui": "active"
+          }
+        },
+        {
+          "caption": "The controller checks the body's shape. Bad input stops here with 400.",
+          "at": "api",
+          "slot": "top",
+          "state": {
+            "ui": "done",
+            "api": "active"
+          }
+        },
+        {
+          "caption": "The service runs the booking use case and opens one transaction.",
+          "at": "svc",
+          "slot": "top",
+          "state": {
+            "api": "done",
+            "svc": "active"
+          }
+        },
+        {
+          "caption": "The domain model applies its own rules, such as which status changes are legal.",
+          "at": "dom",
+          "slot": "top",
+          "state": {
+            "svc": "done",
+            "dom": "active"
+          }
+        },
+        {
+          "caption": "The service passes the checked object to the repository, which writes the row. Constraints are the last guard.",
+          "at": "db",
+          "slot": "top",
+          "state": {
+            "dom": "done",
+            "db": "active"
+          }
+        },
+        {
+          "caption": "The service gets a domain object back, never raw SQL rows.",
+          "at": "svc",
+          "slot": "bottom",
+          "token": {
+            "label": "Appointment AP-1"
+          },
+          "state": {
+            "db": "done",
+            "svc": "active"
+          }
+        },
+        {
+          "caption": "The controller maps the result to 201 and a JSON body.",
+          "at": "api",
+          "slot": "bottom",
+          "token": {
+            "label": "201 Created"
+          },
+          "state": {
+            "svc": "done",
+            "api": "active"
+          }
+        },
+        {
+          "caption": "If the slot was taken, the service throws instead, and the controller maps that to 409.",
+          "at": "api",
+          "slot": "bottom",
+          "token": {
+            "label": "409 SLOT_TAKEN",
+            "tone": "err"
+          },
+          "state": {
+            "svc": "error",
+            "api": "active"
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "Layers.java",
+      "lang": "java",
+      "title": "Four layers in Java",
+      "run": "captured",
+      "caption": "The layers in one file so you can see the boundaries. This book models the domain in Java; the Express chapters hold the same rules in JavaScript.",
+      "walk": [
+        {
+          "lines": [
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11
+          ],
+          "text": "Wire the layers by hand: repository into service, service into controller."
+        },
+        {
+          "lines": [
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27
+          ],
+          "text": "The controller rejects bad input and maps outcomes to status codes."
+        },
+        {
+          "lines": [
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43
+          ],
+          "text": "The service applies the rule: one live appointment per slot."
+        },
+        {
+          "lines": [
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55
+          ],
+          "text": "The domain record guards its fields and knows how a booking starts."
+        },
+        {
+          "lines": [
+            61,
+            62,
+            63,
+            64
+          ],
+          "text": "The service depends on this interface, not on any database."
+        },
+        {
+          "lines": [
+            66,
+            67,
+            68,
+            69,
+            70,
+            71,
+            72,
+            73,
+            74
+          ],
+          "text": "An in-memory repository for the demo; a PostgreSQL one has the same methods."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not put SQL in controllers; one route then mixes three layers' jobs.",
+    "Do not return database rows to clients; map them to an API shape.",
+    "Check-then-save in the service still races; page 5 adds locks and constraints."
+  ],
+  "quiz": {
+    "q": "What does the second line of Layers print?",
+    "options": [
+      "201 {id: AP-2, status: BOOKED}",
+      "409 {error: SLOT_TAKEN}",
+      "400 {error: VALIDATION}",
+      "A stack trace from SlotTakenException"
+    ],
+    "answer": 1,
+    "why": "SL-1 already has a BOOKED appointment, so `findLiveBySlot` finds it. The service throws and the controller maps the exception to 409."
+  },
+  "takeaway": "Each layer has one job, and calls point inward, never outward.",
+  "chat": {
+    "starters": [
+      "Where does validation belong: controller, service or domain?",
+      "Should the service return domain objects or DTOs?",
+      "Is a repository interface worth it if I only ever use PostgreSQL?"
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "BOOKED B1 R1 9.0-10.0\nREJECTED R1 9.5-10.5 clashes with B1\nBOOKED B2 R1 10.0-11.0\nBOOKED B3 R2 9.0-10.0\nbookings held: 3",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java WalkingSkeleton.java",
+  "tool": "Java 17.0.17",
+  "hash": "91191fd59f517976",
+  "at": "2026-10-12T11:34:55.556Z"
+}

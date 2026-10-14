@@ -1,0 +1,11 @@
+{
+  "stdout": "ops = 100000, wrong values = 0\nsize = 5 (capacity 5)",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java LockedLru.java",
+  "tool": "Java 17.0.17",
+  "hash": "fca9268567e24adc",
+  "at": "2026-10-14T08:37:09.982Z"
+}

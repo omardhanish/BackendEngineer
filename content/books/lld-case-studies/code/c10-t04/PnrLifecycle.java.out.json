@@ -1,0 +1,11 @@
+{
+  "stdout": "PNR-1 HELD -> CONFIRMED\nPNR-1 CONFIRMED -> TICKETED\nPNR-1 TICKETED -> CANCELLED\nPNR-2 refused HELD -> TICKETED\nPNR-2 HELD -> EXPIRED\nPNR-2 refused EXPIRED -> CONFIRMED\nPNR-1 history [HELD, CONFIRMED, TICKETED, CANCELLED]\nPNR-2 history [HELD, EXPIRED]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java PnrLifecycle.java",
+  "tool": "Java 17.0.17",
+  "hash": "98ecc19ae64ed179",
+  "at": "2026-10-14T08:45:42.898Z"
+}

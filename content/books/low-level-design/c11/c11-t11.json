@@ -1,0 +1,45 @@
+{
+  "title": "Presenting your capstone design",
+  "idea": "A design presentation is a short, ordered story: the problem and scope, the model, one request traced through it, proof it runs, and the trade-offs you chose.",
+  "points": [
+    "Open with scope: three use cases in, recurring meetings out, stated in one breath.",
+    "Show the class diagram once, then trace `book` end to end through it.",
+    "Show captured output: a taken room is rejected with `ROOM_TAKEN`, not a crash.",
+    "Close with trade-offs and one change you can absorb, such as a new `ConflictPolicy`."
+  ],
+  "hero": {
+    "type": "timeline",
+    "title": "A ten-minute presentation arc",
+    "items": [
+      { "label": "Scope", "text": "State the brief, the actors, and what you deliberately left out." },
+      { "label": "Model", "text": "Walk the class diagram: `Room`, `Booking`, `BookingService`, the two repositories, and why each exists." },
+      { "label": "One request", "text": "Trace `book` from the service through `ConflictPolicy` to `BookingRepository` and the listeners." },
+      { "label": "Proof", "text": "Run the checks: a booking, a clash, a bad slot, a stranger cancelling." },
+      { "label": "Trade-offs", "text": "Name each choice and its cost, like in-memory repositories behind an interface." },
+      { "label": "Questions", "text": "Invite change questions and answer each with the one class that would change." }
+    ]
+  },
+  "pitfalls": [
+    "Reading every class aloud; listeners lose the thread. Trace one request instead.",
+    "Claiming 'it handles clashes' without showing the output that proves it."
+  ],
+  "quiz": {
+    "q": "A reviewer asks how you would add a 15-minute buffer between meetings. What is the strongest answer?",
+    "options": [
+      "Add an if-check for the buffer inside `BookingService.book`",
+      "Inject a new `ConflictPolicy`; the service stays unchanged",
+      "Store the buffer as a field on every `Booking`",
+      "Say buffers are out of scope and move on"
+    ],
+    "answer": 1,
+    "why": "The overlap rule sits behind `ConflictPolicy`; your `CleaningGap(0.25)` is that buffer. Pass it to the `BookingService` constructor; only that wiring line changes."
+  },
+  "takeaway": "Tell one story: scope, model, one traced request, proof, trade-offs.",
+  "chat": {
+    "starters": [
+      "Can you play a reviewer and ask me change questions about my booking design?",
+      "How do I explain why I used an interface for the repositories?",
+      "What should I do when I cannot answer a question during the presentation?"
+    ]
+  }
+}

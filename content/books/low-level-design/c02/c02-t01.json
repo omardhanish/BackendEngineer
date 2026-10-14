@@ -1,297 +1,388 @@
 {
-  "title": "Factory and Abstract Factory",
-  "idea": "A Factory pattern moves `new` behind one method that returns an interface. An Abstract Factory returns a whole family of related objects that must match.",
-  "analogy": {
-    "text": "You order a coffee by name; the counter decides which machine makes it. A hotel room kit hands you towels, slippers and soap that all match.",
-    "breaks": "Java does not check that a kit's items match; the kit's author must."
-  },
+  "title": "Encapsulation in Java classes",
+  "idea": "Encapsulation means a class keeps its state private and exposes only methods that enforce its rules, so no caller can put an object into an invalid state.",
   "points": [
-    "Callers depend on the interface the factory returns, never on a concrete class.",
-    "Only the factory names concrete classes, so a new type edits one place.",
-    "An Abstract Factory is an interface with one creation method per product.",
-    "Each concrete factory builds one family, so one kit never mixes products."
+    "A class is a blueprint; each object has its own instance fields.",
+    "Make fields `private`; change state only through methods that check the rules.",
+    "Return copies or unmodifiable views, never your internal mutable collection.",
+    "Interviewers check this first: public fields or leaked lists signal weak design."
   ],
   "hero": {
-    "type": "flow",
-    "title": "One kit, one matching family",
-    "nodes": [
-      {
-        "id": "main",
-        "label": "main",
-        "sub": "chooses the kit once"
-      },
-      {
-        "id": "kit",
-        "label": "RegionKit",
-        "sub": "abstract factory"
-      },
-      {
-        "id": "uk",
-        "label": "UkKit",
-        "sub": "VAT family"
-      },
-      {
-        "id": "in",
-        "label": "IndiaKit",
-        "sub": "GST family"
-      },
-      {
-        "id": "co",
-        "label": "checkout(kit, net)",
-        "sub": "sees interfaces only"
-      },
-      {
-        "id": "tax",
-        "label": "TaxRule",
-        "sub": "product one"
-      },
-      {
-        "id": "rec",
-        "label": "Receipt",
-        "sub": "product two"
-      }
-    ],
-    "edges": [
-      {
-        "from": "uk",
-        "to": "kit",
-        "label": "implements",
-        "dashed": true
-      },
-      {
-        "from": "in",
-        "to": "kit",
-        "label": "implements",
-        "dashed": true
-      },
-      {
-        "from": "main",
-        "to": "co",
-        "label": "new UkKit()"
-      },
-      {
-        "from": "co",
-        "to": "kit",
-        "label": "asks"
-      },
-      {
-        "from": "kit",
-        "to": "tax",
-        "label": "taxRule()"
-      },
-      {
-        "from": "kit",
-        "to": "rec",
-        "label": "receipt()"
-      }
-    ],
-    "steps": [
-      {
-        "caption": "`RegionKit` declares one method per product. `UkKit` and `IndiaKit` each implement all of them.",
-        "active": [
-          "kit",
-          "uk",
-          "in"
-        ],
-        "edges": [
-          0,
-          1
-        ]
-      },
-      {
-        "caption": "`main` is the only place that names a concrete kit. It passes it to `checkout`.",
-        "active": [
-          "main",
-          "co"
-        ],
-        "edges": [
-          2
-        ]
-      },
-      {
-        "caption": "`checkout` holds a `RegionKit`. It cannot tell whether the kit is UK or India.",
-        "active": [
-          "co",
-          "kit"
-        ],
-        "edges": [
-          3
-        ]
-      },
-      {
-        "caption": "It asks the kit for a `TaxRule` and a `Receipt`. Both come from the same family.",
-        "active": [
-          "kit",
-          "tax",
-          "rec"
-        ],
-        "edges": [
-          4,
-          5
-        ]
-      },
-      {
-        "caption": "One kit builds the whole set, so its tax rule and receipt always match.",
-        "active": [
-          "uk",
-          "tax",
-          "rec"
-        ],
-        "edges": [
-          0,
-          4,
-          5
-        ]
-      },
-      {
-        "caption": "A new region is one new kit class. `checkout` and the products' interfaces stay unchanged.",
-        "active": [
-          "kit",
-          "co"
-        ],
-        "edges": [
-          0,
-          1,
-          3
-        ]
-      }
-    ]
+    "type": "anim",
+    "engine": "memory",
+    "title": "A getter that leaks the real list",
+    "scenario": {
+      "code": [
+        "Wallet w = new Wallet();",
+        "w.deposit(50);",
+        "List<String> log = w.getLog();",
+        "log.clear();",
+        "w.balance = -500;",
+        "List<String> copy = w.getLog(); // fixed Wallet"
+      ],
+      "steps": [
+        {
+          "caption": "`new Wallet()` creates one object on the heap. The `w` variable holds a reference to it.",
+          "line": 0,
+          "stack": [
+            {
+              "name": "main",
+              "vars": {
+                "w": {
+                  "ref": "o1",
+                  "label": "Wallet"
+                }
+              }
+            }
+          ],
+          "heap": [
+            {
+              "id": "o1",
+              "label": "Wallet",
+              "props": {
+                "balance": "0",
+                "log": {
+                  "ref": "o2"
+                }
+              }
+            },
+            {
+              "id": "o2",
+              "label": "ArrayList",
+              "props": {
+                "size": "0"
+              }
+            }
+          ]
+        },
+        {
+          "caption": "`deposit` is the intended door: it changes the balance and records the change together.",
+          "line": 1,
+          "stack": [
+            {
+              "name": "main",
+              "vars": {
+                "w": {
+                  "ref": "o1",
+                  "label": "Wallet"
+                }
+              }
+            }
+          ],
+          "heap": [
+            {
+              "id": "o1",
+              "label": "Wallet",
+              "props": {
+                "balance": "50",
+                "log": {
+                  "ref": "o2"
+                }
+              }
+            },
+            {
+              "id": "o2",
+              "label": "ArrayList",
+              "props": {
+                "size": "1",
+                "0": "\"deposit 50\""
+              }
+            }
+          ]
+        },
+        {
+          "caption": "`getLog()` returns the reference itself. Now `main` and the wallet share one list.",
+          "line": 2,
+          "stack": [
+            {
+              "name": "main",
+              "vars": {
+                "w": {
+                  "ref": "o1",
+                  "label": "Wallet"
+                },
+                "log": {
+                  "ref": "o2",
+                  "label": "ArrayList"
+                }
+              }
+            }
+          ],
+          "heap": [
+            {
+              "id": "o1",
+              "label": "Wallet",
+              "props": {
+                "balance": "50",
+                "log": {
+                  "ref": "o2"
+                }
+              }
+            },
+            {
+              "id": "o2",
+              "label": "ArrayList",
+              "props": {
+                "size": "1",
+                "0": "\"deposit 50\""
+              }
+            }
+          ]
+        },
+        {
+          "caption": "`log.clear()` empties the shared list, so the wallet's own history is gone. No wallet method ran.",
+          "line": 3,
+          "stack": [
+            {
+              "name": "main",
+              "vars": {
+                "w": {
+                  "ref": "o1",
+                  "label": "Wallet"
+                },
+                "log": {
+                  "ref": "o2",
+                  "label": "ArrayList"
+                }
+              }
+            }
+          ],
+          "heap": [
+            {
+              "id": "o1",
+              "label": "Wallet",
+              "props": {
+                "balance": "50",
+                "log": {
+                  "ref": "o2"
+                }
+              }
+            },
+            {
+              "id": "o2",
+              "label": "ArrayList",
+              "props": {
+                "size": "0"
+              }
+            }
+          ]
+        },
+        {
+          "caption": "A public field skips every check. The balance is now negative, breaking the class rule.",
+          "line": 4,
+          "stack": [
+            {
+              "name": "main",
+              "vars": {
+                "w": {
+                  "ref": "o1",
+                  "label": "Wallet"
+                },
+                "log": {
+                  "ref": "o2",
+                  "label": "ArrayList"
+                }
+              }
+            }
+          ],
+          "heap": [
+            {
+              "id": "o1",
+              "label": "Wallet",
+              "props": {
+                "balance": "-500",
+                "log": {
+                  "ref": "o2"
+                }
+              }
+            },
+            {
+              "id": "o2",
+              "label": "ArrayList",
+              "props": {
+                "size": "0"
+              }
+            }
+          ]
+        },
+        {
+          "caption": "Rerun with the fixed class: fields are `private`, and the getter returns `List.copyOf(log)`, a separate read-only list.",
+          "line": 5,
+          "stack": [
+            {
+              "name": "main",
+              "vars": {
+                "w": {
+                  "ref": "o1",
+                  "label": "Wallet"
+                },
+                "copy": {
+                  "ref": "o3",
+                  "label": "List"
+                }
+              }
+            }
+          ],
+          "heap": [
+            {
+              "id": "o1",
+              "label": "Wallet",
+              "props": {
+                "balance": "50",
+                "log": {
+                  "ref": "o2"
+                }
+              }
+            },
+            {
+              "id": "o2",
+              "label": "ArrayList",
+              "props": {
+                "size": "1",
+                "0": "\"deposit 50\""
+              }
+            },
+            {
+              "id": "o3",
+              "label": "read-only copy",
+              "props": {
+                "size": "1",
+                "0": "\"deposit 50\""
+              }
+            }
+          ]
+        }
+      ]
+    }
   },
   "code": [
     {
-      "file": "NotifierFactoryDemo.java",
+      "file": "LeakyWallet.java",
       "lang": "java",
-      "title": "Factory",
+      "title": "The problem",
       "run": "captured",
-      "caption": "The chapter 1 example used a `switch`; a registry `Map<String, Supplier<Notifier>>` adds types without editing the factory. GoF Factory Method instead lets subclasses override creation.",
+      "caption": "A public field and a leaking getter let any caller break the wallet's rules.",
       "walk": [
         {
           "lines": [
-            19,
-            21
-          ],
-          "text": "The product interface: what every notifier can do."
-        },
-        {
-          "lines": [
             23,
-            33
+            25
           ],
-          "text": "Three concrete products. Only registrations refer to them by name."
+          "text": "The rule lives only in a comment. `balance` is public, so nothing guards it."
         },
         {
           "lines": [
-            35,
-            41
+            33,
+            37
           ],
-          "text": "The registry maps a channel name to a `Supplier` that builds a fresh notifier."
+          "text": "`withdraw` checks funds, but callers are free to bypass it entirely."
         },
         {
           "lines": [
-            44,
-            46
+            39,
+            39
           ],
-          "text": "`register` adds a type at start-up; the factory's code stays unchanged."
-        },
-        {
-          "lines": [
-            48,
-            52
-          ],
-          "text": "`create` looks up the supplier and rejects unknown channels."
-        },
-        {
-          "lines": [
-            5,
-            10
-          ],
-          "text": "`main` registers push, then works with `Notifier` only."
+          "text": "The getter returns the internal list itself, not a copy."
         },
         {
           "lines": [
             11,
-            15
+            12
           ],
-          "text": "An unsupported channel fails fast with a clear message."
+          "text": "A caller writes the field directly. No method runs, so no check runs."
+        },
+        {
+          "lines": [
+            14,
+            17
+          ],
+          "text": "Clearing the returned list rewrites the wallet's history from outside."
+        },
+        {
+          "lines": [
+            19,
+            19
+          ],
+          "text": "Compare both lines of output: the object now lies about its own past."
         }
       ]
     },
     {
-      "file": "RegionKitDemo.java",
+      "file": "WalletDemo.java",
       "lang": "java",
-      "title": "Abstract Factory",
+      "title": "The fix",
       "run": "captured",
-      "caption": "Each kit builds a tax rule and a receipt that belong together.",
+      "caption": "Private state, validated methods and a read-only copy keep every rule inside the class.",
       "walk": [
         {
           "lines": [
+            24,
+            27
+          ],
+          "text": "All fields are `private`. `owner` is also `final`: set once, never changed."
+        },
+        {
+          "lines": [
+            29,
+            33
+          ],
+          "text": "The constructor rejects a bad owner, so no half-built wallet exists."
+        },
+        {
+          "lines": [
+            35,
+            48
+          ],
+          "text": "Every change goes through a method that validates first, then updates state and history together."
+        },
+        {
+          "lines": [
+            50,
+            52
+          ],
+          "text": "Getters expose values only. `List.copyOf` returns an unmodifiable snapshot."
+        },
+        {
+          "lines": [
+            9,
+            13
+          ],
+          "text": "Trying to clear the copy throws, so history cannot be rewritten outside."
+        },
+        {
+          "lines": [
             14,
-            16
+            18
           ],
-          "text": "Two product interfaces. Each has one method, so lambdas can implement them."
-        },
-        {
-          "lines": [
-            18,
-            21
-          ],
-          "text": "The abstract factory: one creation method per product in the family."
-        },
-        {
-          "lines": [
-            23,
-            28
-          ],
-          "text": "`UkKit` returns the UK tax rule and the matching UK receipt."
-        },
-        {
-          "lines": [
-            30,
-            35
-          ],
-          "text": "`IndiaKit` is a second family with the same shape."
-        },
-        {
-          "lines": [
-            7,
-            11
-          ],
-          "text": "`checkout` depends on `RegionKit` only and gets a matching pair."
-        },
-        {
-          "lines": [
-            2,
-            4
-          ],
-          "text": "The choice of family happens once, at the edge of the program."
+          "text": "An overdraft is refused with a clear message, and the balance stays valid."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Do not add a factory for a class with one implementation and no second coming.",
-    "Throw on unknown input in the factory; returning `null` moves the crash to the caller.",
-    "Adding a product to an Abstract Factory edits every concrete factory; keep families small."
+    "Generating a getter and setter for every field; a setter for `balance` re-opens the hole.",
+    "Returning an internal `List` or array; callers mutate it and your invariants silently break.",
+    "Storing a caller's mutable list as given; copy it in the constructor, not only in getters."
   ],
   "quiz": {
-    "q": "What is the last line `NotifierFactoryDemo` prints?",
+    "q": "The getter copies, but the constructor does not. What does this print?",
+    "code": "final class Item {\n    private final List<String> tags;\n    Item(List<String> tags) { this.tags = tags; }\n    List<String> tags() { return List.copyOf(tags); }\n}\n// in main:\nvar src = new ArrayList<>(List.of(\"new\"));\nvar item = new Item(src);\nsrc.add(\"sale\");\nSystem.out.println(item.tags());",
+    "lang": "java",
     "options": [
-      "PUSH to app: Order A-17 shipped",
-      "rejected: fax",
-      "rejected: null",
-      "Exception in thread \"main\" IllegalArgumentException"
+      "[new]",
+      "[new, sale]",
+      "UnsupportedOperationException",
+      "[]"
     ],
     "answer": 1,
-    "why": "Nothing registered `fax`, so `create` throws `IllegalArgumentException` with the channel as its message. `main` catches it and prints that message.",
-    "code": "if (maker == null) throw new IllegalArgumentException(channel);\n// in main:\ntry { NotifierFactory.create(\"fax\"); }\ncatch (IllegalArgumentException e) {\n    System.out.println(\"rejected: \" + e.getMessage());\n}",
-    "lang": "java"
+    "why": "`Item` stores the caller's list itself. Adding to `src` changes the object's state too. Copying with `List.copyOf` in the constructor closes that door."
   },
-  "takeaway": "A factory hides which class you get; an Abstract Factory keeps families matched.",
+  "takeaway": "Private fields, checked methods, copies out and in: the object guards itself.",
   "chat": {
     "starters": [
-      "How is the Factory Method pattern different from a static factory?",
-      "When does an Abstract Factory become overkill?",
-      "Should the registry be static, or an object I inject?"
+      "Should every private field get a getter?",
+      "When is a public final field acceptable in Java?",
+      "How do I explain encapsulation in an LLD interview without sounding textbook?"
     ]
   }
 }

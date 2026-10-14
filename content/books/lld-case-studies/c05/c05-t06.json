@@ -1,0 +1,266 @@
+{
+  "title": "ATM schema in PostgreSQL",
+  "idea": "The ATM schema maps the Java model to tables so PostgreSQL enforces money rules: no negative balance, one row per ATM request, one locked account.",
+  "analogy": {
+    "text": "A bank ledger kept in one locked drawer. A clerk takes the key, checks the balance, writes the line, then hands the key on.",
+    "breaks": "The row lock covers one account, not the whole ledger."
+  },
+  "points": [
+    "A CHECK on `balance_minor` refuses any overdraw the code forgot to stop.",
+    "A UNIQUE pair of `atm_id` and `request_id` makes a retry find its first row.",
+    "A partial index on account and time serves the daily-limit sum query.",
+    "Withdraw locks the account row `FOR UPDATE`, then checks, debits and records."
+  ],
+  "hero": {
+    "type": "timeline",
+    "title": "Inside one withdrawal transaction",
+    "items": [
+      {
+        "label": "BEGIN",
+        "text": "One transaction holds every read and write of this withdrawal."
+      },
+      {
+        "label": "Lock account",
+        "text": "SELECT ... FOR UPDATE locks the account row. Another ATM for it waits."
+      },
+      {
+        "label": "Replay check",
+        "text": "Look up the request id. If found, return its stored result."
+      },
+      {
+        "label": "Rules",
+        "text": "Compare the balance, then today's total plus this amount against the daily limit."
+      },
+      {
+        "label": "Write",
+        "text": "Debit the balance and insert a PENDING row, or insert a DECLINED row only."
+      },
+      {
+        "label": "COMMIT",
+        "text": "The lock is released. The waiting ATM now reads the new balance."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "schema.mjs",
+      "lang": "js",
+      "title": "Tables and constraints",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "The full schema on a real PostgreSQL. Each bad write is refused by a named constraint, shown by its error code.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7
+          ],
+          "text": "`account` keeps money as BIGINT paise, and the balance can never drop below zero."
+        },
+        {
+          "lines": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13
+          ],
+          "text": "`card` stores a token and a PIN hash, never the card number or PIN."
+        },
+        {
+          "lines": [
+            16,
+            17,
+            18,
+            19
+          ],
+          "text": "One cassette row per ATM and note value; counts cannot go negative."
+        },
+        {
+          "lines": [
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26
+          ],
+          "text": "Status is TEXT with a CHECK; one row per ATM request id."
+        },
+        {
+          "lines": [
+            27,
+            28
+          ],
+          "text": "The partial index holds only rows that count toward the daily limit."
+        },
+        {
+          "lines": [
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59
+          ],
+          "text": "Five writes: one ok, then a duplicate, an overdraw, too few notes and a bad foreign key."
+        },
+        {
+          "lines": [
+            62,
+            63,
+            64,
+            65,
+            66,
+            67
+          ],
+          "text": "Today's total uses a half-open range on `created_at`, which the index serves."
+        }
+      ]
+    },
+    {
+      "file": "withdraw.mjs",
+      "lang": "js",
+      "title": "The withdrawal transaction",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "Two ATMs withdraw from one account at once, then a retry, a reversal and the daily limit.",
+      "walk": [
+        {
+          "lines": [
+            15,
+            16,
+            17,
+            18,
+            19,
+            20
+          ],
+          "text": "Lock the account row first, so every withdrawal for it runs one at a time."
+        },
+        {
+          "lines": [
+            21,
+            22,
+            23,
+            24,
+            25,
+            26
+          ],
+          "text": "Inside the lock, a known request id is a replay: return the stored status."
+        },
+        {
+          "lines": [
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37
+          ],
+          "text": "Sum today's spending, then decline for funds or limit, or debit."
+        },
+        {
+          "lines": [
+            38,
+            39,
+            40,
+            41,
+            42,
+            43
+          ],
+          "text": "Record the row either way and commit, which releases the lock."
+        },
+        {
+          "lines": [
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63,
+            64,
+            65,
+            66,
+            67,
+            68,
+            69,
+            70
+          ],
+          "text": "Reverse flips PENDING to REVERSED and credits back. A second call changes no row."
+        },
+        {
+          "lines": [
+            72,
+            73,
+            74,
+            75,
+            76,
+            77,
+            78,
+            79
+          ],
+          "text": "Run two withdrawals in parallel. The lock, not timing, decides the result."
+        },
+        {
+          "lines": [
+            80,
+            81,
+            82,
+            83,
+            84
+          ],
+          "text": "Replay the winner, reverse it twice, then hit the daily limit."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Check the request id after taking the lock; otherwise a parallel retry fails with 23505.",
+    "Pass day boundaries as parameters; `date_trunc` depends on the session time zone.",
+    "Never store card numbers or PINs; store a token and a salted PIN hash."
+  ],
+  "quiz": {
+    "q": "What does withdraw.mjs print for the two parallel ATMs?",
+    "options": [
+      "[\"PENDING\",\"PENDING\"]",
+      "[\"DECLINED (funds)\",\"PENDING\"]",
+      "[\"DECLINED (daily limit)\",\"PENDING\"]",
+      "A unique violation error 23505"
+    ],
+    "answer": 1,
+    "why": "The second transaction waits on the row lock. It then reads balance 20000, which is below 80000, so it declines for funds."
+  },
+  "takeaway": "Lock the account row, then check, debit and record in one transaction.",
+  "chat": {
+    "starters": [
+      "Why lock the account row instead of using a version column?",
+      "Should DECLINED attempts be stored in the same table?",
+      "How would I keep a full ledger of debits and credits?"
+    ]
+  }
+}

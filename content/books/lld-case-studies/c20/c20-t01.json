@@ -1,0 +1,137 @@
+{
+  "title": "Event bus requirements and scope",
+  "idea": "Scoping a pub-sub event bus means fixing how publishers reach subscribers through topics, which delivery guarantee you promise, and what v1 leaves out.",
+  "points": [
+    "Publishers send events to a named topic and never know who listens.",
+    "Every subscriber of a topic receives each event, independently of the others.",
+    "Delivery is at-least-once: a failed handler is retried, then parked as a dead letter.",
+    "Events with the same key reach each subscriber in publish order."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "Pick the delivery guarantee first",
+    "head": [
+      "Guarantee",
+      "Can lose events",
+      "Can duplicate",
+      "Subscriber must",
+      "In v1"
+    ],
+    "rows": [
+      [
+        "At-most-once",
+        "Yes",
+        "No",
+        "Accept gaps",
+        "No"
+      ],
+      [
+        "At-least-once",
+        "No",
+        "Yes",
+        "Skip repeats by event id",
+        "Yes"
+      ],
+      [
+        "Exactly-once",
+        "No",
+        "No",
+        "Share a transaction with the bus",
+        "Out of scope"
+      ]
+    ],
+    "highlight": {
+      "row": 1
+    },
+    "caption": "In v1, retries stop losses while the process runs; subscribers skip repeated event ids. Surviving a restart needs a durable store."
+  },
+  "code": [
+    {
+      "file": "BusScope.java",
+      "lang": "java",
+      "title": "Scope as an enum",
+      "run": "captured",
+      "caption": "Each requirement carries its kind, so the v1 cut is data you can print and check against interview asks.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7
+          ],
+          "text": "Group every requirement by kind in an EnumMap, which keeps enum order."
+        },
+        {
+          "lines": [
+            8,
+            9,
+            10,
+            11
+          ],
+          "text": "Print each group with its size, then its requirements."
+        },
+        {
+          "lines": [
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "text": "Answer three interview asks: is this in v1 or not?"
+        },
+        {
+          "lines": [
+            24,
+            25,
+            26,
+            27,
+            28
+          ],
+          "text": "Five functional needs: topics, publish, subscribe, unsubscribe, dead letters."
+        },
+        {
+          "lines": [
+            29,
+            30,
+            31,
+            32
+          ],
+          "text": "Four qualities: at-least-once, per-key order, isolation, thread safety."
+        },
+        {
+          "lines": [
+            33,
+            34,
+            35
+          ],
+          "text": "Durability, clustering and exactly-once are named as out on purpose."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Ask whether events must survive a restart; in-memory and durable buses differ greatly.",
+    "Promise order per key, not across the whole topic; global order kills parallelism.",
+    "Never promise exactly-once; offer at-least-once with idempotent subscribers instead."
+  ],
+  "quiz": {
+    "q": "An interviewer asks for exactly-once delivery in v1. Best scoping answer?",
+    "options": [
+      "Promise it, because retries make delivery exact",
+      "Switch to at-most-once so nothing repeats",
+      "At-least-once, with subscribers that skip repeated event ids",
+      "Remove retries so duplicates cannot happen"
+    ],
+    "answer": 2,
+    "why": "Retries are what stop losses, and retries can repeat a delivery. Remembering handled event ids makes repeats harmless, which gives the effect of exactly-once."
+  },
+  "takeaway": "Fix topics, the delivery guarantee and per-key order before drawing classes.",
+  "chat": {
+    "starters": [
+      "Why is exactly-once delivery so hard to guarantee?",
+      "When is at-most-once delivery the right choice?",
+      "What should I ask an interviewer before designing a pub-sub system?"
+    ]
+  }
+}

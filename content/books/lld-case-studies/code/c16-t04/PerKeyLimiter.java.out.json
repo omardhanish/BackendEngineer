@@ -1,0 +1,11 @@
+{
+  "stdout": "t=0    {k1=100, k2=100}\nt=1000 {k1=50, k2=50}\nbuckets created: 2",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java PerKeyLimiter.java",
+  "tool": "Java 17.0.17",
+  "hash": "98a7aca2bbda7677",
+  "at": "2026-10-14T08:35:43.345Z"
+}

@@ -1,0 +1,92 @@
+{
+  "title": "Reservation service and allocation",
+  "idea": "The core design is one ReservationService that finds the free tables for a slot and asks an injected TableAllocationStrategy which one the party gets.",
+  "analogy": {
+    "text": "A head waiter with a seating chart. The waiter checks which tables are free at seven, then follows the house rule for who sits where.",
+    "breaks": "Changing the house rule here means passing a new object, not retraining."
+  },
+  "points": [
+    "ReservationService is a facade: callers see `book`, not tables or schedules.",
+    "`TableAllocationStrategy` is the strategy pattern; best fit is one rule.",
+    "`ReservationRepository` hides storage: a map now, PostgreSQL on page 6.",
+    "The `Clock` and id supplier are injected, so every run prints the same."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "One booking through the service",
+    "scenario": {
+      "token": { "label": "party 4, 19:00", "tone": "req" },
+      "stages": [
+        { "id": "client", "label": "Caller", "kind": "end" },
+        { "id": "svc", "label": "ReservationService", "sub": "facade" },
+        { "id": "repo", "label": "ReservationRepository", "sub": "per table" },
+        { "id": "strat", "label": "TableAllocationStrategy", "sub": "best fit" }
+      ],
+      "steps": [
+        { "caption": "A customer asks for a table for four at 19:00.", "at": "client", "slot": "top", "state": { "client": "active" } },
+        { "caption": "The service checks the start against the `Clock`, then builds a 90-minute TimeSlot.", "at": "svc", "slot": "top", "state": { "client": "done", "svc": "active" } },
+        { "caption": "For each table it reads that table's reservations and keeps tables with no overlap.", "at": "repo", "slot": "top", "state": { "client": "done", "svc": "done", "repo": "active" } },
+        { "caption": "The free list goes to the strategy. Best fit picks the smallest table that seats four.", "at": "strat", "slot": "top", "token": { "label": "free: T3, T4", "tone": "req" }, "state": { "client": "done", "svc": "done", "repo": "done", "strat": "active" } },
+        { "caption": "T3 is chosen. The service saves a Reservation through the repository.", "at": "repo", "slot": "bottom", "token": { "label": "save RV-3", "tone": "ok" }, "state": { "svc": "done", "repo": "active", "strat": "done" } },
+        { "caption": "The Reservation returns to the caller. The service never knew the allocation rule.", "at": "client", "slot": "bottom", "token": { "label": "RV-3 on T3", "tone": "ok" }, "state": { "client": "active", "svc": "done", "repo": "done", "strat": "done" } },
+        { "caption": "When no free table fits, the strategy returns empty and the service refuses with NO_TABLE.", "at": "client", "slot": "bottom", "token": { "label": "NO_TABLE", "tone": "err" }, "state": { "client": "error", "svc": "done", "repo": "done", "strat": "done" } }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "CoreReservation.java",
+      "lang": "java",
+      "title": "Service and interfaces",
+      "run": "captured",
+      "caption": "The core flow. Every collaborator is passed into the constructor. Reservation is trimmed to a record; page 4 adds status rules.",
+      "walk": [
+        { "lines": [7, 8, 9, 10], "text": "A fixed `Clock` at noon and four tables: one for two, two for four, one for six." },
+        { "lines": [11, 12, 13, 14], "text": "Wire the service with best fit, an in-memory repository and a counter for ids." },
+        { "lines": [15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25], "text": "Six requests: five at 19:00 and a couple at 20:30, right after the first seating." },
+        { "lines": [26, 27, 28, 29, 30], "text": "A start before the clock's noon is refused." },
+        { "lines": [54, 55, 56, 57, 58, 59, 60], "text": "Best fit: the smallest capacity that seats the party, ties broken by id." },
+        { "lines": [95, 96, 97, 98, 99, 100, 101, 102, 103, 104], "text": "Keep only tables whose reservations do not overlap the new slot." },
+        { "lines": [105, 106, 107, 108, 109, 110], "text": "Ask the strategy, refuse with NO_TABLE when empty, else save and return." }
+      ]
+    },
+    {
+      "file": "LargeTableGuard.java",
+      "lang": "java",
+      "title": "A new rule, no edits",
+      "run": "captured",
+      "caption": "A decorator strategy keeps the six-seat table for bigger parties. The service and best fit are unchanged.",
+      "walk": [
+        { "lines": [5, 6], "text": "Wrap best fit: tables of six or more only go to parties of four or more." },
+        { "lines": [7, 8], "text": "Two free lists: an earlier time with T3 and T4, a late time with T4 only." },
+        { "lines": [9, 10, 11, 12, 13, 14], "text": "Ask both strategies for a couple and for a party of five." },
+        { "lines": [42, 43, 44, 45, 46], "text": "Small parties see a filtered list; big parties pass straight through to the inner rule." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not put allocation rules inside `book`; each new rule would edit the service.",
+    "Never call `Instant.now()` inside the service; inject a `Clock` so tests control time.",
+    "Check overlap per table, not per restaurant; other tables stay bookable."
+  ],
+  "quiz": {
+    "q": "Which line does CoreReservation print for the fourth request?",
+    "options": [
+      "party of 4 refused: NO_TABLE",
+      "RV-4 T3 x4 at 19:00",
+      "RV-4 T4 x4 at 19:00",
+      "RV-4 T2 x4 at 19:00"
+    ],
+    "answer": 2,
+    "why": "T2 and T3 already hold overlapping 19:00 reservations. The only free table that seats four is T4, so best fit returns it."
+  },
+  "takeaway": "One service runs the flow; strategies decide which table, swapped without edits.",
+  "chat": {
+    "starters": [
+      "Is best fit always the right allocation rule?",
+      "How is a decorator strategy different from a subclass?",
+      "Where would table combining fit in this design?"
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "CP-1 ON_HOLD_SHELF for M-2 until 2026-01-13\nsweep 2026-01-13: nothing expired\nM-2 missed pickup\nCP-1 ON_HOLD_SHELF for M-3 until 2026-01-17\npickup refused for M-2\nduplicate return ignored, copy is ON_HOLD_SHELF\nM-3 cancelled\nCP-1 AVAILABLE",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java PickupExpiry.java",
+  "tool": "Java 17.0.17",
+  "hash": "701fea2b25dc6ce8",
+  "at": "2026-10-14T08:35:38.144Z"
+}

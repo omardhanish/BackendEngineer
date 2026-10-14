@@ -1,0 +1,11 @@
+{
+  "stdout": "500 -> 200 OK\n90000 -> 402 CARD_DECLINED\n777 -> 503 GATEWAY_DOWN cause=bank timeout",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ErrorCodeDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "4f66ae9354bfda48",
+  "at": "2026-10-12T11:30:36.108Z"
+}

@@ -1,0 +1,279 @@
+{
+  "title": "Order lifecycle and rider assignment",
+  "idea": "A food order moves through a lifecycle where each step has an owner. Rider assignment runs beside it, offering the order to nearby riders.",
+  "analogy": {
+    "text": "A parcel tracking sheet: the shop signs \"packed\", the courier signs \"collected\" and \"delivered\". Nobody may sign another person's line.",
+    "breaks": "Paper cannot refuse a wrong signature; your transition table can."
+  },
+  "points": [
+    "Each `Transition` names from, to and actor; anything not in the table is rejected.",
+    "Start rider search when the restaurant accepts, so the rider arrives near ready time.",
+    "Offer the order to the nearest riders, capped; a decline passes to the next.",
+    "No rider found is normal: queue the order and retry, never block the kitchen."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "From accepted order to reserved rider",
+    "actors": [
+      {
+        "id": "cust",
+        "label": "Customer"
+      },
+      {
+        "id": "svc",
+        "label": "OrderService"
+      },
+      {
+        "id": "rest",
+        "label": "Restaurant"
+      },
+      {
+        "id": "asg",
+        "label": "RiderAssigner"
+      },
+      {
+        "id": "rider",
+        "label": "Riders"
+      }
+    ],
+    "messages": [
+      {
+        "from": "cust",
+        "to": "svc",
+        "label": "place O-7",
+        "note": "The order starts in `PLACED`. Only the restaurant or the customer can move it now."
+      },
+      {
+        "from": "svc",
+        "to": "rest",
+        "label": "new order O-7",
+        "note": "The restaurant sees the order and decides: accept or reject."
+      },
+      {
+        "from": "rest",
+        "to": "svc",
+        "label": "RESTAURANT: ACCEPTED",
+        "note": "The table allows this move for this actor. The customer can no longer cancel alone."
+      },
+      {
+        "from": "svc",
+        "to": "asg",
+        "label": "assign(O-7, kitchen)",
+        "note": "Acceptance triggers rider search. The order keeps moving while the search runs."
+      },
+      {
+        "from": "asg",
+        "to": "rider",
+        "label": "offer to R1 (nearest)",
+        "note": "Free riders within range are ranked by distance. The nearest gets the first offer."
+      },
+      {
+        "from": "rider",
+        "to": "asg",
+        "label": "R1 declines",
+        "dashed": true,
+        "note": "A decline is expected. The assigner moves to the next rider in the ranking."
+      },
+      {
+        "from": "asg",
+        "to": "rider",
+        "label": "offer to R2",
+        "note": "The second offer goes out. The offer count is capped so the order is not stuck."
+      },
+      {
+        "from": "asg",
+        "to": "svc",
+        "label": "R2 reserved",
+        "note": "`take` removes R2 from the free pool atomically, so no other order gets R2."
+      },
+      {
+        "from": "rest",
+        "to": "svc",
+        "label": "RESTAURANT: READY",
+        "note": "The kitchen moves the order through `PREPARING` to `READY`. Only the rider may pick it up."
+      },
+      {
+        "from": "rider",
+        "to": "svc",
+        "label": "RIDER: PICKED_UP, DELIVERED",
+        "note": "The rider owns the last two moves. `DELIVERED` is terminal."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "OrderLifecycleDemo.java",
+      "lang": "java",
+      "title": "Lifecycle with owners",
+      "run": "captured",
+      "caption": "The lifecycle is a table of allowed moves, each tagged with the actor who may make it.",
+      "walk": [
+        {
+          "lines": [
+            22,
+            23,
+            24,
+            25,
+            26,
+            27
+          ],
+          "text": "Statuses and actors are enums. A `Transition` record is a value, so `equals` compares all three fields."
+        },
+        {
+          "lines": [
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40
+          ],
+          "text": "The lifecycle reads like a spec. A product manager can check it line by line."
+        },
+        {
+          "lines": [
+            58,
+            59,
+            60,
+            61,
+            62,
+            63,
+            64,
+            65,
+            66
+          ],
+          "text": "On a typo, `valueOf` throws as the class initialises, so first use fails loudly."
+        },
+        {
+          "lines": [
+            48,
+            49,
+            50,
+            51,
+            52
+          ],
+          "text": "One gate checks status, target and actor together. The error names all three for support logs."
+        },
+        {
+          "lines": [
+            7,
+            10
+          ],
+          "text": "A late customer cancel and a restaurant marking pickup are both refused; the log stays clean."
+        },
+        {
+          "lines": [
+            53,
+            54,
+            56
+          ],
+          "text": "Each accepted move records who did it. That audit trail settles refund disputes."
+        }
+      ]
+    },
+    {
+      "file": "RiderAssignmentDemo.java",
+      "lang": "java",
+      "title": "Rider offers with declines",
+      "run": "captured",
+      "caption": "Nearest riders get offers in turn; declines move on, and an empty result queues the order.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "text": "`R1` is nearest but declines every offer. `R3` is outside the 3 km radius."
+        },
+        {
+          "lines": [
+            25,
+            26,
+            27,
+            28,
+            29,
+            30
+          ],
+          "text": "The pool owns availability. `take` is an atomic check-and-remove, as in the cab matcher."
+        },
+        {
+          "lines": [
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43
+          ],
+          "text": "The constructor rejects a zero radius or zero offers before any order is processed."
+        },
+        {
+          "lines": [
+            45,
+            46,
+            47,
+            48,
+            49,
+            50
+          ],
+          "text": "Filter by radius, sort by distance then id, and cap how many riders are asked."
+        },
+        {
+          "lines": [
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57
+          ],
+          "text": "A decline moves to the next rider. Accepting still needs `take` to win the race."
+        },
+        {
+          "lines": [
+            58,
+            13,
+            14
+          ],
+          "text": "An empty `Optional` means \"retry later\". The caller queues the order instead of throwing."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Checking only from and to, not the actor, lets a rider mark food ready or cancel.",
+    "Assigning a rider at `PLACED` wastes rider time when the restaurant then rejects the order.",
+    "Offering every rider at once makes several accept; offer in turn, or reserve atomically."
+  ],
+  "quiz": {
+    "q": "A fresh pool from the demo, but `maxOffers` is 1. What is O-7's result?",
+    "code": "RiderAssigner one = new RiderAssigner(pool, 3.0, 1);\nString r = one.assign(\"O-7\", kitchen)\n    .map(Rider::id).orElse(\"queued, retry later\");\nSystem.out.println(\"O-7 -> \" + r);",
+    "lang": "java",
+    "options": [
+      "O-7 -> R2",
+      "O-7 -> R1",
+      "O-7 -> queued, retry later",
+      "O-7 -> R4"
+    ],
+    "answer": 2,
+    "why": "With one offer allowed, only the nearest rider, `R1`, is asked. `R1` declines, the loop ends, and the empty `Optional` becomes the fallback text."
+  },
+  "takeaway": "Every lifecycle move has an owner; rider offers go nearest first, in turn.",
+  "chat": {
+    "starters": [
+      "Where should the retry queue for unassigned orders live?",
+      "How do I stop an order from waiting forever if no rider ever accepts?",
+      "Should rider assignment use the Observer pattern on the ACCEPTED status?"
+    ]
+  }
+}

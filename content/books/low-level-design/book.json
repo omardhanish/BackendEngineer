@@ -1,7 +1,7 @@
 {
   "slug": "low-level-design",
   "title": "Low-Level Design",
-  "tagline": "From SOLID and design patterns to real systems you can design, code and defend in an interview.",
+  "tagline": "OOP, SOLID, UML, every design pattern and the principles behind production-quality Java designs.",
   "audience": "a backend engineer who knows basic Java and wants to design clean, extensible classes and ace LLD interviews",
   "hue": 135,
   "order": 20,
@@ -9,8 +9,8 @@
   "locale": "en",
   "tutor": {
     "name": "Low-Level Design",
-    "about": "Teaches low-level design (OOP, SOLID, design patterns, classic LLD case studies and a capstone) in Java to a backend engineer preparing for real work and interviews.",
-    "examples": "Java 17 (classes, interfaces, enums, records), UML class and sequence diagrams",
+    "about": "Teaches low-level design in depth (OOP, SOLID, UML, all classic design patterns, GRASP, DDD, testing, concurrency and a capstone) in Java 17 to a backend engineer preparing for real work and interviews.",
+    "examples": "Java 17 (classes, interfaces, enums, records, concurrency), UML class, sequence and state diagrams",
     "learnerRole": "engineer",
     "mentorRole": "senior engineer and interviewer"
   },

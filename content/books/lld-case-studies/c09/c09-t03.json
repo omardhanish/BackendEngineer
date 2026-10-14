@@ -1,0 +1,329 @@
+{
+  "title": "Reservation service core design",
+  "idea": "ReservationService is a facade that holds room nights, prices them and charges payment, with each swappable rule behind its own interface.",
+  "analogy": {
+    "text": "A hotel front office manager asks the inventory clerk, the rate sheet and the card machine in turn. Swap the rate sheet and the manager's routine stays the same.",
+    "breaks": "Code swaps a rule at construction time, not mid-shift."
+  },
+  "points": [
+    "Facade: callers see `hold` and `confirm`, never the parts behind them.",
+    "Strategy: PricingStrategy and CancellationPolicy change per rate plan without service edits.",
+    "InventoryStore reserves every night of a stay, or none of them.",
+    "A declined payment releases the nights at once, so rooms are never stranded."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "One reservation through the service",
+    "scenario": {
+      "token": {
+        "label": "DLX 13-15 Mar",
+        "tone": "req"
+      },
+      "stages": [
+        {
+          "id": "caller",
+          "label": "Caller",
+          "kind": "end"
+        },
+        {
+          "id": "svc",
+          "label": "ReservationService",
+          "sub": "facade"
+        },
+        {
+          "id": "inv",
+          "label": "InventoryStore",
+          "sub": "all nights or none"
+        },
+        {
+          "id": "price",
+          "label": "PricingStrategy",
+          "sub": "per night"
+        },
+        {
+          "id": "pay",
+          "label": "PaymentGateway",
+          "sub": "charge",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "Guest G-7 asks for a Deluxe room, check-in 13 March, check-out 15 March.",
+          "at": "caller",
+          "slot": "top",
+          "state": {
+            "caller": "active"
+          }
+        },
+        {
+          "caption": "The service turns the stay into a list of nights: the 13th and the 14th.",
+          "at": "svc",
+          "slot": "top",
+          "state": {
+            "caller": "done",
+            "svc": "active"
+          }
+        },
+        {
+          "caption": "Inventory checks both nights and takes one Deluxe unit on each.",
+          "at": "inv",
+          "slot": "top",
+          "state": {
+            "caller": "done",
+            "svc": "done",
+            "inv": "active"
+          }
+        },
+        {
+          "caption": "The pricing strategy prices each night on its own, so weekend nights can cost more.",
+          "at": "price",
+          "slot": "top",
+          "state": {
+            "caller": "done",
+            "svc": "done",
+            "inv": "done",
+            "price": "active"
+          }
+        },
+        {
+          "caption": "The caller gets reservation `RS-1` in HELD state, with a deadline from the injected `Clock`.",
+          "at": "caller",
+          "slot": "bottom",
+          "token": {
+            "label": "RS-1 HELD",
+            "tone": "ok"
+          },
+          "state": {
+            "caller": "active",
+            "svc": "done",
+            "inv": "done",
+            "price": "done"
+          }
+        },
+        {
+          "caption": "G-9 wants 14 to 16 March. The 14th has no Deluxe left, so nothing is taken.",
+          "at": "inv",
+          "slot": "bottom",
+          "token": {
+            "label": "DLX 14-16 Mar",
+            "tone": "err"
+          },
+          "state": {
+            "svc": "done",
+            "inv": "blocked"
+          }
+        },
+        {
+          "caption": "G-7 confirms `RS-1`. The gateway charges the held total once.",
+          "at": "pay",
+          "slot": "top",
+          "token": {
+            "label": "charge total",
+            "tone": "req"
+          },
+          "state": {
+            "svc": "done",
+            "inv": "done",
+            "price": "done",
+            "pay": "active"
+          }
+        },
+        {
+          "caption": "Payment succeeds and `RS-1` becomes CONFIRMED. A decline would have released both nights.",
+          "at": "caller",
+          "slot": "bottom",
+          "token": {
+            "label": "RS-1 CONFIRMED",
+            "tone": "ok"
+          },
+          "state": {
+            "caller": "active",
+            "svc": "done",
+            "inv": "done",
+            "price": "done",
+            "pay": "done"
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "CoreReservation.java",
+      "lang": "java",
+      "title": "Service and its policies",
+      "run": "captured",
+      "caption": "One Deluxe room, two guests with overlapping stays. The service only talks to interfaces.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12
+          ],
+          "text": "Wire a fixed clock, one Deluxe room, weekend pricing and a fake gateway lambda."
+        },
+        {
+          "lines": [
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20
+          ],
+          "text": "G-7 holds Friday and Saturday; G-9 overlaps on Saturday and is refused."
+        },
+        {
+          "lines": [
+            29,
+            30,
+            31,
+            32,
+            33,
+            34
+          ],
+          "text": "Three interfaces: one per policy the business may want to swap."
+        },
+        {
+          "lines": [
+            43,
+            44,
+            45,
+            46,
+            47
+          ],
+          "text": "Check every night first, then take them all, inside one lock."
+        },
+        {
+          "lines": [
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59
+          ],
+          "text": "Friday and Saturday nights cost 20 percent more, in integer minor units."
+        },
+        {
+          "lines": [
+            82,
+            83,
+            84,
+            85,
+            86,
+            87,
+            88,
+            89,
+            90,
+            91
+          ],
+          "text": "`hold`: nights from the range, reserve all, price each, deadline in 15 minutes."
+        },
+        {
+          "lines": [
+            92,
+            93,
+            94,
+            95,
+            96,
+            97,
+            98,
+            99,
+            100,
+            101,
+            102,
+            103
+          ],
+          "text": "`confirm`: refuse stale holds, charge once, release nights if the card fails."
+        }
+      ]
+    },
+    {
+      "file": "TieredRefund.java",
+      "lang": "java",
+      "title": "A new cancellation plan",
+      "run": "captured",
+      "caption": "Two new CancellationPolicy classes. Nothing that already exists is edited to add them.",
+      "walk": [
+        {
+          "lines": [
+            7,
+            8,
+            9,
+            10
+          ],
+          "text": "One paid amount, three rate plans, each with its own refund rule."
+        },
+        {
+          "lines": [
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "text": "Ask each plan what it refunds at 10, 3 and 0 days before."
+        },
+        {
+          "lines": [
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39
+          ],
+          "text": "Tiered: full refund a week out, half from two days, then nothing."
+        },
+        {
+          "lines": [
+            41,
+            42,
+            43,
+            44,
+            45
+          ],
+          "text": "NonRefundable always returns zero; the service handles it like any plan."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not add `if (plan == ...)` branches in the service; add a CancellationPolicy class.",
+    "Reserve inventory before charging; charging first leaves a paid guest without a room.",
+    "Release held nights on every failure path; expired holds are freed by the sweeper (page five)."
+  ],
+  "quiz": {
+    "q": "What does CoreReservation print for G-9?",
+    "options": [
+      "G-9: no DLX for those nights",
+      "G-9: hold no longer valid",
+      "held RS-2 [2026-03-14, 2026-03-15] HELD",
+      "G-9: payment declined"
+    ],
+    "answer": 0,
+    "why": "G-9's stay includes 14 March, which RS-1 already holds. `reserve` finds zero free and returns false, so the service throws."
+  },
+  "takeaway": "A facade calls interfaces; new plans arrive as new classes, not edits.",
+  "chat": {
+    "starters": [
+      "Is WeekdayWeekendPricing better as a strategy or a decorator?",
+      "Where should the hold time of 15 minutes be configured?",
+      "How do I test ReservationService without a payment gateway?"
+    ]
+  }
+}

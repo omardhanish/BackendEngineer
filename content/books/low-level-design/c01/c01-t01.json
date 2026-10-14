@@ -1,59 +1,269 @@
 {
   "title": "What low-level design is",
-  "idea": "Low-level design (LLD) turns a feature into concrete classes, interfaces, methods and the links between them, so the code is clear, testable and easy to extend.",
+  "idea": "Low-level design (LLD) decides the classes, their responsibilities, the methods they expose and how they collaborate, so that one feature's code stays correct and easy to change.",
+  "analogy": {
+    "text": "An architect's floor plan shows rooms and doors. The joiner's drawing shows each cupboard: its parts, hinges and which wall it hangs on.",
+    "breaks": "Cupboards rarely change after fitting; classes change every sprint."
+  },
   "points": [
-    "High-level design (HLD) picks services, databases and how they talk.",
-    "LLD works inside one service: which classes exist and who owns what.",
-    "A good LLD lets you add a feature by adding code, not editing it.",
-    "LLD interviews ask you to model a small system and defend each choice."
+    "LLD names the types: entities, value objects, interfaces and the services using them.",
+    "Each class gets one job, owns its data and guards its own rules.",
+    "Variation hides behind an interface, so a new option means a new class.",
+    "Good LLD shows when requirements change: edits land in one place, not five."
   ],
   "hero": {
-    "type": "timeline",
-    "title": "From a request to classes",
-    "items": [
+    "type": "flow",
+    "title": "The shipping feature as classes",
+    "nodes": [
       {
-        "label": "Clarify",
-        "text": "Ask what the system must do and what is out of scope."
+        "id": "req",
+        "label": "Requirement",
+        "sub": "ship parcels, several options"
       },
       {
-        "label": "Find nouns",
-        "text": "Nouns in the use cases become candidate classes: `Room`, `Booking`, `Employee`."
+        "id": "caller",
+        "label": "Checkout code",
+        "sub": "loops over options"
       },
       {
-        "label": "Assign jobs",
-        "text": "Give each class one responsibility and the data it needs to do it."
+        "id": "parcel",
+        "label": "Parcel",
+        "sub": "record: weightKg > 0"
       },
       {
-        "label": "Draw links",
-        "text": "Decide is-a and has-a links, then sketch a UML class diagram."
+        "id": "method",
+        "label": "ShippingMethod",
+        "sub": "interface: name, feeCents, days"
       },
       {
-        "label": "Define contracts",
-        "text": "Put an `interface` where behaviour may vary, such as a pricing rule."
+        "id": "flat",
+        "label": "FlatPlusWeight",
+        "sub": "base + per kg"
       },
       {
-        "label": "Code and check",
-        "text": "Write the classes, run a scenario, and adjust names and links."
+        "id": "same",
+        "label": "SameDay",
+        "sub": "fixed price"
+      }
+    ],
+    "edges": [
+      {
+        "from": "req",
+        "to": "caller",
+        "label": "drives"
+      },
+      {
+        "from": "caller",
+        "to": "parcel",
+        "label": "creates"
+      },
+      {
+        "from": "caller",
+        "to": "method",
+        "label": "depends on"
+      },
+      {
+        "from": "flat",
+        "to": "method",
+        "label": "implements",
+        "dashed": true
+      },
+      {
+        "from": "same",
+        "to": "method",
+        "label": "implements",
+        "dashed": true
+      },
+      {
+        "from": "method",
+        "to": "parcel",
+        "label": "reads weight"
+      }
+    ],
+    "steps": [
+      {
+        "caption": "Start from the requirement, not from code. It names the nouns: parcel, shipping option, fee.",
+        "active": [
+          "req"
+        ],
+        "edges": []
+      },
+      {
+        "caption": "`Parcel` is a value object. Its constructor rejects a weight of zero or less, so bad data never travels.",
+        "active": [
+          "caller",
+          "parcel"
+        ],
+        "edges": [
+          1
+        ]
+      },
+      {
+        "caption": "`ShippingMethod` is the contract. Fee and delivery days live together, so neither can be forgotten.",
+        "active": [
+          "caller",
+          "method"
+        ],
+        "edges": [
+          2,
+          5
+        ]
+      },
+      {
+        "caption": "`FlatPlusWeight` covers every base-plus-per-kilogram tariff with data, not new if-branches.",
+        "active": [
+          "flat",
+          "method"
+        ],
+        "edges": [
+          3
+        ]
+      },
+      {
+        "caption": "Same-day delivery arrives later. It becomes `SameDay`, a new class; no existing class is edited.",
+        "active": [
+          "same",
+          "method"
+        ],
+        "edges": [
+          4
+        ]
+      },
+      {
+        "caption": "The caller only knows the interface. That one decision is what keeps the feature cheap to change.",
+        "active": [
+          "caller",
+          "method",
+          "flat",
+          "same"
+        ],
+        "edges": [
+          2,
+          3,
+          4
+        ]
       }
     ]
   },
+  "code": [
+    {
+      "file": "ShippingScript.java",
+      "lang": "java",
+      "title": "The problem",
+      "run": "captured",
+      "caption": "Working code with no design: string keys, rules scattered across methods, bad input accepted silently.",
+      "walk": [
+        {
+          "lines": [
+            11,
+            20
+          ],
+          "text": "Every tariff sits in one method chosen by a string. Each new option edits it."
+        },
+        {
+          "lines": [
+            19,
+            19
+          ],
+          "text": "An unknown key falls through to zero. A typo means free shipping, with no error."
+        },
+        {
+          "lines": [
+            4,
+            5
+          ],
+          "text": "Lower-case `express` and a negative weight both run. Nothing owns the rule that weight is positive."
+        },
+        {
+          "lines": [
+            22,
+            30
+          ],
+          "text": "Delivery days repeat the same keys elsewhere. Someone added same-day to fees and forgot it here."
+        },
+        {
+          "lines": [
+            6,
+            7
+          ],
+          "text": "So same-day prints four days. The compiler cannot help, because the link is only a string."
+        }
+      ]
+    },
+    {
+      "file": "ShippingDemo.java",
+      "lang": "java",
+      "title": "The fix",
+      "run": "captured",
+      "caption": "The same feature after LLD: a value object, a contract, and one class per kind of tariff.",
+      "walk": [
+        {
+          "lines": [
+            24,
+            29
+          ],
+          "text": "`Parcel` checks its own invariant in the compact constructor. An invalid parcel cannot exist."
+        },
+        {
+          "lines": [
+            32,
+            36
+          ],
+          "text": "`ShippingMethod` bundles fee and days, so adding an option means writing both."
+        },
+        {
+          "lines": [
+            39,
+            48
+          ],
+          "text": "`FlatPlusWeight` is a record: immutable, validated, and reused for every tariff of that shape."
+        },
+        {
+          "lines": [
+            52,
+            59
+          ],
+          "text": "`SameDay` is the new requirement. It is added beside the others, not wedged into them."
+        },
+        {
+          "lines": [
+            11,
+            14
+          ],
+          "text": "The caller loops over the interface. It never asks which concrete class it holds."
+        },
+        {
+          "lines": [
+            15,
+            19
+          ],
+          "text": "The bad weight now fails loudly at the boundary, with a message naming the value."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Choosing behaviour with string or int codes; a typo compiles and silently takes the default branch.",
+    "Repeating the same if-else chain in several methods; one gets missed when an option is added.",
+    "Leaving validation to callers; one forgetful caller lets invalid objects spread through the system."
+  ],
   "quiz": {
-    "q": "Which question belongs to low-level design rather than high-level design?",
+    "q": "A new rule: Express is free above 20 kg. In the fixed design, what changes?",
     "options": [
-      "Should orders and payments be separate services?",
-      "Which class decides whether two bookings overlap?",
-      "Which database should store the bookings?",
-      "How many servers sit behind the load balancer?"
+      "Every class that calls feeCents",
+      "The Parcel record gets a free flag",
+      "A new ShippingMethod class for Express's tariff",
+      "The ShippingMethod interface gains a method"
     ],
-    "answer": 1,
-    "why": "LLD works inside one service: it decides which class owns a rule. Services, databases and servers are HLD choices."
+    "answer": 2,
+    "why": "Editing `FlatPlusWeight` would also change Standard. A new `ShippingMethod` class holds the 20 kg rule; callers, `Parcel` and `FlatPlusWeight` stay unchanged."
   },
-  "takeaway": "HLD picks the boxes; LLD designs the classes inside each box.",
+  "takeaway": "LLD gives each rule one home, so change touches one class.",
   "chat": {
     "starters": [
-      "What does an LLD interview round usually look like?",
-      "How is low-level design different from just writing code?",
-      "Which topics should I learn first for LLD interviews?"
+      "How is LLD different from just writing clean code?",
+      "When is an interface overkill for a small feature?",
+      "Why use a record for Parcel instead of a normal class?"
     ]
   }
 }

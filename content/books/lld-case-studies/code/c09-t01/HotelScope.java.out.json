@@ -1,0 +1,11 @@
+{
+  "stdout": "IN  GUEST -> SEARCH\nIN  GUEST -> RESERVE_AND_PAY\nIN  GUEST -> CANCEL\nIN  FRONT_DESK -> CHECK_IN\nIN  FRONT_DESK -> CHECK_OUT\nIN  SYSTEM -> EXPIRE_HOLDS\nIN  SYSTEM -> NO_SHOW\nOUT HOTEL_ADMIN -> DYNAMIC_PRICING\nOUT GUEST -> LOYALTY_POINTS\nnights in a: 2\na overlaps b? false",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java HotelScope.java",
+  "tool": "Java 17.0.17",
+  "hash": "4d0f644ac08616b7",
+  "at": "2026-10-14T08:42:48.398Z"
+}

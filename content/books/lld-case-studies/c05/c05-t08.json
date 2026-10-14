@@ -1,0 +1,234 @@
+{
+  "title": "ATM screens and end-to-end flow",
+  "idea": "The ATM frontend is a set of touchscreen screens driven by one reducer, so a double press or a network retry can never request cash twice.",
+  "points": [
+    "Screens: insert card, PIN, amount, processing, take cash; the reducer picks one.",
+    "Amount buttons disable while processing, and the reducer ignores a second press.",
+    "A lost reply keeps the key; the bank later reverses an unconfirmed PENDING debit.",
+    "Follow-ups: add deposits as a new flow, or many banks behind a network switch."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "Amount pressed to cash taken",
+    "actors": [
+      {
+        "id": "ui",
+        "label": "AmountScreen"
+      },
+      {
+        "id": "client",
+        "label": "ApiClient"
+      },
+      {
+        "id": "api",
+        "label": "Express API"
+      },
+      {
+        "id": "db",
+        "label": "PostgreSQL"
+      },
+      {
+        "id": "cash",
+        "label": "CashDispenser"
+      }
+    ],
+    "messages": [
+      {
+        "from": "ui",
+        "to": "client",
+        "label": "withdraw(S-1, 250000, wd-2)",
+        "note": "The reducer moved to PROCESSING and made key wd-2. An effect starts the call."
+      },
+      {
+        "from": "client",
+        "to": "api",
+        "label": "POST /withdrawals",
+        "note": "The key travels in the Idempotency-Key header. The body is validated by zod."
+      },
+      {
+        "from": "api",
+        "to": "db",
+        "label": "lock account, debit",
+        "note": "One transaction locks the account row, checks funds and inserts a PENDING row."
+      },
+      {
+        "from": "api",
+        "to": "client",
+        "label": "reply lost",
+        "dashed": true,
+        "note": "The reply is lost. The screen shows a retry message and keeps wd-2."
+      },
+      {
+        "from": "client",
+        "to": "api",
+        "label": "POST again, wd-2",
+        "note": "The customer presses the same amount. The same key is sent."
+      },
+      {
+        "from": "api",
+        "to": "client",
+        "label": "200 TX-2 PENDING",
+        "dashed": true,
+        "note": "The key is known, so the first result returns. No second debit."
+      },
+      {
+        "from": "ui",
+        "to": "cash",
+        "label": "dispense notes",
+        "note": "Approved: the screen shows take cash while the machine pushes notes out."
+      },
+      {
+        "from": "client",
+        "to": "api",
+        "label": "POST .../TX-2/confirm",
+        "note": "Notes taken: TX-2 becomes COMPLETED. A jam would call reverse instead."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "atmScreen.mjs",
+      "lang": "js",
+      "title": "Screen reducer",
+      "run": "browser",
+      "caption": "Pure screen logic. Run it, then change the retried amount to 100000 and predict the key.",
+      "walk": [
+        {
+          "lines": [
+            2,
+            3,
+            4
+          ],
+          "text": "The whole screen state: which screen, the amount, the key, the last message."
+        },
+        {
+          "lines": [
+            10,
+            11,
+            12
+          ],
+          "text": "The bank counts PIN tries; the screen only shows what is left."
+        },
+        {
+          "lines": [
+            15,
+            16,
+            17,
+            18,
+            19
+          ],
+          "text": "A press outside AMOUNT is ignored. The key is reused only for the same amount."
+        },
+        {
+          "lines": [
+            20,
+            21
+          ],
+          "text": "A network error returns to AMOUNT and keeps the key for a safe retry."
+        },
+        {
+          "lines": [
+            22,
+            23
+          ],
+          "text": "A decline is final for that attempt, so the key is dropped."
+        },
+        {
+          "lines": [
+            28,
+            29,
+            30
+          ],
+          "text": "Inactivity ends the session, but never while a request is in flight."
+        },
+        {
+          "lines": [
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43
+          ],
+          "text": "The run: wrong PIN, a decline, a double press, a lost reply and a retry."
+        }
+      ]
+    },
+    {
+      "file": "AmountScreen.jsx",
+      "lang": "js",
+      "title": "AmountScreen component",
+      "run": "static",
+      "illustrative": true,
+      "caption": "A React component that renders state and dispatches events. Not run here.",
+      "walk": [
+        {
+          "lines": [
+            4,
+            5,
+            6
+          ],
+          "text": "The effect fires on entering PROCESSING and sends the reducer's key."
+        },
+        {
+          "lines": [
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14
+          ],
+          "text": "409 and other 4xx are final declines; only a lost reply or 5xx retries the key."
+        },
+        {
+          "lines": [
+            17,
+            21,
+            22
+          ],
+          "text": "Messages use an alert region; a busy note is announced politely."
+        },
+        {
+          "lines": [
+            23,
+            24,
+            25,
+            26,
+            27,
+            28
+          ],
+          "text": "Buttons only dispatch events, and all disable while busy."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Disabling buttons is not enough; the reducer and the Idempotency-Key must stop repeats.",
+    "Reusing a key for a new amount replays the old one; issue a fresh key.",
+    "Interview follow-up: say what happens if power fails after debit but before dispense."
+  ],
+  "quiz": {
+    "q": "In the run, what key does the retry after NETWORK_ERROR use?",
+    "options": [
+      "wd-1",
+      "wd-2",
+      "wd-3",
+      "-"
+    ],
+    "answer": 1,
+    "why": "DECLINED dropped wd-1, so the next press made wd-2. NETWORK_ERROR keeps it, and the same amount reuses it."
+  },
+  "takeaway": "One reducer owns the screens; one key per amount makes retries safe.",
+  "chat": {
+    "starters": [
+      "Where should the ATM store the key if it reboots mid-request?",
+      "How would I add a balance screen without breaking the reducer?",
+      "How does a shared ATM network route requests to many banks?"
+    ]
+  }
+}

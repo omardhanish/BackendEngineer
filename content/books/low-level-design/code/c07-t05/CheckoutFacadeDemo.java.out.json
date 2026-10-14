@@ -1,0 +1,11 @@
+{
+  "stdout": "OK parcel lamp to N1\nFAILED payment declined\n  refund ch-1000\nFAILED shipping no route to ZZ\nlamps left: 2",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java CheckoutFacadeDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "7ef2ae62c1bb5e24",
+  "at": "2026-10-12T11:23:39.101Z"
+}

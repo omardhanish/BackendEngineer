@@ -1,0 +1,210 @@
+{
+  "title": "Event bus class design",
+  "idea": "The event bus class design gives `EventBus` named topics; a `Publisher` sends an `Event` to one topic, and each `Subscription` there hands it to one `Subscriber`.",
+  "analogy": {
+    "text": "A building has one noticeboard per subject. Pinning a notice copies it into the pigeonhole of everyone who signed up for that board.",
+    "breaks": "No copies are made: every subscriber gets the same immutable event."
+  },
+  "points": [
+    "`Event` is an immutable record: id, topic, key and payload.",
+    "`Topic` owns its subscriptions; `EventBus` maps names to topics.",
+    "`Subscription` pairs one `Subscriber` with a filter that picks its events.",
+    "`Publisher` is bound to one topic, so callers cannot misroute events."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Class diagram",
+    "nodes": [
+      {
+        "id": "pub",
+        "label": "Publisher",
+        "sub": "topic, publish(key, payload)"
+      },
+      {
+        "id": "bus",
+        "label": "EventBus",
+        "sub": "topics, subscribe, publish"
+      },
+      {
+        "id": "event",
+        "label": "Event",
+        "sub": "record: id, topic, key, payload"
+      },
+      {
+        "id": "topic",
+        "label": "Topic",
+        "sub": "name, subscriptions"
+      },
+      {
+        "id": "sub",
+        "label": "Subscription",
+        "sub": "topic, subscriber, filter"
+      },
+      {
+        "id": "filter",
+        "label": "Predicate<Event>",
+        "sub": "which events match"
+      },
+      {
+        "id": "subscriber",
+        "label": "Subscriber",
+        "sub": "interface: name, onEvent"
+      },
+      {
+        "id": "printer",
+        "label": "Printer",
+        "sub": "a concrete handler"
+      }
+    ],
+    "edges": [
+      {
+        "from": "pub",
+        "to": "bus",
+        "label": "uses",
+        "caption": "A publisher holds one topic name and forwards each publish call to the bus."
+      },
+      {
+        "from": "bus",
+        "to": "event",
+        "label": "creates",
+        "caption": "The bus assigns the event id, so ids are unique across publishers."
+      },
+      {
+        "from": "bus",
+        "to": "topic",
+        "label": "has many",
+        "caption": "The bus keeps topics by name and refuses names it does not know."
+      },
+      {
+        "from": "topic",
+        "to": "sub",
+        "label": "has many",
+        "caption": "A topic holds zero or more subscriptions. Removing one leaves the others untouched."
+      },
+      {
+        "from": "sub",
+        "to": "filter",
+        "label": "has 1",
+        "caption": "The filter decides whether this subscriber wants an event at all."
+      },
+      {
+        "from": "sub",
+        "to": "subscriber",
+        "label": "has 1",
+        "caption": "Each subscription points to exactly one handler."
+      },
+      {
+        "from": "printer",
+        "to": "subscriber",
+        "label": "is-a",
+        "caption": "Concrete handlers implement Subscriber. The bus never knows their class."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "ClassDesign.java",
+      "lang": "java",
+      "title": "Model and a short demo",
+      "run": "captured",
+      "caption": "The whole model in one file, with synchronous delivery for now. Retries and a mailbox arrive on the next page.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7,
+            8
+          ],
+          "text": "Create the topic, then a publisher bound to it."
+        },
+        {
+          "lines": [
+            9,
+            10,
+            11
+          ],
+          "text": "Email takes every event; refunds filters to cancellations only."
+        },
+        {
+          "lines": [
+            12,
+            13,
+            14,
+            15
+          ],
+          "text": "After unsubscribe, the refunds handler no longer receives events."
+        },
+        {
+          "lines": [
+            16,
+            17,
+            18,
+            19,
+            20
+          ],
+          "text": "Asking for an unknown topic fails fast with a clear message."
+        },
+        {
+          "lines": [
+            24,
+            25,
+            26,
+            27,
+            28,
+            29
+          ],
+          "text": "Event is an immutable record; Subscriber is a two-method contract."
+        },
+        {
+          "lines": [
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54
+          ],
+          "text": "Topic owns its subscriptions and hands out a copy to iterate."
+        },
+        {
+          "lines": [
+            84,
+            85,
+            86,
+            87,
+            88,
+            89,
+            90
+          ],
+          "text": "Publish assigns an id, then delivers to each matching subscription."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not let subscribers see the bus internals; give them only the event.",
+    "Return a `Subscription` handle from subscribe, so unsubscribe removes exactly that one.",
+    "Make `Event` immutable; one shared copy reaches many subscribers."
+  ],
+  "quiz": {
+    "q": "Which line does ClassDesign print for EV-3?",
+    "options": [
+      "email <- EV-3 O-2 cancelled",
+      "refunds <- EV-3 O-2 cancelled",
+      "Both email and refunds receive EV-3",
+      "refused: no topic orders"
+    ],
+    "answer": 0,
+    "why": "Refunds was unsubscribed before EV-3 was published, so only the email subscription remains on the topic to receive it."
+  },
+  "takeaway": "Topics own subscriptions; each subscription joins one filter to one subscriber.",
+  "chat": {
+    "starters": [
+      "Why is Publisher bound to a single topic?",
+      "Should the filter live on the subscription or the subscriber?",
+      "How would wildcard topics like orders.* change this design?"
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "ok       Move[row=0, col=0]\nok       Move[row=1, col=1]\nrejected Move[row=1, col=1]: cell taken\nrejected Move[row=3, col=0]: off the board\nok       Move[row=2, col=2]\nX..\n.O.\n..X\nnext: Ben",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java TicTacToeModel.java",
+  "tool": "Java 17.0.17",
+  "hash": "b868ed7697d2231c",
+  "at": "2026-10-12T11:16:41.463Z"
+}

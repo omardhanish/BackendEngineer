@@ -1,0 +1,11 @@
+{
+  "stdout": "v1    DRIVER -> TAKE_TICKET\nv1    DRIVER -> PAY_FEE\nv1    DRIVER -> EXIT_LOT\nv1    SYSTEM -> SHOW_FREE_SPOTS\nv1    ATTENDANT -> HANDLE_LOST_TICKET\nlater DRIVER -> RESERVE_IN_ADVANCE\nlater DRIVER -> MONTHLY_PASS\nlater DRIVER -> EV_CHARGING\nMOTORBIKE may use [MOTORBIKE, COMPACT, LARGE]\nCAR may use [COMPACT, LARGE]\nTRUCK may use [LARGE]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ParkingScope.java",
+  "tool": "Java 17.0.17",
+  "hash": "9650ddd2d72f1a42",
+  "at": "2026-10-14T08:34:32.981Z"
+}

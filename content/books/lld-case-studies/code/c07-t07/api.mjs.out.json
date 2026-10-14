@@ -1,0 +1,11 @@
+{
+  "stdout": "U-7 POST /checkout 400 {\"error\":\"IDEMPOTENCY_KEY_REQUIRED\"}\nU-7 POST /checkout 400 {\"error\":\"VALIDATION\"}\nU-7 POST /checkout 409 {\"error\":\"PRICE_CHANGED\",\"totalMinor\":179700}\nU-7 POST /checkout 201 {\"id\":\"OR-1\",\"status\":\"PENDING_PAYMENT\",\"totalMinor\":179700,\"payBy\":\"2026-01-15T10:15:00.000Z\"}\nU-7 POST /checkout 200 {\"id\":\"OR-1\",\"status\":\"PENDING_PAYMENT\",\"totalMinor\":179700,\"payBy\":\"2026-01-15T10:15:00.000Z\"}\nU-9 POST /checkout 409 {\"error\":\"OUT_OF_STOCK\",\"sku\":\"SKU-TEE\"}",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node api.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "48d9e36f258a54fe",
+  "at": "2026-10-14T10:24:18.012Z"
+}

@@ -1,259 +1,205 @@
 {
-  "title": "Expense sharing like Splitwise",
-  "idea": "A Splitwise design records who paid and how each expense splits, keeps one net balance per person, and settles those balances with few transfers.",
+  "title": "Substitutable subtypes",
+  "idea": "The Liskov Substitution Principle (LSP) says a subtype must work anywhere its parent type is expected, keeping every promise the parent's contract makes.",
   "analogy": {
-    "text": "Flatmates keep a shared notebook. Each receipt adds to the payer and subtracts each person's share. At month end, only the totals matter.",
-    "breaks": "The notebook has no rules; code must reject shares that do not add up."
+    "text": "You book \"a compact rental car\". Any compact the desk hands over must start, steer and take normal fuel. One needing special fuel breaks your booking.",
+    "breaks": "A clerk warns you of a swap; Java swaps silently at runtime."
   },
   "points": [
-    "Money is a `long` in cents; `double` drifts when you split and add.",
-    "A `SplitStrategy` turns a total into shares: equal, exact, percent, and more.",
-    "The `Ledger` adds the total to the payer and subtracts each share.",
-    "`Settler` repeatedly pairs the biggest debtor with the biggest creditor."
+    "Preconditions (what callers must supply) may not get stricter in a subtype.",
+    "Postconditions (what the method guarantees) may not get weaker; no surprise exceptions either.",
+    "Compiling proves nothing about promises; run the parent's tests against every subtype.",
+    "If a subtype cannot keep a promise, change the contract or drop inheritance."
   ],
   "hero": {
-    "type": "anim",
-    "engine": "pipeline",
-    "title": "One expense, from receipt to settlement",
-    "scenario": {
-      "token": {
-        "label": "10000 cents",
-        "tone": "req"
+    "type": "seq",
+    "title": "A subtype that breaks a promise",
+    "actors": [
+      {
+        "id": "client",
+        "label": "client(queue)"
       },
-      "stages": [
-        {
-          "id": "expense",
-          "label": "Expense",
-          "sub": "payer, total, split",
-          "kind": "end"
-        },
-        {
-          "id": "split",
-          "label": "SplitStrategy",
-          "sub": "total to shares"
-        },
-        {
-          "id": "ledger",
-          "label": "Ledger",
-          "sub": "net per person"
-        },
-        {
-          "id": "settler",
-          "label": "Settler",
-          "sub": "greedy pairing"
-        },
-        {
-          "id": "out",
-          "label": "Transfers",
-          "sub": "who pays whom",
-          "kind": "end"
-        }
-      ],
-      "steps": [
-        {
-          "caption": "`ana` pays 10000 cents for three people. The expense names a payer, a total and a split.",
-          "at": "expense",
-          "slot": "top",
-          "state": {
-            "expense": "active"
-          }
-        },
-        {
-          "caption": "`Equal` divides by three. The one leftover cent goes to the first person, so shares sum exactly.",
-          "at": "split",
-          "slot": "top",
-          "token": {
-            "label": "3334 / 3333 / 3333",
-            "tone": "req"
-          },
-          "state": {
-            "expense": "done",
-            "split": "active"
-          }
-        },
-        {
-          "caption": "The ledger adds 10000 to `ana` and subtracts each share. All balances still sum to zero.",
-          "at": "ledger",
-          "slot": "top",
-          "token": {
-            "label": "+6666 −3333 −3333",
-            "tone": "ok"
-          },
-          "state": {
-            "expense": "done",
-            "split": "done",
-            "ledger": "active"
-          }
-        },
-        {
-          "caption": "A different expense: an `Exact` split whose shares miss the total throws in the strategy. The ledger never changes.",
-          "at": "split",
-          "slot": "top",
-          "token": {
-            "label": "600 ≠ 1000",
-            "tone": "err"
-          },
-          "state": {
-            "expense": "done",
-            "split": "error",
-            "ledger": "blocked"
-          }
-        },
-        {
-          "caption": "To settle, the biggest debtor pays the biggest creditor as much as one side needs.",
-          "at": "settler",
-          "slot": "top",
-          "token": {
-            "label": "max debt → max credit",
-            "tone": "req"
-          },
-          "state": {
-            "expense": "done",
-            "split": "done",
-            "ledger": "done",
-            "settler": "active"
-          }
-        },
-        {
-          "caption": "Each pairing zeroes at least one person, so n people need at most n − 1 transfers.",
-          "at": "out",
-          "slot": "top",
-          "token": {
-            "label": "transfers",
-            "tone": "ok"
-          },
-          "state": {
-            "expense": "done",
-            "split": "done",
-            "ledger": "done",
-            "settler": "done",
-            "out": "active"
-          }
-        }
-      ]
-    }
+      {
+        "id": "queue",
+        "label": "BoundedJobQueue(2)"
+      },
+      {
+        "id": "retry",
+        "label": "Retry list"
+      }
+    ],
+    "messages": [
+      {
+        "from": "client",
+        "to": "queue",
+        "label": "add(\"email\")",
+        "note": "The client was written against the parent contract: `add` keeps every job."
+      },
+      {
+        "from": "client",
+        "to": "queue",
+        "label": "add(\"invoice\")",
+        "note": "Second job fits. The bounded queue is now full."
+      },
+      {
+        "from": "client",
+        "to": "queue",
+        "label": "add(\"backup\")",
+        "note": "The override returns normally but drops the job. No exception, no log line."
+      },
+      {
+        "from": "client",
+        "to": "queue",
+        "label": "drain()",
+        "note": "The client asks for the jobs it believes are queued."
+      },
+      {
+        "from": "queue",
+        "to": "client",
+        "label": "[email, invoice]",
+        "dashed": true,
+        "note": "Three submitted, two returned. The parent's postcondition was weakened: a silent LSP break."
+      },
+      {
+        "from": "client",
+        "to": "queue",
+        "label": "offer(\"backup\")",
+        "note": "Replay with the fix: a fresh BoundedJobQueue(2) already holds email and invoice. `offer` may reject, and says so in its return value."
+      },
+      {
+        "from": "queue",
+        "to": "client",
+        "label": "false",
+        "dashed": true,
+        "note": "The queue is full, so it returns false. Rejection is now part of the promise every `JobQueue` keeps."
+      },
+      {
+        "from": "client",
+        "to": "retry",
+        "label": "add(\"backup\")",
+        "note": "The client handles false and keeps the job. Any subtype now substitutes safely."
+      }
+    ]
   },
   "code": [
     {
-      "file": "SplitDemo.java",
+      "file": "LspBroken.java",
       "lang": "java",
-      "title": "Split and record",
+      "title": "The problem",
       "run": "captured",
-      "caption": "Two good expenses and one bad one. Balances print in name order from a `TreeMap`.",
+      "caption": "A bounded subclass overrides `add` and quietly drops a job the parent promised to keep.",
       "walk": [
         {
           "lines": [
-            20,
-            22
-          ],
-          "text": "The strategy contract: given a total, say who owes how much."
-        },
-        {
-          "lines": [
-            24,
-            32
-          ],
-          "text": "`Equal` hands the leftover cents out one each, so nothing is lost."
-        },
-        {
-          "lines": [
-            34,
-            41
-          ],
-          "text": "`Exact` refuses shares that do not add up to the total."
-        },
-        {
-          "lines": [
-            45,
-            49
-          ],
-          "text": "Ask for shares first; only a valid split touches the balances."
-        },
-        {
-          "lines": [
-            44,
-            44
-          ],
-          "text": "Positive means the group owes you; negative means you owe the group."
-        },
-        {
-          "lines": [
-            8,
-            16
-          ],
-          "text": "The third expense is rejected and leaves every balance as it was."
-        }
-      ]
-    },
-    {
-      "file": "SettleDemo.java",
-      "lang": "java",
-      "title": "Settle up",
-      "run": "captured",
-      "caption": "Four net balances turned into transfers by greedy pairing.",
-      "walk": [
-        {
-          "lines": [
-            15,
-            18
-          ],
-          "text": "A `Transfer` is a value: from, to and an amount in cents."
-        },
-        {
-          "lines": [
-            26,
+            21,
             27
           ],
-          "text": "Find the biggest creditor and debtor; stop when either is missing."
-        },
-        {
-          "lines": [
-            28,
-            31
-          ],
-          "text": "Move the smaller of the two amounts, which zeroes at least one person."
+          "text": "The parent's contract: `add` keeps every job. Callers were written and tested against that."
         },
         {
           "lines": [
             36,
-            41
+            42
           ],
-          "text": "`sign` lets one method find the largest credit or the largest debt."
+          "text": "The subclass compiles and passes its own tests, so the type system raises no alarm."
         },
         {
           "lines": [
-            9,
-            11
+            44,
+            47
           ],
-          "text": "`main` settles a set of balances that sum to zero."
+          "text": "When full, the override returns normally and discards the job. The postcondition is weaker."
+        },
+        {
+          "lines": [
+            11,
+            18
+          ],
+          "text": "`runAll` trusts the contract and reports three submissions. It cannot notice the drop."
+        },
+        {
+          "lines": [
+            6,
+            9
+          ],
+          "text": "Same client, two queues. Only the subtype's run loses a job, and nothing is thrown."
+        }
+      ]
+    },
+    {
+      "file": "JobQueueDemo.java",
+      "lang": "java",
+      "title": "The fix",
+      "run": "captured",
+      "caption": "Rejection becomes part of the contract, so every queue can keep the same promise.",
+      "walk": [
+        {
+          "lines": [
+            22,
+            29
+          ],
+          "text": "The contract now admits rejection: `offer` returns false, like `java.util.Queue` does."
+        },
+        {
+          "lines": [
+            31,
+            44
+          ],
+          "text": "`ListJobQueue` holds the list. `final` methods stop subclasses bending `offer` or `drain`."
+        },
+        {
+          "lines": [
+            46,
+            48
+          ],
+          "text": "`UnboundedJobQueue` always has room, so its `offer` always returns true."
+        },
+        {
+          "lines": [
+            50,
+            57
+          ],
+          "text": "`BoundedJobQueue` validates its capacity and answers only one question: is there room?"
+        },
+        {
+          "lines": [
+            11,
+            19
+          ],
+          "text": "`submitAll` checks every result and keeps rejected jobs for retry. It works for any `JobQueue`."
+        },
+        {
+          "lines": [
+            5,
+            9
+          ],
+          "text": "Both queues go through the same client, and no job disappears without the client knowing."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Never store money as `double`; use `long` cents or `BigDecimal`.",
-    "Validate the split before touching balances, or a rejected expense leaves half an update.",
-    "Do not promise the fewest transfers: greedy pairing is simple, not always optimal."
+    "An override that throws \"not supported\" breaks callers; give that type a smaller interface instead.",
+    "An override that silently ignores input, like a full queue dropping jobs, hides data loss.",
+    "Inheriting only to reuse code creates is-a lies; prefer composition when the promises differ."
   ],
   "quiz": {
-    "q": "What does `SplitDemo` print last?",
+    "q": "`ReadOnlyStore extends Store`, and its `put` throws. The parent's `put` promises to save. What fixes the LSP break?",
     "options": [
-      "{ana=4566, ben=-5333, cy=1167}",
-      "{ana=5167, ben=-6334, cy=1167}",
-      "{ana=5166, ben=-6333, cy=1167}",
-      "{ana=5166, ben=-5333, cy=1167}"
+      "Catch the exception in every caller",
+      "ReadOnlyStore implements a read-only interface Store extends",
+      "Make put return silently instead of throwing",
+      "Mark put as @Deprecated in ReadOnlyStore"
     ],
-    "answer": 2,
-    "why": "The bad split throws before the ledger changes. `ana`'s 10000 splits 3334, 3333, 3333; then `cy`'s exact split charges 1500 and 3000.",
-    "code": "ledger.add(\"ana\", 10000, new Equal(List.of(\"ana\", \"ben\", \"cy\")));\nledger.add(\"cy\", 4500, new Exact(Map.of(\"ana\", 1500L, \"ben\", 3000L)));\n// throws: shares 600, total 1000\nledger.add(\"ben\", 1000, new Exact(Map.of(\"ana\", 600L)));",
-    "lang": "java"
+    "answer": 1,
+    "why": "A read-only type cannot keep a promise to save. Give it a smaller contract with only reads; `Store` adds `put`, so no subtype lies."
   },
-  "takeaway": "Split with a strategy, keep net balances in cents, settle greedily.",
+  "takeaway": "A subtype must keep every promise its parent made.",
   "chat": {
     "starters": [
-      "How would I add a percentage split without touching `Ledger`?",
-      "How do groups fit in when one person is in several groups?",
-      "Why is finding the minimum number of transfers hard?"
+      "Does List.of throwing on add() violate LSP?",
+      "How do preconditions and postconditions apply to Java overrides?",
+      "Is the classic square and rectangle example really an LSP problem?"
     ]
   }
 }

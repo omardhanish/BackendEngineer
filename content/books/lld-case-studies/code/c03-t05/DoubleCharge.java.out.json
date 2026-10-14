@@ -1,0 +1,11 @@
+{
+  "stdout": "check-then-act charges: 2\nputIfAbsent charges: 1\nfirst try: PROCESSING\nretry same key: PROCESSING\nafter reconcile: SUCCEEDED, charges 1",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java DoubleCharge.java",
+  "tool": "Java 17.0.17",
+  "hash": "9816cf1b12a99f25",
+  "at": "2026-10-14T08:41:05.682Z"
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "GET /orders/7\n  #1 503 at +20ms\n  wait 86ms\n  #2 TIMEOUT at +406ms\n  wait 165ms\n  #3 200 at +601ms\nPOST /orders\n  #1 503 at +20ms\nPUT /orders/7\n  #1 TIMEOUT at +300ms\n  wait 90ms\n  #2 TIMEOUT at +690ms\n  wait 187ms\n  #3 TIMEOUT at +1177ms\n  stop: total budget spent",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ApiClientCore.java",
+  "tool": "Java 17.0.17",
+  "hash": "56364640b82581a0",
+  "at": "2026-10-14T08:44:44.097Z"
+}

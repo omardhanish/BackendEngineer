@@ -1,0 +1,11 @@
+{
+  "stdout": "audit[A-7 charged 2500]\nSame instance: true\nBuild order: [FakeGateway, AuditLog, OrderService]\nStartup failed: no binding for PaymentGateway\nStartup failed: cycle Inventory -> Pricing -> Inventory",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java MiniContainerDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "0dc9bce14c910af6",
+  "at": "2026-10-12T11:23:01.201Z"
+}

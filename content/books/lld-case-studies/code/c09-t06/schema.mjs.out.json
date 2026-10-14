@@ -1,0 +1,11 @@
+{
+  "stdout": "zero-night stay -> 23514 reservation_check\nreserved above total -> 23514 room_inventory_check\nsame Idempotency-Key -> 23505 reservation_idempotency_key_key\nunknown guest -> 23503 reservation_guest_id_fkey\nroom 201 twice -> 23P01 reservation_room_id_daterange_excl\nback-to-back stay in room 201 -> accepted\n[{\"id\":\"RS-1\",\"room_id\":\"R201\",\"check_in\":\"2026-03-10\",\"check_out\":\"2026-03-13\"},{\"id\":\"RS-6\",\"room_id\":\"R201\",\"check_in\":\"2026-03-13\",\"check_out\":\"2026-03-15\"}]",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node schema.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "694f3a3985073dca",
+  "at": "2026-10-14T08:47:43.511Z"
+}

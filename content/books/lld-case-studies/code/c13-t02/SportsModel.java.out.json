@@ -1,0 +1,11 @@
+{
+  "stdout": "18:00-20:00 overlaps 19:00-20:00? true\n18:00-20:00 overlaps 20:00-21:00? false\nBK-1 C-1 18:00-20:00 P-7 120000 PENDING\nrejected: no court C-9 at Riverside Arena\nrejected: slots start on the hour\nrejected: end must be after start",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java SportsModel.java",
+  "tool": "Java 17.0.17",
+  "hash": "d6f194ffe7ff946c",
+  "at": "2026-10-14T08:33:41.013Z"
+}

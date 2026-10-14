@@ -1,0 +1,221 @@
+{
+  "title": "Movie booking domain model",
+  "idea": "The domain model splits fixed layout (Theatre, Screen, Seat) from per-show state (Show, SeatHold, Booking), with Movie as shared catalog data.",
+  "analogy": {
+    "text": "A stadium seating chart versus tonight's ticket list. The chart stays the same for years; every event gets a fresh list of who sits where.",
+    "breaks": "A SeatHold expires on its own; a paper list never does."
+  },
+  "points": [
+    "A Theatre has Screens; each Screen has a fixed list of Seats.",
+    "A Show plays one Movie on one Screen at one start time.",
+    "A SeatHold claims seats of one Show for one user until it expires.",
+    "A Booking is created from a SeatHold and carries the price in minor units."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Class diagram",
+    "nodes": [
+      {
+        "id": "theatre",
+        "label": "Theatre",
+        "sub": "id, name, screens"
+      },
+      {
+        "id": "screen",
+        "label": "Screen",
+        "sub": "id, name, seats"
+      },
+      {
+        "id": "seat",
+        "label": "Seat",
+        "sub": "id, SeatType"
+      },
+      {
+        "id": "movie",
+        "label": "Movie",
+        "sub": "id, title, durationMin"
+      },
+      {
+        "id": "show",
+        "label": "Show",
+        "sub": "startsAt, priceOf(seat)"
+      },
+      {
+        "id": "hold",
+        "label": "SeatHold",
+        "sub": "seatIds, expiresAt"
+      },
+      {
+        "id": "booking",
+        "label": "Booking",
+        "sub": "amountMinor, status"
+      },
+      {
+        "id": "status",
+        "label": "BookingStatus",
+        "sub": "enum"
+      }
+    ],
+    "edges": [
+      {
+        "from": "theatre",
+        "to": "screen",
+        "label": "has 1..*",
+        "caption": "A Theatre owns one or more Screens. Screens do not move between theatres."
+      },
+      {
+        "from": "screen",
+        "to": "seat",
+        "label": "has 1..*",
+        "caption": "A Screen owns its Seats. Each Seat has a SeatType that drives its price."
+      },
+      {
+        "from": "show",
+        "to": "screen",
+        "label": "uses 1",
+        "caption": "A Show points at exactly one Screen, so it knows which seats exist."
+      },
+      {
+        "from": "show",
+        "to": "movie",
+        "label": "plays 1",
+        "caption": "A Show plays one Movie. Many Shows can share the same Movie."
+      },
+      {
+        "from": "hold",
+        "to": "show",
+        "label": "for 1",
+        "caption": "A SeatHold belongs to one Show and lists seat ids, not Seat objects."
+      },
+      {
+        "from": "booking",
+        "to": "hold",
+        "label": "from 1",
+        "caption": "A Booking is built from one SeatHold and freezes the total price."
+      },
+      {
+        "from": "booking",
+        "to": "status",
+        "label": "has",
+        "caption": "BookingStatus is an enum. The lifecycle page turns it into a state machine."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "DomainModel.java",
+      "lang": "java",
+      "title": "The model in Java 17",
+      "run": "captured",
+      "caption": "Records for immutable data, a class for Booking because its status changes. Invariants live in constructors.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7,
+            8,
+            9,
+            10
+          ],
+          "text": "Build the fixed layout: one Movie, one Screen with three Seats, one Theatre."
+        },
+        {
+          "lines": [
+            11,
+            12,
+            13
+          ],
+          "text": "A Show joins Movie and Screen and sets a price per SeatType, in paise."
+        },
+        {
+          "lines": [
+            17,
+            18,
+            19,
+            20
+          ],
+          "text": "Create a hold with a fixed expiry and ask about it at a fixed time."
+        },
+        {
+          "lines": [
+            21,
+            22
+          ],
+          "text": "A Booking is built from the hold; the total comes from Show.priceOf."
+        },
+        {
+          "lines": [
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33
+          ],
+          "text": "Two bad inputs are refused: a seat lookup that fails and an empty hold."
+        },
+        {
+          "lines": [
+            62,
+            63,
+            64,
+            65,
+            66,
+            67,
+            68,
+            69,
+            70
+          ],
+          "text": "The compact constructor rejects empty holds and copies the list defensively."
+        },
+        {
+          "lines": [
+            72,
+            73,
+            74,
+            75,
+            76,
+            77,
+            78,
+            79,
+            80,
+            81,
+            82,
+            83,
+            84,
+            85
+          ],
+          "text": "Booking is mutable only in status; money is a long, never a double."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not store seat state on Seat; one Seat appears in many Shows.",
+    "Keep money as long minor units; double rounds 0.1 + 0.2 wrongly.",
+    "Validate in constructors so an invalid SeatHold can never exist."
+  ],
+  "quiz": {
+    "q": "What does the last line of DomainModel print?",
+    "options": [
+      "rejected: no seat Z9 in Audi 1",
+      "rejected: a hold needs at least one seat",
+      "hold expired? true",
+      "Nothing; it throws and stops"
+    ],
+    "answer": 1,
+    "why": "The second try builds a SeatHold with an empty list. Its compact constructor throws, and the catch prints the message."
+  },
+  "takeaway": "Fixed layout and per-show state are different classes; keep them apart.",
+  "chat": {
+    "starters": [
+      "Why is Show not the owner of seat states here?",
+      "When should I use a record instead of a class?",
+      "How would I model seat categories with different prices per show?"
+    ]
+  }
+}

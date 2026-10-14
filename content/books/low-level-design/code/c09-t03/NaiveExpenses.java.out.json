@@ -1,0 +1,11 @@
+{
+  "stdout": "amount 100.0, shares 99.99\nChen owes nothing, Zed owes 33.33\namount now 250.0",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java NaiveExpenses.java",
+  "tool": "Java 17.0.17",
+  "hash": "97c5b08604b01430",
+  "at": "2026-10-12T11:33:29.534Z"
+}

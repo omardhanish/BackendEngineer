@@ -1,0 +1,11 @@
+{
+  "stdout": "PASS approved order is PAID\nPASS declined order is FAILED\nPASS receipt only for O-1",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java DoublesDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "8a4254edba44c4b2",
+  "at": "2026-10-12T11:26:06.318Z"
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "PRESS       UP    UP:SENDING   DOWN:OFF\nPRESS       UP    UP:SENDING   DOWN:OFF\nSENT        UP    UP:LIT(E2)   DOWN:OFF\nPRESS       DOWN  UP:LIT(E2)   DOWN:SENDING\nSEND_FAILED DOWN  UP:LIT(E2)   DOWN:OFF       Not sent. Press again.\nPRESS       DOWN  UP:LIT(E2)   DOWN:SENDING\nSENT        DOWN  UP:LIT(E2)   DOWN:LIT\nASSIGNED    HC-1  UP:LIT(E1)   DOWN:LIT\nASSIGNED    HC-2  UP:LIT(E1)   DOWN:LIT(E1)\nARRIVED     HC-1  UP:OFF       DOWN:LIT(E1)\nARRIVED     HC-9  UP:OFF       DOWN:LIT(E1)",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node hallPanel.mjs",
+  "tool": null,
+  "hash": "80f9aaba804e24bf",
+  "at": "2026-10-14T08:39:15.328Z"
+}

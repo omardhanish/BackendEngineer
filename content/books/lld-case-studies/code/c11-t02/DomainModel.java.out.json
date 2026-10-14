@@ -1,0 +1,11 @@
+{
+  "stdout": "19:00-20:30 overlaps 20:30-22:00? false\n19:00-20:30 overlaps 20:00-21:30? true\nRV-1 C-1 T2 x3 19:00-20:30 CONFIRMED\nrejected: party of 5 does not fit T2 (4 seats)\nrejected: slot must end after it starts",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java DomainModel.java",
+  "tool": "Java 17.0.17",
+  "hash": "4e3fa84df9b88fc7",
+  "at": "2026-10-14T08:44:30.784Z"
+}

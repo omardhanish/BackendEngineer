@@ -1,0 +1,11 @@
+{
+  "stdout": "[smtp mail.corp.test] to billing@acme.test: INV-1 due 120.00\nFake recorded: [INV-1]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java InvertedDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "8ffd1c365159f0fa",
+  "at": "2026-10-12T11:28:25.800Z"
+}

@@ -1,0 +1,356 @@
+{
+  "title": "Thread pools and producer-consumer",
+  "idea": "A thread pool reuses a fixed set of worker threads fed by a task queue. Producer-consumer splits making work from doing it through a blocking queue.",
+  "points": [
+    "Creating a thread per task exhausts memory under load; a pool caps concurrent threads.",
+    "A bounded queue plus a rejection policy turns overload into a clear, early error.",
+    "`BlockingQueue.put` waits when full and `take` waits when empty: built-in backpressure.",
+    "Always `shutdown` then `awaitTermination`; a forgotten pool keeps the JVM alive."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "A producer fills a bounded queue",
+    "scenario": {
+      "tiers": [
+        [
+          "prod"
+        ],
+        [
+          "q"
+        ],
+        [
+          "w1",
+          "w2",
+          "w3"
+        ]
+      ],
+      "nodes": {
+        "prod": {
+          "label": "Producer",
+          "sub": "put(job)",
+          "kind": "service"
+        },
+        "q": {
+          "label": "Blocking queue",
+          "sub": "capacity 4",
+          "kind": "queue"
+        },
+        "w1": {
+          "label": "Worker 1",
+          "sub": "take()",
+          "kind": "server"
+        },
+        "w2": {
+          "label": "Worker 2",
+          "sub": "take()",
+          "kind": "server"
+        },
+        "w3": {
+          "label": "Worker 3",
+          "sub": "take()",
+          "kind": "server"
+        }
+      },
+      "links": [
+        [
+          "prod",
+          "q"
+        ],
+        [
+          "q",
+          "w1"
+        ],
+        [
+          "q",
+          "w2"
+        ],
+        [
+          "q",
+          "w3"
+        ]
+      ],
+      "steps": [
+        {
+          "caption": "Three workers start and call `take`. The queue is empty, so all three block without using CPU.",
+          "badge": {
+            "w1": "waiting",
+            "w2": "waiting",
+            "w3": "waiting"
+          }
+        },
+        {
+          "caption": "The producer puts jobs 1 to 4. The queue now holds four jobs.",
+          "send": [
+            {
+              "from": "prod",
+              "to": "q",
+              "label": "j1..j4",
+              "tone": "req"
+            }
+          ],
+          "items": {
+            "q": [
+              "j1",
+              "j2",
+              "j3",
+              "j4"
+            ]
+          }
+        },
+        {
+          "caption": "Waiting workers wake and each takes one job from the head of the queue.",
+          "send": [
+            {
+              "from": "q",
+              "to": "w1",
+              "label": "j1",
+              "tone": "info"
+            },
+            {
+              "from": "q",
+              "to": "w2",
+              "label": "j2",
+              "tone": "info"
+            },
+            {
+              "from": "q",
+              "to": "w3",
+              "label": "j3",
+              "tone": "info"
+            }
+          ],
+          "items": {
+            "q": [
+              "j4"
+            ]
+          },
+          "state": {
+            "w1": "busy",
+            "w2": "busy",
+            "w3": "busy"
+          },
+          "badge": {
+            "w1": null,
+            "w2": null,
+            "w3": null
+          }
+        },
+        {
+          "caption": "The producer is faster and fills the queue again. Its next `put` blocks: that is backpressure.",
+          "send": [
+            {
+              "from": "prod",
+              "to": "q",
+              "label": "j5..j7",
+              "tone": "req"
+            }
+          ],
+          "items": {
+            "q": [
+              "j4",
+              "j5",
+              "j6",
+              "j7"
+            ]
+          },
+          "state": {
+            "prod": "hot"
+          },
+          "badge": {
+            "prod": "blocked"
+          }
+        },
+        {
+          "caption": "Worker 1 finishes and takes j4. A slot frees up, so the producer's blocked put of j8 completes.",
+          "send": [
+            {
+              "from": "q",
+              "to": "w1",
+              "label": "j4",
+              "tone": "info"
+            },
+            {
+              "from": "prod",
+              "to": "q",
+              "label": "j8",
+              "tone": "req"
+            }
+          ],
+          "items": {
+            "q": [
+              "j5",
+              "j6",
+              "j7",
+              "j8"
+            ]
+          },
+          "state": {
+            "prod": "ok"
+          },
+          "badge": {
+            "prod": null
+          }
+        },
+        {
+          "caption": "Workers drain j5 to j8. With no work left, the producer puts one poison pill per worker.",
+          "send": [
+            {
+              "from": "prod",
+              "to": "q",
+              "label": "stop x3",
+              "tone": "warn"
+            }
+          ],
+          "items": {
+            "q": [
+              "stop",
+              "stop",
+              "stop"
+            ]
+          }
+        },
+        {
+          "caption": "All workers have returned. `awaitTermination` now succeeds and the totals are final.",
+          "items": {
+            "q": []
+          },
+          "state": {
+            "w1": "ok",
+            "w2": "ok",
+            "w3": "ok"
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "BoundedPoolDemo.java",
+      "lang": "java",
+      "title": "Bounded pool rejects overload",
+      "run": "captured",
+      "caption": "Two workers and two queue slots. A latch keeps workers busy, so the fifth job finds the pool full.",
+      "walk": [
+        {
+          "lines": [
+            13,
+            17
+          ],
+          "text": "Build the pool yourself: fixed threads, a bounded queue, and an explicit rejection policy."
+        },
+        {
+          "lines": [
+            22,
+            25
+          ],
+          "text": "Each job is a `Callable`; `submit` returns a `Future` for its result."
+        },
+        {
+          "lines": [
+            26,
+            27
+          ],
+          "text": "Jobs 1 and 2 go straight to new workers; 3 and 4 wait in the queue."
+        },
+        {
+          "lines": [
+            28,
+            30
+          ],
+          "text": "Job 5 has no worker and no slot, so `AbortPolicy` throws instead of growing memory."
+        },
+        {
+          "lines": [
+            33,
+            35
+          ],
+          "text": "`Future.get` waits for each result, so they come back in submit order."
+        },
+        {
+          "lines": [
+            37,
+            39
+          ],
+          "text": "`shutdown` refuses new jobs; `awaitTermination` waits for running ones to finish."
+        }
+      ]
+    },
+    {
+      "file": "JobQueueDemo.java",
+      "lang": "java",
+      "title": "Producer-consumer queue",
+      "run": "captured",
+      "caption": "One producer and three consumers share a queue of four slots. Every job is handled exactly once.",
+      "walk": [
+        {
+          "lines": [
+            14,
+            18
+          ],
+          "text": "A 4-slot queue makes the producer wait. The pool has one extra thread: the producer is a task."
+        },
+        {
+          "lines": [
+            20,
+            27
+          ],
+          "text": "`put` blocks while full. After 20 jobs it sends one poison pill per consumer."
+        },
+        {
+          "lines": [
+            31,
+            36
+          ],
+          "text": "`take` blocks while empty. Each job goes to exactly one consumer."
+        },
+        {
+          "lines": [
+            33,
+            33
+          ],
+          "text": "On the poison pill the consumer returns, so its pool thread becomes free."
+        },
+        {
+          "lines": [
+            37,
+            39
+          ],
+          "text": "Restore the interrupt flag rather than swallow it, so the pool can stop the thread."
+        },
+        {
+          "lines": [
+            42,
+            45
+          ],
+          "text": "Wait for termination, then print totals that do not depend on which thread ran what."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "`Executors.newFixedThreadPool` uses an unbounded queue: a slow consumer grows memory until it fails.",
+    "Sending one poison pill for three consumers: two consumers block forever and the pool never ends.",
+    "Ignoring the `Future` from `submit`: a task's exception is stored there and silently lost."
+  ],
+  "quiz": {
+    "q": "Pool: 2 threads, a queue of 2, `AbortPolicy`. Six jobs that block are submitted. What happens?",
+    "options": [
+      "All six run; the pool adds threads",
+      "Four accepted; jobs 5 and 6 throw a rejection",
+      "Two accepted; the rest throw a rejection",
+      "The fifth `submit` call blocks until a slot frees"
+    ],
+    "answer": 1,
+    "why": "Two jobs occupy the workers and two fill the queue. With the maximum size reached, `AbortPolicy` throws `RejectedExecutionException` for each further job.",
+    "lang": "java"
+  },
+  "takeaway": "Bound the threads, bound the queue, and decide what happens when both are full.",
+  "chat": {
+    "starters": [
+      "How do I choose the pool size for CPU-bound vs I/O-bound work?",
+      "When should I use CallerRunsPolicy instead of AbortPolicy?",
+      "Is a poison pill better than interrupting the consumers?"
+    ]
+  }
+}

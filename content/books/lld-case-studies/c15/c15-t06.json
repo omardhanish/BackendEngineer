@@ -1,0 +1,195 @@
+{
+  "title": "Logging in an Express service",
+  "idea": "In a Node.js service the logger becomes middleware: each request gets a child logger carrying its request id, and every line is one JSON object.",
+  "points": [
+    "A child logger adds fields like `requestId` to every line it writes.",
+    "One access line per completed request is logged on `finish`; aborted ones need `close`.",
+    "Error middleware logs the failure once and returns a safe 500 body.",
+    "Interview follow-ups: ship lines centrally, sample DEBUG, carry ids with `AsyncLocalStorage`."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "One failing request, end to end",
+    "actors": [
+      {
+        "id": "client",
+        "label": "Client"
+      },
+      {
+        "id": "mw",
+        "label": "Request middleware"
+      },
+      {
+        "id": "route",
+        "label": "Route handler"
+      },
+      {
+        "id": "err",
+        "label": "Error middleware"
+      },
+      {
+        "id": "log",
+        "label": "Logger + appender"
+      }
+    ],
+    "messages": [
+      {
+        "from": "client",
+        "to": "mw",
+        "label": "GET /boom, X-Request-Id",
+        "note": "A client may send its own request id. The service reuses a short, safe id; otherwise it makes one."
+      },
+      {
+        "from": "mw",
+        "to": "route",
+        "label": "req.log = child",
+        "note": "The middleware binds the id into a child logger and attaches it to `req`."
+      },
+      {
+        "from": "route",
+        "to": "err",
+        "label": "throw Error",
+        "note": "Express forwards the thrown error to the error middleware; Express 5 also does this for rejected promises from async handlers."
+      },
+      {
+        "from": "err",
+        "to": "log",
+        "label": "error line",
+        "note": "The error is logged once, with the request id, as one JSON line."
+      },
+      {
+        "from": "err",
+        "to": "client",
+        "label": "500 + requestId",
+        "dashed": true,
+        "note": "The client gets no stack trace, only an id it can quote to support."
+      },
+      {
+        "from": "mw",
+        "to": "log",
+        "label": "request done",
+        "note": "On `finish`, the access line records method, path and status."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "service.mjs",
+      "lang": "js",
+      "title": "Logger as middleware",
+      "run": "captured",
+      "caption": "A small JSON logger with levels, child loggers and redaction, wired into Express. Lines go to an in-memory appender so the run prints them. Redaction is by key for brevity; production code should allow-list fields.",
+      "walk": [
+        {
+          "lines": [
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "text": "Levels, a memory appender, a fixed clock and a redaction list."
+        },
+        {
+          "lines": [
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18
+          ],
+          "text": "Children share the level state but add bound fields such as `requestId`."
+        },
+        {
+          "lines": [
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30
+          ],
+          "text": "Middleware reuses a short, safe request id or makes one, then logs one access line on finish."
+        },
+        {
+          "lines": [
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38
+          ],
+          "text": "`express.json` runs after `req.log` exists; the route validates with zod and hides DEBUG at INFO."
+        },
+        {
+          "lines": [
+            40,
+            41,
+            42,
+            43,
+            44,
+            45
+          ],
+          "text": "An admin route changes the shared level at runtime, accepting only known levels."
+        },
+        {
+          "lines": [
+            46,
+            47,
+            48,
+            49
+          ],
+          "text": "Error middleware logs the message once and hides details from the client."
+        },
+        {
+          "lines": [
+            58,
+            59,
+            60,
+            61,
+            62,
+            63,
+            64
+          ],
+          "text": "Happy path, 400, 500, a bad and a good level change, then a repeat."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Key-based redaction misses nested fields and secrets in messages; prefer an allow-list of fields.",
+    "Do not log the same error in the route and the error middleware.",
+    "Protect the log-level endpoint; anyone who can set DEBUG can flood your disks."
+  ],
+  "quiz": {
+    "q": "Which `requestId` appears on the `unhandled error` line?",
+    "options": [
+      "req-3",
+      "edge-42",
+      "req-2",
+      "No requestId field"
+    ],
+    "answer": 1,
+    "why": "The client sent `X-Request-Id: edge-42`. The middleware reuses an incoming id, and the child logger stamps it on every line for that request."
+  },
+  "takeaway": "One JSON line per event, a request id on every line, secrets never.",
+  "chat": {
+    "starters": [
+      "How would I carry the request id into async code without passing req around?",
+      "Interview follow-up: how do logs from 50 servers end up searchable in one place?",
+      "Interview follow-up: how do I sample DEBUG logs for 1 percent of requests?"
+    ]
+  }
+}

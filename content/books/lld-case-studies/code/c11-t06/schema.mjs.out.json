@@ -1,0 +1,11 @@
+{
+  "stdout": "overlap on T2   23P01 no_overlap\nback-to-back    ok\nparty of 0      23514 reservation_party_size_check\nunknown table   23503 reservation_table_id_fkey\nsame key twice  23505 reservation_idempotency_key_key\ncancel, rebook  ok\n[{\"id\":\"RV-1\",\"table_id\":\"T2\",\"status\":\"CANCELLED\"},{\"id\":\"RV-3\",\"table_id\":\"T2\",\"status\":\"CONFIRMED\"},{\"id\":\"RV-7\",\"table_id\":\"T2\",\"status\":\"CONFIRMED\"}]",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node schema.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "1a46553a3bd4dc11",
+  "at": "2026-10-14T10:25:07.041Z"
+}

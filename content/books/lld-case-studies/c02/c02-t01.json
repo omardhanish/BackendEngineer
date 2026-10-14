@@ -1,0 +1,176 @@
+{
+  "title": "Parking lot requirements",
+  "idea": "Scoping a parking lot system means fixing the actors, the entry, pay and exit use cases, which vehicles fit which spots, and what v1 leaves out.",
+  "points": [
+    "Drivers take a ticket at entry, pay, then leave through an exit gate.",
+    "The core rule: one spot holds at most one vehicle at a time.",
+    "Each vehicle type fits only some spot types; a truck needs LARGE.",
+    "Assume several floors, hundreds of spots, and several gates working at once."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Who does what in v1",
+    "nodes": [
+      {
+        "id": "driver",
+        "label": "Driver",
+        "sub": "car, bike or truck"
+      },
+      {
+        "id": "entry",
+        "label": "Take ticket",
+        "sub": "spot assigned at gate"
+      },
+      {
+        "id": "pay",
+        "label": "Pay fee",
+        "sub": "per started hour"
+      },
+      {
+        "id": "exit",
+        "label": "Exit lot",
+        "sub": "barrier opens if paid"
+      },
+      {
+        "id": "board",
+        "label": "Free-spot board",
+        "sub": "counts per spot type"
+      },
+      {
+        "id": "system",
+        "label": "System",
+        "sub": "gates and boards"
+      },
+      {
+        "id": "staff",
+        "label": "Attendant",
+        "sub": "lost tickets"
+      },
+      {
+        "id": "out",
+        "label": "Out of scope",
+        "sub": "reservations, passes, EV"
+      }
+    ],
+    "edges": [
+      {
+        "from": "driver",
+        "to": "entry",
+        "caption": "A driver arrives at an entry gate. The gate issues a ticket with an assigned spot."
+      },
+      {
+        "from": "entry",
+        "to": "pay",
+        "caption": "Before leaving, the driver pays for the stay. The fee depends on vehicle type and time."
+      },
+      {
+        "from": "pay",
+        "to": "exit",
+        "caption": "The exit gate opens only for a paid ticket. The spot becomes free again."
+      },
+      {
+        "from": "system",
+        "to": "board",
+        "caption": "The system is an actor too: it keeps free-spot counts on the display boards."
+      },
+      {
+        "from": "staff",
+        "to": "pay",
+        "label": "lost ticket",
+        "dashed": true,
+        "caption": "An attendant handles a lost ticket and charges a fixed lost-ticket fee."
+      },
+      {
+        "from": "driver",
+        "to": "out",
+        "dashed": true,
+        "caption": "Advance booking, monthly passes and EV charging wait for later. Say the cut out loud."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "ParkingScope.java",
+      "lang": "java",
+      "title": "Use cases and fit rules",
+      "run": "captured",
+      "caption": "The scope as code: each use case has an actor and a v1 flag, and each vehicle type lists the spots it may use.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7,
+            8
+          ],
+          "text": "Print every use case with its actor, tagged v1 or later."
+        },
+        {
+          "lines": [
+            9,
+            10,
+            11
+          ],
+          "text": "Print the fit rule: which spot types each vehicle type may use."
+        },
+        {
+          "lines": [
+            15
+          ],
+          "text": "Three actors: the driver, the attendant, and the system itself."
+        },
+        {
+          "lines": [
+            19,
+            20,
+            21,
+            22
+          ],
+          "text": "A bike fits anywhere, a car needs COMPACT or LARGE, a truck needs LARGE."
+        },
+        {
+          "lines": [
+            29,
+            30,
+            31,
+            32,
+            33
+          ],
+          "text": "Five use cases make v1, including lost tickets for the attendant."
+        },
+        {
+          "lines": [
+            34,
+            35,
+            36
+          ],
+          "text": "Reservations, passes and EV charging are listed, so the cut is visible."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Agree on the fit rule early; it drives allocation, pricing and the schema.",
+    "State traffic and size numbers as assumptions, not as measured facts.",
+    "Name lost tickets and failed payments now; they shape the ticket lifecycle."
+  ],
+  "quiz": {
+    "q": "Where should a spot be chosen in the v1 parking lot?",
+    "options": [
+      "By the driver, who parks in any free spot",
+      "At the entry gate, when the ticket is issued",
+      "At the exit gate, when the fee is paid",
+      "In advance, through a reservation screen"
+    ],
+    "answer": 1,
+    "why": "Assigning at entry lets the system enforce the fit rule and one vehicle per spot, and keeps free counts exact. Reservations are out of scope."
+  },
+  "takeaway": "Fix actors, use cases, fit rules and cuts before drawing classes.",
+  "chat": {
+    "starters": [
+      "Should drivers choose their own spot instead of the gate assigning one?",
+      "How should I price a lost ticket in an interview answer?",
+      "Which scale assumptions are worth stating for a parking lot?"
+    ]
+  }
+}

@@ -1,0 +1,202 @@
+{
+  "title": "Thread safety and immutability",
+  "idea": "A class is thread-safe when every caller sees correct results however threads interleave. The cheapest way there is state nobody can change.",
+  "analogy": {
+    "text": "A whiteboard in a shared office gets half-erased sums when two people edit at once. A printed notice can be read by everyone; a change means printing a new one.",
+    "breaks": "Printing costs paper; new Java objects cost little but still allocate."
+  },
+  "points": [
+    "Races need three things: shared data, mutation, and no coordination. Remove any one.",
+    "Check-then-act breaks when another thread changes state between the check and the act.",
+    "`synchronized` makes check-and-act atomic; `volatile` shows writes but leaves `n++` non-atomic.",
+    "Immutable objects need no lock: final fields, defensive copies, changes return new objects."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "Two withdrawals race on one balance",
+    "actors": [
+      {
+        "id": "a",
+        "label": "Thread A"
+      },
+      {
+        "id": "w",
+        "label": "Wallet balance"
+      },
+      {
+        "id": "b",
+        "label": "Thread B"
+      }
+    ],
+    "messages": [
+      {
+        "from": "a",
+        "to": "w",
+        "label": "read 100: is 100 >= 80?",
+        "note": "A checks the balance. It passes, so A decides to pay out 80."
+      },
+      {
+        "from": "b",
+        "to": "w",
+        "label": "read 100: is 100 >= 80?",
+        "note": "Before A writes, B checks the same unchanged balance. It also passes."
+      },
+      {
+        "from": "b",
+        "to": "w",
+        "label": "write 100 - 80 = 20",
+        "note": "B pays out 80. The balance is now 20."
+      },
+      {
+        "from": "a",
+        "to": "w",
+        "label": "write 20 - 80 = -60",
+        "note": "A acts on its old decision. The wallet pays 160 from 100."
+      },
+      {
+        "from": "a",
+        "to": "w",
+        "label": "lock; check 100; write 20",
+        "dashed": true,
+        "note": "With `synchronized`, A holds the lock from check to write. B cannot check in between."
+      },
+      {
+        "from": "b",
+        "to": "w",
+        "label": "lock; check 20: rejected",
+        "dashed": true,
+        "note": "B checks only after A finishes, sees 20 and is refused. The invariant holds."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "RaceDemo.java",
+      "lang": "java",
+      "title": "The race, then the lock",
+      "run": "captured",
+      "caption": "Latches force the unlucky timing that production hits rarely. The unsafe wallet overpays; the synchronized one cannot.",
+      "walk": [
+        {
+          "lines": [
+            8,
+            11
+          ],
+          "text": "Thread A passes the check, then pauses before writing. Real schedulers do this at random."
+        },
+        {
+          "lines": [
+            12,
+            16
+          ],
+          "text": "Thread B runs a full withdrawal inside A's gap, against the same unchanged balance."
+        },
+        {
+          "lines": [
+            40,
+            46
+          ],
+          "text": "Check and act are two separate steps with nothing guarding the gap between them."
+        },
+        {
+          "lines": [
+            56,
+            62
+          ],
+          "text": "One `synchronized` method makes check and act indivisible; a second caller waits for the lock."
+        },
+        {
+          "lines": [
+            63,
+            64
+          ],
+          "text": "Getters lock too, for visibility. A `volatile` field also gives visibility, but `n++` on it still races."
+        },
+        {
+          "lines": [
+            21,
+            26
+          ],
+          "text": "Whichever thread wins, exactly one withdrawal succeeds, so only counts are printed."
+        }
+      ]
+    },
+    {
+      "file": "ImmutableDemo.java",
+      "lang": "java",
+      "title": "Immutable value, atomic swap",
+      "run": "captured",
+      "caption": "An immutable record shared by four threads. Updates build new objects and swap the reference atomically.",
+      "walk": [
+        {
+          "lines": [
+            34,
+            39
+          ],
+          "text": "The compact constructor validates input and freezes the list with `List.copyOf`."
+        },
+        {
+          "lines": [
+            8,
+            11
+          ],
+          "text": "The caller mutates its own list later; the config kept its own copy."
+        },
+        {
+          "lines": [
+            12,
+            16
+          ],
+          "text": "The accessor returns the unmodifiable copy, so nobody can change state through it."
+        },
+        {
+          "lines": [
+            41,
+            43
+          ],
+          "text": "A change returns a new object. Old snapshots stay valid for any thread reading them."
+        },
+        {
+          "lines": [
+            18,
+            24
+          ],
+          "text": "The only shared mutable thing is one reference, swapped with `updateAndGet`."
+        },
+        {
+          "lines": [
+            28,
+            30
+          ],
+          "text": "After `join`, no update was lost and the first version is untouched."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Making fields `final` but storing the caller's `ArrayList`: the caller can still change your state.",
+    "Locking the setter but not the getter: readers on other threads may see stale values.",
+    "Treating a record as deeply immutable: a record holding a mutable list is only shallowly immutable."
+  ],
+  "quiz": {
+    "q": "Four threads each call this 1,000 times on one shared instance. Which statement is true?",
+    "code": "final class Hits {\n    private volatile int n;\n    void hit() { n++; }\n    int get() { return n; }\n}",
+    "lang": "java",
+    "options": [
+      "Always 4000: `volatile` makes `n++` atomic",
+      "Possibly under 4000: `n++` is read, add, write",
+      "Throws `ConcurrentModificationException` on collision",
+      "4000 only because the class is `final`"
+    ],
+    "answer": 1,
+    "why": "`volatile` makes each write visible, not atomic. `n++` is read, add, write: two threads can read the same value and lose an update."
+  },
+  "takeaway": "Share nothing mutable; when you must, guard the whole check-then-act with one lock.",
+  "chat": {
+    "starters": [
+      "How do I make a class with a list field truly immutable?",
+      "Why does volatile not fix a lost update on n++?",
+      "When is an immutable copy-on-write object too slow?"
+    ]
+  }
+}

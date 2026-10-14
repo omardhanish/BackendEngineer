@@ -1,0 +1,250 @@
+{
+  "title": "Frontend components, state, API client",
+  "idea": "Frontend LLD decides the screens, which component owns each piece of state, and one API client that handles errors, retries and the Idempotency-Key.",
+  "points": [
+    "The page component loads data; display children like SlotCard only render props.",
+    "Server data, form input and request status are separate state, each owned once.",
+    "One reducer, a pure function of state and event, owns a screen's steps.",
+    "The client retries only transient failures and keeps one key per intent."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Booking screen component tree",
+    "nodes": [
+      {
+        "id": "page",
+        "label": "DoctorPage",
+        "sub": "route /doctors/:id"
+      },
+      {
+        "id": "reducer",
+        "label": "screen reducer",
+        "sub": "state + event → next"
+      },
+      {
+        "id": "hook",
+        "label": "useSlots",
+        "sub": "data, loading, error"
+      },
+      {
+        "id": "list",
+        "label": "SlotList",
+        "sub": "empty and error views"
+      },
+      {
+        "id": "card",
+        "label": "SlotCard",
+        "sub": "time, fee"
+      },
+      {
+        "id": "btn",
+        "label": "BookSlotButton",
+        "sub": "phase, key"
+      },
+      {
+        "id": "client",
+        "label": "apiClient",
+        "sub": "errors, retries, key"
+      },
+      {
+        "id": "server",
+        "label": "REST API",
+        "sub": "Express service"
+      }
+    ],
+    "edges": [
+      {
+        "from": "page",
+        "to": "hook",
+        "label": "owns",
+        "caption": "DoctorPage calls `useSlots`, which holds the server data and its loading and error flags."
+      },
+      {
+        "from": "page",
+        "to": "reducer",
+        "label": "owns",
+        "caption": "DoctorPage owns the screen reducer: a pure function from state and event to the next state."
+      },
+      {
+        "from": "page",
+        "to": "list",
+        "caption": "SlotList gets slots as props. Its loading, empty and error views are designed before the happy path."
+      },
+      {
+        "from": "list",
+        "to": "card",
+        "caption": "Each SlotCard shows one slot and keeps no state of its own."
+      },
+      {
+        "from": "card",
+        "to": "btn",
+        "caption": "BookSlotButton owns only its request phase and its Idempotency-Key."
+      },
+      {
+        "from": "hook",
+        "to": "client",
+        "label": "GET",
+        "caption": "Loading slots goes through the client, which retries 5xx and network errors."
+      },
+      {
+        "from": "btn",
+        "to": "client",
+        "label": "POST",
+        "caption": "Booking uses the same client; every retry sends the same key."
+      },
+      {
+        "from": "client",
+        "to": "server",
+        "caption": "The client is the only code that knows URLs, headers and the error shape."
+      },
+      {
+        "from": "btn",
+        "to": "reducer",
+        "label": "dispatch",
+        "caption": "On success the button calls `onBooked`, which dispatches `booked`; DoctorPage then routes to the confirmation page."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "apiClient.mjs",
+      "lang": "js",
+      "title": "API client with retries",
+      "run": "browser",
+      "caption": "Pure client logic against a fake server, so it runs in the page. The wait is printed, not slept.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7,
+            8
+          ],
+          "text": "One key per call, reused by every retry; the caller can pass its own."
+        },
+        {
+          "lines": [
+            11,
+            12,
+            13
+          ],
+          "text": "A thrown fetch becomes status 0, a network error, like any other result."
+        },
+        {
+          "lines": [
+            14,
+            15,
+            16
+          ],
+          "text": "Any 2xx is success; the UI gets data, never a raw response."
+        },
+        {
+          "lines": [
+            17,
+            18,
+            19,
+            20
+          ],
+          "text": "Only network errors and 5xx retry; a 4xx returns at once."
+        },
+        {
+          "lines": [
+            21,
+            22
+          ],
+          "text": "Exponential backoff doubles the wait; production adds random jitter."
+        },
+        {
+          "lines": [
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42
+          ],
+          "text": "The fake server stores the booking, then loses the first reply."
+        },
+        {
+          "lines": [
+            45,
+            46,
+            47,
+            48,
+            49
+          ],
+          "text": "Load slots, book SL-1 through a lost reply, then hit a taken slot."
+        }
+      ]
+    },
+    {
+      "file": "BookSlotButton.jsx",
+      "lang": "js",
+      "title": "BookSlotButton component",
+      "run": "static",
+      "illustrative": true,
+      "caption": "A React component that owns one request's state. Not run here.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6
+          ],
+          "text": "One Idempotency-Key per booking intent, kept across re-renders and manual retries."
+        },
+        {
+          "lines": [
+            10,
+            11
+          ],
+          "text": "Ignore clicks while submitting, then mark the request in flight."
+        },
+        {
+          "lines": [
+            14
+          ],
+          "text": "Success hands the appointment to the parent; this component stores nothing more."
+        },
+        {
+          "lines": [
+            15,
+            16,
+            17
+          ],
+          "text": "A taken slot and a failure get different messages and next steps."
+        },
+        {
+          "lines": [
+            22
+          ],
+          "text": "The disabled button is the visible guard; the key is the real one."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not copy server data into many components; keep one owner and pass props.",
+    "Never retry a POST without an Idempotency-Key; a lost reply becomes a double booking.",
+    "Never auto-retry a 409; show the user what to do next."
+  ],
+  "quiz": {
+    "q": "In the run, what does book SL-1 finally return?",
+    "options": [
+      "An error: NETWORK, no retry",
+      "ok with AP-1, after one retry",
+      "ok with AP-2, after one retry",
+      "An error: SLOT_TAKEN on the retry"
+    ],
+    "answer": 1,
+    "why": "The server stored AP-1 under key-1 before the reply was lost. The retry sends key-1 again, so the server replays AP-1 with 200."
+  },
+  "takeaway": "One owner per piece of state; one client for every request.",
+  "chat": {
+    "starters": [
+      "Should I use a library like React Query instead of a custom hook?",
+      "When is an optimistic update safe for a booking?",
+      "How do I show that someone else just took a slot?"
+    ]
+  }
+}

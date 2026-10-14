@@ -1,0 +1,358 @@
+{
+  "title": "Double charges and refund races",
+  "idea": "A double charge happens when two requests with one Idempotency-Key both see it as new; the fix claims the key atomically and updates refund totals with compare-and-set.",
+  "analogy": {
+    "text": "A ticket slot that fits one ticket. Two people push copies of the same ticket at once; the slot takes one, and the other bounces back.",
+    "breaks": "A slot never times out; a PROCESSING payment must be reconciled."
+  },
+  "points": [
+    "Check-then-act on the key map lets two threads both charge.",
+    "`putIfAbsent` claims the key atomically; the loser sees PROCESSING and stops.",
+    "Refund totals use `compareAndSet`: re-read and retry when another refund wins.",
+    "A timeout stays PROCESSING; a reconciler asks the gateway for the truth."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "lanes",
+    "title": "A double-click, one Idempotency-Key",
+    "scenario": {
+      "lanes": [
+        {
+          "id": "a",
+          "label": "Request A",
+          "kind": "area",
+          "hint": "key k-1"
+        },
+        {
+          "id": "b",
+          "label": "Request B",
+          "kind": "area",
+          "hint": "key k-1"
+        },
+        {
+          "id": "map",
+          "label": "Key map",
+          "kind": "area"
+        },
+        {
+          "id": "gw",
+          "label": "Gateway",
+          "kind": "area",
+          "hint": "charges made"
+        }
+      ],
+      "tokens": {
+        "ca": {
+          "label": "k-1 seen?",
+          "tone": "sync"
+        },
+        "cb": {
+          "label": "k-1 seen?",
+          "tone": "sync"
+        },
+        "na": {
+          "label": "no",
+          "tone": "io"
+        },
+        "nb": {
+          "label": "no",
+          "tone": "io"
+        },
+        "ka": {
+          "label": "k-1: A",
+          "tone": "micro"
+        },
+        "kb": {
+          "label": "k-1: B",
+          "tone": "micro"
+        },
+        "c1": {
+          "label": "charge 1",
+          "tone": "macro"
+        },
+        "c2": {
+          "label": "charge 2",
+          "tone": "timer"
+        },
+        "pa": {
+          "label": "putIfAbsent",
+          "tone": "sync"
+        },
+        "pb": {
+          "label": "putIfAbsent",
+          "tone": "sync"
+        },
+        "own": {
+          "label": "k-1: PROCESSING",
+          "tone": "micro"
+        },
+        "back": {
+          "label": "in progress",
+          "tone": "neutral"
+        }
+      },
+      "steps": [
+        {
+          "caption": "Unsafe version. A double-click sends two requests with key k-1. Both ask whether k-1 is known.",
+          "at": {
+            "a": [
+              "ca"
+            ],
+            "b": [
+              "cb"
+            ]
+          }
+        },
+        {
+          "caption": "The map is still empty, so both get no. Neither knows about the other.",
+          "at": {
+            "a": [
+              "na"
+            ],
+            "b": [
+              "nb"
+            ]
+          }
+        },
+        {
+          "caption": "A records k-1 and calls the gateway.",
+          "at": {
+            "b": [
+              "nb"
+            ],
+            "map": [
+              "ka"
+            ],
+            "gw": [
+              "c1"
+            ]
+          },
+          "active": "c1"
+        },
+        {
+          "caption": "B acts on its stale no, overwrites the key and charges too. The customer pays twice.",
+          "at": {
+            "map": [
+              "kb"
+            ],
+            "gw": [
+              "c1",
+              "c2"
+            ]
+          },
+          "active": "c2"
+        },
+        {
+          "caption": "Safe version. Both requests call `putIfAbsent` on k-1 at the same moment.",
+          "at": {
+            "a": [
+              "pa"
+            ],
+            "b": [
+              "pb"
+            ]
+          }
+        },
+        {
+          "caption": "The map applies one call at a time for k-1. A's call writes PROCESSING and gets null back.",
+          "at": {
+            "b": [
+              "pb"
+            ],
+            "map": [
+              "own"
+            ]
+          },
+          "active": "own"
+        },
+        {
+          "caption": "Only the call that got null goes on to charge.",
+          "at": {
+            "b": [
+              "pb"
+            ],
+            "map": [
+              "own"
+            ],
+            "gw": [
+              "c1"
+            ]
+          },
+          "active": "c1"
+        },
+        {
+          "caption": "B's call returns the existing PROCESSING value. B reports in progress and never charges.",
+          "at": {
+            "b": [
+              "back"
+            ],
+            "map": [
+              "own"
+            ],
+            "gw": [
+              "c1"
+            ]
+          },
+          "active": "back"
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "DoubleCharge.java",
+      "lang": "java",
+      "title": "Prove the double charge",
+      "run": "captured",
+      "caption": "A barrier forces both requests to collide every run, so the race shows up deterministically.",
+      "walk": [
+        {
+          "lines": [
+            7,
+            8
+          ],
+          "text": "Run the same double-click race twice: unsafe, then with `putIfAbsent`."
+        },
+        {
+          "lines": [
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "text": "Edge case: the charge times out, the retry is a replay, then reconcile settles it."
+        },
+        {
+          "lines": [
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25
+          ],
+          "text": "Two threads, one key, and a barrier; join both before reading the count."
+        },
+        {
+          "lines": [
+            34,
+            35,
+            36
+          ],
+          "text": "Safe: only the call that gets null from `putIfAbsent` goes on to charge."
+        },
+        {
+          "lines": [
+            37,
+            38,
+            39,
+            40,
+            41,
+            42
+          ],
+          "text": "Unsafe: both check, wait for each other, then both claim and charge."
+        },
+        {
+          "lines": [
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55
+          ],
+          "text": "`pay` claims the key once. A timeout leaves PROCESSING, and replays return it."
+        },
+        {
+          "lines": [
+            57,
+            58,
+            59
+          ],
+          "text": "`replace` swaps only from PROCESSING, so reconcile never overwrites a final status."
+        }
+      ]
+    },
+    {
+      "file": "RefundGuard.java",
+      "lang": "java",
+      "title": "Refunds with compare-and-set",
+      "run": "captured",
+      "caption": "Two agents refund 30000 each from a 50000 payment at the same moment.",
+      "walk": [
+        {
+          "lines": [
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21
+          ],
+          "text": "Start both agents, count accepted refunds, and return the refunded total."
+        },
+        {
+          "lines": [
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38
+          ],
+          "text": "Unsafe: read, wait, check, write. Both pass the check on a stale read."
+        },
+        {
+          "lines": [
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54
+          ],
+          "text": "CAS: write only if the total is still what you read; otherwise re-read."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Never check `containsKey` then `put`; claim the key with `putIfAbsent`.",
+    "Never call the gateway while holding a lock or inside a map update; I/O blocks others.",
+    "A request that finds PROCESSING must poll or wait, never charge again."
+  ],
+  "quiz": {
+    "q": "What is the first line RefundGuard prints?",
+    "options": [
+      "accepted 1, unsafe refunded: 30000",
+      "accepted 2, unsafe refunded: 30000",
+      "It changes from run to run",
+      "accepted 2, unsafe refunded: 60000"
+    ],
+    "answer": 3,
+    "why": "The barrier makes both agents read 0 before checking. Both pass the 50000 limit check and both add 30000."
+  },
+  "takeaway": "Claim keys and refund totals atomically, and reconcile timeouts instead of guessing.",
+  "chat": {
+    "starters": [
+      "Why does a ConcurrentHashMap not stop the first race?",
+      "What should the second request return while the first is PROCESSING?",
+      "How often should a reconciler poll the gateway?"
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "201 {id: AP-1, status: BOOKED}\n409 {error: SLOT_TAKEN}\n400 {error: VALIDATION}",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java Layers.java",
+  "tool": "Java 17.0.17",
+  "hash": "468d8b245380893b",
+  "at": "2026-10-14T08:37:33.747Z"
+}

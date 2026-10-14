@@ -1,0 +1,11 @@
+{
+  "stdout": "parallel refunds accepted: 1\nrefund 20000 more: ok\nrefund 1 more: refused\nrefund a PROCESSING payment: refused\nwebhook SUCCEEDED, rows: 1\nsame webhook again, rows: 0\nP-1 50000 REFUNDED v2\nP-2 0 SUCCEEDED v1",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node refund.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "d5e974c0f2f264cf",
+  "at": "2026-10-14T10:23:58.166Z"
+}

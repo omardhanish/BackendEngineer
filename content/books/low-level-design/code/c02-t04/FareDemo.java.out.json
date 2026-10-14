@@ -1,0 +1,11 @@
+{
+  "stdout": "BikeRide -> 250\nCarRide -> 800\nSharedRide -> 266\ntotal 1316",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java FareDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "b079967f5316c7bd",
+  "at": "2026-10-12T11:14:41.727Z"
+}

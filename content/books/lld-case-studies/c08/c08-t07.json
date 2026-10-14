@@ -1,0 +1,202 @@
+{
+  "title": "Booking API in Express",
+  "idea": "The booking API exposes holds and bookings as REST resources, with each layer doing one job: controller validates, service decides inside a transaction, repository runs SQL.",
+  "analogy": {
+    "text": "A restaurant pass. The waiter checks the order is readable, the chef decides how to cook it, and the pantry only fetches ingredients.",
+    "breaks": "A kitchen can improvise; the repository never makes decisions."
+  },
+  "points": [
+    "Holding seats is `POST /shows/:showId/holds`; it returns 201 or 409.",
+    "Booking is `POST /bookings` with an Idempotency-Key header; replays return 200.",
+    "`zod` rejects bad bodies with 400 before the service runs.",
+    "One error middleware maps domain errors to HTTP status codes."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "Endpoints",
+    "head": [
+      "Method",
+      "Path",
+      "Request",
+      "Success",
+      "Errors"
+    ],
+    "rows": [
+      [
+        "GET",
+        "/shows/:showId/seats",
+        "none",
+        "200 seat map",
+        "404 show"
+      ],
+      [
+        "POST",
+        "/shows/:showId/holds",
+        "seats[]",
+        "201 holdId, seats, heldUntil",
+        "400, 404, 409 taken"
+      ],
+      [
+        "DELETE",
+        "/holds/:holdId",
+        "none",
+        "204 released",
+        "404 hold"
+      ],
+      [
+        "POST",
+        "/bookings",
+        "holdId + Idempotency-Key",
+        "201 booking; 200 on replay",
+        "400, 409 expired"
+      ],
+      [
+        "POST",
+        "/bookings/:id/cancel",
+        "none",
+        "200 CANCELLED",
+        "404, 409 state"
+      ]
+    ],
+    "highlight": {
+      "row": 3
+    },
+    "caption": "The snippet below runs the two POST routes. The others follow the same layers."
+  },
+  "code": [
+    {
+      "file": "api.mjs",
+      "lang": "js",
+      "title": "Layered Express app",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "Repository, service, controllers and error mapping in one file, on a real PostgreSQL. Payment is left out: charge before calling `book`, outside the transaction.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12
+          ],
+          "text": "Schema for the demo: seat rows per show and bookings with a unique Idempotency-Key."
+        },
+        {
+          "lines": [
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20
+          ],
+          "text": "A fixed demo clock keeps output stable; `tx` gives each service call one transaction."
+        },
+        {
+          "lines": [
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29
+          ],
+          "text": "Repository: lock free seats in order, then mark them HELD for ten minutes."
+        },
+        {
+          "lines": [
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48
+          ],
+          "text": "Service `hold`: 404 for an unknown show, 409 when any seat is taken, else `heldUntil`."
+        },
+        {
+          "lines": [
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57
+          ],
+          "text": "Service `book`: replay a known key; otherwise book the live hold (payment happens before this)."
+        },
+        {
+          "lines": [
+            59,
+            60,
+            61,
+            62,
+            63,
+            64,
+            65,
+            66,
+            67,
+            68,
+            69,
+            70,
+            71,
+            72
+          ],
+          "text": "Controllers parse with `zod` and demand the key; Express 5 forwards async throws to the error middleware."
+        },
+        {
+          "lines": [
+            73,
+            74,
+            75,
+            76,
+            77,
+            78
+          ],
+          "text": "Error middleware maps validation, domain, duplicate-key and unknown errors to status codes."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Never call the payment provider inside an open database transaction; locks stay held while you wait.",
+    "Two requests with one new key can both miss the lookup; UNIQUE must catch it.",
+    "Do not return 500 for a taken seat; 409 tells the client to refresh the map."
+  ],
+  "quiz": {
+    "q": "What status does the second identical POST /bookings print?",
+    "options": [
+      "201",
+      "200",
+      "409",
+      "400"
+    ],
+    "answer": 1,
+    "why": "The service finds a booking stored under Idempotency-Key k-1 and returns it unchanged. The controller marks a replay with 200."
+  },
+  "takeaway": "Validate in the controller, decide in a transaction, retry safely with Idempotency-Key.",
+  "chat": {
+    "starters": [
+      "Where should the payment call go if not inside the transaction?",
+      "How do I return 409 when two requests share one new Idempotency-Key?",
+      "Should holds be their own table instead of columns on show_seat?"
+    ]
+  }
+}

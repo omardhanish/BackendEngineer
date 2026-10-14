@@ -1,0 +1,113 @@
+{
+  "title": "Use cases and domain entities",
+  "idea": "Requirement analysis turns a vague brief into use cases (who does what, under which rule) and entities (the things those rules are about), before any class is coded.",
+  "points": [
+    "A use case is an actor's goal plus its rule: 'only the owner cancels'.",
+    "Nouns in the use cases suggest entities; verbs become methods on a service.",
+    "Entities have identity and refer to each other by id, never by copied fields.",
+    "In interviews, read use cases back and ask what is out before drawing classes."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "Use cases mapped to entities",
+    "head": ["Use case", "Actor", "Entities", "Rule"],
+    "rows": [
+      ["Search free rooms", "Employee", "Room, Booking", "capacity fits, no overlap in the slot"],
+      ["Book a room", "Employee", "Room, Booking, Employee", "slot within 0-24, room not taken"],
+      ["Cancel a booking", "Employee (owner)", "Booking", "only the owner may cancel"],
+      ["Notify and audit", "System", "Booking, Employee", "every book and cancel is announced"],
+      ["Manage rooms", "Facilities admin", "Building, Room", "capacity at least 1"],
+      ["Recurring meetings", "Employee", "none", "out of scope for this version"]
+    ],
+    "highlight": { "col": 2 },
+    "caption": "The Entities column is your first class list. The last row records a deliberate scope cut."
+  },
+  "code": [
+    {
+      "file": "CopiedFieldsBug.java",
+      "lang": "java",
+      "title": "The problem",
+      "run": "captured",
+      "caption": "A model copied from a screen layout stores a snapshot of the email. When HR fixes it, reminders go stale.",
+      "walk": [
+        {
+          "lines": [25, 27],
+          "text": "`BookingRow` mirrors the booking screen: room, email, times. It looks complete to a UI designer."
+        },
+        {
+          "lines": [28, 33],
+          "text": "The factory reads the email once and drops the employee id. The link to the person is gone."
+        },
+        {
+          "lines": [15, 15],
+          "text": "HR corrects the address in the one place that owns it, the directory."
+        },
+        {
+          "lines": [17, 21],
+          "text": "Both reminders still use the old address, while the directory holds the new one."
+        },
+        {
+          "lines": [26, 26],
+          "text": "Without an employee id the rule 'only the owner may cancel' cannot even be checked."
+        }
+      ]
+    },
+    {
+      "file": "DomainModel.java",
+      "lang": "java",
+      "title": "The fix",
+      "run": "captured",
+      "caption": "Entities from the use cases, linked by id, each guarding its own invariants at construction.",
+      "walk": [
+        {
+          "lines": [34, 50],
+          "text": "`Building` and `Room` come from the facilities use case. A room with no seats is rejected."
+        },
+        {
+          "lines": [52, 57],
+          "text": "`Employee` owns the email. It is the single source of truth for contact details."
+        },
+        {
+          "lines": [59, 68],
+          "text": "`Booking` stores `roomId` and `employeeId`, not copies. The slot must sit inside 0 to 24."
+        },
+        {
+          "lines": [70, 72],
+          "text": "`isOwnedBy` answers the cancel rule directly from the stored id."
+        },
+        {
+          "lines": [14, 18],
+          "text": "After HR's change, the reminder resolves the id and gets the current address."
+        },
+        {
+          "lines": [20, 31],
+          "text": "Invalid rooms and slots fail fast with messages that name the bad value."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Modelling from screens copies fields into bookings; data drifts when the source changes.",
+    "Skipping the actor column hides rules like 'only the owner cancels' until code review.",
+    "Turning every noun into a class: 'slot' and 'calendar' are values or queries here, not entities."
+  ],
+  "quiz": {
+    "q": "In CopiedFieldsBug, what does the reminder line for B2 print?",
+    "options": [
+      "reminder B2 -> asha@new.example",
+      "reminder B2 -> null",
+      "reminder B2 -> asha@old.example",
+      "reminder B2 -> e7"
+    ],
+    "answer": 2,
+    "why": "`BookingRow.of` copied the email when B2 was created. Updating the directory later does not touch the copy, so the stale address prints."
+  },
+  "takeaway": "Use cases give the rules; entities hold identity and link by id.",
+  "chat": {
+    "starters": [
+      "How do I tell an entity from a value object in this system?",
+      "Should Building hold a list of Rooms or should Room hold a buildingId?",
+      "Which clarifying questions should I ask before modelling the booking system?"
+    ]
+  }
+}

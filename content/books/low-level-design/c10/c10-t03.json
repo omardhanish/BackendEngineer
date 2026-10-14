@@ -1,0 +1,229 @@
+{
+  "title": "GRASP for change and variation",
+  "idea": "Four GRASP rules handle change: Polymorphism replaces type switches, Pure Fabrication invents a non-domain class, Indirection adds a middleman, and Protected Variations hides unstable parts behind interfaces.",
+  "points": [
+    "Polymorphism: when behaviour varies by type, give each type its own implementation.",
+    "Pure Fabrication: invent a non-domain class when no domain class should own a job.",
+    "Indirection: an intermediate object decouples two classes so either can change alone.",
+    "Protected Variations: find what will change and wrap it in a stable interface."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "One quote through four GRASP roles",
+    "scenario": {
+      "token": {
+        "label": "PET, 20k insured",
+        "tone": "req"
+      },
+      "stages": [
+        {
+          "id": "form",
+          "label": "Quote form",
+          "sub": "asks for a premium",
+          "kind": "end"
+        },
+        {
+          "id": "quotes",
+          "label": "QuoteService",
+          "sub": "Indirection"
+        },
+        {
+          "id": "registry",
+          "label": "RuleRegistry",
+          "sub": "Pure Fabrication"
+        },
+        {
+          "id": "iface",
+          "label": "PremiumRule",
+          "sub": "Protected Variations"
+        },
+        {
+          "id": "pet",
+          "label": "PetRule",
+          "sub": "Polymorphism",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "The quote form needs a yearly premium. It knows only `QuoteService`, never a rule class.",
+          "at": "form",
+          "slot": "top",
+          "state": {
+            "form": "active"
+          }
+        },
+        {
+          "caption": "Indirection: `QuoteService` sits between the form and the rules and validates the sum insured once.",
+          "at": "quotes",
+          "slot": "top",
+          "state": {
+            "form": "done",
+            "quotes": "active"
+          }
+        },
+        {
+          "caption": "Pure Fabrication: `RuleRegistry` is no real-world thing. It exists to map cover codes to rules.",
+          "at": "registry",
+          "slot": "top",
+          "state": {
+            "form": "done",
+            "quotes": "done",
+            "registry": "active"
+          }
+        },
+        {
+          "caption": "Protected Variations: callers see only the `PremiumRule` interface. New covers do not ripple outward.",
+          "at": "iface",
+          "slot": "top",
+          "state": {
+            "form": "done",
+            "quotes": "done",
+            "registry": "done",
+            "iface": "active"
+          }
+        },
+        {
+          "caption": "Polymorphism: Java dispatches to `PetRule.premiumCents`. No `switch` on the cover type exists anywhere.",
+          "at": "pet",
+          "slot": "bottom",
+          "token": {
+            "label": "premium",
+            "tone": "ok"
+          },
+          "state": {
+            "form": "done",
+            "quotes": "done",
+            "registry": "done",
+            "iface": "done",
+            "pet": "active"
+          }
+        },
+        {
+          "caption": "The premium travels back to the form. Adding a cover means one new class and one registration.",
+          "at": "form",
+          "slot": "bottom",
+          "token": {
+            "label": "premium",
+            "tone": "ok"
+          },
+          "state": {
+            "form": "done",
+            "quotes": "done",
+            "registry": "done",
+            "iface": "done",
+            "pet": "done"
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "SwitchPremium.java",
+      "lang": "java",
+      "title": "The problem",
+      "run": "captured",
+      "caption": "A `switch` on cover codes. A new cover is silently quoted at zero.",
+      "walk": [
+        {
+          "lines": [
+            11,
+            13
+          ],
+          "text": "The quote desk owns every cover's pricing, so each new cover edits this class."
+        },
+        {
+          "lines": [
+            14,
+            18
+          ],
+          "text": "Behaviour varies by type through a string `switch`. The compiler cannot check it is complete."
+        },
+        {
+          "lines": [
+            19,
+            22
+          ],
+          "text": "The new cover falls into `default` and returns zero. No error, just free insurance."
+        },
+        {
+          "lines": [
+            3,
+            7
+          ],
+          "text": "Look at the PET line in the output: a premium of zero went out unnoticed."
+        }
+      ]
+    },
+    {
+      "file": "PluggablePremium.java",
+      "lang": "java",
+      "title": "The fix",
+      "run": "captured",
+      "caption": "Each GRASP rule has a visible home. Unknown covers fail loudly instead of pricing at zero.",
+      "walk": [
+        {
+          "lines": [
+            22,
+            26
+          ],
+          "text": "Protected Variations: pricing rules will keep changing, so they hide behind `PremiumRule`."
+        },
+        {
+          "lines": [
+            28,
+            40
+          ],
+          "text": "Polymorphism is the Strategy pattern from c08 seen as a placement rule: each cover owns its price."
+        },
+        {
+          "lines": [
+            42,
+            52
+          ],
+          "text": "Pure Fabrication: the registry is invented to own lookups. It rejects unknown covers."
+        },
+        {
+          "lines": [
+            54,
+            60
+          ],
+          "text": "Indirection: the form depends on `QuoteService` alone; rules can change behind it."
+        },
+        {
+          "lines": [
+            8,
+            18
+          ],
+          "text": "Main wires the parts once. `BOAT` is not registered, so it raises a clear error."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "A `default` branch that returns zero hides missing cases; throw instead, or remove the switch.",
+    "Adding Indirection everywhere creates layers that only forward calls; add it where change is likely.",
+    "Pure Fabrications named `Helper` or `Manager` collect unrelated jobs; name them for one job."
+  ],
+  "quiz": {
+    "q": "`QuoteService` calls a credit bureau's client library directly. The bureau may change next year. Which GRASP rule fits?",
+    "options": [
+      "Information Expert: let QuoteService score credit itself",
+      "Protected Variations: hide the bureau behind a CreditCheck interface",
+      "Creator: let QuoteService construct the bureau client",
+      "Controller: route credit calls through the UI controller"
+    ],
+    "answer": 1,
+    "why": "The bureau is a known point of change. A stable `CreditCheck` interface keeps `QuoteService` unaware of the library, so switching bureaus touches one adapter class."
+  },
+  "takeaway": "Find what varies, hide it behind an interface, and dispatch polymorphically.",
+  "chat": {
+    "starters": [
+      "How is Protected Variations different from the Open/Closed Principle?",
+      "Is a repository a Pure Fabrication?",
+      "When is a switch on an enum still acceptable?"
+    ]
+  }
+}

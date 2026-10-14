@@ -1,0 +1,214 @@
+{
+  "title": "Reservation domain model",
+  "idea": "The domain model separates the fixed floor plan (Restaurant, Table) from bookings in time (TimeSlot, Reservation), and links each Reservation to one Customer and one Table.",
+  "analogy": {
+    "text": "A floor plan pinned on the wall and the host's booking book. The plan rarely changes; the book gains a new line for every party and evening.",
+    "breaks": "The book cannot spot a clash; TimeSlot.overlaps can, and page 3 refuses it."
+  },
+  "points": [
+    "A Restaurant owns its Tables and decides how long one seating lasts.",
+    "A Table has a capacity and an Area; it stores no booking state.",
+    "A TimeSlot is a half-open interval, so back-to-back seatings do not overlap.",
+    "A Reservation joins one Customer, one Table and one TimeSlot for a party size."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Class diagram",
+    "nodes": [
+      {
+        "id": "rest",
+        "label": "Restaurant",
+        "sub": "diningMinutes, slotAt()"
+      },
+      {
+        "id": "table",
+        "label": "Table",
+        "sub": "id, capacity"
+      },
+      {
+        "id": "area",
+        "label": "Area",
+        "sub": "enum INDOOR, PATIO"
+      },
+      {
+        "id": "slot",
+        "label": "TimeSlot",
+        "sub": "start, end, overlaps()"
+      },
+      {
+        "id": "res",
+        "label": "Reservation",
+        "sub": "partySize, status"
+      },
+      {
+        "id": "cust",
+        "label": "Customer",
+        "sub": "id, name, phone"
+      },
+      {
+        "id": "status",
+        "label": "ReservationStatus",
+        "sub": "enum"
+      }
+    ],
+    "edges": [
+      {
+        "from": "rest",
+        "to": "table",
+        "label": "has 1..*",
+        "caption": "A Restaurant owns one or more Tables. The list is copied, so callers cannot change it."
+      },
+      {
+        "from": "table",
+        "to": "area",
+        "label": "in 1",
+        "caption": "Each Table sits in one Area. Customers may ask for the patio later."
+      },
+      {
+        "from": "rest",
+        "to": "slot",
+        "label": "creates",
+        "caption": "Restaurant.slotAt turns a start time into a TimeSlot of the seating length."
+      },
+      {
+        "from": "res",
+        "to": "table",
+        "label": "uses 1",
+        "caption": "A Reservation points at exactly one Table, and the party must fit its capacity."
+      },
+      {
+        "from": "res",
+        "to": "slot",
+        "label": "for 1",
+        "caption": "A Reservation covers one TimeSlot. Two on the same Table must not overlap."
+      },
+      {
+        "from": "res",
+        "to": "cust",
+        "label": "by 1",
+        "caption": "One Customer makes the Reservation. A Customer can hold many over time."
+      },
+      {
+        "from": "res",
+        "to": "status",
+        "label": "has",
+        "caption": "ReservationStatus is an enum. Page 4 turns it into a state machine."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "DomainModel.java",
+      "lang": "java",
+      "title": "The model in Java 17",
+      "run": "captured",
+      "caption": "Records for fixed data, a class for Reservation because its status changes. Invariants live in constructors.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7,
+            8,
+            9
+          ],
+          "text": "One restaurant with three tables and a 90-minute seating, plus one customer."
+        },
+        {
+          "lines": [
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "text": "Build three slots and test two overlaps: back-to-back and one hour apart."
+        },
+        {
+          "lines": [
+            17,
+            18
+          ],
+          "text": "A party of three fits the four-seat table T2."
+        },
+        {
+          "lines": [
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28
+          ],
+          "text": "Two bad inputs are refused: a party too big and a zero-length slot."
+        },
+        {
+          "lines": [
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57
+          ],
+          "text": "Half-open overlap: each slot must start before the other one ends."
+        },
+        {
+          "lines": [
+            64,
+            65,
+            66,
+            67,
+            68,
+            69
+          ],
+          "text": "The restaurant owns the seating length, so every slot has the same rule."
+        },
+        {
+          "lines": [
+            82,
+            83,
+            84,
+            85,
+            86,
+            87,
+            88
+          ],
+          "text": "The constructor checks the party fits the table before any field is set."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not store booked times on Table; one Table serves many reservations a night.",
+    "Use half-open intervals, or a 20:30 finish blocks a 20:30 start.",
+    "Validate party size in the Reservation constructor, not in every caller."
+  ],
+  "quiz": {
+    "q": "What does the second line of DomainModel print?",
+    "options": [
+      "19:00-20:30 overlaps 20:30-22:00? true",
+      "19:00-20:30 overlaps 20:00-21:30? true",
+      "19:00-20:30 overlaps 20:00-21:30? false",
+      "rejected: slot must end after it starts"
+    ],
+    "answer": 1,
+    "why": "Slot c starts at 20:00, before a ends at 20:30, and a starts before c ends. Both conditions hold, so they overlap."
+  },
+  "takeaway": "Tables are fixed; reservations are intervals in time on one table.",
+  "chat": {
+    "starters": [
+      "Why is TimeSlot a value object and not an entity?",
+      "Should seating length depend on party size?",
+      "How would I model two tables pushed together?"
+    ]
+  }
+}

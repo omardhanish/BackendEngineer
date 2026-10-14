@@ -1,0 +1,28 @@
+{
+  "slug": "lld-case-studies",
+  "title": "LLD Case Studies: Production Systems",
+  "tagline": "Twenty real-world systems designed end to end: Java domain model, Node.js backend, PostgreSQL and frontend.",
+  "audience": "a backend engineer who knows Java and Node.js basics and wants production-quality LLD for interviews and real work",
+  "hue": 274,
+  "order": 30,
+  "profile": "mixed",
+  "locale": "en",
+  "tutor": {
+    "name": "LLD Case Studies",
+    "about": "Walks a backend engineer through production-quality low-level design of twenty real systems: Java 17 domain models and patterns, Node.js Express backends on PostgreSQL, and frontend design.",
+    "examples": "Java 17 for domain design, Node.js 20 + Express 5 + PostgreSQL 18 for the backend, React for the frontend",
+    "learnerRole": "engineer",
+    "mentorRole": "staff engineer and interviewer"
+  },
+  "runtime": {
+    "bannedApis": [
+      "Object.groupBy",
+      "Map.groupBy",
+      "Promise.withResolvers",
+      "Array.fromAsync",
+      "fs.glob",
+      "new WebSocket"
+    ],
+    "banHint": "missing from Node 20"
+  }
+}

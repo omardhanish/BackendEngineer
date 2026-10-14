@@ -1,0 +1,11 @@
+{
+  "stdout": "v1 mock test: PASS\nv1 state test: PASS\nv2 mock test: FAIL, got [sendBatch [O-1, O-2]]\nv2 state test: PASS",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java OverSpecifiedMock.java",
+  "tool": "Java 17.0.17",
+  "hash": "52fa8e66a05c6a74",
+  "at": "2026-10-12T11:26:07.132Z"
+}

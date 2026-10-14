@@ -1,0 +1,11 @@
+{
+  "stdout": "csv: 2 rows [1,Ada, 2,Linus]\njson: 2 rows [{\"id\":1}, {\"id\":2}]\nxml: 2 rows [<r id='1'/>, <r id='2'/>]\nrejected: empty input",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ImporterFactoryDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "a9fa3a6e871950c9",
+  "at": "2026-10-12T11:22:00.772Z"
+}

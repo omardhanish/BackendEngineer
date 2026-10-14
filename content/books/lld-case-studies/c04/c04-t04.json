@@ -1,0 +1,173 @@
+{
+  "title": "Elevator state machine and flows",
+  "idea": "The elevator lifecycle is a state machine: a car moves between IDLE, MOVING, DOORS_OPEN and OUT_OF_SERVICE only along allowed arrows, so it never moves with open doors.",
+  "points": [
+    "IDLE starts MOVING for a call elsewhere, or opens doors for one here.",
+    "MOVING may only stop with DOORS_OPEN, or halt as OUT_OF_SERVICE.",
+    "Doors must close, back to IDLE, before the car moves again.",
+    "Only an operator returns an OUT_OF_SERVICE car to IDLE."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "A hall call, then a ride",
+    "actors": [
+      {
+        "id": "user",
+        "label": "Passenger"
+      },
+      {
+        "id": "ctl",
+        "label": "ElevatorController"
+      },
+      {
+        "id": "strat",
+        "label": "SchedulingStrategy"
+      },
+      {
+        "id": "car",
+        "label": "Elevator E2"
+      }
+    ],
+    "messages": [
+      {
+        "from": "user",
+        "to": "ctl",
+        "label": "hallCall(6, DOWN)",
+        "note": "Floor 6 DOWN is pressed. The panel lights the button."
+      },
+      {
+        "from": "ctl",
+        "to": "strat",
+        "label": "choose(6, DOWN, cars)",
+        "note": "The strategy scores every car in service and returns the cheapest."
+      },
+      {
+        "from": "strat",
+        "to": "ctl",
+        "label": "E2",
+        "dashed": true,
+        "note": "E2 at floor 8 is idle and two floors away."
+      },
+      {
+        "from": "ctl",
+        "to": "car",
+        "label": "addStop(6)",
+        "note": "The stop joins E2's sorted set. On the next tick E2 goes IDLE to MOVING."
+      },
+      {
+        "from": "car",
+        "to": "ctl",
+        "label": "at 6: DOORS_OPEN",
+        "dashed": true,
+        "note": "E2 reaches floor 6 and goes MOVING to DOORS_OPEN. The hall call is served."
+      },
+      {
+        "from": "ctl",
+        "to": "user",
+        "label": "lamp off",
+        "dashed": true,
+        "note": "The panel turns the DOWN light off."
+      },
+      {
+        "from": "user",
+        "to": "ctl",
+        "label": "carCall(E2, 0)",
+        "note": "Inside, the rider presses 0. A car call goes straight to that car."
+      },
+      {
+        "from": "ctl",
+        "to": "car",
+        "label": "addStop(0)",
+        "note": "Doors close first, DOORS_OPEN to IDLE, then E2 goes MOVING down."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "ElevatorLifecycle.java",
+      "lang": "java",
+      "title": "State enum with rules",
+      "run": "captured",
+      "caption": "The allowed moves live in the enum. Elevator asks the enum before changing state.",
+      "walk": [
+        {
+          "lines": [
+            8,
+            9,
+            10,
+            11,
+            12
+          ],
+          "text": "A normal stop. The try to move with doors open is refused."
+        },
+        {
+          "lines": [
+            13,
+            14,
+            15,
+            16
+          ],
+          "text": "An emergency stop. The car stays out until an operator restores it."
+        },
+        {
+          "lines": [
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30
+          ],
+          "text": "An EnumMap lists the allowed next states for each state."
+        },
+        {
+          "lines": [
+            32,
+            33,
+            34
+          ],
+          "text": "`canMoveTo` is the one question every transition asks."
+        },
+        {
+          "lines": [
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50
+          ],
+          "text": "Refuse and report an illegal move; otherwise record the new state."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not set `state` from many places; every change goes through `moveTo`.",
+    "Never allow DOORS_OPEN to MOVING directly; doors close to IDLE first.",
+    "Keep Direction apart from ElevatorState; an IDLE car can still face UP."
+  ],
+  "quiz": {
+    "q": "What does the seventh line of ElevatorLifecycle print?",
+    "options": [
+      "E1 OUT_OF_SERVICE -> MOVING",
+      "E1 refused OUT_OF_SERVICE -> MOVING",
+      "E1 OUT_OF_SERVICE -> IDLE",
+      "E1 refused MOVING -> OUT_OF_SERVICE"
+    ],
+    "answer": 1,
+    "why": "OUT_OF_SERVICE allows only IDLE next. `canMoveTo(MOVING)` is false, so `moveTo` prints the refusal and keeps the state."
+  },
+  "takeaway": "Write allowed transitions once, in the enum; refuse everything else.",
+  "chat": {
+    "starters": [
+      "Should door reopening (someone blocks the door) be its own state?",
+      "Would the State pattern fit better than an enum here?",
+      "How do I log every transition for maintenance audits?"
+    ]
+  }
+}

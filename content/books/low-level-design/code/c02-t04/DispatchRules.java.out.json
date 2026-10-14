@@ -1,0 +1,11 @@
+{
+  "stdout": "20\nlog(Payment)\nlog(CardPayment)\nPayment.kind\npayment",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java DispatchRules.java",
+  "tool": "Java 17.0.17",
+  "hash": "376ca47397a0e93c",
+  "at": "2026-10-12T11:14:41.166Z"
+}

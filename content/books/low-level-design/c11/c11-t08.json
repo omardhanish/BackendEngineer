@@ -1,0 +1,58 @@
+{
+  "title": "Design review loop",
+  "idea": "A peer review is a structured read of your design by another engineer, who questions responsibilities and change points while you explain, decide and revise.",
+  "points": [
+    "Send a one-page summary first: use cases, class diagram, and the trade-offs you chose.",
+    "Good comments name a scenario: who changes this class when a rule changes?",
+    "Label each comment blocking or optional, so the author knows what must change.",
+    "Answer every comment with a change or a reason; an unanswered comment looks ignored."
+  ],
+  "hero": {
+    "type": "timeline",
+    "title": "One review round on the capstone",
+    "items": [
+      {
+        "label": "Self-review",
+        "text": "Re-read the diagram against the use cases. Remove what no requirement needs."
+      },
+      {
+        "label": "Walkthrough",
+        "text": "Trace one `book` call aloud, from `BookingService` to each listener."
+      },
+      {
+        "label": "Comments",
+        "text": "On the first draft, the reviewer asks why `BookingService` sends email itself. Tagged blocking."
+      },
+      {
+        "label": "Decide",
+        "text": "You agree: email is a reaction, so it moves behind `BookingListener`."
+      },
+      {
+        "label": "Revise",
+        "text": "Push the change, link it in the thread, and re-run every test."
+      },
+      {
+        "label": "Approve",
+        "text": "The reviewer resolves the thread. Optional comments go to a follow-up list."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "review-fix.diff",
+      "lang": "diff",
+      "title": "A comment and its fix",
+      "run": "static",
+      "illustrative": true,
+      "caption": "From an early draft: one blocking design comment, answered with the smallest change that removes the concern."
+    }
+  ],
+  "takeaway": "Review the design's reasons, not its formatting, and answer every comment.",
+  "chat": {
+    "starters": [
+      "What should a design review checklist for LLD include?",
+      "How do I push back on a review comment I disagree with?",
+      "How do I give feedback on a peer's class diagram politely?"
+    ]
+  }
+}

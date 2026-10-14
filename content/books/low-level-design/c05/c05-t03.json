@@ -1,209 +1,249 @@
 {
-  "title": "Booking class diagram",
-  "idea": "A class diagram shows the classes, their key methods and how they relate; interfaces mark the seams where one part can be swapped for another.",
+  "title": "Optional for absent values",
+  "idea": "`Optional<T>` is a return type that says a value may be missing, so the caller must choose what happens then instead of meeting `null` later.",
   "points": [
-    "`BookingService` holds the use cases and depends on interfaces and repositories.",
-    "`ConflictPolicy` is a strategy: the overlap rule changes without touching the service.",
-    "`BookingListener` lets notification and auditing react without the service knowing them.",
-    "A dashed line with a hollow triangle means a class implements an interface."
+    "Return `Optional` from lookups like `findById`; the signature now documents absence.",
+    "`map` and `filter` run only on a present value; an empty one passes through.",
+    "End the chain with `orElse`, `orElseGet` or `orElseThrow` to pick the fallback.",
+    "Use it for return values only, not for fields, parameters or collections."
   ],
   "hero": {
-    "type": "flow",
-    "title": "Who depends on whom",
-    "dir": "TB",
-    "nodes": [
-      {
-        "id": "svc",
-        "label": "BookingService",
-        "sub": "the use cases"
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "One lookup through an Optional chain",
+    "scenario": {
+      "token": {
+        "label": "Optional[c3]",
+        "tone": "req"
       },
-      {
-        "id": "rooms",
-        "label": "RoomRepository"
-      },
-      {
-        "id": "bookings",
-        "label": "BookingRepository"
-      },
-      {
-        "id": "policy",
-        "label": "ConflictPolicy",
-        "sub": "interface"
-      },
-      {
-        "id": "listener",
-        "label": "BookingListener",
-        "sub": "interface"
-      },
-      {
-        "id": "overlap",
-        "label": "OverlapPolicy"
-      },
-      {
-        "id": "notify",
-        "label": "NotificationService"
-      },
-      {
-        "id": "audit",
-        "label": "AuditLogger"
-      }
-    ],
-    "edges": [
-      {
-        "from": "svc",
-        "to": "rooms",
-        "label": "uses",
-        "caption": "The service reads rooms through `RoomRepository`, never through a raw list."
-      },
-      {
-        "from": "svc",
-        "to": "bookings",
-        "label": "uses",
-        "caption": "`BookingRepository` saves bookings and returns one room's bookings with `forRoom`."
-      },
-      {
-        "from": "svc",
-        "to": "policy",
-        "label": "asks",
-        "caption": "Before saving, the service asks `ConflictPolicy` whether the new slot clashes."
-      },
-      {
-        "from": "overlap",
-        "to": "policy",
-        "label": "implements",
-        "dashed": true,
-        "caption": "`OverlapPolicy` is today's rule; a policy with buffer time could replace it."
-      },
-      {
-        "from": "svc",
-        "to": "listener",
-        "label": "notifies",
-        "caption": "After a booking, the service calls each `BookingListener` in turn."
-      },
-      {
-        "from": "notify",
-        "to": "listener",
-        "label": "implements",
-        "dashed": true,
-        "caption": "`NotificationService` reacts by telling the attendees."
-      },
-      {
-        "from": "audit",
-        "to": "listener",
-        "label": "implements",
-        "dashed": true,
-        "caption": "`AuditLogger` reacts by recording who booked what; the service knows neither class."
-      }
-    ]
+      "stages": [
+        {
+          "id": "find",
+          "label": "findById",
+          "sub": "id c3"
+        },
+        {
+          "id": "email",
+          "label": "map",
+          "sub": "Customer::email"
+        },
+        {
+          "id": "filter",
+          "label": "filter",
+          "sub": "contains @"
+        },
+        {
+          "id": "domain",
+          "label": "map",
+          "sub": "cut the domain"
+        },
+        {
+          "id": "end",
+          "label": "orElse",
+          "sub": "fallback",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "`findById` finds customer c3 and wraps it. The `Optional` is present.",
+          "at": "find",
+          "slot": "top",
+          "state": {
+            "find": "active"
+          }
+        },
+        {
+          "caption": "`map` runs because a value is present. The box now holds the email string.",
+          "at": "email",
+          "slot": "top",
+          "token": {
+            "label": "Optional[not-an-email]",
+            "tone": "req"
+          },
+          "state": {
+            "find": "done",
+            "email": "active"
+          }
+        },
+        {
+          "caption": "`filter` tests for an @ sign. The test fails, so the result is an empty `Optional`.",
+          "at": "filter",
+          "slot": "top",
+          "token": {
+            "label": "Optional.empty",
+            "tone": "err"
+          },
+          "state": {
+            "find": "done",
+            "email": "done",
+            "filter": "error"
+          }
+        },
+        {
+          "caption": "`map` on an empty `Optional` does nothing. The lambda never runs, so it cannot crash.",
+          "at": "domain",
+          "slot": "top",
+          "token": {
+            "label": "Optional.empty",
+            "tone": "err"
+          },
+          "state": {
+            "find": "done",
+            "email": "done",
+            "filter": "error",
+            "domain": "blocked"
+          }
+        },
+        {
+          "caption": "`orElse` unwraps: a present value comes out as is, an empty one becomes the fallback.",
+          "at": "end",
+          "slot": "top",
+          "token": {
+            "label": "no-domain",
+            "tone": "ok"
+          },
+          "state": {
+            "find": "done",
+            "email": "done",
+            "filter": "error",
+            "domain": "blocked",
+            "end": "active"
+          }
+        },
+        {
+          "caption": "`orElseThrow` is the strict ending: empty becomes a clear exception here, not a null crash later.",
+          "at": "end",
+          "slot": "top",
+          "token": {
+            "label": "IllegalStateException",
+            "tone": "err"
+          },
+          "state": {
+            "find": "done",
+            "email": "done",
+            "filter": "error",
+            "domain": "blocked",
+            "end": "error"
+          }
+        }
+      ]
+    }
   },
   "code": [
     {
-      "file": "class-diagram.txt",
-      "lang": "text",
-      "title": "Mermaid class diagram",
-      "run": "static",
-      "illustrative": true,
-      "caption": "The same design as Mermaid text, which lives next to the code and diffs cleanly.",
+      "file": "NullReturnDemo.java",
+      "lang": "java",
+      "title": "The problem",
+      "run": "captured",
+      "caption": "A lookup that returns `null` without saying so, and a caller that trusts it.",
       "walk": [
         {
           "lines": [
-            2,
-            6
+            21,
+            23
           ],
-          "text": "A class box lists the public methods, with types kept short."
+          "text": "The map is immutable and safe, but `get` still returns `null` for a missing key."
+        },
+        {
+          "lines": [
+            25,
+            28
+          ],
+          "text": "`findEmail` passes that `null` on. Nothing in its return type warns the caller."
+        },
+        {
+          "lines": [
+            30,
+            33
+          ],
+          "text": "`emailDomain` calls `indexOf` on the result. For an unknown id that dereferences `null`."
         },
         {
           "lines": [
             7,
-            10
+            14
           ],
-          "text": "`<<interface>>` marks a contract that has no state."
-        },
-        {
-          "lines": [
-            15,
-            18
-          ],
-          "text": "Plain arrows are associations: the service keeps each one in a field."
-        },
-        {
-          "lines": [
-            19,
-            21
-          ],
-          "text": "`<|..` is realization: the class on the right implements the interface."
-        },
-        {
-          "lines": [
-            22,
-            22
-          ],
-          "text": "Multiplicity: one room has zero or more bookings."
+          "text": "The crash happens in `emailDomain`, far from the lookup that caused it. Real code rarely catches it."
         }
       ]
     },
     {
-      "file": "PolicyDemo.java",
+      "file": "OptionalDemo.java",
       "lang": "java",
-      "title": "The ConflictPolicy contract",
+      "title": "The fix",
       "run": "captured",
-      "caption": "One interface, one implementation, three candidate slots against one booking.",
+      "caption": "`findById` returns `Optional`, and each caller chooses a fallback or a clear failure.",
       "walk": [
         {
           "lines": [
-            17,
-            18
+            37,
+            40
           ],
-          "text": "`Booking` is a value: a record with the room, the owner and the slot."
+          "text": "`ofNullable` wraps a lookup that may be null; `of` throws on null. Absence is now in the type."
         },
         {
           "lines": [
-            20,
-            22
+            23,
+            28
           ],
-          "text": "The whole contract: a candidate, the existing bookings, a yes or no."
+          "text": "The record rejects null fields, so values inside an `Optional` are always complete."
         },
         {
           "lines": [
-            24,
-            32
+            50,
+            55
           ],
-          "text": "Same room, and each slot starts before the other ends: that is an overlap."
+          "text": "`map` extracts, `filter` rejects bad emails, `map` cuts the domain. Empty skips every step."
         },
         {
           "lines": [
-            5,
-            13
+            57,
+            59
           ],
-          "text": "The caller holds the interface type, so another policy drops in unchanged."
+          "text": "`orElse` with a constant suits display code that must always show something."
+        },
+        {
+          "lines": [
+            61,
+            64
+          ],
+          "text": "`orElseThrow` with a supplier suits callers that need a value. The message names the id."
+        },
+        {
+          "lines": [
+            12,
+            19
+          ],
+          "text": "Three ids cover the three paths: present, missing, and present but invalid."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Do not bury the overlap rule inside `BookingService`; put it behind `ConflictPolicy`.",
-    "Avoid drawing every getter; show roles, key methods and relations.",
-    "Name interfaces for their role, like `ConflictPolicy`, never `IConflictPolicy`."
+    "Calling `get()` without a check just moves the crash; use `orElseThrow` to state intent.",
+    "`orElse(load())` always runs `load`, even when present; use `orElseGet` for costly fallbacks.",
+    "Returning `null` from a method typed `Optional` defeats it; return `Optional.empty()`."
   ],
   "quiz": {
     "q": "What does this print?",
-    "code": "List<Booking> existing = List.of(\n    new Booking(\"BK1\", \"R-101\", \"E7\", 10, 11));\nBooking c = new Booking(\"x\", \"R-202\", \"E9\", 10, 11);\nSystem.out.println(new OverlapPolicy().conflicts(c, existing));",
+    "code": "static int calls = 0;\nstatic String guest() { calls++; return \"guest\"; }\n\n// in main:\nOptional<String> name = Optional.of(\"ana\");\nString a = name.orElse(guest());\nString b = name.orElseGet(() -> guest());\nSystem.out.println(a + \" \" + b + \" \" + calls);",
     "lang": "java",
     "options": [
-      "true",
-      "false",
-      "R-101 conflicts",
-      "It does not compile"
+      "ana ana 0",
+      "ana ana 1",
+      "ana ana 2",
+      "guest guest 2"
     ],
     "answer": 1,
-    "why": "`OverlapPolicy` compares room ids first. The only booking is in `R-101`, so `anyMatch` finds nothing for `R-202` and returns `false`."
+    "why": "`orElse` takes a value, so `guest()` runs before the call. `orElseGet` takes a supplier and calls it only when empty."
   },
-  "takeaway": "Draw the seams first: services depend on interfaces, details implement them.",
+  "takeaway": "Return `Optional` for maybe-missing results; end every chain with a fallback.",
   "chat": {
     "starters": [
-      "When should an arrow in a class diagram be composition instead of association?",
-      "Why is ConflictPolicy an interface and not a method on Room?",
-      "How much detail should a class diagram have in an interview?"
+      "Why is Optional a bad choice for a field or a method parameter?",
+      "When should a repository throw instead of returning an empty Optional?",
+      "How do OptionalInt and Optional<Integer> differ?"
     ]
   }
 }

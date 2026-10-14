@@ -1,276 +1,263 @@
 {
-  "title": "Command and Mediator",
-  "idea": "Command turns a request into an object you can store, queue and undo. Mediator routes talk between many objects through one hub, so none references another.",
+  "title": "Type-safe generic classes",
+  "idea": "Generics let one class work for many types while the compiler checks each use, so callers never cast and wrong types fail at compile time.",
   "points": [
-    "A command holds its receiver (the object doing the work) and arguments.",
-    "An invoker, like `History`, runs commands and keeps them on a stack for undo.",
-    "Colleagues, the objects the mediator connects, hold only its interface and report to it.",
-    "The mediator holds the rules, so changing how widgets interact touches one class."
+    "The class declares a type parameter `T`; each caller picks the actual type.",
+    "A bound such as `T extends Entity<ID>` lets the class call `id()` safely.",
+    "Take `? extends T` to read items in, `? super T` to write out.",
+    "Type arguments are erased at runtime, so `new T()` does not compile."
   ],
   "hero": {
-    "type": "anim",
-    "engine": "lanes",
-    "title": "Undo and redo are two stacks",
-    "scenario": {
-      "lanes": [
-        {
-          "id": "doc",
-          "label": "Document",
-          "kind": "area",
-          "hint": "the receiver's text"
-        },
-        {
-          "id": "undo",
-          "label": "Undo stack",
-          "kind": "stack",
-          "hint": "commands already run"
-        },
-        {
-          "id": "redo",
-          "label": "Redo stack",
-          "kind": "stack",
-          "hint": "commands undone"
-        }
-      ],
-      "tokens": {
-        "cHello": {
-          "label": "Append Hello",
-          "tone": "io"
-        },
-        "cWorld": {
-          "label": "Append world",
-          "tone": "io"
-        },
-        "cBang": {
-          "label": "Append !",
-          "tone": "io"
-        },
-        "pHello": {
-          "label": "Hello",
-          "tone": "sync"
-        },
-        "pWorld": {
-          "label": "world",
-          "tone": "sync"
-        },
-        "pBang": {
-          "label": "!",
-          "tone": "sync"
-        }
+    "type": "flow",
+    "title": "One generic repository, many entity types",
+    "nodes": [
+      {
+        "id": "repo",
+        "label": "Repository<ID, T>",
+        "sub": "T extends Entity<ID>"
       },
-      "steps": [
-        {
-          "caption": "`run` calls `execute` on the first command, then pushes it on the undo stack.",
-          "at": {
-            "doc": [
-              "pHello"
-            ],
-            "undo": [
-              "cHello"
-            ],
-            "redo": []
-          },
-          "active": "cHello"
-        },
-        {
-          "caption": "The second command runs the same way and lands on top.",
-          "at": {
-            "doc": [
-              "pHello",
-              "pWorld"
-            ],
-            "undo": [
-              "cHello",
-              "cWorld"
-            ],
-            "redo": []
-          },
-          "active": "cWorld"
-        },
-        {
-          "caption": "`undo` pops the top command, calls its `undo`, and pushes it on the redo stack.",
-          "at": {
-            "doc": [
-              "pHello"
-            ],
-            "undo": [
-              "cHello"
-            ],
-            "redo": [
-              "cWorld"
-            ]
-          },
-          "active": "cWorld"
-        },
-        {
-          "caption": "`redo` pops from the redo stack, calls `execute` again, and moves it back.",
-          "at": {
-            "doc": [
-              "pHello",
-              "pWorld"
-            ],
-            "undo": [
-              "cHello",
-              "cWorld"
-            ],
-            "redo": []
-          },
-          "active": "cWorld"
-        },
-        {
-          "caption": "Undo once more: the `world` command waits on the redo stack again.",
-          "at": {
-            "doc": [
-              "pHello"
-            ],
-            "undo": [
-              "cHello"
-            ],
-            "redo": [
-              "cWorld"
-            ]
-          },
-          "active": "cWorld"
-        },
-        {
-          "caption": "Running a new command clears the redo stack. That undone branch is gone.",
-          "at": {
-            "doc": [
-              "pHello",
-              "pBang"
-            ],
-            "undo": [
-              "cHello",
-              "cBang"
-            ],
-            "redo": []
-          },
-          "active": "cBang"
-        }
-      ]
-    }
+      {
+        "id": "impl",
+        "label": "InMemoryRepository<ID, T>",
+        "sub": "Map<ID, T> rows"
+      },
+      {
+        "id": "entity",
+        "label": "Entity<ID>",
+        "sub": "ID id()"
+      },
+      {
+        "id": "user",
+        "label": "User",
+        "sub": "Entity<String>"
+      },
+      {
+        "id": "order",
+        "label": "Order",
+        "sub": "Entity<Integer>"
+      },
+      {
+        "id": "urepo",
+        "label": "users",
+        "sub": "<String, User>"
+      },
+      {
+        "id": "orepo",
+        "label": "orders",
+        "sub": "<Integer, Order>"
+      }
+    ],
+    "edges": [
+      {
+        "from": "impl",
+        "to": "repo",
+        "label": "implements",
+        "dashed": true
+      },
+      {
+        "from": "repo",
+        "to": "entity",
+        "label": "T bounded by"
+      },
+      {
+        "from": "user",
+        "to": "entity",
+        "label": "implements",
+        "dashed": true
+      },
+      {
+        "from": "order",
+        "to": "entity",
+        "label": "implements",
+        "dashed": true
+      },
+      {
+        "from": "urepo",
+        "to": "impl",
+        "label": "ID=String, T=User"
+      },
+      {
+        "from": "orepo",
+        "to": "impl",
+        "label": "ID=Integer, T=Order"
+      }
+    ],
+    "steps": [
+      {
+        "caption": "`Repository` declares two type parameters: the id type and the entity type.",
+        "active": [
+          "repo"
+        ],
+        "edges": []
+      },
+      {
+        "caption": "The bound says `T` must be an `Entity<ID>`, so the code may call `id()`.",
+        "active": [
+          "repo",
+          "entity"
+        ],
+        "edges": [
+          1
+        ]
+      },
+      {
+        "caption": "`User` and `Order` implement `Entity` with different id types.",
+        "active": [
+          "entity",
+          "user",
+          "order"
+        ],
+        "edges": [
+          2,
+          3
+        ]
+      },
+      {
+        "caption": "`InMemoryRepository` is written once against `ID` and `T`, never a concrete class.",
+        "active": [
+          "impl",
+          "repo"
+        ],
+        "edges": [
+          0
+        ]
+      },
+      {
+        "caption": "`users` fixes `ID=String, T=User`. `findById` now returns `Optional<User>`, no cast.",
+        "active": [
+          "urepo",
+          "impl",
+          "user"
+        ],
+        "edges": [
+          4
+        ]
+      },
+      {
+        "caption": "`orders` reuses the same class with other types. Saving a `User` there fails to compile.",
+        "active": [
+          "orepo",
+          "impl",
+          "order"
+        ],
+        "edges": [
+          5
+        ]
+      }
+    ]
   },
   "code": [
     {
-      "file": "CommandDemo.java",
+      "file": "RawRepository.java",
       "lang": "java",
-      "title": "Command",
+      "title": "The problem",
       "run": "captured",
-      "caption": "Each edit is an object, so `History` can undo and redo it later.",
+      "caption": "An `Object` store: every read needs a cast, and a wrong type crashes at runtime.",
       "walk": [
         {
           "lines": [
-            18,
-            18
+            22,
+            24
           ],
-          "text": "The command contract: do the work, and reverse it."
+          "text": "The store holds `Object`, so the compiler cannot know what is inside."
         },
         {
           "lines": [
-            20,
-            25
+            7,
+            8
           ],
-          "text": "`Document` is the receiver. It knows nothing about commands or history."
+          "text": "A `String` is accepted where a `User` was meant. Nothing flags it."
         },
         {
           "lines": [
-            27,
-            30
+            9,
+            10
           ],
-          "text": "`Append` stores its receiver and text, which is all it needs to undo."
+          "text": "Every caller casts. This one is right, by luck rather than by type."
         },
         {
           "lines": [
-            32,
-            35
+            11,
+            16
           ],
-          "text": "`History` is the invoker. A new command clears the redo stack."
-        },
-        {
-          "lines": [
-            37,
-            44
-          ],
-          "text": "Undo and redo move one command between the two stacks."
-        },
-        {
-          "lines": [
-            6,
-            14
-          ],
-          "text": "`main` runs two edits, undoes one, then redoes it."
+          "text": "The wrong value surfaces only when read, far from where it was stored."
         }
       ]
     },
     {
-      "file": "MediatorDemo.java",
+      "file": "TypedRepository.java",
       "lang": "java",
-      "title": "Mediator",
+      "title": "The fix",
       "run": "captured",
-      "caption": "Two inputs and a button never reference each other. The dialog decides.",
+      "caption": "A bounded generic repository with `Optional` reads and wildcard bulk methods.",
       "walk": [
         {
           "lines": [
-            10,
-            12
+            27,
+            32
           ],
-          "text": "The mediator interface: widgets only report that they changed."
+          "text": "`Entity<ID>` is the bound. Each record states its own id type."
         },
         {
           "lines": [
-            14,
-            28
+            34,
+            37
           ],
-          "text": "Each widget holds the mediator, updates itself, then calls `changed`."
+          "text": "The contract is generic too, so any caller gets typed results."
         },
         {
           "lines": [
-            30,
-            34
+            40,
+            47
           ],
-          "text": "The button has no idea which fields exist."
+          "text": "`T extends Entity<ID>` lets `save` call `item.id()` with no cast."
         },
         {
           "lines": [
-            36,
-            44
+            48,
+            50
           ],
-          "text": "`SignupDialog` owns the rule: valid email and ticked terms enable submit."
+          "text": "`Optional<T>` makes a missing row explicit instead of returning `null`."
         },
         {
           "lines": [
-            3,
-            6
+            51,
+            58
           ],
-          "text": "`main` changes the widgets; every reaction goes through the dialog."
+          "text": "`? extends T` reads from producers; `? super T` writes into consumers."
+        },
+        {
+          "lines": [
+            11,
+            23
+          ],
+          "text": "One class serves users and orders. The commented line would not compile."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Store what `undo` needs inside the command at run time, not in shared fields.",
-    "Watch the mediator's size: when it holds every rule, it becomes a god class.",
-    "Skip Command for one-off calls with no undo, queueing or logging need."
+    "Using raw types like `List` without a parameter: errors move from compile time to runtime.",
+    "Taking `List<T>` when callers have `List<Subtype>`: use `? extends T` for inputs.",
+    "Adding type parameters nobody varies makes signatures noisy; generify only real variation."
   ],
   "quiz": {
-    "q": "What does this print?",
+    "q": "Given `copyTo(Collection<? super T> target)` on a repository of `User`, which call compiles?",
     "options": [
-      "[]",
-      "[abcd]",
-      "[cd]",
-      "[ab]"
+      "copyTo(new ArrayList<String>())",
+      "copyTo(new ArrayList<Object>())",
+      "copyTo(new ArrayList<Entity<Integer>>())",
+      "None: wildcards forbid writing"
     ],
-    "answer": 3,
-    "why": "Two undos empty the undo stack; the third does nothing. The redo stack's top is `ab`, undone last, so redo re-applies it.",
-    "code": "history.run(new Append(doc, \"ab\"));\nhistory.run(new Append(doc, \"cd\"));\nhistory.undo();\nhistory.undo();\nhistory.undo();\nhistory.redo();\nSystem.out.println(doc.text());",
-    "lang": "java"
+    "answer": 1,
+    "why": "`? super User` accepts `User` or any supertype, such as `Object`. `User` is an `Entity<String>`, so `Entity<Integer>` and `String` are not supertypes."
   },
-  "takeaway": "Command makes an action an object; Mediator makes one hub own the interactions.",
+  "takeaway": "Let the caller pick the type; let the compiler stop the wrong one.",
   "chat": {
     "starters": [
-      "How would I add macro commands that group several edits?",
-      "Is a `Runnable` in Java a Command?",
-      "How is Mediator different from Observer?"
+      "When should a method be generic rather than the whole class?",
+      "What does type erasure stop me from doing at runtime?",
+      "How do I remember when to use extends or super in a wildcard?"
     ]
   }
 }

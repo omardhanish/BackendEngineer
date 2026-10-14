@@ -1,0 +1,210 @@
+{
+  "title": "Iterator pattern",
+  "idea": "The Iterator pattern gives callers a cursor that visits a collection's elements one by one, without revealing how the collection stores them.",
+  "points": [
+    "The collection implements `Iterable` and hands out a fresh `Iterator` per traversal.",
+    "Each iterator keeps its own position, so two loops never disturb each other.",
+    "Java's for-each loop calls `iterator()`, then `hasNext()` and `next()` for you.",
+    "Skip a custom iterator when a list will do; return `List.copyOf` or a stream."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "One for-each loop, message by message",
+    "actors": [
+      {
+        "id": "client",
+        "label": "for-each loop"
+      },
+      {
+        "id": "list",
+        "label": "Playlist"
+      },
+      {
+        "id": "cur",
+        "label": "Cursor"
+      }
+    ],
+    "messages": [
+      {
+        "from": "client",
+        "to": "list",
+        "label": "iterator()",
+        "note": "The loop asks the collection for a cursor. It never sees the array inside."
+      },
+      {
+        "from": "list",
+        "to": "cur",
+        "label": "new Cursor()",
+        "note": "The cursor starts at index 0 and records the list's current `modCount`."
+      },
+      {
+        "from": "client",
+        "to": "cur",
+        "label": "hasNext()",
+        "note": "The loop asks first. The cursor compares its index with `size`, not the array length."
+      },
+      {
+        "from": "cur",
+        "to": "client",
+        "label": "next() -> Intro",
+        "dashed": true,
+        "note": "`next()` returns one element and moves the cursor forward by one."
+      },
+      {
+        "from": "client",
+        "to": "list",
+        "label": "add(\"Bonus\")",
+        "note": "Someone changes the playlist mid-loop. Its `modCount` moves past the cursor's snapshot."
+      },
+      {
+        "from": "client",
+        "to": "cur",
+        "label": "next()",
+        "note": "The cursor sees the version changed and refuses to guess."
+      },
+      {
+        "from": "cur",
+        "to": "client",
+        "label": "ConcurrentModification",
+        "dashed": true,
+        "note": "Fail-fast: an exception now beats silently skipping or repeating an element later."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "LeakyPlaylist.java",
+      "lang": "java",
+      "title": "The problem: leaked storage",
+      "run": "captured",
+      "caption": "The playlist hands out its raw array. Callers must know its layout, and they can change it.",
+      "walk": [
+        {
+          "lines": [
+            22,
+            23
+          ],
+          "text": "Storage is an array with spare slots plus a count. That is an internal detail."
+        },
+        {
+          "lines": [
+            26
+          ],
+          "text": "Returning the array itself leaks that detail to every caller."
+        },
+        {
+          "lines": [
+            9,
+            10,
+            11,
+            12
+          ],
+          "text": "The loop trusts `raw.length`, so it plays an empty slot: see the `null` line."
+        },
+        {
+          "lines": [
+            15,
+            16
+          ],
+          "text": "Another caller overwrites a song. The playlist cannot stop it or even notice."
+        },
+        {
+          "lines": [
+            9,
+            26
+          ],
+          "text": "Switch to a linked list later and both clients fail to compile."
+        }
+      ]
+    },
+    {
+      "file": "PlaylistIteratorDemo.java",
+      "lang": "java",
+      "title": "The fix: Iterable + cursor",
+      "run": "captured",
+      "caption": "The playlist hides its array behind `Iterable`. Its iterator is independent, bounded and fail-fast.",
+      "walk": [
+        {
+          "lines": [
+            25,
+            37
+          ],
+          "text": "Implementing `Iterable` is the whole public contract. For-each now works on `Playlist`."
+        },
+        {
+          "lines": [
+            39,
+            40
+          ],
+          "text": "A private inner class reads the array directly; nobody outside can reach it."
+        },
+        {
+          "lines": [
+            10,
+            11,
+            12
+          ],
+          "text": "Two cursors, two positions: advancing `a` does not move `b`."
+        },
+        {
+          "lines": [
+            43,
+            48
+          ],
+          "text": "Bounds come from `size`, so spare array slots are never returned."
+        },
+        {
+          "lines": [
+            14,
+            15
+          ],
+          "text": "Past the end, `next()` throws `NoSuchElementException`, as the `Iterator` contract requires."
+        },
+        {
+          "lines": [
+            28,
+            41,
+            46,
+            47
+          ],
+          "text": "A version counter detects changes during a loop and fails fast, like `ArrayList` does."
+        },
+        {
+          "lines": [
+            17,
+            18,
+            19,
+            20
+          ],
+          "text": "Adding inside the loop trips the check on the next call to `next()`."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "A getter returning the internal array lets callers corrupt state; return an iterator or copy.",
+    "Calling `list.remove` in a for-each loop may throw or silently skip; use `Iterator.remove` or `removeIf`.",
+    "Storing the cursor in the collection, not the iterator, makes nested loops over one list interfere."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "List<String> l = new ArrayList<>(List.of(\"a\", \"b\", \"c\"));\nfor (String s : l) if (s.equals(\"b\")) l.remove(s);\nSystem.out.println(l);",
+    "lang": "java",
+    "options": [
+      "ConcurrentModificationException",
+      "[a, c]",
+      "[a, b, c]",
+      "[a]"
+    ],
+    "answer": 1,
+    "why": "Removing `b` makes size 2 while the cursor is at 2. `hasNext()` returns false, so the loop silently skips `c` and nothing throws."
+  },
+  "takeaway": "Expose a cursor, not your storage; each loop gets its own.",
+  "chat": {
+    "starters": [
+      "How would I write an iterator that filters or skips elements lazily?",
+      "Why is ArrayList's iterator fail-fast but CopyOnWriteArrayList's is not?",
+      "When is returning a Stream better than implementing Iterable?"
+    ]
+  }
+}

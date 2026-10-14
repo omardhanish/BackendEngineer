@@ -1,0 +1,11 @@
+{
+  "stdout": "500 -> 200 OK\n90000 -> 500 internal error\nExpected 90000 -> 402 card declined",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java MessageParsingDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "4a7cfff002c9b21e",
+  "at": "2026-10-12T11:22:05.231Z"
+}

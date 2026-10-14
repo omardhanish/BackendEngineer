@@ -1,0 +1,11 @@
+{
+  "stdout": "Lin (SALARIED): 5450 to Nordbank ****4931\nRaj (HOURLY): 5250 to Citybank ****3000",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java PayrollBefore.java",
+  "tool": "Java 17.0.17",
+  "hash": "f88c3c558c1b60ad",
+  "at": "2026-10-12T11:24:24.985Z"
+}

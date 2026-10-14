@@ -1,0 +1,11 @@
+{
+  "stdout": "T-1 KA01AB1234 at F1-C1 ACTIVE\nlot PL-1 has 3 spots, 1 entry gate\nrejected: TRUCK does not fit F1-C1 (COMPACT)\nrejected: negative amount -500",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ParkingModel.java",
+  "tool": "Java 17.0.17",
+  "hash": "0c78486da858c133",
+  "at": "2026-10-14T08:34:34.185Z"
+}

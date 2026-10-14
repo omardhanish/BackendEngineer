@@ -1,0 +1,194 @@
+{
+ "title": "Court booking API in Express",
+ "idea": "The court booking API exposes availability, create and cancel as REST endpoints, with each layer doing one job and PostgreSQL deciding who gets an hour.",
+ "analogy": {
+  "text": "A club front desk. The clerk checks the form, the manager applies the rules, the records room files it.",
+  "breaks": "The records room here refuses clashes on its own."
+ },
+ "points": [
+  "Controllers parse input with zod and demand an Idempotency-Key on create.",
+  "The service prices the hours and runs everything in one transaction.",
+  "The repository holds SQL only; the unique index reports a taken hour.",
+  "One error middleware maps validation, domain and database errors to status codes."
+ ],
+ "hero": {
+  "type": "table",
+  "title": "Endpoints",
+  "head": [
+   "Method",
+   "Path",
+   "Request",
+   "Success",
+   "Errors"
+  ],
+  "rows": [
+   [
+    "GET",
+    "/courts/:courtId/slots?date=",
+    "none",
+    "200 hourly grid",
+    "400 date, 404 court"
+   ],
+   [
+    "POST",
+    "/bookings",
+    "courtId, startsAt, hours + Idempotency-Key",
+    "201 PENDING; 200 on replay",
+    "400, 404 court, 409 taken"
+   ],
+   [
+    "POST",
+    "/bookings/:id/confirm",
+    "paymentRef",
+    "200 CONFIRMED",
+    "404, 409 expired"
+   ],
+   [
+    "POST",
+    "/bookings/:id/cancel",
+    "none",
+    "200 CANCELLED + refundMinor",
+    "409 not cancellable"
+   ],
+   [
+    "GET",
+    "/players/me/bookings",
+    "none",
+    "200 list by start time",
+    "401"
+   ]
+  ],
+  "highlight": {
+   "row": 1
+  },
+  "caption": "The snippet runs create and cancel of an unpaid hold. Confirm, refunds and the grid follow the same layers."
+ },
+ "code": [
+  {
+   "file": "api.mjs",
+   "lang": "js",
+   "title": "Layered Express app",
+   "run": "captured",
+   "needs": [
+    "postgres"
+   ],
+   "caption": "Repository, service, controllers and error mapping in one file on a real PostgreSQL. Payment, refunds and expiring stale holds (page 6) are left out to keep it short. A rolled-back insert still uses up its SERIAL number, so the last id is BK-4. Real code scopes the Idempotency-Key to the signed-in player, so one user cannot replay another's booking.",
+   "walk": [
+    {
+     "lines": [
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14
+     ],
+     "text": "A trimmed page 6 schema: bookings, one row per hour, and the partial unique index."
+    },
+    {
+     "lines": [
+      16,
+      17,
+      18,
+      19,
+      20,
+      21
+     ],
+     "text": "`tx` gives each service call one transaction and rolls back on any error."
+    },
+    {
+     "lines": [
+      25,
+      26,
+      27,
+      28,
+      29,
+      30
+     ],
+     "text": "Insert the PENDING booking with a deadline, then one slot row per hour."
+    },
+    {
+     "lines": [
+      31,
+      32,
+      33,
+      34
+     ],
+     "text": "This demo cancels only PENDING holds; cancelling CONFIRMED adds the refund step left out."
+    },
+    {
+     "lines": [
+      41,
+      42,
+      43,
+      44,
+      45,
+      46,
+      47,
+      48,
+      49,
+      50
+     ],
+     "text": "Replay a known key; else price each hour (UTC here, the ground's zone in real code), insert, claim."
+    },
+    {
+     "lines": [
+      58,
+      59,
+      60,
+      61,
+      62,
+      63,
+      64,
+      65,
+      66,
+      67,
+      68
+     ],
+     "text": "Controllers validate with `zod`. Express 5 passes async throws to the error middleware."
+    },
+    {
+     "lines": [
+      69,
+      70,
+      71,
+      72,
+      73,
+      74,
+      75,
+      76
+     ],
+     "text": "Map errors by type and by constraint name: a taken hour becomes 409 SLOT_TAKEN."
+    }
+   ]
+  }
+ ],
+ "pitfalls": [
+  "Check the Idempotency-Key before anything else, or a retry gets a 409 instead of a replay.",
+  "Map errors by constraint name, not only by code 23505; two unique rules share it.",
+  "Never keep a transaction open while calling the payment provider."
+ ],
+ "quiz": {
+  "q": "What status does the last request in api.mjs get?",
+  "options": [
+   "409, because key k-2 failed before",
+   "201, because cancelling freed 17:00",
+   "200, a replay of the earlier k-2 call",
+   "409 SLOT_TAKEN, BK-1 still owns 17:00"
+  ],
+  "answer": 1,
+  "why": "The first k-2 call rolled back, so no row stores that key. Cancel set BK-1's slots inactive, so the partial index allows 17:00 again."
+ },
+ "takeaway": "Validate at the edge, decide in the service, let constraints settle races.",
+ "chat": {
+  "starters": [
+   "Why does the failed k-2 request not count as a used key?",
+   "Where should the payment call happen in the confirm endpoint?",
+   "How would I return the refund amount from cancel?"
+  ]
+ }
+}

@@ -1,0 +1,245 @@
+{
+  "title": "Notification service with failover",
+  "idea": "The core implementation is one `NotificationService` that dedupes by idempotency key, checks preferences, then walks an ordered provider list with bounded retries until one provider accepts.",
+  "analogy": {
+    "text": "Calling a support line. You dial a busy number twice, then try the backup number. A wrong number means you stop dialling altogether.",
+    "breaks": "A phone call has no idempotency key; a redial is a new call."
+  },
+  "points": [
+    "The idempotency key is checked first, so a replay returns the stored result.",
+    "An opt-out ends the flow as SKIPPED before any provider is called.",
+    "RETRYABLE retries the same provider, then fails over to the next one.",
+    "REJECTED means the request itself is bad, so failover would not help."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "One OTP through the service",
+    "scenario": {
+      "token": {
+        "label": "k1 OTP",
+        "tone": "req"
+      },
+      "stages": [
+        {
+          "id": "caller",
+          "label": "Caller",
+          "kind": "end"
+        },
+        {
+          "id": "dedupe",
+          "label": "Dedupe",
+          "sub": "byKey map"
+        },
+        {
+          "id": "prefs",
+          "label": "Preferences",
+          "sub": "opt-outs"
+        },
+        {
+          "id": "a",
+          "label": "sms-a",
+          "sub": "primary"
+        },
+        {
+          "id": "b",
+          "label": "sms-b",
+          "sub": "backup",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "A caller sends request `k1`: an OTP by SMS for U-1.",
+          "at": "caller",
+          "slot": "top",
+          "state": {
+            "caller": "active"
+          }
+        },
+        {
+          "caption": "The key `k1` is new, so the service creates N-1 and stores it.",
+          "at": "dedupe",
+          "slot": "top",
+          "state": {
+            "caller": "done",
+            "dedupe": "active"
+          }
+        },
+        {
+          "caption": "U-1 has not muted SMS, so the request continues.",
+          "at": "prefs",
+          "slot": "top",
+          "state": {
+            "caller": "done",
+            "dedupe": "done",
+            "prefs": "active"
+          }
+        },
+        {
+          "caption": "sms-a answers RETRYABLE twice. Each provider gets two tries in total.",
+          "at": "a",
+          "slot": "top",
+          "token": {
+            "label": "k1 try 2",
+            "tone": "err"
+          },
+          "state": {
+            "caller": "done",
+            "dedupe": "done",
+            "prefs": "done",
+            "a": "error"
+          }
+        },
+        {
+          "caption": "The service fails over to sms-b, which accepts on the first try.",
+          "at": "b",
+          "slot": "top",
+          "token": {
+            "label": "k1 OTP",
+            "tone": "req"
+          },
+          "state": {
+            "caller": "done",
+            "dedupe": "done",
+            "prefs": "done",
+            "a": "error",
+            "b": "active"
+          }
+        },
+        {
+          "caption": "N-1 returns as SENT, with all three attempts recorded.",
+          "at": "caller",
+          "slot": "bottom",
+          "token": {
+            "label": "N-1 SENT",
+            "tone": "ok"
+          },
+          "state": {
+            "caller": "active",
+            "dedupe": "done",
+            "prefs": "done",
+            "a": "error",
+            "b": "done"
+          }
+        },
+        {
+          "caption": "The caller retries `k1` after a timeout. Dedupe returns N-1; no provider is called.",
+          "at": "dedupe",
+          "slot": "bottom",
+          "token": {
+            "label": "N-1 again",
+            "tone": "ok"
+          },
+          "state": {
+            "caller": "done",
+            "dedupe": "active"
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "NotificationCore.java",
+      "lang": "java",
+      "title": "Retry and failover",
+      "run": "captured",
+      "caption": "The full send algorithm, single-threaded for now. `Provider.send` now returns a `Result`, not a boolean, so the service can tell retry from reject. Notification is trimmed to id, status and attempts.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7,
+            8
+          ],
+          "text": "sms-a fails twice, sms-b never fails. U-2 has muted email."
+        },
+        {
+          "lines": [
+            9,
+            10,
+            11,
+            12,
+            13
+          ],
+          "text": "Four requests: a fresh OTP, its replay, a muted email, and a bad number."
+        },
+        {
+          "lines": [
+            38,
+            39,
+            40,
+            41,
+            42,
+            43
+          ],
+          "text": "Providers per channel in failover order, tries per provider, preferences, and the key map."
+        },
+        {
+          "lines": [
+            53,
+            54,
+            55,
+            56
+          ],
+          "text": "A known key returns the stored Notification. A new key gets the next id."
+        },
+        {
+          "lines": [
+            57,
+            58,
+            59,
+            60
+          ],
+          "text": "An opt-out is recorded as SKIPPED, so callers can tell it from a failure."
+        },
+        {
+          "lines": [
+            61,
+            62,
+            63,
+            64,
+            65,
+            66,
+            67,
+            68
+          ],
+          "text": "Try each provider up to its budget. OK wins; REJECTED stops everything."
+        },
+        {
+          "lines": [
+            69,
+            70
+          ],
+          "text": "Every provider ran out of tries: the notification is FAILED."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Never fail over on REJECTED; a bad phone number fails at every vendor.",
+    "Store the key before calling providers, or a retry during a slow send sends twice.",
+    "Add a backoff between retries in production; hammering a struggling provider makes it worse."
+  ],
+  "quiz": {
+    "q": "What does the last line of NotificationCore print?",
+    "options": [
+      "calls: sms-a=6 sms-b=2",
+      "calls: sms-a=3 sms-b=1",
+      "calls: sms-a=2 sms-b=1",
+      "calls: sms-a=3 sms-b=2"
+    ],
+    "answer": 1,
+    "why": "N-1 calls sms-a twice and sms-b once. The replay calls nobody. The bad number calls sms-a once and stops: 3 and 1."
+  },
+  "takeaway": "Dedupe first, retry a bounded number of times, then fail over.",
+  "chat": {
+    "starters": [
+      "How do I classify a provider error as RETRYABLE or REJECTED?",
+      "Should a failed SMS fall back to email for the same user?",
+      "Where should backoff between retries live in this design?"
+    ]
+  }
+}

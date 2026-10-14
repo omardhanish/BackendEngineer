@@ -1,0 +1,11 @@
+{
+  "stdout": "RV-1 CONFIRMED -> SEATED\nRV-1 SEATED -> COMPLETED\nRV-2 too early for no-show at 19:10\nRV-2 CONFIRMED -> NO_SHOW\nRV-2 refused NO_SHOW -> SEATED (final)\nRV-3 CONFIRMED -> CANCELLED\nRV-3 refused CANCELLED -> CANCELLED (final)",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ReservationLifecycle.java",
+  "tool": "Java 17.0.17",
+  "hash": "b93f5b91b3294a44",
+  "at": "2026-10-14T08:46:29.113Z"
+}

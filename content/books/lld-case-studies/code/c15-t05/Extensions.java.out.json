@@ -1,0 +1,11 @@
+{
+  "stdout": "console| INFO order OD-7 placed\nconsole| ERROR card \"declined\"\nalerts | {\"level\":\"ERROR\",\"logger\":\"checkout\",\"msg\":\"card \\\"declined\\\"\"}\nconfig rejected: unknown appender kafka",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java Extensions.java",
+  "tool": "Java 17.0.17",
+  "hash": "f73cb5b25cc16483",
+  "at": "2026-10-14T08:48:27.170Z"
+}

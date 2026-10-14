@@ -1,0 +1,11 @@
+{
+  "stdout": "t=0 heartbeat #1 ok\nt=500 heartbeat #1 ok\nt=1000 charge-card #1 gateway timeout, retry at 1100\nt=1000 send-report #1 ok\nt=1000 heartbeat #1 ok\nt=1100 charge-card #2 gateway timeout, retry at 1300\nt=1300 charge-card #3 ok\nt=1500 heartbeat #1 ok\nt=1500 bad-export #1 disk full, retry at 1600\nt=1700 bad-export #2 disk full, retry at 1900\nt=1900 bad-export #3 failed for good: disk full\nT-1 charge-card SUCCEEDED\nT-2 send-report SUCCEEDED\nT-3 heartbeat CANCELLED\nT-4 old-cleanup CANCELLED\nT-5 bad-export FAILED",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java CoreScheduler.java",
+  "tool": "Java 17.0.17",
+  "hash": "14a97ba417c553ab",
+  "at": "2026-10-14T10:23:25.162Z"
+}

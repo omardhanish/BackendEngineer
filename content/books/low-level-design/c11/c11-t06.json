@@ -1,0 +1,293 @@
+{
+  "title": "Patterns in the booking system",
+  "idea": "Incorporating design patterns means placing a known structure exactly where your system expects change, so a new rule or reaction becomes a new class, not an edit.",
+  "points": [
+    "`ConflictPolicy` is a Strategy: each overlap rule lives in its own class.",
+    "`BookingListener` is an Observer: email and audit react without `BookingService` knowing them.",
+    "Pick patterns from the change list in your requirements, never from a pattern catalogue.",
+    "In the interview, name each pattern, the change it absorbs, and its cost."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Two patterns around BookingService",
+    "nodes": [
+      {
+        "id": "svc",
+        "label": "BookingService",
+        "sub": "book(), cancel()"
+      },
+      {
+        "id": "policy",
+        "label": "ConflictPolicy",
+        "sub": "interface: conflicts()"
+      },
+      {
+        "id": "strict",
+        "label": "StrictOverlap",
+        "sub": "no shared minute"
+      },
+      {
+        "id": "gap",
+        "label": "CleaningGap",
+        "sub": "hours between slots"
+      },
+      {
+        "id": "listener",
+        "label": "BookingListener",
+        "sub": "interface: onBooked()"
+      },
+      {
+        "id": "notify",
+        "label": "NotificationService",
+        "sub": "sends the email"
+      },
+      {
+        "id": "audit",
+        "label": "AuditLogger",
+        "sub": "writes the audit line"
+      }
+    ],
+    "edges": [
+      {
+        "from": "svc",
+        "to": "policy",
+        "label": "asks"
+      },
+      {
+        "from": "strict",
+        "to": "policy",
+        "label": "implements",
+        "dashed": true
+      },
+      {
+        "from": "gap",
+        "to": "policy",
+        "label": "implements",
+        "dashed": true
+      },
+      {
+        "from": "svc",
+        "to": "listener",
+        "label": "notifies each"
+      },
+      {
+        "from": "notify",
+        "to": "listener",
+        "label": "implements",
+        "dashed": true
+      },
+      {
+        "from": "audit",
+        "to": "listener",
+        "label": "implements",
+        "dashed": true
+      }
+    ],
+    "steps": [
+      {
+        "caption": "`BookingService` owns the booking flow. It depends on two interfaces, never on concrete rules or reactions.",
+        "active": [
+          "svc"
+        ],
+        "edges": []
+      },
+      {
+        "caption": "Before saving, it asks a `ConflictPolicy` whether the candidate clashes with the room's bookings.",
+        "active": [
+          "svc",
+          "policy"
+        ],
+        "edges": [
+          0
+        ]
+      },
+      {
+        "caption": "Each overlap rule is one Strategy class. The service is built with one of them.",
+        "active": [
+          "policy",
+          "strict",
+          "gap"
+        ],
+        "edges": [
+          1,
+          2
+        ]
+      },
+      {
+        "caption": "Facilities asks for a cleaning gap. You add `CleaningGap`; `BookingService` stays untouched.",
+        "active": [
+          "gap"
+        ],
+        "edges": [
+          2
+        ]
+      },
+      {
+        "caption": "After saving, the service tells every registered `BookingListener`. It does not know who they are.",
+        "active": [
+          "svc",
+          "listener"
+        ],
+        "edges": [
+          3
+        ]
+      },
+      {
+        "caption": "Email and audit are two Observers. A Slack alert would be a third class, not an edit.",
+        "active": [
+          "listener",
+          "notify",
+          "audit"
+        ],
+        "edges": [
+          4,
+          5
+        ]
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "HardCodedBooking.java",
+      "lang": "java",
+      "title": "The problem: rules in if/else",
+      "run": "captured",
+      "caption": "Rules chosen by a mode string, reactions printed inline. A typo silently switches the rule off.",
+      "walk": [
+        {
+          "lines": [
+            20,
+            23
+          ],
+          "text": "The rule is picked by a free-form `String`. The compiler cannot check its value."
+        },
+        {
+          "lines": [
+            26,
+            27,
+            28,
+            29
+          ],
+          "text": "Every new rule adds an `else if` here, so this method changes for every policy request."
+        },
+        {
+          "lines": [
+            30,
+            31,
+            32
+          ],
+          "text": "The overlap maths is mixed with the rule choice, so neither can be tested alone."
+        },
+        {
+          "lines": [
+            40,
+            41
+          ],
+          "text": "Email and audit are hard-coded. Adding a Slack alert means editing the booking method again."
+        },
+        {
+          "lines": [
+            10,
+            11,
+            12
+          ],
+          "text": "`CLEANING-GAP` does not equal `CLEANING_GAP`, so the gap is 0 and the clash is accepted."
+        }
+      ]
+    },
+    {
+      "file": "PatternedBookingDemo.java",
+      "lang": "java",
+      "title": "The fix: Strategy + Observer",
+      "run": "captured",
+      "caption": "The same flow with a `ConflictPolicy` strategy and `BookingListener` observers injected through the constructor.",
+      "walk": [
+        {
+          "lines": [
+            7,
+            8
+          ],
+          "text": "Wiring happens once, at the edge. A wrong policy name is now a compile error."
+        },
+        {
+          "lines": [
+            20,
+            21,
+            22
+          ],
+          "text": "The Strategy contract from the capstone spec. The service only knows this method."
+        },
+        {
+          "lines": [
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31
+          ],
+          "text": "One rule, one class. The compact constructor rejects a negative gap at creation time."
+        },
+        {
+          "lines": [
+            32,
+            33,
+            38
+          ],
+          "text": "The Observer contract. Each listener does one job and can be tested with a fake booking."
+        },
+        {
+          "lines": [
+            55,
+            56,
+            57
+          ],
+          "text": "Dependencies arrive through the constructor. `List.copyOf` stops callers adding listeners later."
+        },
+        {
+          "lines": [
+            62,
+            63,
+            64,
+            65
+          ],
+          "text": "Only this room's bookings go to the policy. A clash throws `RoomTakenException` with a stable code."
+        },
+        {
+          "lines": [
+            67,
+            68
+          ],
+          "text": "Listeners run only after the save, so a rejected booking never sends an email."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Adding a Factory or Builder nobody needs; reviewers ask which requirement it serves.",
+    "Notifying listeners before saving sends emails for bookings that later fail.",
+    "One throwing listener aborts the others; decide whether to catch per listener and log."
+  ],
+  "quiz": {
+    "q": "Some buildings need VIP rooms bookable only by managers. Which change fits this design best?",
+    "options": [
+      "A new `BookingListener` that cancels non-manager VIP bookings",
+      "A new `ConflictPolicy` that rejects VIP slots for non-managers",
+      "A new `BookingPermission` interface that `book()` checks before the policy",
+      "A subclass `VipBookingService` that overrides `book()`"
+    ],
+    "answer": 2,
+    "why": "A permission rule is not a time clash, so it needs its own extension point. A policy bends its contract; a listener acts too late; a subclass duplicates the flow."
+  },
+  "takeaway": "Put a pattern where the requirements predict change, and name that change.",
+  "chat": {
+    "starters": [
+      "Should the repositories in the capstone also be behind interfaces?",
+      "How do I stop one failing listener from blocking the others?",
+      "How many patterns should I mention in a 45-minute LLD interview?"
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "chat: build 41 passed\ndashboard: #41\nchat: build 42 failed\nlistener failed: pager down\nALERT: first red build #42\ndashboard: #42\nchat: build 43 failed\nlistener failed: pager down\ndashboard: #43",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java BuildObserverDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "7e7ceeb56d89fb3f",
+  "at": "2026-10-12T11:25:09.240Z"
+}

@@ -1,0 +1,242 @@
+{
+  "title": "Thread-safe task scheduler",
+  "idea": "A thread-safe scheduler lets many worker threads take due tasks from one queue so that each task runs exactly once and idle workers sleep instead of spinning.",
+  "analogy": {
+    "text": "A deli counter with a ticket roll. Only one hand pulls a ticket at a time, and staff wait on a bell instead of staring at the queue.",
+    "breaks": "A deli bell rings for one customer; signalAll wakes every waiting worker."
+  },
+  "points": [
+    "`PriorityQueue` is not thread-safe; guard every peek and poll with one lock.",
+    "Check and poll the head in one locked step, or workers take undue tasks.",
+    "Idle workers wait on a `Condition`; submit and clock changes signal them.",
+    "Run the job after releasing the lock, so one slow job blocks nobody."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "Two workers, one queue",
+    "actors": [
+      {
+        "id": "c",
+        "label": "Client"
+      },
+      {
+        "id": "a",
+        "label": "Worker A"
+      },
+      {
+        "id": "b",
+        "label": "Worker B"
+      },
+      {
+        "id": "s",
+        "label": "SafeScheduler"
+      }
+    ],
+    "messages": [
+      {
+        "from": "a",
+        "to": "s",
+        "label": "takeDue()",
+        "note": "A takes the lock, finds nothing due, and waits on the condition. Waiting releases the lock."
+      },
+      {
+        "from": "b",
+        "to": "s",
+        "label": "takeDue()",
+        "note": "B waits the same way. Both workers sleep without burning CPU."
+      },
+      {
+        "from": "c",
+        "to": "s",
+        "label": "submit(T-1)",
+        "note": "Submit adds the task under the lock, then calls `signalAll`."
+      },
+      {
+        "from": "s",
+        "to": "a",
+        "label": "T-1",
+        "note": "A wins the lock, re-checks the head, and polls T-1 in the same locked step."
+      },
+      {
+        "from": "s",
+        "to": "b",
+        "label": "nothing due",
+        "dashed": true,
+        "note": "B wakes after A, re-checks, finds an empty head and waits again."
+      },
+      {
+        "from": "a",
+        "to": "s",
+        "label": "takeDue() again",
+        "note": "A ran the job with the lock released, so others were never blocked by it."
+      },
+      {
+        "from": "c",
+        "to": "s",
+        "label": "cancel(id)",
+        "note": "Cancel and claim race on one task's status. Compare-and-set lets exactly one win; `DoubleRun` proves it."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "DoubleRun.java",
+      "lang": "java",
+      "title": "The race, then the fix",
+      "run": "captured",
+      "caption": "A barrier forces both workers to check before either acts, so the race shows every time.",
+      "walk": [
+        {
+          "lines": [
+            13,
+            14,
+            15,
+            16
+          ],
+          "text": "One task status, a run counter, and a barrier for two threads."
+        },
+        {
+          "lines": [
+            20,
+            21,
+            22,
+            23
+          ],
+          "text": "With compare-and-set, the check and the claim are one atomic step."
+        },
+        {
+          "lines": [
+            24,
+            25,
+            26,
+            27,
+            28
+          ],
+          "text": "Without it, check-then-act: both see SCHEDULED, then both claim the task."
+        },
+        {
+          "lines": [
+            30
+          ],
+          "text": "Only a thread that claimed the task runs the job."
+        }
+      ]
+    },
+    {
+      "file": "WorkerPool.java",
+      "lang": "java",
+      "title": "Four workers, one locked queue",
+      "run": "captured",
+      "caption": "Four workers drain 1,200 tasks. Late tasks wait for the clock, and no task runs twice.",
+      "walk": [
+        {
+          "lines": [
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "text": "Each worker loops: take a due task, run it outside the lock."
+        },
+        {
+          "lines": [
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33
+          ],
+          "text": "1,000 tasks are due at 0; 200 are due at 5000."
+        },
+        {
+          "lines": [
+            34,
+            35,
+            36,
+            37,
+            38
+          ],
+          "text": "Advance the clock and wake workers so they re-check the head."
+        },
+        {
+          "lines": [
+            58,
+            59,
+            60,
+            61,
+            62,
+            63,
+            64,
+            65,
+            66
+          ],
+          "text": "Submit adds under the lock and signals waiting workers."
+        },
+        {
+          "lines": [
+            69,
+            70,
+            71,
+            72,
+            73,
+            74,
+            75,
+            76,
+            77,
+            78,
+            79,
+            80,
+            81,
+            82,
+            83
+          ],
+          "text": "Check the head and poll it inside one critical section; otherwise wait."
+        },
+        {
+          "lines": [
+            91,
+            92,
+            93,
+            94
+          ],
+          "text": "Shutdown sets a flag and wakes everyone so the loops exit."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Never call the job while holding the queue lock; one slow job freezes every worker.",
+    "Always re-check the head in a loop after waking; signals and spurious wakeups lie.",
+    "Use compare-and-set for run versus cancel; a plain read then write lets both win."
+  ],
+  "quiz": {
+    "q": "What does the first line of DoubleRun print?",
+    "options": [
+      "check-then-act runs: 1",
+      "check-then-act runs: 2",
+      "check-then-act runs: 0",
+      "It changes from run to run"
+    ],
+    "answer": 1,
+    "why": "The barrier makes both threads read SCHEDULED before either writes RUNNING. Both believe the task is free, so the job runs twice."
+  },
+  "takeaway": "Claim tasks atomically, wait on a condition, run jobs outside the lock.",
+  "chat": {
+    "starters": [
+      "Could I use DelayQueue instead of a lock and a condition?",
+      "Why signalAll instead of signal when a task is submitted?",
+      "How would ScheduledThreadPoolExecutor compare with this design?"
+    ]
+  }
+}

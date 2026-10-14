@@ -1,0 +1,11 @@
+{
+  "stdout": "check-then-act loans: 2\natomic replace loans: 1\nmember at 4, two borrows, safe: 5",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java LastCopyRace.java",
+  "tool": "Java 17.0.17",
+  "hash": "54e79a8c2d016865",
+  "at": "2026-10-14T08:35:36.205Z"
+}

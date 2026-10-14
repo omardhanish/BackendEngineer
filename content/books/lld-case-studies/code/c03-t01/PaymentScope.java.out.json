@@ -1,0 +1,11 @@
+{
+  "stdout": "IN   CUSTOMER  PAY_BY_UPI\nIN   CUSTOMER  PAY_BY_CARD\nIN   CUSTOMER  CHECK_STATUS\nIN   CUSTOMER  RETRY_SAFELY\nIN   MERCHANT  REFUND\nIN   GATEWAY   CONFIRM_ASYNC\nIN   SYSTEM    RECONCILE\nOUT  CUSTOMER  SAVE_CARD\nOUT  MERCHANT  SPLIT_PAYOUT\nOUT  MERCHANT  MULTI_CURRENCY\nv1 covers 7 of 10 use cases",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java PaymentScope.java",
+  "tool": "Java 17.0.17",
+  "hash": "e2804a26f1b6d9a9",
+  "at": "2026-10-14T08:39:51.581Z"
+}

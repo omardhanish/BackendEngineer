@@ -1,0 +1,11 @@
+{
+  "stdout": "-- 2 x BOOK --\n  OrderService -> Inventory: reserve 2\n  OrderService -> Payment: charge 3000\n  OrderService -> Inventory: commit 2\nController <-- CONFIRMED\n-- 4 x BOOK --\n  OrderService -> Inventory: reserve 4\n  OrderService -> Payment: charge 6000\n  OrderService -> Inventory: release 4\nController <-- PAYMENT_DECLINED\nBOOK free 8, sold 2",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java CheckoutTrace.java",
+  "tool": "Java 17.0.17",
+  "hash": "f4dd445eccd08e69",
+  "at": "2026-10-12T11:30:41.682Z"
+}

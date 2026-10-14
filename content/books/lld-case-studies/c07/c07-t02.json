@@ -1,0 +1,79 @@
+{
+  "title": "Cart and order domain model",
+  "idea": "The cart domain model separates what a shopper intends (Cart, CartItem) from what was agreed (Order, Payment), with Product and Inventory as shared catalog data.",
+  "analogy": {
+    "text": "A shopping list versus a till receipt. You scribble and cross out the list freely; the receipt freezes items and prices the moment you pay.",
+    "breaks": "An Order still changes status; a receipt never does."
+  },
+  "points": [
+    "A Cart belongs to one user and holds at most one CartItem per SKU.",
+    "An Order copies the cart lines, so later cart edits never change it.",
+    "Inventory tracks units on hand and units reserved per SKU.",
+    "A Payment belongs to one Order and carries an idempotency key."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Class diagram",
+    "nodes": [
+      { "id": "product", "label": "Product", "sub": "sku, name, priceMinor" },
+      { "id": "cart", "label": "Cart", "sub": "userId, add(), subtotal" },
+      { "id": "item", "label": "CartItem", "sub": "sku, qty, unitPriceMinor" },
+      { "id": "inv", "label": "Inventory", "sub": "onHand, reserved per SKU" },
+      { "id": "order", "label": "Order", "sub": "lines copy, totalMinor" },
+      { "id": "status", "label": "OrderStatus", "sub": "enum" },
+      { "id": "pay", "label": "Payment", "sub": "amountMinor, key" },
+      { "id": "rule", "label": "PricingRule", "sub": "interface, discounts" }
+    ],
+    "edges": [
+      { "from": "cart", "to": "item", "label": "has 0..*", "caption": "A Cart owns its CartItems, at most one per SKU. Adding the same SKU again merges quantities." },
+      { "from": "item", "to": "product", "label": "refers 1", "caption": "A CartItem points at a Product by SKU and remembers the price the shopper saw." },
+      { "from": "inv", "to": "product", "label": "counts 1", "caption": "Inventory counts units per Product SKU. The cart never touches it directly." },
+      { "from": "order", "to": "item", "label": "copies 1..*", "caption": "An Order copies the cart lines at checkout. The copy is immutable." },
+      { "from": "order", "to": "status", "label": "has", "caption": "OrderStatus is an enum. Page 4 turns it into a state machine." },
+      { "from": "pay", "to": "order", "label": "for 1", "caption": "A Payment is for exactly one Order and must have a positive amount." },
+      { "from": "rule", "to": "order", "label": "prices", "dashed": true, "caption": "PricingRule objects compute discounts at checkout. Page 3 implements them." }
+    ]
+  },
+  "code": [
+    {
+      "file": "DomainModel.java",
+      "lang": "java",
+      "title": "The model in Java 17",
+      "run": "captured",
+      "caption": "Records for values, classes where state changes. Invariants live in constructors; money is a long in paise.",
+      "walk": [
+        { "lines": [5, 6, 7, 8, 9], "text": "Two products priced in paise, and stock: five mugs, one T-shirt." },
+        { "lines": [10, 11, 12, 13, 14, 15], "text": "Adding the mug twice merges into one line with quantity three." },
+        { "lines": [16, 17, 18, 19], "text": "The Order copies the cart; a later cart edit leaves the order alone." },
+        { "lines": [20, 21, 22, 23, 24, 25, 26, 27, 28, 29], "text": "Three bad inputs are refused by constructors, each with its own message." },
+        { "lines": [36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48], "text": "Product and CartItem are records; CartItem caps quantity at ten." },
+        { "lines": [54, 55, 56, 57], "text": "`add` merges by SKU, so the cap applies to the merged quantity." },
+        { "lines": [65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77], "text": "Order keeps a frozen copy of lines and starts as PENDING_PAYMENT." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not let Order hold a reference to the live Cart; copy the lines.",
+    "Keep money as long minor units; double cannot store most decimal prices exactly.",
+    "Do not put stock counts on Product; stock changes far more often than catalog data."
+  ],
+  "quiz": {
+    "q": "What does the first rejected line of DomainModel print?",
+    "options": [
+      "rejected: qty must be 1..10, got 9",
+      "rejected: qty must be 1..10, got 13",
+      "rejected: negative price",
+      "Nothing; the mug quantity becomes 13"
+    ],
+    "answer": 1,
+    "why": "The cart already holds four mugs. `add` merges 4 + 9 = 13, and the CartItem constructor rejects anything above ten."
+  },
+  "takeaway": "Cart is editable intent; Order is a frozen copy with a status.",
+  "chat": {
+    "starters": [
+      "Should the cart store the price the shopper saw at all?",
+      "Why is Inventory separate from Product?",
+      "How would I model product variants like size and colour?"
+    ]
+  }
+}

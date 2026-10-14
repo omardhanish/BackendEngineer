@@ -1,203 +1,246 @@
 {
-  "title": "Movie ticket booking design",
-  "idea": "A ticket booking design models movies, theatres, screens, shows and seats, and lets a user hold seats briefly so only one person can pay for each.",
-  "analogy": {
-    "text": "A busy restaurant host pencils your name against a table for ten minutes. Arrive late and the table goes to the next group.",
-    "breaks": "A host may bend the rule; the code never does."
-  },
+  "title": "Small, role-shaped interfaces",
+  "idea": "The Interface Segregation Principle (ISP) says no client should depend on methods it does not use, so you split wide interfaces into small role interfaces.",
   "points": [
-    "`Theatre` has `Screen`s; a `Show` is one `Movie` on one screen at one time.",
-    "Each show seat moves FREE, then HELD with an expiry, then BOOKED.",
-    "Hold and confirm run under one lock, so two users never hold one seat.",
-    "The caller passes the clock in, so expiry is testable and repeatable."
+    "Shape each interface around one client's need, not around one implementing class.",
+    "Symptom: implementations full of empty methods or `UnsupportedOperationException` stubs.",
+    "A class may implement several role interfaces; each client sees only its slice.",
+    "ISP turns runtime crashes into compile errors: the wrong object cannot be passed."
   ],
   "hero": {
-    "type": "seq",
-    "title": "Two users, one seat, one winner",
-    "actors": [
+    "type": "flow",
+    "title": "Clients see only the role they use",
+    "nodes": [
       {
-        "id": "ana",
-        "label": "ana"
+        "id": "viewer",
+        "label": "ReportViewer",
+        "sub": "show(key)"
       },
       {
-        "id": "ben",
-        "label": "ben"
+        "id": "job",
+        "label": "RetentionJob",
+        "sub": "purge(key)"
       },
       {
-        "id": "seats",
-        "label": "ShowSeats"
+        "id": "reader",
+        "label": "DocumentReader",
+        "sub": "read(key)"
       },
       {
-        "id": "pay",
-        "label": "Payment"
+        "id": "writer",
+        "label": "DocumentWriter",
+        "sub": "write, delete"
+      },
+      {
+        "id": "bucket",
+        "label": "BucketStore",
+        "sub": "reads and writes"
+      },
+      {
+        "id": "archive",
+        "label": "LegalArchive",
+        "sub": "reads only"
       }
     ],
-    "messages": [
+    "edges": [
       {
-        "from": "ana",
-        "to": "seats",
-        "label": "hold A1 at 0",
-        "note": "ana picks A1. It is FREE, so it becomes HELD until minute 10."
+        "from": "viewer",
+        "to": "reader",
+        "label": "uses"
       },
       {
-        "from": "seats",
-        "to": "ana",
-        "label": "true",
-        "dashed": true,
-        "note": "ana has the hold and goes to pay."
+        "from": "job",
+        "to": "writer",
+        "label": "uses"
       },
       {
-        "from": "ben",
-        "to": "seats",
-        "label": "hold A1 at 5",
-        "note": "ben wants the same seat. The hold is live, so he is refused."
+        "from": "bucket",
+        "to": "reader",
+        "label": "implements",
+        "dashed": true
       },
       {
-        "from": "ana",
-        "to": "pay",
-        "label": "pay",
-        "note": "ana's payment stalls. Her hold expires at minute 10 while she waits."
+        "from": "bucket",
+        "to": "writer",
+        "label": "implements",
+        "dashed": true
       },
       {
-        "from": "ben",
-        "to": "seats",
-        "label": "hold A1 at 12",
-        "note": "ben retries after the expiry. The stale hold clears and ben holds A1."
+        "from": "archive",
+        "to": "reader",
+        "label": "implements",
+        "dashed": true
+      }
+    ],
+    "steps": [
+      {
+        "caption": "Start from the clients. `ReportViewer` only reads; `RetentionJob` only deletes.",
+        "active": [
+          "viewer",
+          "job"
+        ],
+        "edges": []
       },
       {
-        "from": "ben",
-        "to": "pay",
-        "label": "pay",
-        "note": "ben pays inside his ten-minute window."
+        "caption": "Each client gets an interface cut to its need: `DocumentReader` for one, `DocumentWriter` for the other.",
+        "active": [
+          "viewer",
+          "job",
+          "reader",
+          "writer"
+        ],
+        "edges": [
+          0,
+          1
+        ]
       },
       {
-        "from": "ana",
-        "to": "seats",
-        "label": "confirm A1 at 13",
-        "note": "ana's late confirm is refused: she no longer holds the seat. Refund her."
+        "caption": "`BucketStore` can do both, so it implements both roles. One class, two narrow views.",
+        "active": [
+          "bucket",
+          "reader",
+          "writer"
+        ],
+        "edges": [
+          2,
+          3
+        ]
       },
       {
-        "from": "ben",
-        "to": "seats",
-        "label": "confirm A1 at 13",
-        "note": "Only the live holder may confirm. A1 becomes BOOKED for ben."
+        "caption": "`LegalArchive` is read-only, so it implements only `DocumentReader`. No stub methods, no surprise throws.",
+        "active": [
+          "archive",
+          "reader"
+        ],
+        "edges": [
+          4
+        ]
+      },
+      {
+        "caption": "Handing the archive to `RetentionJob` no longer compiles. The type system blocks the bug before it ships.",
+        "active": [
+          "job",
+          "writer",
+          "archive"
+        ],
+        "edges": [
+          1
+        ]
       }
     ]
   },
   "code": [
     {
-      "file": "SeatHoldDemo.java",
+      "file": "FatStoreDemo.java",
       "lang": "java",
-      "title": "Hold, expire, confirm",
+      "title": "The problem",
       "run": "captured",
-      "caption": "`ShowSeats` is the seat map of one `Show`. The story from the diagram, with the clock passed in as minutes.",
+      "caption": "One wide `DocumentStore` forces a read-only archive to fake its writes. The purge job compiles, then crashes.",
       "walk": [
         {
           "lines": [
-            17,
-            23
+            22,
+            27
           ],
-          "text": "An `enum` for seat states; each seat remembers its holder and expiry."
+          "text": "`DocumentStore` bundles reading and writing into one contract that every store must sign."
         },
         {
           "lines": [
-            34,
-            37
-          ],
-          "text": "An expired hold is cleared when someone next asks for the seat."
-        },
-        {
-          "lines": [
-            38,
-            42
-          ],
-          "text": "Only a FREE seat can be held; the hold lasts `holdMinutes`."
-        },
-        {
-          "lines": [
-            45,
-            51
-          ],
-          "text": "Confirm only for the current holder, and only before the expiry."
-        },
-        {
-          "lines": [
-            34,
+            29,
             34
           ],
-          "text": "`synchronized` makes the check and the change one step per show."
+          "text": "`BucketStore` supports every method, so the wide interface fits it well."
         },
         {
           "lines": [
-            7,
-            13
+            36,
+            45
           ],
-          "text": "`main` replays ana and ben at minutes 0, 5, 12 and 13."
+          "text": "`LegalArchive` cannot write, so it throws from methods it was forced to declare."
+        },
+        {
+          "lines": [
+            47,
+            52
+          ],
+          "text": "`RetentionJob` only needs `delete`, yet its parameter type accepts any store."
+        },
+        {
+          "lines": [
+            10,
+            17
+          ],
+          "text": "The compiler accepts both stores. The archive fails only at runtime, in production."
         }
       ]
     },
     {
-      "file": "SeatRaceDemo.java",
+      "file": "RoleInterfacesDemo.java",
       "lang": "java",
-      "title": "Eight users race",
+      "title": "The fix",
       "run": "captured",
-      "caption": "Eight threads try to hold the same two seats at once. Only counts are printed.",
+      "caption": "Split by role: readers and writers. Each class implements only what it can honour.",
       "walk": [
         {
           "lines": [
-            14,
-            21
-          ],
-          "text": "Eight tasks each ask for seats C4 and C5 together."
-        },
-        {
-          "lines": [
-            22,
+            19,
             24
           ],
-          "text": "Wait for every task to finish before reading the results."
+          "text": "Reading and changing become two roles. `RetentionJob` still sees `write`; split only if a client needs delete alone."
         },
         {
           "lines": [
-            33,
-            38
+            26,
+            35
           ],
-          "text": "All or nothing: check every seat, then take them all, under one lock."
+          "text": "`BucketStore` implements both roles and validates input. `read` returns `Optional` instead of null."
         },
         {
           "lines": [
-            25,
-            26
+            37,
+            42
           ],
-          "text": "Print counts only; which user wins changes from run to run."
+          "text": "`LegalArchive` implements only reading. It has nothing left to fake."
+        },
+        {
+          "lines": [
+            44,
+            60
+          ],
+          "text": "Each client asks for the narrowest role in its constructor, then rejects null."
+        },
+        {
+          "lines": [
+            8,
+            15
+          ],
+          "text": "The viewer works with both stores. Passing the archive to the purge job fails to compile."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Never check-then-take without a lock; two users both see FREE and both book.",
-    "Give every hold an expiry, or abandoned checkouts block seats forever.",
-    "Confirm only for the live holder before expiry, and refund late payments."
+    "Stubbing methods with `UnsupportedOperationException` hides an ISP violation until a caller hits it at runtime.",
+    "Splitting into one-method interfaces nobody asks for creates clutter; split only by real clients.",
+    "Adding an abstract method to a widely used interface breaks every implementer; add a new role."
   ],
   "quiz": {
-    "q": "What does `SeatRaceDemo` print?",
+    "q": "A new `AuditTool` must list all keys, but `LegalArchive` cannot list. Best design?",
     "options": [
-      "winners: 8 then seats held: 2",
-      "winners: 1 then seats held: 2",
-      "winners: 1 then seats held: 16",
-      "Different counts on each run"
+      "Add `listKeys()` to `DocumentReader` and throw in `LegalArchive`",
+      "A new `KeyLister` interface, implemented only by stores that list",
+      "Give `listKeys()` a default method in `DocumentReader` returning null",
+      "Make `AuditTool` cast its reader to `BucketStore`"
     ],
     "answer": 1,
-    "why": "`holdAll` is `synchronized`, so check and take happen as one step. The first thread takes both seats; the other seven see them held.",
-    "code": "// eight threads, each calls:\nholds.holdAll(user, List.of(\"C4\", \"C5\"));\n// then, after awaitTermination:\nSystem.out.println(\"winners: \" + winners.get());\nSystem.out.println(\"seats held: \" + holds.count());",
-    "lang": "java"
+    "why": "A new role interface serves the new client without touching existing implementers. Throwing or returning null recreates the trap; casting couples the tool to one class."
   },
-  "takeaway": "Hold seats briefly under a lock; confirm only as the live holder.",
+  "takeaway": "Interfaces belong to their clients: give each client only what it calls.",
   "chat": {
     "starters": [
-      "How would this work with a database instead of one lock in memory?",
-      "Should each show have its own lock, or one for the whole system?",
-      "How do I release holds when nobody asks for the seat again?"
+      "How is ISP different from SRP?",
+      "Does Java's `List` interface violate ISP with its optional methods?",
+      "How many methods are too many for one interface?"
     ]
   }
 }

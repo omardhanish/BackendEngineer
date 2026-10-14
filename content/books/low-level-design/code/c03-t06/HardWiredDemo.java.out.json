@@ -1,0 +1,11 @@
+{
+  "stdout": "Unit test: issuing an invoice for ACME\n[smtp] connecting to mail.corp.test\n[smtp] to billing@acme.test: INV-1 due 120.00\nTest checks id: INV-1\nReal emails sent by the test: 1",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java HardWiredDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "081d08fbdf06e0fb",
+  "at": "2026-10-12T11:28:24.913Z"
+}

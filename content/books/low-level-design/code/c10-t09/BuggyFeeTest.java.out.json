@@ -1,0 +1,11 @@
+{
+  "stdout": "PASS returned early is free\nPASS on the due date is free\nFAIL last grace day is free\nPASS first charged day: 3 x 25\nPASS cap reached at 20 days\nPASS never above the cap\n5 passed, 1 failed",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java BuggyFeeTest.java",
+  "tool": "Java 17.0.17",
+  "hash": "4beb441aff721995",
+  "at": "2026-10-12T11:34:35.074Z"
+}

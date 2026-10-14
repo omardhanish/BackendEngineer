@@ -1,0 +1,11 @@
+{
+  "stdout": "KA01AB1234 entered with T-1\nKA01AB1234 refused: ALREADY_INSIDE T-1\nT-1 refused: NOT_PAID, barrier stays down\npay-1: DECLINED\npay-1: DECLINED\npay-2: PAID 15000\npay-2: PAID 15000\npay-3: ALREADY_PAID_OR_UNKNOWN\ncharges sent: 2\nT-1 exited, barrier up\nKA01AB1234 entered with T-3",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java EdgeCases.java",
+  "tool": "Java 17.0.17",
+  "hash": "8c92e87e8c8f3197",
+  "at": "2026-10-14T08:36:42.551Z"
+}

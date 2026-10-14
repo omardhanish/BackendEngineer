@@ -1,0 +1,11 @@
+{
+  "stdout": "(1 + 2) * 4\n12",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ExprVisitorDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "cd82088ddf02611e",
+  "at": "2026-10-12T11:18:45.560Z"
+}

@@ -1,0 +1,94 @@
+{
+  "title": "Flight booking service and strategies",
+  "idea": "The core design is one FlightBookingService that runs hold and pay, and reaches fare inventory, pricing and payment only through injected interfaces.",
+  "analogy": {
+    "text": "A travel agent at a desk. The agent follows one script, but phones the airline for seats, checks the price sheet, and swipes the card.",
+    "breaks": "A real agent improvises when a call fails; the service only follows code."
+  },
+  "points": [
+    "FlightBookingService is a facade: callers see only `hold` and `pay`.",
+    "`FareInventory` hides where seat counts live: a map now, PostgreSQL later.",
+    "`PricingStrategy` is the strategy pattern: each pricing rule is its own class.",
+    "`PaymentGateway` and `Clock` are injected, so tests control money and time."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "One booking through the service",
+    "scenario": {
+      "token": { "label": "hold 2 x Y-SAVER", "tone": "req" },
+      "stages": [
+        { "id": "client", "label": "Caller", "kind": "end" },
+        { "id": "svc", "label": "FlightBookingService", "sub": "facade" },
+        { "id": "inv", "label": "FareInventory", "sub": "seat counts" },
+        { "id": "price", "label": "PricingStrategy", "sub": "per passenger" },
+        { "id": "pay", "label": "PaymentGateway", "sub": "charge", "kind": "end" }
+      ],
+      "steps": [
+        { "caption": "Asha asks to hold two Y-SAVER seats on AI-101.", "at": "client", "slot": "top", "state": { "client": "active" } },
+        { "caption": "The service looks up the fare and reads how many seats are left.", "at": "svc", "slot": "top", "state": { "client": "done", "svc": "active" } },
+        { "caption": "The inventory reserves two seats from the count, or refuses the whole request.", "at": "inv", "slot": "top", "state": { "client": "done", "svc": "done", "inv": "active" } },
+        { "caption": "The pricing strategy prices one passenger; the service multiplies by two and freezes the total.", "at": "price", "slot": "top", "state": { "client": "done", "svc": "done", "inv": "done", "price": "active" } },
+        { "caption": "The caller gets PNR-1, HELD, with a deadline from the injected `Clock`.", "at": "client", "slot": "bottom", "token": { "label": "PNR-1 HELD", "tone": "ok" }, "state": { "client": "active", "svc": "done", "inv": "done", "price": "done" } },
+        { "caption": "Another request for two more seats finds one left. Nothing is reserved.", "at": "inv", "slot": "bottom", "token": { "label": "2 more?", "tone": "err" }, "state": { "svc": "done", "inv": "blocked" } },
+        { "caption": "Asha pays before the deadline. The gateway charges the frozen total once.", "at": "pay", "slot": "top", "token": { "label": "pay PNR-1", "tone": "req" }, "state": { "svc": "done", "inv": "done", "price": "done", "pay": "active" } },
+        { "caption": "The service issues one Ticket per passenger and returns the TICKETED booking.", "at": "client", "slot": "bottom", "token": { "label": "TK-1, TK-2", "tone": "ok" }, "state": { "client": "active", "svc": "done", "inv": "done", "price": "done", "pay": "done" } }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "FlightBookingCore.java",
+      "lang": "java",
+      "title": "Service and interfaces",
+      "run": "captured",
+      "caption": "The core flow with every collaborator passed into the constructor. Types are trimmed versions of page 2; the payment gateway is a lambda that always approves. Status is trimmed to HELD and TICKETED here; page 4 adds CONFIRMED between them.",
+      "walk": [
+        { "lines": [6, 7, 8, 9, 10, 11], "text": "A fixed `Clock`, one flight, and an inventory loaded with three seats." },
+        { "lines": [12, 13], "text": "Wire the service with one implementation of each interface." },
+        { "lines": [14, 15, 16, 17, 18, 19, 20, 21], "text": "Hold two seats, print what is left, then try two more and get refused." },
+        { "lines": [46, 47, 48, 49, 50, 51, 52], "text": "Three interfaces: inventory, pricing, payment. Each one is a swap point." },
+        { "lines": [60, 61, 62, 63, 64, 65], "text": "`reserve` refuses unless enough seats remain; it is not thread-safe yet." },
+        { "lines": [89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100], "text": "`hold` reserves seats, prices them, and stamps a 15-minute deadline." },
+        { "lines": [102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116], "text": "`pay` checks the hold is live, charges once, then issues one ticket per passenger." }
+      ]
+    },
+    {
+      "file": "NewPricingRule.java",
+      "lang": "java",
+      "title": "A new pricing strategy",
+      "run": "captured",
+      "caption": "Scarcity pricing added as a new class. The service and the fixed strategy stay untouched.",
+      "walk": [
+        { "lines": [7, 8, 9, 10], "text": "Tiers: 20 percent extra at five or fewer seats, 50 at two or fewer." },
+        { "lines": [11, 12, 13, 14, 15], "text": "Price one passenger under both strategies as seats run out." },
+        { "lines": [28, 29, 30, 31, 32, 33], "text": "The new class copies its tiers into a sorted map." },
+        { "lines": [34, 35, 36, 37], "text": "`ceilingEntry` finds the tightest tier that applies; integer math keeps money exact." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not add `if (fewSeatsLeft)` branches to the service; write a new strategy.",
+    "Freeze the total at hold time, or the traveller pays a price never shown.",
+    "Never call `Instant.now()` inside the service; inject a `Clock`."
+  ],
+  "quiz": {
+    "q": "What does NewPricingRule print for 3 seats left?",
+    "options": [
+      "left 3: fixed 450000, scarcity 675000",
+      "left 3: fixed 450000, scarcity 540000",
+      "left 3: fixed 450000, scarcity 450000",
+      "left 3: fixed 540000, scarcity 540000"
+    ],
+    "answer": 1,
+    "why": "The smallest tier key at or above 3 is 5, which adds 20 percent. 450000 times 120 over 100 is 540000; the fixed strategy ignores seats left."
+  },
+  "takeaway": "One facade service; every rule that changes sits behind an injected interface.",
+  "chat": {
+    "starters": [
+      "Should the price be computed before or after reserving seats?",
+      "How would I test FlightBookingService with a gateway that declines?",
+      "When would a decorator fit better than a new strategy here?"
+    ]
+  }
+}

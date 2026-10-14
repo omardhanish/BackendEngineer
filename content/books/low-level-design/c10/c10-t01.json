@@ -1,0 +1,252 @@
+{
+  "title": "Cohesion and coupling",
+  "idea": "High cohesion means a class's members all serve one purpose; low coupling means it knows as little as possible about other classes.",
+  "analogy": {
+    "text": "In a good kitchen each station keeps its own tools. Waiters pass orders through the hatch; they never open the chef's fridge.",
+    "breaks": "Cooks can improvise; classes only honour the methods they publish."
+  },
+  "points": [
+    "Cohesion asks: do this class's fields and methods change for the same reason?",
+    "Coupling asks: how many other classes break when this one changes inside?",
+    "Ask an object a question; never reach into its internals and do its maths.",
+    "In interviews, justify each class by naming its one job and its few collaborators."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "A promo reaching into the cart",
+    "nodes": [
+      {
+        "id": "promo",
+        "label": "PromoEngine",
+        "sub": "discountCents(Cart)"
+      },
+      {
+        "id": "list",
+        "label": "Leaked List<Item>",
+        "sub": "the cart's live list"
+      },
+      {
+        "id": "cart",
+        "label": "Cart",
+        "sub": "private items, totalCents(), totalOfItemsAtLeast"
+      },
+      {
+        "id": "item",
+        "label": "Item",
+        "sub": "name, priceCents"
+      },
+      {
+        "id": "receipt",
+        "label": "Receipt page",
+        "sub": "shows cart.totalCents()"
+      }
+    ],
+    "edges": [
+      {
+        "from": "promo",
+        "to": "list",
+        "label": "removeIf cheap"
+      },
+      {
+        "from": "list",
+        "to": "item",
+        "label": "reads price"
+      },
+      {
+        "from": "receipt",
+        "to": "cart",
+        "label": "total"
+      },
+      {
+        "from": "cart",
+        "to": "item",
+        "label": "owns"
+      },
+      {
+        "from": "promo",
+        "to": "cart",
+        "label": "totalOfItemsAtLeast"
+      }
+    ],
+    "steps": [
+      {
+        "caption": "`PromoEngine` gets the cart's internal list and filters it in place. It now depends on how `Cart` stores items.",
+        "active": [
+          "promo",
+          "list"
+        ],
+        "edges": [
+          0
+        ]
+      },
+      {
+        "caption": "It also reads each `Item` price itself. Pricing maths that belongs to the cart now lives outside it.",
+        "active": [
+          "promo",
+          "list",
+          "item"
+        ],
+        "edges": [
+          0,
+          1
+        ]
+      },
+      {
+        "caption": "The receipt page asks `Cart` for its total. The promo deleted the sticker, so the total silently drops to 4000.",
+        "active": [
+          "receipt",
+          "cart"
+        ],
+        "edges": [
+          2
+        ]
+      },
+      {
+        "caption": "Raise cohesion: `Cart` owns its items and every calculation over them. Its getter returns a copy.",
+        "active": [
+          "cart",
+          "item"
+        ],
+        "edges": [
+          3
+        ]
+      },
+      {
+        "caption": "Lower coupling: the promo asks `Cart` one question and never sees a `List` or an `Item`.",
+        "active": [
+          "promo",
+          "cart"
+        ],
+        "edges": [
+          4
+        ]
+      },
+      {
+        "caption": "The receipt and the promo now share only the `Cart` methods. Changing storage inside `Cart` breaks neither.",
+        "active": [
+          "receipt",
+          "cart",
+          "promo"
+        ],
+        "edges": [
+          2,
+          4
+        ]
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "LeakyCart.java",
+      "lang": "java",
+      "title": "The problem",
+      "run": "captured",
+      "caption": "The promo reaches into the cart and edits its list. Compare the totals before and after.",
+      "walk": [
+        {
+          "lines": [
+            24,
+            25
+          ],
+          "text": "`items()` returns the live list, so every caller is coupled to the cart's storage."
+        },
+        {
+          "lines": [
+            32,
+            36
+          ],
+          "text": "The promo filters that list in place to find eligible items. It mutates someone else's state."
+        },
+        {
+          "lines": [
+            37,
+            39
+          ],
+          "text": "The discount maths sits outside `Cart`, although it uses only the cart's data: low cohesion."
+        },
+        {
+          "lines": [
+            10,
+            13
+          ],
+          "text": "The discount is right, but the cart lost an item. The bug shows up far from its cause."
+        }
+      ]
+    },
+    {
+      "file": "CohesiveCart.java",
+      "lang": "java",
+      "title": "The fix",
+      "run": "captured",
+      "caption": "`Cart` answers questions about its own items; the promo depends on one method and an interface.",
+      "walk": [
+        {
+          "lines": [
+            18,
+            23
+          ],
+          "text": "`Item` validates itself, so no other class has to check prices."
+        },
+        {
+          "lines": [
+            27,
+            31
+          ],
+          "text": "Items are private and the getter returns `List.copyOf`. Outsiders cannot edit the cart."
+        },
+        {
+          "lines": [
+            33,
+            38
+          ],
+          "text": "Both totals use one method over the cart's own data. That is high cohesion."
+        },
+        {
+          "lines": [
+            41,
+            44
+          ],
+          "text": "`Promo` is a narrow contract. New promos plug in without touching `Cart`."
+        },
+        {
+          "lines": [
+            46,
+            50
+          ],
+          "text": "The promo asks one question and does one division. It knows nothing about storage."
+        },
+        {
+          "lines": [
+            11,
+            14
+          ],
+          "text": "The cart is unchanged after the promo runs. Each class owns its own effects."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Getters returning live collections let any caller corrupt state; return `List.copyOf` or an unmodifiable view.",
+    "Long chains like `a.getB().getC().getD()` couple you to three classes; ask the first one instead.",
+    "A `Utils` or `Manager` class with unrelated methods has low cohesion; every team edits it."
+  ],
+  "quiz": {
+    "q": "A `ReportService` reads `order.getCustomer().getAddress().getCountry()` to pick a tax rate. What is the best change?",
+    "options": [
+      "Make Address fields public to skip the getters",
+      "Add order.taxCountry() and let Order answer it",
+      "Copy the country into ReportService at startup",
+      "Make ReportService extend Order to reach the fields"
+    ],
+    "answer": 1,
+    "why": "`Order` already holds the path to the country, so it should answer. `ReportService` then depends on one method, not on `Customer` and `Address` too."
+  },
+  "takeaway": "Keep related work together; let classes ask, not reach in.",
+  "chat": {
+    "starters": [
+      "How do I measure coupling in a class I already have?",
+      "Can a class be too cohesive, split into pieces that are too small?",
+      "How do cohesion and coupling relate to SRP and DIP?"
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "Total before promo: 4500\nPromo discount: 400\nTotal after promo: 4000\nItems left: 1",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java LeakyCart.java",
+  "tool": "Java 17.0.17",
+  "hash": "ef32c50de8587cc0",
+  "at": "2026-10-12T11:17:40.523Z"
+}

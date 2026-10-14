@@ -1,0 +1,11 @@
+{
+  "stdout": "check-then-act: winners=2 hours claimed=4 hours stored=3\nper-court lock: winners=1 hours claimed=2 hours stored=2",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java SlotRace.java",
+  "tool": "Java 17.0.17",
+  "hash": "3c17263088cd650d",
+  "at": "2026-10-14T08:36:34.203Z"
+}

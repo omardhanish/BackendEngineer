@@ -1,0 +1,11 @@
+{
+  "stdout": "GET    STATUS_503    key=false -> RETRY\nPUT    TIMEOUT       key=false -> RETRY\nPOST   STATUS_503    key=false -> FAIL FAST\nPOST   STATUS_503    key=true  -> RETRY\nGET    STATUS_404    key=false -> FAIL FAST\nDELETE CONNECT_ERROR key=false -> RETRY\nIN  Caller: SEND_REQUEST\nIN  ApiClient: RETRY_TRANSIENT_FAILURE\nIN  ApiClient: ENFORCE_TIMEOUT_BUDGET\nIN  ApiClient: OPEN_CIRCUIT_WHEN_DOWNSTREAM_FAILS\nIN  Operator: CONFIGURE_POLICY_PER_SERVICE\nOUT Caller: CACHE_RESPONSES\nOUT ApiClient: HEDGE_SLOW_REQUESTS\nOUT Operator: SHARE_BREAKER_STATE_ACROSS_HOSTS",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java Scope.java",
+  "tool": "Java 17.0.17",
+  "hash": "b091431417ab1394",
+  "at": "2026-10-14T08:42:18.535Z"
+}

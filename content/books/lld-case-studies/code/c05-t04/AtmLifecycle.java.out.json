@@ -1,0 +1,11 @@
+{
+  "stdout": "ATM-7 refused IDLE -> DISPENSING\nATM-7 IDLE -> CARD_INSERTED\nATM-7 wrong PIN 1/3\nATM-7 CARD_INSERTED -> AUTHENTICATED\nATM-7 AUTHENTICATED -> DISPENSING\nATM-7 DISPENSING -> IDLE\nATM-7 IDLE -> CARD_INSERTED\nATM-7 wrong PIN 1/3\nATM-7 wrong PIN 2/3\nATM-7 wrong PIN 3/3\nATM-7 card retained\nATM-7 CARD_INSERTED -> IDLE\nATM-7 IDLE -> OUT_OF_SERVICE\nATM-7 refused OUT_OF_SERVICE -> CARD_INSERTED",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java AtmLifecycle.java",
+  "tool": "Java 17.0.17",
+  "hash": "e2c37b854dede68d",
+  "at": "2026-10-14T08:33:33.358Z"
+}

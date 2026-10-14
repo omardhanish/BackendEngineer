@@ -1,0 +1,11 @@
+{
+  "stdout": "STANDARD 2kg: 700\nexpress 2kg: 0\nEXPRESS -5kg: -350\nSAME_DAY 1kg: 1500, days 4",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ShippingScript.java",
+  "tool": "Java 17.0.17",
+  "hash": "84bc127a38b4ab8c",
+  "at": "2026-10-12T11:16:44.382Z"
+}

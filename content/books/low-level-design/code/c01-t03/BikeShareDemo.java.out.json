@@ -1,0 +1,11 @@
+{
+  "stdout": "bob is not riding B1\nalice is at the ride limit\nDocked: [B2@Quay, B3@Quay, B1@Park]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java BikeShareDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "3a3e9a6359ec0199",
+  "at": "2026-10-12T11:43:10.060Z"
+}

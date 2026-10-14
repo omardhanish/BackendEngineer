@@ -1,0 +1,11 @@
+{
+  "stdout": "total GBP 120.00\ntotal INR 118.00\nbad postcode SW1A 1AA\nerror: no kit for region FR",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java RegionKitDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "7e4fa9ef10ba9efd",
+  "at": "2026-10-12T11:30:37.481Z"
+}

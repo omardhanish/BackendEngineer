@@ -1,0 +1,11 @@
+{
+  "stdout": "A=99000 B=101000\ntotal=200000\nrejected: insufficient funds",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java BankTransferDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "cf566d4d12ecf669",
+  "at": "2026-10-12T11:09:02.768Z"
+}

@@ -1,0 +1,323 @@
+{
+  "title": "Decorator pattern",
+  "idea": "The Decorator pattern wraps an object in another object with the same interface, adding behaviour before or after each forwarded call, without editing the original class.",
+  "analogy": {
+    "text": "A phone in a rugged case, then a card wallet clipped on. Each layer adds one feature, and you still use the phone the same way.",
+    "breaks": "A case cannot change what the phone does; a decorator can change results."
+  },
+  "points": [
+    "A decorator implements the component interface and wraps one instance of it.",
+    "Each method adds its step and forwards the call; wrapping order sets step order.",
+    "`java.io` uses it: a `BufferedReader` wraps a `FileReader` to add buffering.",
+    "Use it for optional, combinable extras; one fixed extra step needs no pattern."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "One charge through three wrappers",
+    "scenario": {
+      "token": {
+        "label": "charge A-1",
+        "tone": "req"
+      },
+      "stages": [
+        {
+          "id": "client",
+          "label": "Caller",
+          "sub": "sees PaymentGateway",
+          "kind": "end"
+        },
+        {
+          "id": "log",
+          "label": "Logging",
+          "sub": "outermost"
+        },
+        {
+          "id": "limit",
+          "label": "LimitCheck",
+          "sub": "max 10000"
+        },
+        {
+          "id": "retry",
+          "label": "Retrying",
+          "sub": "3 attempts"
+        },
+        {
+          "id": "card",
+          "label": "CardGateway",
+          "sub": "real work",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "The caller holds a `PaymentGateway`. It cannot tell how many wrappers sit behind it.",
+          "at": "client",
+          "slot": "top",
+          "state": {
+            "client": "active"
+          }
+        },
+        {
+          "caption": "`Logging` adds its before-step, then forwards to the object it wraps.",
+          "at": "log",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "log": "active"
+          }
+        },
+        {
+          "caption": "`LimitCheck` sees 2500 is under the limit, so it forwards too.",
+          "at": "limit",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "log": "done",
+            "limit": "active"
+          }
+        },
+        {
+          "caption": "`Retrying` makes attempt 1 on the real gateway.",
+          "at": "retry",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "log": "done",
+            "limit": "done",
+            "retry": "active"
+          }
+        },
+        {
+          "caption": "`CardGateway` times out and throws. Only `Retrying` is built to handle that.",
+          "at": "card",
+          "slot": "bottom",
+          "token": {
+            "label": "timeout",
+            "tone": "err"
+          },
+          "state": {
+            "client": "done",
+            "log": "done",
+            "limit": "done",
+            "retry": "done",
+            "card": "error"
+          }
+        },
+        {
+          "caption": "`Retrying` catches the exception and calls the gateway again. This time it pays.",
+          "at": "card",
+          "slot": "bottom",
+          "token": {
+            "label": "PAID",
+            "tone": "ok"
+          },
+          "state": {
+            "client": "done",
+            "log": "done",
+            "limit": "done",
+            "retry": "active",
+            "card": "done"
+          }
+        },
+        {
+          "caption": "The result unwinds through each wrapper. `Logging` adds its after-step on the way out.",
+          "at": "log",
+          "slot": "bottom",
+          "token": {
+            "label": "PAID",
+            "tone": "ok"
+          },
+          "state": {
+            "client": "done",
+            "log": "active",
+            "limit": "done",
+            "retry": "done",
+            "card": "done"
+          }
+        },
+        {
+          "caption": "A 50000 charge stops at `LimitCheck`. The inner layers never run.",
+          "at": "limit",
+          "slot": "bottom",
+          "token": {
+            "label": "DECLINED",
+            "tone": "err"
+          },
+          "state": {
+            "client": "done",
+            "log": "done",
+            "limit": "blocked"
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "SubclassExplosion.java",
+      "lang": "java",
+      "title": "The problem: subclasses",
+      "run": "captured",
+      "caption": "Adding features by inheritance: every mix needs its own class, and code gets copied.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "text": "Four classes already, for only two features on one gateway."
+        },
+        {
+          "lines": [
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33
+          ],
+          "text": "Logging is welded to `CardGateway`. A wallet gateway needs its own copy."
+        },
+        {
+          "lines": [
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41
+          ],
+          "text": "The limit check is welded to the card gateway too."
+        },
+        {
+          "lines": [
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50
+          ],
+          "text": "This copies the logging lines. It logs, then `super.charge` checks the limit: order fixed at compile time."
+        },
+        {
+          "lines": [
+            14,
+            15,
+            16,
+            17
+          ],
+          "text": "Add retry as a third feature: each gateway needs 7 subclasses (2^3 - 1), so two need 14."
+        }
+      ]
+    },
+    {
+      "file": "GatewayDecoratorDemo.java",
+      "lang": "java",
+      "title": "The fix: decorators",
+      "run": "captured",
+      "caption": "Three small wrappers, each with one job, stacked around any `PaymentGateway`.",
+      "walk": [
+        {
+          "lines": [
+            11
+          ],
+          "text": "The component interface. Callers and every wrapper depend only on this."
+        },
+        {
+          "lines": [
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18
+          ],
+          "text": "The concrete component does the real work. It fails once to trigger retry."
+        },
+        {
+          "lines": [
+            20,
+            21,
+            22,
+            23,
+            24,
+            25
+          ],
+          "text": "The base decorator holds the wrapped object. `requireNonNull` rejects a missing one early."
+        },
+        {
+          "lines": [
+            28,
+            29,
+            30,
+            31,
+            32
+          ],
+          "text": "`Logging` acts before and after forwarding, and returns the inner result unchanged."
+        },
+        {
+          "lines": [
+            42,
+            43,
+            44
+          ],
+          "text": "`LimitCheck` may short-circuit: an over-limit charge never reaches the inner layers."
+        },
+        {
+          "lines": [
+            54,
+            55,
+            56,
+            57,
+            58,
+            59
+          ],
+          "text": "`Retrying` calls the inner object again on failure, then rethrows after the last attempt."
+        },
+        {
+          "lines": [
+            5,
+            6
+          ],
+          "text": "Composition happens at runtime. Reorder the constructors to change the behaviour."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Putting `LimitCheck` inside `Retrying` re-checks the limit on every attempt; decide the wrapping order on purpose.",
+    "Code that checks `instanceof CardGateway` breaks once the object is wrapped; depend on the interface.",
+    "A `default` interface method a decorator forgets to override silently skips the wrapped object."
+  ],
+  "quiz": {
+    "q": "Same classes as the demo. How many times does `log: charge B-7` print?",
+    "code": "PaymentGateway gw =\n    new Retrying(new Logging(new CardGateway()), 3);\ngw.charge(\"B-7\", 900);",
+    "lang": "java",
+    "options": [
+      "Once",
+      "Twice",
+      "Three times",
+      "Never"
+    ],
+    "answer": 1,
+    "why": "`Logging` is inside `Retrying`, so each attempt passes through it. The first attempt times out, the second pays: two before-steps."
+  },
+  "takeaway": "A decorator is the same interface plus one extra step, wrapped around another.",
+  "chat": {
+    "starters": [
+      "How is a decorator different from a proxy if both wrap an object?",
+      "How does BufferedReader use the Decorator pattern in java.io?",
+      "When should I prefer a decorator over a Strategy or a subclass?"
+    ]
+  }
+}

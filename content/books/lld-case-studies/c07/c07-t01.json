@@ -1,0 +1,74 @@
+{
+  "title": "Shopping cart requirements",
+  "idea": "Scoping a shopping cart means naming who uses it, what they can do, the rule that must never break, and what v1 leaves out.",
+  "points": [
+    "Shoppers browse products, edit a cart, check out, pay, and cancel orders.",
+    "The core rule: never sell more units than the warehouse holds.",
+    "Stock is reserved at checkout, not when an item enters a cart.",
+    "Assume many cart edits, few checkouts, and spikes during sales."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Who does what in v1",
+    "nodes": [
+      { "id": "shopper", "label": "Shopper", "sub": "signed-in user" },
+      { "id": "browse", "label": "Browse products", "sub": "price, in stock?" },
+      { "id": "cart", "label": "Edit cart", "sub": "add, change qty, remove" },
+      { "id": "checkout", "label": "Check out", "sub": "price, reserve stock" },
+      { "id": "pay", "label": "Pay once", "sub": "order becomes PAID" },
+      { "id": "cancel", "label": "Cancel order", "sub": "before it ships" },
+      { "id": "sys", "label": "System sweeper", "sub": "frees unpaid stock" },
+      { "id": "out", "label": "Out of scope", "sub": "returns, admin, search" }
+    ],
+    "edges": [
+      { "from": "shopper", "to": "browse", "caption": "The shopper starts on product pages that show price and whether stock exists." },
+      { "from": "browse", "to": "cart", "caption": "Adding to the cart only records intent. No stock is taken yet." },
+      { "from": "cart", "to": "checkout", "caption": "Checkout reprices every line and reserves stock for all lines, or for none." },
+      { "from": "checkout", "to": "pay", "caption": "Payment turns the order PAID. The reservation becomes a real stock deduction." },
+      { "from": "pay", "to": "cancel", "caption": "A shopper may cancel before shipping. Stock goes back and money is refunded." },
+      { "from": "sys", "to": "checkout", "label": "expires", "dashed": true, "caption": "The system is an actor too: it releases stock held by orders nobody paid for." },
+      { "from": "shopper", "to": "out", "dashed": true, "caption": "Returns, catalog admin screens and search wait for a later version. Say so out loud." }
+    ]
+  },
+  "code": [
+    {
+      "file": "CartScope.java",
+      "lang": "java",
+      "title": "Use cases as an enum",
+      "run": "captured",
+      "caption": "The scope written as code: every use case names its actor, and v1 is an explicit set.",
+      "walk": [
+        { "lines": [5, 6, 7], "text": "v1 is a named set. A use case not in it is out of scope." },
+        { "lines": [8, 9, 10], "text": "Print every use case with an IN or OUT tag and its actor." },
+        { "lines": [11, 12, 13], "text": "Count v1 use cases per actor. An `EnumMap` keeps the order stable." },
+        { "lines": [17], "text": "Three actors: the shopper, the system itself, and an admin." },
+        { "lines": [20, 21, 22, 23, 24, 25], "text": "Six use cases form the buying path, including stock release by the system." },
+        { "lines": [26, 27, 28], "text": "Catalog admin, returns and recommendations are listed, so the cut is visible." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not reserve stock on add-to-cart; idle carts would lock up the whole catalog.",
+    "State traffic numbers as assumptions; never present a guess as a measured fact.",
+    "Forgetting the system actor hides the release of unpaid stock until late."
+  ],
+  "quiz": {
+    "q": "When should the design take stock away from other shoppers?",
+    "options": [
+      "When the item is added to a cart",
+      "When the order ships from the warehouse",
+      "At checkout, as a reservation with an expiry",
+      "Never; check stock only after payment"
+    ],
+    "answer": 2,
+    "why": "Reserving at checkout protects the paying shopper for a short time. Earlier locks out browsers; later lets two people pay for one unit."
+  },
+  "takeaway": "Agree on actors, use cases and the no-overselling rule before designing.",
+  "chat": {
+    "starters": [
+      "Should guest carts without login be in v1 scope?",
+      "How long should a checkout reservation last?",
+      "Which scale assumptions should I state for a cart in an interview?"
+    ]
+  }
+}

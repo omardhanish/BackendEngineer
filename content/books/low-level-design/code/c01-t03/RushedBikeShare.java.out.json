@@ -1,0 +1,11 @@
+{
+  "stdout": "alice rides: 1\nbob rides: -2\nB1: DOCKED\nB9: DOCKED",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java RushedBikeShare.java",
+  "tool": "Java 17.0.17",
+  "hash": "7592686c4e868a05",
+  "at": "2026-10-12T11:43:09.437Z"
+}

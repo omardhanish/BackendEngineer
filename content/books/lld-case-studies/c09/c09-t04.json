@@ -1,0 +1,190 @@
+{
+  "title": "Hotel reservation lifecycle",
+  "idea": "A reservation's lifecycle is a state machine: seven statuses, a fixed set of allowed moves, and date guards that refuse moves at the wrong time.",
+  "points": [
+    "HELD becomes CONFIRMED on payment, EXPIRED at the deadline, or CANCELLED on decline.",
+    "CONFIRMED moves to CHECKED_IN, CANCELLED, or NO_SHOW after the check-in date.",
+    "CHECKED_OUT, CANCELLED, EXPIRED and NO_SHOW are terminal: nothing leaves them.",
+    "Every move asks the enum first, then checks the date guard."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "Reserve, pay, arrive, leave",
+    "actors": [
+      {
+        "id": "guest",
+        "label": "Guest"
+      },
+      {
+        "id": "svc",
+        "label": "ReservationService"
+      },
+      {
+        "id": "inv",
+        "label": "InventoryStore"
+      },
+      {
+        "id": "pay",
+        "label": "PaymentGateway"
+      },
+      {
+        "id": "desk",
+        "label": "Front desk"
+      }
+    ],
+    "messages": [
+      {
+        "from": "guest",
+        "to": "svc",
+        "label": "hold(DLX, 10-13 Mar)",
+        "note": "The guest picks a room type and dates. A Reservation is created in HELD."
+      },
+      {
+        "from": "svc",
+        "to": "inv",
+        "label": "reserve(3 nights)",
+        "note": "One Deluxe unit is taken on each of the three nights, or none."
+      },
+      {
+        "from": "svc",
+        "to": "guest",
+        "label": "RS-1 HELD, 15 min",
+        "dashed": true,
+        "note": "The guest gets a deadline. If it passes, the system moves RS-1 to EXPIRED."
+      },
+      {
+        "from": "guest",
+        "to": "svc",
+        "label": "confirm(RS-1, token)",
+        "note": "The guest pays inside the deadline."
+      },
+      {
+        "from": "svc",
+        "to": "pay",
+        "label": "charge(total)",
+        "note": "The service charges the held total once."
+      },
+      {
+        "from": "pay",
+        "to": "svc",
+        "label": "ok",
+        "dashed": true,
+        "note": "Payment succeeded: HELD moves to CONFIRMED. A decline moves it to CANCELLED and frees the nights."
+      },
+      {
+        "from": "desk",
+        "to": "svc",
+        "label": "checkIn(RS-1, room 201)",
+        "note": "On 10 March the desk assigns a real Room. CONFIRMED moves to CHECKED_IN."
+      },
+      {
+        "from": "desk",
+        "to": "svc",
+        "label": "checkOut(RS-1)",
+        "note": "On 13 March the guest leaves. CHECKED_IN moves to CHECKED_OUT, a terminal state."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "ReservationLifecycle.java",
+      "lang": "java",
+      "title": "Status enum with guards",
+      "run": "captured",
+      "caption": "Allowed moves live in the enum; date guards live in Reservation. Wrong moves are refused and reported.",
+      "walk": [
+        {
+          "lines": [
+            8,
+            9,
+            10,
+            11,
+            12
+          ],
+          "text": "RS-1 takes the happy path, but first tries to check in a day early."
+        },
+        {
+          "lines": [
+            13,
+            14,
+            15,
+            16
+          ],
+          "text": "RS-2 never arrives, then a late check-in is attempted."
+        },
+        {
+          "lines": [
+            17,
+            18,
+            19
+          ],
+          "text": "RS-3 expires, then a payment arrives for it anyway."
+        },
+        {
+          "lines": [
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33
+          ],
+          "text": "`next()` lists the allowed next statuses; terminal ones return an empty set."
+        },
+        {
+          "lines": [
+            44
+          ],
+          "text": "First guard: is this move in the enum's allowed set at all?"
+        },
+        {
+          "lines": [
+            45,
+            46,
+            47,
+            48
+          ],
+          "text": "Date guards: no check-in before the date, no no-show until the day has passed."
+        },
+        {
+          "lines": [
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55
+          ],
+          "text": "Report and stop on refusal; otherwise print the move and change status."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not set `status` directly from controllers; every change must go through `move`.",
+    "Treat a late payment for an EXPIRED hold as a refund case, never a confirm.",
+    "Mark NO_SHOW only after the check-in day ends, in the hotel's own time zone."
+  ],
+  "quiz": {
+    "q": "What does ReservationLifecycle print for RS-2's check-in?",
+    "options": [
+      "RS-2 NO_SHOW -> CHECKED_IN",
+      "RS-2 refused NO_SHOW -> CHECKED_IN (not allowed)",
+      "RS-2 refused NO_SHOW -> CHECKED_IN (before check-in date)",
+      "RS-2 CONFIRMED -> CHECKED_IN"
+    ],
+    "answer": 1,
+    "why": "RS-2 is already NO_SHOW, a terminal status. Its `next()` set is empty, so the first guard refuses before any date check runs."
+  },
+  "takeaway": "Statuses change only through allowed moves, each checked against the calendar.",
+  "chat": {
+    "starters": [
+      "What should happen when a NO_SHOW guest turns up the next morning?",
+      "Should early check-in be a separate status or just a guard?",
+      "Where does the job that expires HELD reservations run?"
+    ]
+  }
+}

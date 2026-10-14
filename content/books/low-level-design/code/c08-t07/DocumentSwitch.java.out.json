@@ -1,0 +1,11 @@
+{
+  "stdout": "PUBLISHED: sneaky change",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java DocumentSwitch.java",
+  "tool": "Java 17.0.17",
+  "hash": "f736f3507e207881",
+  "at": "2026-10-12T11:18:43.769Z"
+}

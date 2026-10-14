@@ -1,0 +1,11 @@
+{
+  "stdout": "Top 2: [ana, ben]\nTop 2: [dee, ben]\nPlayers: 3",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java HappyPathDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "058e0fec7c0332af",
+  "at": "2026-10-12T11:27:56.200Z"
+}

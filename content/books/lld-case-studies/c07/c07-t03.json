@@ -1,0 +1,325 @@
+{
+  "title": "Checkout service and pricing rules",
+  "idea": "The core design is one CheckoutService that reprices the cart, reserves stock and charges payment, talking to each part only through an interface.",
+  "analogy": {
+    "text": "A supermarket till. The cashier scans every item at today's price, applies the coupons in order, checks the shelf count, then runs the card.",
+    "breaks": "A cashier can bend a coupon rule; a PricingRule cannot."
+  },
+  "points": [
+    "CheckoutService is a facade: callers see one `checkout` method, nothing else.",
+    "Each discount is a `PricingRule` strategy; new promotions are new classes.",
+    "Rules run in list order, and each one sees the running total.",
+    "Stock is reserved for all lines or none, and released if payment fails."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "One checkout through the service",
+    "scenario": {
+      "token": {
+        "label": "3 mugs, 1 tee",
+        "tone": "req"
+      },
+      "stages": [
+        {
+          "id": "caller",
+          "label": "Caller",
+          "kind": "end"
+        },
+        {
+          "id": "svc",
+          "label": "CheckoutService",
+          "sub": "facade"
+        },
+        {
+          "id": "rules",
+          "label": "PricingRule list",
+          "sub": "in order"
+        },
+        {
+          "id": "inv",
+          "label": "Inventory",
+          "sub": "all or nothing"
+        },
+        {
+          "id": "pay",
+          "label": "PaymentGateway",
+          "sub": "charge",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "U-7 checks out a cart with three mugs and one T-shirt.",
+          "at": "caller",
+          "slot": "top",
+          "state": {
+            "caller": "active"
+          }
+        },
+        {
+          "caption": "The service reprices every line from the catalog, not from the cart.",
+          "at": "svc",
+          "slot": "top",
+          "state": {
+            "caller": "done",
+            "svc": "active"
+          }
+        },
+        {
+          "caption": "Each PricingRule takes its discount from the running total, in list order.",
+          "at": "rules",
+          "slot": "top",
+          "token": {
+            "label": "subtotal",
+            "tone": "req"
+          },
+          "state": {
+            "caller": "done",
+            "svc": "done",
+            "rules": "active"
+          }
+        },
+        {
+          "caption": "Inventory checks every line first, then reserves them all together.",
+          "at": "inv",
+          "slot": "top",
+          "token": {
+            "label": "reserve 4",
+            "tone": "req"
+          },
+          "state": {
+            "caller": "done",
+            "svc": "done",
+            "rules": "done",
+            "inv": "active"
+          }
+        },
+        {
+          "caption": "The gateway charges the discounted total once.",
+          "at": "pay",
+          "slot": "top",
+          "token": {
+            "label": "charge total",
+            "tone": "req"
+          },
+          "state": {
+            "caller": "done",
+            "svc": "done",
+            "rules": "done",
+            "inv": "done",
+            "pay": "active"
+          }
+        },
+        {
+          "caption": "Success returns an Order with subtotal, discount and total frozen.",
+          "at": "caller",
+          "slot": "bottom",
+          "token": {
+            "label": "OR-1",
+            "tone": "ok"
+          },
+          "state": {
+            "caller": "active",
+            "svc": "done",
+            "rules": "done",
+            "inv": "done",
+            "pay": "done"
+          }
+        },
+        {
+          "caption": "U-9 wants the T-shirt, but none are left. Nothing is reserved or charged.",
+          "at": "inv",
+          "slot": "bottom",
+          "token": {
+            "label": "OUT_OF_STOCK",
+            "tone": "err"
+          },
+          "state": {
+            "inv": "blocked"
+          }
+        },
+        {
+          "caption": "U-8's card is declined. The service releases the mugs it had reserved.",
+          "at": "pay",
+          "slot": "bottom",
+          "token": {
+            "label": "declined",
+            "tone": "err"
+          },
+          "state": {
+            "inv": "done",
+            "pay": "error"
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "CoreCheckout.java",
+      "lang": "java",
+      "title": "Service and interfaces",
+      "run": "captured",
+      "caption": "The core flow with every collaborator injected. This trimmed version charges inside checkout; page 4 splits out the PENDING_PAYMENT step. CartItem drops the price here; Line holds the catalog price used at checkout.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7,
+            8
+          ],
+          "text": "Wire the service: catalog prices, stock, one pricing rule and a fake gateway."
+        },
+        {
+          "lines": [
+            9,
+            10,
+            11,
+            12
+          ],
+          "text": "U-7 buys three mugs and a T-shirt; print the frozen totals."
+        },
+        {
+          "lines": [
+            13,
+            14,
+            15
+          ],
+          "text": "U-9 hits empty stock; U-8 is declined. Then count the mugs left."
+        },
+        {
+          "lines": [
+            33,
+            34
+          ],
+          "text": "Two interfaces are the swap points: pricing rules and the payment gateway."
+        },
+        {
+          "lines": [
+            55,
+            56,
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63
+          ],
+          "text": "Reserve checks every line before changing any; release gives units back."
+        },
+        {
+          "lines": [
+            78,
+            79,
+            80,
+            81,
+            82,
+            83,
+            84
+          ],
+          "text": "Reprice from the catalog, then let each rule cut the running total."
+        },
+        {
+          "lines": [
+            85,
+            86,
+            87,
+            88,
+            89,
+            90,
+            91,
+            92,
+            93
+          ],
+          "text": "Reserve, charge, release on decline, and return an immutable Order."
+        }
+      ]
+    },
+    {
+      "file": "RuleOrder.java",
+      "lang": "java",
+      "title": "A new rule, rule order",
+      "run": "captured",
+      "caption": "A buy-3-pay-for-2 rule added as a new class; no old class is edited. The same cart priced with three rule lists.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7,
+            8
+          ],
+          "text": "One cart and two rules: 10 percent off above 2000.00, and 3 mugs for 2."
+        },
+        {
+          "lines": [
+            9,
+            10,
+            11,
+            12,
+            13
+          ],
+          "text": "Price the cart with one rule, then with both rules in each order."
+        },
+        {
+          "lines": [
+            16,
+            17,
+            18,
+            19,
+            20
+          ],
+          "text": "The same loop as the service: each rule cuts the running total."
+        },
+        {
+          "lines": [
+            38,
+            39,
+            40,
+            41,
+            42
+          ],
+          "text": "The new strategy only needs a SKU and the buy and pay counts."
+        },
+        {
+          "lines": [
+            43,
+            44,
+            45,
+            46,
+            47,
+            48
+          ],
+          "text": "Every full group of three makes one unit free; never discount below zero."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not add `if (saleDay)` branches to CheckoutService; add a PricingRule class instead.",
+    "Never trust the price stored in the cart; reprice from the catalog at checkout.",
+    "Rule order changes the total; make the order explicit configuration, not list luck."
+  ],
+  "quiz": {
+    "q": "What does RuleOrder print on its last line?",
+    "options": [
+      "10%, then 3-for-2: 179700",
+      "10%, then 3-for-2: 156740",
+      "10%, then 3-for-2: 206640",
+      "10%, then 3-for-2: 161730"
+    ],
+    "answer": 1,
+    "why": "10 percent of 229600 leaves 206640. The mug rule then removes one free mug, 49900, giving 156740."
+  },
+  "takeaway": "One facade service; every promotion is a PricingRule applied in a stated order.",
+  "chat": {
+    "starters": [
+      "Is a list of PricingRules the chain of responsibility pattern?",
+      "How do I stop two promotions from stacking when they should not?",
+      "Where should the rule order come from in production?"
+    ]
+  }
+}

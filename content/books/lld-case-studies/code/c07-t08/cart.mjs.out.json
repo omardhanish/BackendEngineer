@@ -1,0 +1,11 @@
+{
+  "stdout": "QTY_CHANGED      CART    {\"MUG\":2} -\nQTY_SAVED        CART    {\"MUG\":2} -\nQTY_CHANGED      CART    {\"MUG\":2,\"TEE\":3} -\nQTY_FAILED       CART    {\"MUG\":2} - Could not update TEE.\nQTY_CHANGED      CART    {\"MUG\":2,\"TEE\":1} -\nQTY_SAVED        CART    {\"MUG\":2,\"TEE\":1} -\nCHECKOUT_CLICKED PLACING {\"MUG\":2,\"TEE\":1} ck-1\nCHECKOUT_CLICKED PLACING {\"MUG\":2,\"TEE\":1} ck-1\nNETWORK_ERROR    CART    {\"MUG\":2,\"TEE\":1} ck-1 Connection lost. Try again.\nCHECKOUT_CLICKED PLACING {\"MUG\":2,\"TEE\":1} ck-1\nCHECKOUT_FAILED  CART    {\"MUG\":2,\"TEE\":1} ck-1 Checkout failed: OUT_OF_STOCK.\nCHECKOUT_CLICKED PLACING {\"MUG\":2,\"TEE\":1} ck-1\nORDER_PLACED     PAYING  {\"MUG\":2,\"TEE\":1} ck-1\nQTY_CHANGED      PAYING  {\"MUG\":2,\"TEE\":1} ck-1",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node cart.mjs",
+  "tool": null,
+  "hash": "0d79d6e75df77234",
+  "at": "2026-10-14T10:23:44.721Z"
+}

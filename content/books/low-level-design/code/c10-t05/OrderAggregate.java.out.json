@@ -1,0 +1,11 @@
+{
+  "stdout": "add dock -> rejected: over budget\n2 laptops -> rejected: over budget\nadd cable -> rejected: already submitted\ntotal 90000, lines 1",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java OrderAggregate.java",
+  "tool": "Java 17.0.17",
+  "hash": "5d1c774e17d7c35f",
+  "at": "2026-10-12T11:32:36.006Z"
+}

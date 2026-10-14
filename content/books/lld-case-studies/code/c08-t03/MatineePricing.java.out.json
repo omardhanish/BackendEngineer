@@ -1,0 +1,11 @@
+{
+  "stdout": "SH-2 A1 = 20000\nSH-1 A1 = 25000",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java MatineePricing.java",
+  "tool": "Java 17.0.17",
+  "hash": "afb74cfac536aa8b",
+  "at": "2026-10-12T11:17:26.615Z"
+}

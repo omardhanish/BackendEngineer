@@ -1,0 +1,11 @@
+{
+  "stdout": "E1 IDLE -> MOVING\nE1 MOVING -> DOORS_OPEN\nE1 refused DOORS_OPEN -> MOVING\nE1 DOORS_OPEN -> IDLE\nE1 IDLE -> MOVING\nE1 MOVING -> OUT_OF_SERVICE\nE1 refused OUT_OF_SERVICE -> MOVING\nE1 OUT_OF_SERVICE -> IDLE",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ElevatorLifecycle.java",
+  "tool": "Java 17.0.17",
+  "hash": "e4d20fd5920ddcac",
+  "at": "2026-10-14T08:34:42.025Z"
+}

@@ -1,0 +1,231 @@
+{
+  "title": "Builder pattern",
+  "idea": "The Builder pattern collects an object's settings step by step in a separate builder, then creates a valid, immutable object in one final `build()` call.",
+  "analogy": {
+    "text": "A sandwich counter: you name the bread, add fillings one at a time, and nothing is handed over until the order is complete.",
+    "breaks": "The counter never refuses an order; `build()` rejects invalid combinations."
+  },
+  "points": [
+    "It replaces long constructors where two `int` arguments can be swapped silently.",
+    "Required values go in the builder's constructor; optional ones get defaults and fluent setters.",
+    "`build()` checks cross-field rules once, so no half-built object ever escapes.",
+    "The JDK uses it: `StringBuilder`, `Stream.builder()` and `HttpRequest.newBuilder()`."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "From builder calls to one object",
+    "actors": [
+      {
+        "id": "client",
+        "label": "Caller"
+      },
+      {
+        "id": "builder",
+        "label": "JobConfig.Builder"
+      },
+      {
+        "id": "config",
+        "label": "JobConfig"
+      }
+    ],
+    "messages": [
+      {
+        "from": "client",
+        "to": "builder",
+        "label": "builder(\"sync-orders\")",
+        "note": "The required name goes in first. A builder without it cannot exist."
+      },
+      {
+        "from": "builder",
+        "to": "client",
+        "label": "this",
+        "dashed": true,
+        "note": "Each setter stores a value and returns the same builder, so calls chain."
+      },
+      {
+        "from": "client",
+        "to": "builder",
+        "label": "retries(3).timeoutSec(30)",
+        "note": "Optional values are named at the call site. Swapping them is now visible."
+      },
+      {
+        "from": "client",
+        "to": "builder",
+        "label": "tag(\"nightly\")",
+        "note": "Collections grow inside the builder. No `JobConfig` exists yet."
+      },
+      {
+        "from": "client",
+        "to": "builder",
+        "label": "build()",
+        "note": "`build()` checks every rule, including ones that span two fields."
+      },
+      {
+        "from": "builder",
+        "to": "config",
+        "label": "new JobConfig(this)",
+        "note": "The private constructor copies the values and freezes the tag list with `List.copyOf`."
+      },
+      {
+        "from": "config",
+        "to": "client",
+        "label": "immutable JobConfig",
+        "dashed": true,
+        "note": "The caller gets a finished object with only `final` fields and no setters."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "TelescopingProblem.java",
+      "lang": "java",
+      "title": "The problem: telescoping",
+      "run": "captured",
+      "caption": "Overloaded constructors hide argument meaning; setters let an invalid object exist.",
+      "walk": [
+        {
+          "lines": [
+            26,
+            27,
+            28,
+            29,
+            30,
+            31
+          ],
+          "text": "Each overload adds one parameter and chains to the next. Three optional fields already need four constructors."
+        },
+        {
+          "lines": [
+            6,
+            7
+          ],
+          "text": "Both calls compile: the types match. Only the order of two `int` values tells them apart."
+        },
+        {
+          "lines": [
+            9
+          ],
+          "text": "Retries and timeout trade places in the printed line. Nothing warned the author."
+        },
+        {
+          "lines": [
+            12,
+            13
+          ],
+          "text": "The JavaBeans style creates the object first. It is usable before its name is set."
+        },
+        {
+          "lines": [
+            15,
+            16
+          ],
+          "text": "Each setter runs alone, so no rule checks the whole object. A negative timeout slips in."
+        }
+      ]
+    },
+    {
+      "file": "JobConfigDemo.java",
+      "lang": "java",
+      "title": "The fix: a builder",
+      "run": "captured",
+      "caption": "A static nested builder: named steps, defaults, one validation point and an immutable result.",
+      "walk": [
+        {
+          "lines": [
+            31,
+            32,
+            33,
+            34,
+            35,
+            36
+          ],
+          "text": "The only constructor is private and takes the builder. `List.copyOf` freezes the tags."
+        },
+        {
+          "lines": [
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56
+          ],
+          "text": "The required name is final in the builder. Optional fields start with sensible defaults."
+        },
+        {
+          "lines": [
+            58,
+            59,
+            60,
+            61,
+            62,
+            63
+          ],
+          "text": "Each setter returns `this`, which makes the fluent chain on lines 7 and 8 work."
+        },
+        {
+          "lines": [
+            65,
+            66,
+            67,
+            68,
+            69,
+            70,
+            71,
+            72,
+            73,
+            74
+          ],
+          "text": "`build()` validates single fields and the cross-field worst-case time, then creates the object."
+        },
+        {
+          "lines": [
+            12,
+            13,
+            14,
+            15
+          ],
+          "text": "The builder keeps its own list. Adding a tag later cannot change an object already built."
+        },
+        {
+          "lines": [
+            17,
+            18,
+            19,
+            20,
+            21
+          ],
+          "text": "Ten retries of 120 seconds breaks the 600-second rule. The error names the exact problem."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Validating in each setter misses cross-field rules; check the whole object in `build()`.",
+    "Passing the builder's own list into the object leaks later changes; copy it in the constructor.",
+    "Adding a builder to a two-field class is noise; use a constructor or a `record` there."
+  ],
+  "quiz": {
+    "q": "Same `JobConfig` as the demo. What does this print?",
+    "code": "JobConfig.Builder b = JobConfig.builder(\"etl\")\n        .timeoutSec(0);\nb.timeoutSec(90);\nSystem.out.println(b.build());",
+    "lang": "java",
+    "options": [
+      "IllegalStateException on timeoutSec(0)",
+      "etl retries=0 timeout=0s tags=[]",
+      "etl retries=0 timeout=90s tags=[]",
+      "IllegalStateException on build()"
+    ],
+    "answer": 2,
+    "why": "Setters only store values; rules run in `build()`. By then the timeout is 90, which is valid, and the other fields keep their defaults."
+  },
+  "takeaway": "Collect settings in a builder; validate once in `build()`; return an immutable object.",
+  "chat": {
+    "starters": [
+      "When should I use a builder instead of a record or a static factory?",
+      "How does Lombok's @Builder compare to writing the builder by hand?",
+      "How do I enforce required fields at compile time with a step builder?"
+    ]
+  }
+}

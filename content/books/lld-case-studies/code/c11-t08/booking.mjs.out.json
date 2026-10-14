@@ -1,0 +1,11 @@
+{
+  "stdout": "SEARCH          LOADING    -     - []\nSLOTS_OK        CHOOSING   -     - [\"19:00\",\"19:30\",\"20:00\"]\nPICK            CHOOSING   19:00 - [\"19:00\",\"19:30\",\"20:00\"]\nCONFIRM_CLICKED SUBMITTING 19:00 rk-1 [\"19:00\",\"19:30\",\"20:00\"]\nCONFIRM_CLICKED SUBMITTING 19:00 rk-1 [\"19:00\",\"19:30\",\"20:00\"]\nREQUEST_FAILED  CHOOSING   19:00 rk-1 [\"19:00\",\"19:30\",\"20:00\"] Could not book. Try again.\nCONFIRM_CLICKED SUBMITTING 19:00 rk-1 [\"19:00\",\"19:30\",\"20:00\"]\nNO_TABLE        CHOOSING   -     - [\"19:30\",\"20:00\"] That time was just taken. Pick another.\nPICK            CHOOSING   19:30 - [\"19:30\",\"20:00\"]\nCONFIRM_CLICKED SUBMITTING 19:30 rk-2 [\"19:30\",\"20:00\"]\nBOOKED          DONE       19:30 rk-2 [\"19:30\",\"20:00\"]",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node booking.mjs",
+  "tool": null,
+  "hash": "064f7d5656bfe05c",
+  "at": "2026-10-14T08:51:56.317Z"
+}

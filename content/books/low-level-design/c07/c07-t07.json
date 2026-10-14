@@ -1,0 +1,243 @@
+{
+  "title": "Proxy pattern",
+  "idea": "The Proxy pattern puts a stand-in with the same interface in front of a real object, to control creation, access rights or caching.",
+  "analogy": {
+    "text": "A receptionist answers for a busy director. They check who you are, answer common questions themselves, and only fetch the director when needed.",
+    "breaks": "A proxy has the exact interface of the real object; a receptionist does not."
+  },
+  "points": [
+    "Virtual proxies delay creation, protection proxies check rights, caching proxies reuse earlier results.",
+    "Decorator adds features you stack; Proxy controls access; Adapter changes the interface itself.",
+    "`java.lang.reflect.Proxy` builds interface proxies; Spring wraps `@Transactional` beans in JDK or CGLIB proxies.",
+    "A call the real object makes on `this` skips the proxy entirely."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "One proxy, three jobs",
+    "actors": [
+      {
+        "id": "client",
+        "label": "Caller"
+      },
+      {
+        "id": "proxy",
+        "label": "GuardedReports"
+      },
+      {
+        "id": "real",
+        "label": "Warehouse"
+      }
+    ],
+    "messages": [
+      {
+        "from": "client",
+        "to": "proxy",
+        "label": "get(q1) as ivy",
+        "note": "The caller holds a `Reports`. It cannot tell a proxy from the real thing."
+      },
+      {
+        "from": "proxy",
+        "to": "client",
+        "label": "SecurityException",
+        "dashed": true,
+        "note": "Protection: ivy is not an analyst, so the call stops. The warehouse is never even created."
+      },
+      {
+        "from": "client",
+        "to": "proxy",
+        "label": "get(q1) as ana",
+        "note": "An analyst asks for the same report. The proxy allows it."
+      },
+      {
+        "from": "proxy",
+        "to": "real",
+        "label": "new Warehouse()",
+        "note": "Virtual: the expensive connection is made now, on the first allowed call, not at startup."
+      },
+      {
+        "from": "proxy",
+        "to": "real",
+        "label": "get(q1)",
+        "note": "The proxy forwards the exact call it received."
+      },
+      {
+        "from": "real",
+        "to": "proxy",
+        "label": "report q1",
+        "dashed": true,
+        "note": "The proxy stores the result before passing it back."
+      },
+      {
+        "from": "proxy",
+        "to": "client",
+        "label": "report q1",
+        "dashed": true,
+        "note": "The caller gets the same answer the real object gave."
+      },
+      {
+        "from": "client",
+        "to": "proxy",
+        "label": "get(q1) again",
+        "note": "Caching: the second request for q1 arrives."
+      },
+      {
+        "from": "proxy",
+        "to": "client",
+        "label": "report q1 (cache hit)",
+        "dashed": true,
+        "note": "The proxy answers from its cache. The warehouse does no work."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "ReportProxyDemo.java",
+      "lang": "java",
+      "title": "A hand-written proxy",
+      "run": "captured",
+      "caption": "One proxy class that checks rights, connects lazily and caches results.",
+      "walk": [
+        {
+          "lines": [
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29
+          ],
+          "text": "The subject interface and the real subject. Its constructor is the expensive part."
+        },
+        {
+          "lines": [
+            30,
+            31,
+            32,
+            33,
+            34
+          ],
+          "text": "The proxy implements the same interface and holds a factory, not a live object."
+        },
+        {
+          "lines": [
+            40,
+            41
+          ],
+          "text": "Protection first: a denied caller costs nothing and never triggers the connection."
+        },
+        {
+          "lines": [
+            42,
+            43
+          ],
+          "text": "Caching next: a repeat request is answered without touching the real object."
+        },
+        {
+          "lines": [
+            44,
+            45,
+            46
+          ],
+          "text": "Virtual last: the real object is built on the first miss, then reused."
+        },
+        {
+          "lines": [
+            39
+          ],
+          "text": "`synchronized` makes lazy creation and the `HashMap` cache safe across threads."
+        },
+        {
+          "lines": [
+            8,
+            9,
+            13
+          ],
+          "text": "Callers build the proxy and only ever see `Reports`; swapping it in changes no caller code."
+        }
+      ]
+    },
+    {
+      "file": "DynamicProxyDemo.java",
+      "lang": "java",
+      "title": "JDK dynamic proxy",
+      "run": "captured",
+      "caption": "The JDK generates the proxy class at runtime. Note what the audit does not see.",
+      "walk": [
+        {
+          "lines": [
+            35,
+            36,
+            37
+          ],
+          "text": "One `InvocationHandler` receives every interface call, with the `Method` and its arguments."
+        },
+        {
+          "lines": [
+            38
+          ],
+          "text": "Reflection wraps thrown exceptions; rethrow the cause, or callers get `UndeclaredThrowableException` instead."
+        },
+        {
+          "lines": [
+            40,
+            41,
+            42
+          ],
+          "text": "`newProxyInstance` creates a class implementing the interface. It only works for interfaces."
+        },
+        {
+          "lines": [
+            28,
+            29,
+            30
+          ],
+          "text": "`basket` calls `price` on `this`, the real object, so those inner calls skip the proxy."
+        },
+        {
+          "lines": [
+            11
+          ],
+          "text": "The output shows one audit line for `basket`, not three. Spring self-invocation fails the same way."
+        },
+        {
+          "lines": [
+            12,
+            13,
+            14,
+            15
+          ],
+          "text": "The original `IllegalArgumentException` reaches the caller unchanged."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Calling a `@Transactional` method from its own class skips the proxy; its transaction settings are ignored.",
+    "A proxy around a cheap object with no access rules only adds indirection; call it directly.",
+    "A lazy proxy without synchronisation can create the real object twice under concurrent first calls."
+  ],
+  "quiz": {
+    "q": "With the classes from the dynamic proxy demo, how many lines starting with `audit:` does this print?",
+    "code": "PriceService svc =\n    Audited.wrap(new ShopPrices(), PriceService.class);\nsvc.basket(\"tea\", \"cake\");\nsvc.price(\"tea\");",
+    "lang": "java",
+    "options": [
+      "None",
+      "One",
+      "Two",
+      "Three"
+    ],
+    "answer": 2,
+    "why": "Each call on the proxy is audited once. The two `price` calls inside `basket` go through `this`, so they skip the handler."
+  },
+  "takeaway": "A proxy keeps the interface and decides whether, when and how calls happen.",
+  "chat": {
+    "starters": [
+      "How do I tell Proxy, Decorator and Adapter apart in an interview?",
+      "Why does @Transactional not work when I call the method from the same class?",
+      "When would I need CGLIB instead of a JDK dynamic proxy?"
+    ]
+  }
+}

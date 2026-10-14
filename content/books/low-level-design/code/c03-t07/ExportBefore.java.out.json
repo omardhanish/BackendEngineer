@@ -1,0 +1,11 @@
+{
+  "stdout": "[ftp] orders.csv = id,cents;A1,250;A2,990\n[ftp] orders.json = [{\"id\":\"A1\"},{\"id\":\"A2\"},]\nfailed: unknown format xml",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ExportBefore.java",
+  "tool": "Java 17.0.17",
+  "hash": "38c6bbb5a19ec25f",
+  "at": "2026-10-12T11:15:50.785Z"
+}

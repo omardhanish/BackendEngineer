@@ -1,0 +1,196 @@
+{
+  "title": "Parking API in Express",
+  "idea": "The parking API exposes entries, tickets and payments as REST resources, with each layer doing one job: controller validates, service decides inside a transaction, repository runs SQL.",
+  "analogy": {
+    "text": "A toll booth. The booth clerk checks your pass is readable, the supervisor decides the charge, and the cash drawer only stores money.",
+    "breaks": "A supervisor can bend rules; the service never does."
+  },
+  "points": [
+    "Entering is `POST /entries`; it returns 201 with a ticket, or 409.",
+    "Paying is `POST /tickets/:id/payments` with an Idempotency-Key; replays return 200.",
+    "`zod` rejects bad bodies and missing keys with 400 before the service runs.",
+    "One error middleware maps domain errors and constraint names to status codes."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "Endpoints",
+    "head": [
+      "Method",
+      "Path",
+      "Request",
+      "Success",
+      "Errors"
+    ],
+    "rows": [
+      [
+        "POST",
+        "/entries",
+        "plate, vehicleType",
+        "201 ticketId, spotId",
+        "400, 409 full or inside"
+      ],
+      [
+        "GET",
+        "/tickets/:id/fee",
+        "none",
+        "200 amountMinor so far",
+        "404 ticket"
+      ],
+      [
+        "POST",
+        "/tickets/:id/payments",
+        "Idempotency-Key header",
+        "201 payment; 200 on replay",
+        "400, 409 not payable"
+      ],
+      [
+        "POST",
+        "/tickets/:id/exit",
+        "none",
+        "200 EXITED, spot freed",
+        "404, 409 not paid"
+      ],
+      [
+        "GET",
+        "/availability",
+        "none",
+        "200 free count per spot type",
+        "none"
+      ]
+    ],
+    "highlight": {
+      "row": 2
+    },
+    "caption": "The snippet below runs the two POST routes that change money and spots. The others follow the same layers."
+  },
+  "code": [
+    {
+      "file": "api.mjs",
+      "lang": "js",
+      "title": "Layered Express app",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "Repository, service, controllers and error mapping in one file, on a real PostgreSQL. Charging the card is left out; the Payment System chapter covers it.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14
+          ],
+          "text": "Trimmed schema: spots, tickets with one open visit per plate, payments with a unique key."
+        },
+        {
+          "lines": [
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22
+          ],
+          "text": "A fixed demo clock, fit and rate tables, and `tx` for one transaction per call."
+        },
+        {
+          "lines": [
+            24,
+            25,
+            26,
+            27,
+            28
+          ],
+          "text": "One UPDATE locks and occupies the first free fitting spot, skipping rows other gates hold."
+        },
+        {
+          "lines": [
+            41,
+            42,
+            43,
+            44,
+            45
+          ],
+          "text": "Service `enter`: 409 LOT_FULL when no row comes back, else insert the ticket."
+        },
+        {
+          "lines": [
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55
+          ],
+          "text": "Service `pay`: replay a known key (real code checks its ticket), else pay an ACTIVE ticket."
+        },
+        {
+          "lines": [
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63,
+            64,
+            65,
+            66,
+            67,
+            68,
+            69
+          ],
+          "text": "Controllers parse with `zod`; Express 5 forwards async throws to the error middleware."
+        },
+        {
+          "lines": [
+            70,
+            71,
+            72,
+            73,
+            74,
+            75
+          ],
+          "text": "Map validation, domain errors and the plate index to codes; a racing duplicate key becomes 409."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not return 500 when the lot is full; 409 tells the gate to show FULL.",
+    "Check the Idempotency-Key before the state check, or a retry looks like an error.",
+    "Never charge a card inside an open transaction; row locks stay held while waiting."
+  ],
+  "quiz": {
+    "q": "What does the second POST /entries print?",
+    "options": [
+      "/entries 201 {\"ticketId\":2,\"spotId\":\"F1-L1\"}",
+      "/entries 409 {\"error\":\"LOT_FULL\"}",
+      "/entries 500 {\"error\":\"INTERNAL\"}",
+      "/entries 409 {\"error\":\"ALREADY_INSIDE\"}"
+    ],
+    "answer": 3,
+    "why": "The plate is normalised to the same value. The ticket insert breaks `one_visit_per_plate`, the transaction rolls back, and the middleware maps that constraint to 409."
+  },
+  "takeaway": "Validate in the controller, decide in one transaction, replay safely by key.",
+  "chat": {
+    "starters": [
+      "Why does the truck get ticket 3 instead of ticket 2?",
+      "How should the exit endpoint check the grace window?",
+      "Should the fee be quoted by GET and then sent back in the payment?"
+    ]
+  }
+}

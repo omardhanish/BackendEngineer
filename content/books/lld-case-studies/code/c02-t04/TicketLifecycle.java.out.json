@@ -1,0 +1,11 @@
+{
+  "stdout": "T-1 ACTIVE -> PAID\nT-1 PAID -> EXITED\nT-2 refused: ACTIVE -> EXITED\nT-3 ACTIVE -> LOST\nT-3 LOST -> PAID\nT-4 ACTIVE -> PAID\nT-4 PAID -> ACTIVE\nT-1 refused: EXITED -> PAID",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java TicketLifecycle.java",
+  "tool": "Java 17.0.17",
+  "hash": "ab23d16861f42a89",
+  "at": "2026-10-14T08:36:40.897Z"
+}

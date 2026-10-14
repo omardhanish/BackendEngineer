@@ -1,0 +1,11 @@
+{
+  "stdout": "config vendor-b,vendor-a:\n  vendor-b -> RETRYABLE\n  vendor-b -> OK\nconfig vendor-c,vendor-a:\n  vendor-c -> RETRYABLE\n  vendor-c -> RETRYABLE\n  vendor-a -> OK",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ProviderConfig.java",
+  "tool": "Java 17.0.17",
+  "hash": "cb8a7832f184a0dd",
+  "at": "2026-10-14T08:36:00.440Z"
+}

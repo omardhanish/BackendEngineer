@@ -1,0 +1,196 @@
+{
+  "title": "File system class design",
+  "idea": "The file system design is the Composite pattern: an abstract `FileSystemNode` with two kinds, `File` holding bytes and `Directory` holding named children, so callers treat both alike.",
+  "analogy": {
+    "text": "A set of nesting boxes. A box may hold loose items or smaller boxes. To weigh a box, you weigh what is inside it.",
+    "breaks": "Real boxes have no names; ours do, and each knows its parent."
+  },
+  "points": [
+    "`FileSystemNode` holds the name, the parent link, and the shared methods.",
+    "A `File` is a leaf; its size is the bytes it stores.",
+    "A `Directory` keeps children in a sorted map, keyed by unique name.",
+    "`size()` on a directory asks each child, so the sum is recursive."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Class diagram",
+    "nodes": [
+      {
+        "id": "node",
+        "label": "FileSystemNode",
+        "sub": "name, parent, size(), path()"
+      },
+      {
+        "id": "file",
+        "label": "File",
+        "sub": "sizeBytes"
+      },
+      {
+        "id": "dir",
+        "label": "Directory",
+        "sub": "children: TreeMap, add(), child()"
+      },
+      {
+        "id": "root",
+        "label": "root Directory",
+        "sub": "one object, parent = null, path /"
+      },
+      {
+        "id": "fs",
+        "label": "FileSystem",
+        "sub": "mkdirs, createFile, move, find"
+      },
+      {
+        "id": "err",
+        "label": "FsException",
+        "sub": "code + path"
+      }
+    ],
+    "edges": [
+      {
+        "from": "file",
+        "to": "node",
+        "label": "is-a",
+        "caption": "A File is a leaf node. It has no children, and its size is its own byte count."
+      },
+      {
+        "from": "dir",
+        "to": "node",
+        "label": "is-a",
+        "caption": "A Directory is also a node, so it can sit inside another directory."
+      },
+      {
+        "from": "dir",
+        "to": "node",
+        "label": "has 0..*",
+        "dashed": true,
+        "caption": "A directory holds any number of nodes. This back edge is what makes the pattern Composite."
+      },
+      {
+        "from": "root",
+        "to": "dir",
+        "label": "instance of",
+        "caption": "The root is one Directory object with no parent. Its path is a single slash."
+      },
+      {
+        "from": "fs",
+        "to": "root",
+        "label": "has 1",
+        "caption": "The FileSystem facade owns the root and turns path strings into nodes. That is the next page."
+      },
+      {
+        "from": "fs",
+        "to": "err",
+        "label": "throws",
+        "caption": "Next page: every failure becomes one FsException with a code."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "FsModel.java",
+      "lang": "java",
+      "title": "Composite model",
+      "run": "captured",
+      "caption": "Nodes, files and directories with their invariants: valid names, unique children, one parent, no cycles.",
+      "walk": [
+        {
+          "lines": [
+            7,
+            8,
+            9,
+            10,
+            11,
+            12
+          ],
+          "text": "Build a small tree: root, a docs folder with two files, one file at the top."
+        },
+        {
+          "lines": [
+            13,
+            14,
+            15
+          ],
+          "text": "Print the tree, the total size, and one file's full path."
+        },
+        {
+          "lines": [
+            16,
+            17,
+            18,
+            19
+          ],
+          "text": "Four bad changes, each refused by a model invariant."
+        },
+        {
+          "lines": [
+            41,
+            42,
+            43,
+            44,
+            45
+          ],
+          "text": "Names cannot be empty, contain a slash, or be a dot or two dots."
+        },
+        {
+          "lines": [
+            52,
+            53,
+            54,
+            55
+          ],
+          "text": "A path is built by walking parent links up to the root."
+        },
+        {
+          "lines": [
+            81,
+            82,
+            83,
+            84
+          ],
+          "text": "Directory size asks every child. A child directory asks its own children."
+        },
+        {
+          "lines": [
+            91,
+            92,
+            93,
+            94,
+            95,
+            96,
+            97,
+            100,
+            101,
+            102,
+            103
+          ],
+          "text": "Adding checks for a second parent, a cycle, and a name clash."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not store children in a `HashMap`; its listing order is unspecified.",
+    "Do not put a `children` list on `File`; leaves should not pretend to be folders.",
+    "Check for cycles when adding a directory, or `size()` recurses until a StackOverflowError."
+  ],
+  "quiz": {
+    "q": "What is the third `refused:` line FsModel prints?",
+    "options": [
+      "refused: docs already exists",
+      "refused: would create a cycle or two parents",
+      "refused: bad name 'a/b'",
+      "refused: negative size"
+    ],
+    "answer": 1,
+    "why": "The third bad change adds the root under docs. Walking up from docs reaches the root itself, so the cycle check refuses it."
+  },
+  "takeaway": "One node type, two kinds; directories ask their children.",
+  "chat": {
+    "starters": [
+      "Why keep a parent link instead of passing the path around?",
+      "Should size be cached on each directory instead of computed every time?",
+      "How would I add a symbolic link class to this Composite?"
+    ]
+  }
+}

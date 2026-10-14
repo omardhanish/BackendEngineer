@@ -1,0 +1,11 @@
+{
+  "stdout": "IN  OTP           CRITICAL optOut=false [SMS]\nIN  ORDER_UPDATE  NORMAL   optOut=false [PUSH, EMAIL]\nIN  PROMOTION     LOW      optOut=true  [EMAIL, PUSH]\nOUT WEEKLY_DIGEST LOW      optOut=true  [EMAIL]\nOUT IN_APP_INBOX  NORMAL   optOut=true  []",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java NotifyScope.java",
+  "tool": "Java 17.0.17",
+  "hash": "f222e4a6c213fc59",
+  "at": "2026-10-14T08:32:09.776Z"
+}

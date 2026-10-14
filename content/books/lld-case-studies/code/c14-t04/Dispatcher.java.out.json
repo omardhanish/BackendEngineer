@@ -1,0 +1,11 @@
+{
+  "stdout": "notifications: 150\nsent: 150\nsms-a calls=150 ok=100\nsms-b calls=50 ok=50",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java Dispatcher.java",
+  "tool": "Java 17.0.17",
+  "hash": "ea78312f88547e7f",
+  "at": "2026-10-14T10:01:00.864Z"
+}

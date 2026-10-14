@@ -1,0 +1,11 @@
+{
+  "stdout": "BK-1 BOOKED -> CHECKED_IN\nBK-1 CHECKED_IN -> COMPLETED\nBK-1 refused COMPLETED -> CANCELLED\nBK-2 BOOKED -> RELEASED\nBK-2 refused RELEASED -> CHECKED_IN\nBK-3 BOOKED -> CANCELLED\nBK-3 blocks room? false",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java BookingLifecycle.java",
+  "tool": "Java 17.0.17",
+  "hash": "75d15d7fdd6a7483",
+  "at": "2026-10-14T10:22:11.690Z"
+}

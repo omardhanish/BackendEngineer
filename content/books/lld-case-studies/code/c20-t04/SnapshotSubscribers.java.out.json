@@ -1,0 +1,11 @@
+{
+  "stdout": "ArrayList: [audit, welcome] then ConcurrentModificationException\nCopyOnWrite: [audit, welcome, email]\nsubscribed from 4 threads: 2000",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java SnapshotSubscribers.java",
+  "tool": "Java 17.0.17",
+  "hash": "2999599d654d88f0",
+  "at": "2026-10-14T08:43:11.439Z"
+}

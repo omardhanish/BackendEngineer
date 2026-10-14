@@ -1,0 +1,94 @@
+{
+  "title": "Retry loop and circuit breaker",
+  "idea": "The core `ApiClient` runs a bounded retry loop: attempts share one deadline, waits grow exponentially with jitter, and a circuit breaker stops calls to a failing service.",
+  "analogy": {
+    "text": "Phoning a busy shop. You wait longer between each try, give up by closing time, and stop calling for a while after it keeps failing.",
+    "breaks": "A shop cannot tell you how long to wait; servers sometimes can."
+  },
+  "points": [
+    "The deadline is fixed at the start; each attempt gets at most what remains.",
+    "Backoff doubles each attempt up to a cap; jitter spreads callers apart.",
+    "The client stops early when the next wait would pass the deadline.",
+    "The breaker opens after repeated failures, then lets one trial call through."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "One call, three attempts",
+    "scenario": {
+      "token": { "label": "GET /orders/7", "tone": "req" },
+      "stages": [
+        { "id": "caller", "label": "Caller", "kind": "end" },
+        { "id": "client", "label": "ApiClient", "sub": "deadline, loop" },
+        { "id": "breaker", "label": "CircuitBreaker", "sub": "closed" },
+        { "id": "transport", "label": "Transport", "sub": "one attempt" },
+        { "id": "server", "label": "Orders service", "kind": "end" }
+      ],
+      "steps": [
+        { "caption": "The caller asks for one order. The client fixes a total deadline now.", "at": "caller", "slot": "top", "state": { "caller": "active" } },
+        { "caption": "Attempt 1: the breaker is closed, so the call goes ahead.", "at": "breaker", "slot": "top", "state": { "caller": "done", "client": "done", "breaker": "active" } },
+        { "caption": "The transport sends the request with a per-attempt timeout.", "at": "server", "slot": "top", "state": { "caller": "done", "client": "done", "breaker": "done", "transport": "done", "server": "active" } },
+        { "caption": "The service answers 503. That failure is transient, and GET is safe to repeat.", "at": "client", "slot": "bottom", "token": { "label": "503", "tone": "err" }, "state": { "caller": "done", "client": "active", "breaker": "done", "transport": "done", "server": "error" } },
+        { "caption": "The client waits a jittered backoff, then sends attempt 2.", "at": "transport", "slot": "top", "token": { "label": "GET retry", "tone": "req" }, "state": { "caller": "done", "client": "done", "breaker": "done", "transport": "active", "server": "done" } },
+        { "caption": "No answer arrives before the attempt timeout. The transport gives up and reports TIMEOUT.", "at": "client", "slot": "bottom", "token": { "label": "TIMEOUT", "tone": "err" }, "state": { "caller": "done", "client": "active", "breaker": "done", "transport": "error", "server": "blocked" } },
+        { "caption": "A longer wait, then attempt 3 reaches a recovered service.", "at": "server", "slot": "top", "token": { "label": "GET retry", "tone": "req" }, "state": { "caller": "done", "client": "done", "breaker": "done", "transport": "done", "server": "active" } },
+        { "caption": "200 comes back. The caller sees one successful call, not three attempts.", "at": "caller", "slot": "bottom", "token": { "label": "200", "tone": "ok" }, "state": { "caller": "active", "client": "done", "breaker": "done", "transport": "done", "server": "done" } }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "ApiClientCore.java",
+      "lang": "java",
+      "title": "Retry loop with deadline",
+      "run": "captured",
+      "caption": "Three calls against a scripted service: a recovery, a refused POST retry, and a budget that runs out. The breaker is left out to keep the loop short; BreakerCore shows it alone, and it plugs in before each attempt.",
+      "walk": [
+        { "lines": [10, 11, 12, 13, 14, 15, 16, 17, 18], "text": "The fake service answers a status after some milliseconds, or never, which costs the full attempt timeout." },
+        { "lines": [19, 20, 21], "text": "Four attempts, backoff from 100 ms up to 1000 ms, 300 ms per try, 1500 ms in all." },
+        { "lines": [42, 43, 46, 47, 48], "text": "Fix the deadline once; each attempt gets the smaller of its timeout and the time left." },
+        { "lines": [51], "text": "The policy says stop: success, a permanent error, an unsafe request, or attempts used up." },
+        { "lines": [52, 53, 54, 55, 56], "text": "Never sleep past the deadline; return the last result instead." },
+        { "lines": [69, 70, 71], "text": "Double per attempt up to the cap, keep half, randomise the other half." }
+      ]
+    },
+    {
+      "file": "BreakerCore.java",
+      "lang": "java",
+      "title": "Circuit breaker states",
+      "run": "captured",
+      "caption": "Three failures open the breaker. After the cool-down one trial goes through; its result closes or reopens it. The mode stays OPEN until the next call asks; that call moves it to HALF_OPEN, so the failed trial prints OPEN again.",
+      "walk": [
+        { "lines": [4, 5, 6], "text": "Open after 3 failures, stay open for 5000 ms, then replay a script of events." },
+        { "lines": [10, 11, 12, 13], "text": "While open, a call is refused without touching the network." },
+        { "lines": [42, 43, 44, 45, 46, 47], "text": "When the cool-down has passed, move to HALF_OPEN and allow the trial." },
+        { "lines": [49, 50, 51, 52], "text": "Any success closes the breaker and clears the failure count." },
+        { "lines": [54, 55, 56, 57, 58, 59, 60], "text": "A failed trial reopens at once; otherwise open when failures reach the threshold." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Without jitter, clients that failed together retry together and overload the service again.",
+    "Cap each attempt by the time left; per-attempt timeouts alone let retries overrun the total.",
+    "This breaker is not thread-safe: two threads seeing OPEN after cool-down both send trials."
+  ],
+  "quiz": {
+    "q": "What does ApiClientCore print for the POST /orders call?",
+    "options": [
+      "#1 503, then wait, then #2 TIMEOUT",
+      "#1 503 and nothing else for that call",
+      "#1 503, then stop: total budget spent",
+      "#1 200 at +20ms"
+    ],
+    "answer": 1,
+    "why": "POST without an Idempotency-Key is not safe to repeat. The policy refuses the retry, so the 503 returns at once."
+  },
+  "takeaway": "Bound retries by a deadline, spread them with jitter, stop calling sick services.",
+  "chat": {
+    "starters": [
+      "Why equal jitter here instead of full jitter?",
+      "Should a breaker count timeouts the same as 503s?",
+      "How do I pick the failure threshold and cool-down time?"
+    ]
+  }
+}

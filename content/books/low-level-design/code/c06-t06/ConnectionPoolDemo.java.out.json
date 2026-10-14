@@ -1,0 +1,11 @@
+{
+  "stdout": "connections created: 2\npeak in use <= 2: true\nthird acquire: pool exhausted\nreused schema: public",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ConnectionPoolDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "13536e4f16932ec0",
+  "at": "2026-10-12T11:22:20.231Z"
+}

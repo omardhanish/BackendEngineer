@@ -1,0 +1,11 @@
+{
+  "stdout": "PASS on time costs nothing\nPASS grace days cost nothing\nFAIL third day costs 75\n1 failing [third day costs 75]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java LateFeeRed.java",
+  "tool": "Java 17.0.17",
+  "hash": "62d4ae03034843a5",
+  "at": "2026-10-12T11:39:46.686Z"
+}

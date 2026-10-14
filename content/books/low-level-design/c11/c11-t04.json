@@ -1,0 +1,177 @@
+{
+  "title": "BookingService core modules",
+  "idea": "The core modules are `BookingService` and the repositories it calls: the service enforces each booking rule in a fixed order, and storage stays behind interfaces.",
+  "analogy": {
+    "text": "A hotel front desk checks your dates make sense, confirms the room exists, reads that room's page in the ledger, and only then writes your name.",
+    "breaks": "A clerk can bend a rule; the service never does."
+  },
+  "points": [
+    "Build bottom-up: entities, then repositories, then the service that orders the rules.",
+    "Cheap checks run first: slot shape, then room exists, then the conflict query.",
+    "Nothing is saved or numbered until every rule passes; rejections leave no trace.",
+    "`synchronized` makes check-then-save atomic in one process; a database needs its own lock."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "One book call through the rules",
+    "scenario": {
+      "token": { "label": "e2 R1 9.5-11", "tone": "req" },
+      "stages": [
+        { "id": "caller", "label": "Caller", "sub": "employee e2", "kind": "end" },
+        { "id": "slot", "label": "Slot check", "sub": "0 <= start < end <= 24" },
+        { "id": "room", "label": "RoomRepository", "sub": "findById" },
+        { "id": "policy", "label": "ConflictPolicy", "sub": "vs forRoom(R1)" },
+        { "id": "repo", "label": "BookingRepository", "sub": "save", "kind": "end" }
+      ],
+      "steps": [
+        {
+          "caption": "`book` is `synchronized`, so this request owns the service until it returns. B1 already holds R1 from 9 to 10.",
+          "at": "caller",
+          "slot": "top",
+          "state": { "caller": "active" }
+        },
+        {
+          "caption": "The slot check costs nothing and needs no storage, so it runs first. 9.5 to 11 is valid.",
+          "at": "slot",
+          "slot": "top",
+          "state": { "caller": "done", "slot": "active" }
+        },
+        {
+          "caption": "`findById` confirms R1 exists. An unknown room fails here, before any `Booking` is built.",
+          "at": "room",
+          "slot": "top",
+          "state": { "caller": "done", "slot": "done", "room": "active" }
+        },
+        {
+          "caption": "The service loads R1's bookings and asks the policy. B1 overlaps 9.5 to 10, so the answer is yes.",
+          "at": "policy",
+          "slot": "top",
+          "state": { "caller": "done", "slot": "done", "room": "done", "policy": "active" }
+        },
+        {
+          "caption": "`RoomTakenException` is thrown. Nothing was saved and the id counter did not move.",
+          "at": "policy",
+          "slot": "bottom",
+          "token": { "label": "ROOM_TAKEN", "tone": "err" },
+          "state": { "caller": "done", "slot": "done", "room": "done", "policy": "error", "repo": "blocked" }
+        },
+        {
+          "caption": "The caller gets the code, not a stack trace, and can offer another room or time.",
+          "at": "caller",
+          "slot": "bottom",
+          "token": { "label": "ROOM_TAKEN", "tone": "err" },
+          "state": { "caller": "error", "slot": "done", "room": "done", "policy": "error", "repo": "blocked" }
+        },
+        {
+          "caption": "e1 cancels B1. The same request now passes every rule and reaches `save`.",
+          "at": "repo",
+          "slot": "top",
+          "token": { "label": "e2 R1 9.5-11", "tone": "req" },
+          "state": { "caller": "done", "slot": "done", "room": "done", "policy": "done", "repo": "active" }
+        },
+        {
+          "caption": "Only now does the id counter move and the booking get saved. B2 returns to the caller.",
+          "at": "caller",
+          "slot": "bottom",
+          "token": { "label": "B2", "tone": "ok" },
+          "state": { "caller": "done", "slot": "done", "room": "done", "policy": "done", "repo": "done" }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "BookingModule.java",
+      "lang": "java",
+      "title": "Book and cancel",
+      "run": "captured",
+      "caption": "The command half of `BookingService`: every rule in order, typed failures, and owner-only cancel.",
+      "walk": [
+        {
+          "lines": [32, 43],
+          "text": "All collaborators arrive through the constructor and are null-checked. The service never creates its own storage."
+        },
+        {
+          "lines": [47, 52],
+          "text": "Slot shape, then room lookup. An unknown room throws `IllegalArgumentException`; a real API maps it to 404."
+        },
+        {
+          "lines": [53, 57],
+          "text": "The candidate is built, then the injected `ConflictPolicy` judges it against this room's bookings only."
+        },
+        {
+          "lines": [58, 60],
+          "text": "The counter moves and save runs last, so a rejected request leaves the counter and repository untouched."
+        },
+        {
+          "lines": [63, 71],
+          "text": "`cancel` loads the booking and compares owners before removing. Ownership is a rule, not a UI check."
+        },
+        {
+          "lines": [99, 110],
+          "text": "The in-memory repository uses a `TreeMap`, so `forRoom` returns bookings in a stable order."
+        },
+        {
+          "lines": [14, 20],
+          "text": "The run shows a clash, a bad slot, a stranger's cancel, then the freed slot rebooked."
+        }
+      ]
+    },
+    {
+      "file": "SearchModule.java",
+      "lang": "java",
+      "title": "Search, with checks",
+      "run": "captured",
+      "caption": "The query half, `searchFree`, tested at its edges with a hand-written check runner.",
+      "walk": [
+        {
+          "lines": [51, 54],
+          "text": "A capacity below one is a caller bug, so it fails fast with a clear message."
+        },
+        {
+          "lines": [55, 60],
+          "text": "A probe booking reuses the same `ConflictPolicy` as `book`. Search and book can never disagree."
+        },
+        {
+          "lines": [58, 59],
+          "text": "Capacity is a minimum. The cheaper capacity test runs before the repository query."
+        },
+        {
+          "lines": [14, 18],
+          "text": "`RoomRepository` is trimmed to one method here, so a lambda serves as the fake."
+        },
+        {
+          "lines": [20, 27],
+          "text": "Each check targets an edge: minimum capacity, overlap, a touching slot, and an empty result."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Saving before the conflict check, then deleting on clash, leaves a window where two bookings exist.",
+    "Incrementing the id counter before validation creates gaps that look like lost bookings in audits.",
+    "Writing a second overlap rule inside search makes search show rooms that book then rejects."
+  ],
+  "quiz": {
+    "q": "In BookingModule, what does line 18 print?",
+    "code": "Booking b1 = svc.book(\"e1\", \"R1\", 9.0, 10.0);\nattempt(() -> svc.cancel(b1.id(), \"e2\"));",
+    "lang": "java",
+    "options": [
+      "ROOM_TAKEN: R1 is taken then",
+      "Nothing; B1 is cancelled",
+      "unknown booking B1",
+      "NOT_OWNER: e2 does not own B1"
+    ],
+    "answer": 3,
+    "why": "`cancel` finds B1, sees its `employeeId` is e1, and throws `NotOwnerException`. `attempt` prints its code and message."
+  },
+  "takeaway": "Order the rules cheapest first, and save only after every rule passes.",
+  "chat": {
+    "starters": [
+      "Is synchronized on the whole service too coarse for many rooms?",
+      "How would book stay correct with two app servers and one database?",
+      "Why does searchFree reuse ConflictPolicy instead of its own loop?"
+    ]
+  }
+}

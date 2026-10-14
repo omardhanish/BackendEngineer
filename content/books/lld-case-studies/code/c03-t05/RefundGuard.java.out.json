@@ -1,0 +1,11 @@
+{
+  "stdout": "accepted 2, unsafe refunded: 60000\naccepted 1, CAS refunded: 30000",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java RefundGuard.java",
+  "tool": "Java 17.0.17",
+  "hash": "89e49682f928229f",
+  "at": "2026-10-14T08:41:06.351Z"
+}

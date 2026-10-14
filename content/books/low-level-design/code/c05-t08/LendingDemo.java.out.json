@@ -1,0 +1,11 @@
+{
+  "stdout": "COPY_ON_LOAN -> C1 is already on loan\nLOAN_LIMIT -> m-ada is at the limit of 2 loans\nCOPY_NOT_FOUND -> no copy C9\nOn loan: [C1=m-ada, C3=m-ada]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java LendingDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "21f06b9bff557728",
+  "at": "2026-10-12T11:31:48.007Z"
+}

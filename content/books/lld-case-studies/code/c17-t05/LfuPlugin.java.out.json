@@ -1,0 +1,11 @@
+{
+  "stdout": "LRU evicts home\nLRU hits=4 misses=1\nLFU evicts promo\nLFU hits=5 misses=0",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java LfuPlugin.java",
+  "tool": "Java 17.0.17",
+  "hash": "96521f2bc2ecb361",
+  "at": "2026-10-14T08:50:50.717Z"
+}

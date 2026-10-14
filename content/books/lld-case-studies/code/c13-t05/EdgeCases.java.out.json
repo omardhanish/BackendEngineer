@@ -1,0 +1,11 @@
+{
+  "stdout": "10:00 BK-1 holds 18:00: yes\n10:05 BK-2 holds 18:00: no\n10:11 BK-3 holds 18:00: yes\n10:12 BK-1 paid, confirm: no\n  BK-1 charge refunded in full\ncancel 30h before: refund 160000\ncancel  5h before: refund 80000\ncancel  1h before: refund 0\ncourt closed for rain 1h before: refund 160000",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java EdgeCases.java",
+  "tool": "Java 17.0.17",
+  "hash": "6f84b83021ff80eb",
+  "at": "2026-10-14T08:36:34.832Z"
+}

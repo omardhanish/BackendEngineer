@@ -1,0 +1,245 @@
+{
+  "title": "Hotel search and checkout UI",
+  "idea": "The hotel frontend is a search page and a checkout flow driven by one reducer that ignores stale searches, repeat clicks and late events.",
+  "points": [
+    "A search id per date change lets the reducer drop answers to older searches.",
+    "The reducer owns the hold and payment keys; retries reuse them, so nothing doubles.",
+    "A 409 removes the sold-out room type and keeps the guest on the results.",
+    "Follow-ups: cache availability by date range, add multi-room carts, and offer price alerts."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Screens and component tree",
+    "nodes": [
+      {
+        "id": "page",
+        "label": "HotelPage",
+        "sub": "route /hotels/:id"
+      },
+      {
+        "id": "red",
+        "label": "booking reducer",
+        "sub": "step, searchId, keys"
+      },
+      {
+        "id": "dates",
+        "label": "DateRangePicker",
+        "sub": "check-in, check-out"
+      },
+      {
+        "id": "results",
+        "label": "RoomResults",
+        "sub": "room cards"
+      },
+      {
+        "id": "pay",
+        "label": "CheckoutPanel",
+        "sub": "pay button"
+      },
+      {
+        "id": "timer",
+        "label": "HoldTimer",
+        "sub": "counts to holdUntil"
+      },
+      {
+        "id": "api",
+        "label": "apiClient",
+        "sub": "fetch + Idempotency-Key"
+      },
+      {
+        "id": "done",
+        "label": "ConfirmationPage",
+        "sub": "reservation id"
+      }
+    ],
+    "edges": [
+      {
+        "from": "page",
+        "to": "red",
+        "label": "owns",
+        "caption": "HotelPage owns the reducer state and passes it down. Children keep no copy of it."
+      },
+      {
+        "from": "dates",
+        "to": "api",
+        "label": "search",
+        "caption": "Each date change bumps the search id and calls GET /availability. Older answers are dropped."
+      },
+      {
+        "from": "page",
+        "to": "results",
+        "caption": "RoomResults shows a card per room type, or a loading or empty state."
+      },
+      {
+        "from": "results",
+        "to": "api",
+        "label": "hold",
+        "caption": "Choosing a room moves the step to HOLDING. An effect sends POST /reservations with the hold key."
+      },
+      {
+        "from": "page",
+        "to": "pay",
+        "caption": "After HOLD_OK the page shows CheckoutPanel and the server's hold deadline."
+      },
+      {
+        "from": "pay",
+        "to": "timer",
+        "caption": "When the timer hits zero it dispatches HOLD_EXPIRED, unless payment is already in flight."
+      },
+      {
+        "from": "pay",
+        "to": "api",
+        "label": "confirm",
+        "caption": "Pay calls the confirm endpoint with its own key. A timeout retries with the same key."
+      },
+      {
+        "from": "api",
+        "to": "done",
+        "caption": "CONFIRMED moves the page to ConfirmationPage with the reservation id."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "booking.mjs",
+      "lang": "js",
+      "title": "Booking reducer",
+      "run": "browser",
+      "caption": "Pure screen logic. Run it, then add a second PAY_CLICKED in a row and predict the output.",
+      "walk": [
+        {
+          "lines": [
+            3,
+            4
+          ],
+          "text": "The whole screen state: step, search id, results, chosen type, two keys and an error."
+        },
+        {
+          "lines": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13
+          ],
+          "text": "Each date change starts a new search id; answers for an old id are ignored."
+        },
+        {
+          "lines": [
+            14,
+            15,
+            16,
+            17,
+            18,
+            19
+          ],
+          "text": "Choosing works only on RESULTS; the same room type keeps its hold key."
+        },
+        {
+          "lines": [
+            20,
+            21,
+            22,
+            23,
+            24,
+            25
+          ],
+          "text": "A failure keeps the key for a safe retry; a 409 drops the sold-out type."
+        },
+        {
+          "lines": [
+            28,
+            29,
+            30,
+            31,
+            32,
+            33
+          ],
+          "text": "Pay is ignored unless PAYING; a payment timeout returns to PAYING with the same key."
+        },
+        {
+          "lines": [
+            36,
+            37,
+            38
+          ],
+          "text": "Hold expiry resets the screen, unless the booking is done or being confirmed."
+        }
+      ]
+    },
+    {
+      "file": "RoomResults.jsx",
+      "lang": "js",
+      "title": "RoomResults component",
+      "run": "static",
+      "illustrative": true,
+      "caption": "A React component that renders state and dispatches events. Not run here.",
+      "walk": [
+        {
+          "lines": [
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11
+          ],
+          "text": "When the step becomes HOLDING, an effect sends the hold with the reducer's key."
+        },
+        {
+          "lines": [
+            13,
+            14
+          ],
+          "text": "Loading and empty states render text, never a blank list."
+        },
+        {
+          "lines": [
+            17
+          ],
+          "text": "Errors render in an alert region so screen readers announce them."
+        },
+        {
+          "lines": [
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24
+          ],
+          "text": "Cards disable while a hold is in flight; clicks only dispatch events."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not trust response order; a slow old search can overwrite newer results.",
+    "Show the server's hold deadline, not a local 15-minute guess; device clocks drift.",
+    "Interview follow-up: caching availability means stale counts, so the hold must still recheck."
+  ],
+  "quiz": {
+    "q": "In the run, what does the stale RESULTS line show as the step?",
+    "options": [
+      "RESULTS",
+      "SEARCHING",
+      "EMPTY",
+      "SEARCH"
+    ],
+    "answer": 1,
+    "why": "Two date changes made the current search id 2. The answer for id 1 is ignored, so the step stays SEARCHING."
+  },
+  "takeaway": "One reducer guards search order, clicks and keys; components only render.",
+  "chat": {
+    "starters": [
+      "Why keep the hold key when the reserve request fails?",
+      "Should I cancel the old fetch with AbortController instead of a search id?",
+      "How would I show live availability without polling every few seconds?"
+    ]
+  }
+}

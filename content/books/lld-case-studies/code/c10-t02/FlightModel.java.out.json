@@ -1,0 +1,11 @@
+{
+  "stdout": "AI-101 BLR->DEL economy seats: 2\nPNR-1 Y-SAVER x2 = 900000 HELD\nTK-1 Asha Rao seat 12A\nrejected: 1A is not in ECONOMY\nrejected: origin equals destination\nrejected: a booking needs 1 to 9 passengers",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java FlightModel.java",
+  "tool": "Java 17.0.17",
+  "hash": "3e3d75f906949f17",
+  "at": "2026-10-14T08:43:47.943Z"
+}

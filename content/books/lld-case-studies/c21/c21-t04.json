@@ -1,0 +1,98 @@
+{
+  "title": "Thread-safe circuit breaker",
+  "idea": "A thread-safe `ApiClient` shares one circuit breaker per downstream host, and every breaker change is a single compare-and-set, so no two threads can win the same transition.",
+  "analogy": {
+    "text": "A single key to a test room. Whoever takes the key from the hook runs the test; everyone else sees an empty hook.",
+    "breaks": "A CAS loser is refused at once; nobody waits for the key back."
+  },
+  "points": [
+    "Many request threads share one client, so its breakers are shared state.",
+    "Check-then-act on the mode lets two threads both start a trial call.",
+    "Keep mode, failure count and open time in one immutable snapshot.",
+    "`computeIfAbsent` builds exactly one breaker per host under contention."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "lanes",
+    "title": "Two threads after the cool-down",
+    "scenario": {
+      "lanes": [
+        { "id": "callers", "label": "Calling threads", "kind": "queue" },
+        { "id": "state", "label": "Breaker mode", "kind": "area" },
+        { "id": "trial", "label": "Trial in flight", "kind": "area" },
+        { "id": "rejected", "label": "Rejected fast", "kind": "area" }
+      ],
+      "tokens": {
+        "a": { "label": "Thread A", "tone": "sync" },
+        "b": { "label": "Thread B", "tone": "io" },
+        "open": { "label": "OPEN", "tone": "timer" },
+        "half": { "label": "HALF_OPEN", "tone": "micro" },
+        "closed": { "label": "CLOSED", "tone": "neutral" }
+      },
+      "steps": [
+        { "caption": "The cool-down has passed. Threads A and B call `allowRequest` at the same moment.", "at": { "callers": ["a", "b"], "state": ["open"], "trial": [], "rejected": [] } },
+        { "caption": "Unsafe version: A reads OPEN. Before A writes, B also reads OPEN.", "active": "b", "at": { "callers": ["a", "b"], "state": ["open"], "trial": [], "rejected": [] } },
+        { "caption": "Both write HALF_OPEN and both send a trial. A sick service gets two calls, not one.", "at": { "callers": [], "state": ["half"], "trial": ["a", "b"], "rejected": [] } },
+        { "caption": "Safe version: start again from OPEN with the same timing.", "at": { "callers": ["a", "b"], "state": ["open"], "trial": [], "rejected": [] } },
+        { "caption": "A runs `compareAndSet(OPEN, HALF_OPEN)`. The mode was still OPEN, so A wins.", "active": "a", "at": { "callers": ["b"], "state": ["half"], "trial": ["a"], "rejected": [] } },
+        { "caption": "B runs the same CAS. The mode is no longer OPEN, so it fails and B is rejected.", "active": "b", "at": { "callers": [], "state": ["half"], "trial": ["a"], "rejected": ["b"] } },
+        { "caption": "A's trial succeeds and the breaker closes. Exactly one probe reached the service.", "at": { "callers": [], "state": ["closed"], "trial": [], "rejected": ["b"] } }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "TrialRace.java",
+      "lang": "java",
+      "title": "Prove the race",
+      "run": "captured",
+      "caption": "A barrier holds both threads at the worst moment, so the race shows on every run. Then the CAS fix.",
+      "walk": [
+        { "lines": [12, 13, 14, 15, 16], "text": "Two callers share one breaker and count how many trial calls they send." },
+        { "lines": [17, 18, 19, 20, 21], "text": "Start both, join both, and only then print." },
+        { "lines": [30, 31, 32, 33], "text": "The barrier makes each thread wait until the other reaches the same point." },
+        { "lines": [41, 42, 43, 44, 45], "text": "Read the mode, wait for the other thread, then act on that old read." },
+        { "lines": [53, 54, 55], "text": "The CAS checks and writes in one step, so only one thread can win." }
+      ]
+    },
+    {
+      "file": "SharedBreakers.java",
+      "lang": "java",
+      "title": "One breaker per host",
+      "run": "captured",
+      "caption": "Eight threads call a broken host and a healthy one. Each host gets one breaker, and each ends in the right mode.",
+      "walk": [
+        { "lines": [7, 8, 9, 10], "text": "Breakers by host in a ConcurrentHashMap; LongAdder counts calls with little contention." },
+        { "lines": [13, 14, 15, 16, 17, 18, 19, 20, 21, 22], "text": "Eight threads each send 500 calls to payments and 500 to search." },
+        { "lines": [30, 31, 32, 33, 34], "text": "`computeIfAbsent` runs the factory at most once per host." },
+        { "lines": [47, 52, 53], "text": "All breaker state is one immutable Snap held in an AtomicReference." },
+        { "lines": [62, 63, 64, 65, 66, 67, 68], "text": "Only one thread can swap OPEN for HALF_OPEN, so only one trial runs." },
+        { "lines": [75, 76, 77, 78, 79, 80, 81, 82, 83], "text": "Count and trip in one atomic update. The function may rerun, so it stays pure." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not keep mode and failure count in separate atomics; updates between them interleave.",
+    "Keep `updateAndGet` functions pure; under contention they may run more than once.",
+    "Always report the trial's outcome, even on exceptions, or HALF_OPEN never ends."
+  ],
+  "quiz": {
+    "q": "What does the first line of TrialRace print?",
+    "options": [
+      "check-then-act  trial calls sent: 1",
+      "check-then-act  trial calls sent: 2",
+      "check-then-act  trial calls sent: 0",
+      "It changes from run to run"
+    ],
+    "answer": 1,
+    "why": "The barrier makes both threads read OPEN before either writes. Both then act on that read and send a trial."
+  },
+  "takeaway": "Hold breaker state in one snapshot and change it only by compare-and-set.",
+  "chat": {
+    "starters": [
+      "Why not just make every breaker method synchronized?",
+      "Should the shared java.util.Random for jitter be per thread?",
+      "What happens if the trial call hangs forever?"
+    ]
+  }
+}

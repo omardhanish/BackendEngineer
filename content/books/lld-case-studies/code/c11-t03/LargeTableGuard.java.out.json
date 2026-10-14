@@ -1,0 +1,11 @@
+{
+  "stdout": "party 2 | earlier: Optional[T3] | late best fit: Optional[T4] | late guarded: Optional.empty\nparty 5 | earlier: Optional[T4] | late best fit: Optional[T4] | late guarded: Optional[T4]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java LargeTableGuard.java",
+  "tool": "Java 17.0.17",
+  "hash": "1af03b1fdfeaf8c2",
+  "at": "2026-10-14T08:45:49.373Z"
+}

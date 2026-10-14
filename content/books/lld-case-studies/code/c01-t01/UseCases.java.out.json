@@ -1,0 +1,11 @@
+{
+  "stdout": "In scope:\n  DOCTOR  PUBLISH_SLOTS POST /doctors/{id}/slots        slot\n  PATIENT SEARCH_SLOTS  GET /doctors/{id}/slots         slot\n  PATIENT BOOK_SLOT     POST /appointments              appointment\n  PATIENT CANCEL        POST /appointments/{id}/cancel  appointment\nOut of scope:\n  PAY_ONLINE\n  VIDEO_CALL\nAssumed slot rows: 240000",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java UseCases.java",
+  "tool": "Java 17.0.17",
+  "hash": "53abd1935f3dd406",
+  "at": "2026-10-14T09:57:09.218Z"
+}

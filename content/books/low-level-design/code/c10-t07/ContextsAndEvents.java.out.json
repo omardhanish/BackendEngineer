@@ -1,0 +1,11 @@
+{
+  "stdout": "warehouse: reserved O-1, 1 left\nbilling: owed 1998\nwarehouse: backorder O-2\nbilling: owed 3996",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ContextsAndEvents.java",
+  "tool": "Java 17.0.17",
+  "hash": "116e362c6c7a17f8",
+  "at": "2026-10-12T11:22:31.667Z"
+}

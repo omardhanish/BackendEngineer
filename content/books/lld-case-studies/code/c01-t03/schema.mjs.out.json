@@ -1,0 +1,11 @@
+{
+  "stdout": "second live booking  23505 one_live_per_slot\ncancel AP-1          ok\nbook after cancel    ok\nslot ends first      23514 ends_after_start\nnegative fee         23514 fee_not_negative\nunknown doctor       23503 slot_doctor_id_fkey\nmade-up status       23514 known_status\n[{\"id\":\"AP-1\",\"patient_id\":\"P-1\",\"status\":\"CANCELLED\"},{\"id\":\"AP-2\",\"patient_id\":\"P-2\",\"status\":\"BOOKED\"}]",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node schema.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "a31619befcd8e871",
+  "at": "2026-10-14T08:37:36.517Z"
+}

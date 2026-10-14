@@ -1,0 +1,11 @@
+{
+  "stdout": "IN  Client: SUBMIT_ONE_SHOT_TASK\nIN  Client: SUBMIT_RECURRING_TASK\nIN  Client: CANCEL_TASK\nIN  Client: READ_TASK_STATUS\nIN  Clock: RUN_DUE_TASKS_IN_ORDER\nIN  Scheduler: RETRY_WITH_BACKOFF\nOUT Operator: SURVIVE_PROCESS_RESTART\nOUT Client: TASK_DEPENDENCIES_DAG\nOUT Client: CRON_EXPRESSIONS\nrun order: [clean-temp, charge-card, send-report]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java Requirements.java",
+  "tool": "Java 17.0.17",
+  "hash": "0215b4e022123b37",
+  "at": "2026-10-14T08:40:23.863Z"
+}

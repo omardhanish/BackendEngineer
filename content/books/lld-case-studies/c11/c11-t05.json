@@ -1,0 +1,367 @@
+{
+  "title": "Table races and edge cases",
+  "idea": "A table race is two bookings both seeing a table free and both claiming it; the fix makes the overlap check and write one atomic step.",
+  "analogy": {
+    "text": "Two hosts glance at the same empty booth and both promise it to a party. A single clipboard on the booth, held by one host at a time, stops that.",
+    "breaks": "A Java lock works inside one process; two servers need the database to decide."
+  },
+  "points": [
+    "Check free, then save, is two steps; another booking can slip between them.",
+    "`tryReserve` checks overlap and adds inside one `synchronized` method.",
+    "Each table has its own lock, so bookings for different tables never wait.",
+    "A loser tries the next table in best-fit order before giving up."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "lanes",
+    "title": "Two parties of four at 19:00",
+    "scenario": {
+      "lanes": [
+        {
+          "id": "a",
+          "label": "Thread P-1",
+          "kind": "area"
+        },
+        {
+          "id": "b",
+          "label": "Thread P-2",
+          "kind": "area"
+        },
+        {
+          "id": "t2",
+          "label": "T2 schedule",
+          "kind": "area",
+          "hint": "four seats"
+        },
+        {
+          "id": "t4",
+          "label": "T4 schedule",
+          "kind": "area",
+          "hint": "six seats"
+        }
+      ],
+      "tokens": {
+        "ca": {
+          "label": "T2 free?",
+          "tone": "sync"
+        },
+        "cb": {
+          "label": "T2 free?",
+          "tone": "sync"
+        },
+        "ya": {
+          "label": "yes",
+          "tone": "io"
+        },
+        "yb": {
+          "label": "yes",
+          "tone": "io"
+        },
+        "ra": {
+          "label": "P-1 19:00",
+          "tone": "micro"
+        },
+        "rb": {
+          "label": "P-2 19:00",
+          "tone": "macro"
+        },
+        "ta": {
+          "label": "tryReserve",
+          "tone": "timer"
+        },
+        "tb": {
+          "label": "tryReserve",
+          "tone": "timer"
+        },
+        "no": {
+          "label": "T2 false",
+          "tone": "neutral"
+        },
+        "r4": {
+          "label": "P-2 19:00",
+          "tone": "micro"
+        }
+      },
+      "steps": [
+        {
+          "caption": "Unsafe version. P-1 asks whether T2 is free at 19:00.",
+          "at": {
+            "a": [
+              "ca"
+            ]
+          },
+          "active": "ca"
+        },
+        {
+          "caption": "Before P-1 writes, P-2 asks too. T2's schedule is still empty.",
+          "at": {
+            "a": [
+              "ya"
+            ],
+            "b": [
+              "cb"
+            ]
+          },
+          "active": "cb"
+        },
+        {
+          "caption": "Both threads now hold the answer yes. Neither knows about the other.",
+          "at": {
+            "a": [
+              "ya"
+            ],
+            "b": [
+              "yb"
+            ]
+          }
+        },
+        {
+          "caption": "P-1 adds its slot to T2.",
+          "at": {
+            "b": [
+              "yb"
+            ],
+            "t2": [
+              "ra"
+            ]
+          },
+          "active": "ra"
+        },
+        {
+          "caption": "P-2 acts on its stale yes and adds an overlapping slot. Two parties, one table.",
+          "at": {
+            "t2": [
+              "ra",
+              "rb"
+            ]
+          },
+          "active": "rb"
+        },
+        {
+          "caption": "Safe version. Both threads call `tryReserve` on T2 at once.",
+          "at": {
+            "a": [
+              "ta"
+            ],
+            "b": [
+              "tb"
+            ]
+          }
+        },
+        {
+          "caption": "T2's lock lets one call in. It finds no overlap and adds P-1's slot.",
+          "at": {
+            "b": [
+              "tb"
+            ],
+            "t2": [
+              "ra"
+            ]
+          },
+          "active": "ra"
+        },
+        {
+          "caption": "P-2's call runs next, sees the overlap, and returns false.",
+          "at": {
+            "b": [
+              "no"
+            ],
+            "t2": [
+              "ra"
+            ]
+          },
+          "active": "no"
+        },
+        {
+          "caption": "P-2 tries the next table in best-fit order. T4 is free, so it wins there.",
+          "at": {
+            "t2": [
+              "ra"
+            ],
+            "t4": [
+              "r4"
+            ]
+          },
+          "active": "r4"
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "TableRace.java",
+      "lang": "java",
+      "title": "Prove the race",
+      "run": "captured",
+      "caption": "A barrier forces both threads to check before either writes, so the double booking shows up every run. Slots are minutes since midnight here.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7
+          ],
+          "text": "Run the same race twice: unsafe first, then atomic."
+        },
+        {
+          "lines": [
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "text": "Two tables in best-fit order, one 19:00 slot, a two-thread barrier."
+        },
+        {
+          "lines": [
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "text": "Join both threads, then sort the tables they got, so output is stable."
+        },
+        {
+          "lines": [
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35
+          ],
+          "text": "Unsafe: pick a free table, wait for the other thread, then write."
+        },
+        {
+          "lines": [
+            37,
+            38,
+            39,
+            40,
+            41
+          ],
+          "text": "Safe: try each table; `tryReserve` refuses an overlap atomically."
+        },
+        {
+          "lines": [
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63
+          ],
+          "text": "Every method locks this table's schedule only, so tables do not block each other."
+        }
+      ]
+    },
+    {
+      "file": "EdgeCases.java",
+      "lang": "java",
+      "title": "Retry, reschedule, cancel",
+      "run": "captured",
+      "caption": "Three failure cases on one table: a retried request, a move that would clash, and a cancel that frees time.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7
+          ],
+          "text": "A client times out and sends the same request key again."
+        },
+        {
+          "lines": [
+            8,
+            9
+          ],
+          "text": "A 20:00 booking clashes with 19:00-20:30; 21:00 fits."
+        },
+        {
+          "lines": [
+            10,
+            11,
+            12,
+            13
+          ],
+          "text": "Move RV-1 twice, cancel RV-2, then try the second move again."
+        },
+        {
+          "lines": [
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40
+          ],
+          "text": "A known key returns the first result instead of booking twice."
+        },
+        {
+          "lines": [
+            42,
+            43,
+            44,
+            45,
+            46
+          ],
+          "text": "Reschedule ignores its own old slot; on a clash the old slot stays."
+        },
+        {
+          "lines": [
+            50,
+            51,
+            52,
+            53,
+            54,
+            55
+          ],
+          "text": "The overlap check skips one id, so a move can overlap itself."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not lock the whole restaurant; one lock per table keeps other tables bookable.",
+    "Never cancel the old slot before the new one is secured during a reschedule.",
+    "A retried booking without an Idempotency-Key can create two reservations for one party."
+  ],
+  "quiz": {
+    "q": "What does TableRace print on its second line?",
+    "options": [
+      "safe:   [T2, T2]",
+      "safe:   [T2, NO_TABLE]",
+      "safe:   [T2, T4]",
+      "safe:   [T4, T4]"
+    ],
+    "answer": 2,
+    "why": "One `tryReserve` on T2 wins; the other sees the overlap, returns false, and that thread reserves T4 instead. Sorting makes the order fixed."
+  },
+  "takeaway": "Check and claim a table in one atomic step, locked per table.",
+  "chat": {
+    "starters": [
+      "Why not use a ConcurrentHashMap instead of synchronized?",
+      "What happens when the service runs on two servers?",
+      "How long should request keys be remembered?"
+    ]
+  }
+}

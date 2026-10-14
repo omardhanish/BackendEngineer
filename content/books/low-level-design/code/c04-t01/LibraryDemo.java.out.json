@@ -1,0 +1,11 @@
+{
+  "stdout": "Ada has Dune for 14 days\nRejected: Dune is on loan\nRejected: 30 days exceeds limit 14\nActive loans: 1",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java LibraryDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "9767132f9049b298",
+  "at": "2026-10-12T11:30:40.956Z"
+}

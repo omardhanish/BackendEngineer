@@ -1,0 +1,11 @@
+{
+  "stdout": "GET /doctors/D-1/slots?limit=2  200 {\"items\":[\"SL-1\",\"SL-2\"],\"nextCursor\":\"…\"}\nGET /doctors/D-1/slots?limit=2  200 {\"items\":[\"SL-3\",\"SL-4\"],\"nextCursor\":\"…\"}\nPOST /appointments k-1 201 {\"id\":\"AP-1\",\"slotId\":\"SL-1\"}\nPOST /appointments k-1 200 {\"id\":\"AP-1\",\"slotId\":\"SL-1\"}\nPOST /appointments k-1 422 {\"error\":{\"code\":\"KEY_REUSED\"}}\nPOST /appointments k-2 409 {\"error\":{\"code\":\"SLOT_TAKEN\"}}\nPOST /appointments k-3 400 {\"error\":{\"code\":\"VALIDATION\",\"fields\":[\"patientId\"]}}\nPOST /appointments k-4 404 {\"error\":{\"code\":\"SLOT_NOT_FOUND\"}}",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node api.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "804c86fdce2da5b6",
+  "at": "2026-10-14T09:57:12.328Z"
+}

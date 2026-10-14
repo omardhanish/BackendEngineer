@@ -1,0 +1,207 @@
+{
+  "title": "Notification API and worker",
+  "idea": "The Node.js notification service accepts requests over HTTP, stores each one as a PENDING row keyed by its Idempotency-Key, and lets workers claim rows and deliver them.",
+  "points": [
+    "`POST /notifications` returns 202: accepted and stored, not yet delivered.",
+    "A known key returns the stored row as 200; `ON CONFLICT` covers races.",
+    "Workers claim rows with `SKIP LOCKED`, so two live workers never take one row.",
+    "Follow-ups: per-channel queues, provider webhooks for receipts, per-user rate limits."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "Accept now, deliver later",
+    "actors": [
+      {
+        "id": "caller",
+        "label": "Order service"
+      },
+      {
+        "id": "api",
+        "label": "Notification API"
+      },
+      {
+        "id": "db",
+        "label": "PostgreSQL"
+      },
+      {
+        "id": "worker",
+        "label": "Worker"
+      },
+      {
+        "id": "prov",
+        "label": "SMS providers"
+      }
+    ],
+    "messages": [
+      {
+        "from": "caller",
+        "to": "api",
+        "label": "POST /notifications",
+        "note": "The caller sends user, channel, template and params, plus an Idempotency-Key header."
+      },
+      {
+        "from": "api",
+        "to": "db",
+        "label": "INSERT ... ON CONFLICT",
+        "note": "The API checks the key, renders the template and inserts a PENDING row. A known key skips both."
+      },
+      {
+        "from": "api",
+        "to": "caller",
+        "label": "202 N-1 PENDING",
+        "dashed": true,
+        "note": "The caller gets an id at once. A replay with the same key gets 200 and the same id."
+      },
+      {
+        "from": "worker",
+        "to": "db",
+        "label": "SELECT ... SKIP LOCKED",
+        "note": "A worker locks the oldest PENDING row. Other workers skip it and take the next one."
+      },
+      {
+        "from": "worker",
+        "to": "prov",
+        "label": "send via sms-a",
+        "note": "The primary provider is down, so the worker fails over to sms-b."
+      },
+      {
+        "from": "prov",
+        "to": "worker",
+        "label": "sms-b accepted",
+        "dashed": true,
+        "note": "The backup provider accepts the message."
+      },
+      {
+        "from": "worker",
+        "to": "db",
+        "label": "UPDATE status SENT",
+        "note": "The worker records the status and provider, then commits and releases the lock."
+      },
+      {
+        "from": "caller",
+        "to": "api",
+        "label": "GET /notifications/N-1",
+        "note": "The caller can ask later: the row now says SENT via sms-b."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "notify-api.mjs",
+      "lang": "js",
+      "title": "API, worker and failover",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "Controller, service, worker and error mapping in one file, on a real PostgreSQL. Providers are fakes; sms-a is down.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12
+          ],
+          "text": "The table is the queue. A partial index serves the worker's PENDING lookup."
+        },
+        {
+          "lines": [
+            15,
+            16,
+            17,
+            18
+          ],
+          "text": "Render once on accept. A missing value is a 400, not a blank message."
+        },
+        {
+          "lines": [
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31
+          ],
+          "text": "A replay returns the stored row before rendering. `ON CONFLICT` covers two first requests racing."
+        },
+        {
+          "lines": [
+            35,
+            39,
+            40,
+            41
+          ],
+          "text": "Each worker locks one PENDING row; `SKIP LOCKED` hands others the next row."
+        },
+        {
+          "lines": [
+            42,
+            43,
+            44,
+            45
+          ],
+          "text": "Try providers in order, then store SENT or FAILED and commit."
+        },
+        {
+          "lines": [
+            53,
+            54,
+            55,
+            56,
+            57
+          ],
+          "text": "The controller requires the key, validates with `zod`, and picks 202 or 200."
+        },
+        {
+          "lines": [
+            79,
+            80,
+            81,
+            82,
+            83,
+            84,
+            85,
+            86,
+            87,
+            88
+          ],
+          "text": "Happy path, replay, two 400s, an email, two parallel workers, then status reads."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "At scale, do not send inside the row lock; mark it SENDING with an expiry time.",
+    "A crash after sending but before COMMIT resends the message; delivery is at-least-once.",
+    "Prefer 202 over 201 for queued work; it tells callers delivery is still pending."
+  ],
+  "quiz": {
+    "q": "What does the second POST print?",
+    "options": [
+      "POST /notifications 409 {\"error\":\"DUPLICATE\"}",
+      "POST /notifications 202 {\"id\":\"N-2\",...}",
+      "POST /notifications 200 {\"id\":\"N-1\",...}",
+      "POST /notifications 500 {\"error\":\"INTERNAL\"}"
+    ],
+    "answer": 2,
+    "why": "The SELECT finds key `login-77`, so the service returns the stored row without inserting. The controller replies 200 with N-1."
+  },
+  "takeaway": "Store first with an idempotency key, then let workers deliver with SKIP LOCKED.",
+  "chat": {
+    "starters": [
+      "How would I add an outbox so the order and its notification commit together?",
+      "How do provider delivery receipts update the status after SENT?",
+      "How do I scale this to many workers and keep OTPs fast?"
+    ]
+  }
+}

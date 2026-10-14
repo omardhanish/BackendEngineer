@@ -1,0 +1,11 @@
+{
+  "stdout": "u1 Y\nu1 Y\nu1 n\nops Y\nops Y\nops Y\nallowed=2 rejected=1",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java Decorators.java",
+  "tool": "Java 17.0.17",
+  "hash": "e0cfadfe1fea4b42",
+  "at": "2026-10-14T08:37:04.301Z"
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "BK-1 R-1 10:00-11:00 ok\nBK-2 R-1 10:30-11:30 refused 23P01 booking_room_id_during_excl\nBK-3 R-1 11:00-12:00 ok\nBK-4 R-2 10:30-11:30 ok\nBK-5 R-1 cancelled overlap ok\nBK-6 R-1 ends before start refused 22000\nBK-7 room R-9 refused 23503 booking_room_id_fkey\nBK-8 status LOST refused 23514 booking_status_check\nfree for 4 at 10:30-11:30: [{\"id\":\"R-3\",\"name\":\"Lyra\"}]",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node schema.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "d6e6ea43ae69087f",
+  "at": "2026-10-14T10:22:15.832Z"
+}

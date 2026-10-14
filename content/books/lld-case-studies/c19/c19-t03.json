@@ -1,0 +1,337 @@
+{
+  "title": "Scheduler core in Java",
+  "idea": "The scheduler core is a priority queue of tasks plus one loop: while the head is due, take it out, run it, then finish, repeat or retry it.",
+  "analogy": {
+    "text": "An airport departure board. The next flight on the list boards first; a delayed flight gets a new time and moves down the list.",
+    "breaks": "Flights do not return every hour; recurring tasks do."
+  },
+  "points": [
+    "`runDue` reads the clock once, then drains every task due by then.",
+    "A task leaves the heap before its fields change, then re-enters later.",
+    "Cancel only flips the status; the loop drops cancelled tasks when it polls them.",
+    "Failures retry at now plus backoff until attempts reach the policy's maximum."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "lanes",
+    "title": "Tasks moving through runDue",
+    "scenario": {
+      "lanes": [
+        {
+          "id": "heap",
+          "label": "Priority queue",
+          "kind": "queue",
+          "hint": "time, then priority"
+        },
+        {
+          "id": "run",
+          "label": "Running",
+          "kind": "area"
+        },
+        {
+          "id": "done",
+          "label": "Finished",
+          "kind": "area",
+          "hint": "terminal states"
+        }
+      ],
+      "tokens": {
+        "beat0": {
+          "label": "heartbeat @0",
+          "tone": "timer"
+        },
+        "beat1000": {
+          "label": "heartbeat @1000",
+          "tone": "timer"
+        },
+        "beat1500": {
+          "label": "heartbeat @1500",
+          "tone": "timer"
+        },
+        "clean": {
+          "label": "old-cleanup X",
+          "tone": "neutral"
+        },
+        "card": {
+          "label": "charge-card p5",
+          "tone": "io"
+        },
+        "card1100": {
+          "label": "charge-card @1100",
+          "tone": "io"
+        },
+        "card1300": {
+          "label": "charge-card @1300",
+          "tone": "io"
+        },
+        "cardok": {
+          "label": "charge-card OK",
+          "tone": "sync"
+        },
+        "report": {
+          "label": "send-report p1",
+          "tone": "macro"
+        },
+        "reportok": {
+          "label": "send-report OK",
+          "tone": "sync"
+        },
+        "export": {
+          "label": "bad-export @1500",
+          "tone": "micro"
+        },
+        "beat2000": {
+          "label": "heartbeat @2000",
+          "tone": "timer"
+        }
+      },
+      "steps": [
+        {
+          "caption": "Five tasks wait. Cleanup is already cancelled but stays in the heap: removal is lazy.",
+          "at": {
+            "heap": [
+              "beat0",
+              "clean",
+              "card",
+              "report",
+              "export"
+            ]
+          }
+        },
+        {
+          "caption": "At t=0 only the heartbeat is due. It runs, then returns with its next time. t=500 repeats this.",
+          "at": {
+            "heap": [
+              "clean",
+              "card",
+              "report",
+              "beat1000",
+              "export"
+            ],
+            "run": [
+              "beat0"
+            ]
+          },
+          "active": "beat0"
+        },
+        {
+          "caption": "At t=1000 cleanup reaches the head. The loop sees CANCELLED and drops it without running.",
+          "at": {
+            "heap": [
+              "card",
+              "report",
+              "beat1000",
+              "export"
+            ],
+            "done": [
+              "clean"
+            ]
+          },
+          "active": "clean"
+        },
+        {
+          "caption": "Charge-card wins the 1000 tie with priority 5. It throws, so it returns with run time 1100.",
+          "at": {
+            "heap": [
+              "report",
+              "beat1000",
+              "card1100",
+              "export"
+            ],
+            "run": [
+              "card"
+            ],
+            "done": [
+              "clean"
+            ]
+          },
+          "active": "card"
+        },
+        {
+          "caption": "Send-report and the heartbeat run next. The report is one-shot, so it finishes.",
+          "at": {
+            "heap": [
+              "card1100",
+              "export",
+              "beat1500"
+            ],
+            "done": [
+              "clean",
+              "reportok"
+            ]
+          },
+          "active": "reportok"
+        },
+        {
+          "caption": "At t=1100 the second attempt fails too. Backoff doubles, so the next try is at 1300.",
+          "at": {
+            "heap": [
+              "card1300",
+              "export",
+              "beat1500"
+            ],
+            "run": [
+              "card1100"
+            ],
+            "done": [
+              "clean",
+              "reportok"
+            ]
+          },
+          "active": "card1100"
+        },
+        {
+          "caption": "At t=1300 the third attempt succeeds and the task leaves the queue for good.",
+          "at": {
+            "heap": [
+              "export",
+              "beat1500"
+            ],
+            "done": [
+              "clean",
+              "reportok",
+              "cardok"
+            ]
+          },
+          "active": "cardok"
+        },
+        {
+          "caption": "Bad-export fails at 1500, 1700 and 1900 (due at 1600, run at the next tick). After three attempts it is FAILED.",
+          "at": {
+            "heap": [
+              "beat2000"
+            ],
+            "done": [
+              "clean",
+              "reportok",
+              "cardok",
+              "export"
+            ]
+          },
+          "active": "export"
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "CoreScheduler.java",
+      "lang": "java",
+      "title": "The complete core",
+      "run": "captured",
+      "caption": "One-shot, recurring, cancelled and failing tasks on a manual clock. Task fields are package-private here, so `Scheduler` requeues directly.",
+      "walk": [
+        {
+          "lines": [
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17
+          ],
+          "text": "Charge-card fails twice, heartbeat repeats every 500 ms, bad-export always fails."
+        },
+        {
+          "lines": [
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "text": "Move the manual clock through fixed ticks, running due work at each."
+        },
+        {
+          "lines": [
+            29,
+            30,
+            31,
+            32
+          ],
+          "text": "The heap orders tasks; the map finds them by id."
+        },
+        {
+          "lines": [
+            46,
+            47,
+            48,
+            49,
+            50,
+            51
+          ],
+          "text": "Cancel flips the status only; no linear search through the heap."
+        },
+        {
+          "lines": [
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59,
+            60
+          ],
+          "text": "Drain every due task, skipping cancelled ones as they surface."
+        },
+        {
+          "lines": [
+            65,
+            66,
+            67,
+            68,
+            69,
+            70,
+            71
+          ],
+          "text": "On success, finish a one-shot task or requeue the next period."
+        },
+        {
+          "lines": [
+            72,
+            73,
+            74,
+            75,
+            76,
+            77,
+            78,
+            79,
+            80,
+            81
+          ],
+          "text": "On failure, give up at the limit or requeue after the backoff."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Never edit run time while a task is in the heap; poll, change, then add.",
+    "Decide what a recurring task does after a long pause: catch up or skip missed runs.",
+    "Reset attempts after a recurring success, or later failures retry less than intended."
+  ],
+  "quiz": {
+    "q": "What is the first line CoreScheduler prints for t=1000?",
+    "options": [
+      "t=1000 heartbeat #1 ok",
+      "t=1000 send-report #1 ok",
+      "t=1000 charge-card #1 gateway timeout, retry at 1100",
+      "t=1000 old-cleanup #1 ok"
+    ],
+    "answer": 2,
+    "why": "Cleanup is cancelled and skipped silently. Of the three due at 1000, charge-card has the highest priority, and its first call throws."
+  },
+  "takeaway": "Poll the due head, run it, then finish, repeat or retry.",
+  "chat": {
+    "starters": [
+      "Why remove cancelled tasks lazily instead of calling queue.remove?",
+      "Should a fixed-rate task's next run come from its run time or from now?",
+      "How would runDue change if jobs ran on a thread pool?"
+    ]
+  }
+}

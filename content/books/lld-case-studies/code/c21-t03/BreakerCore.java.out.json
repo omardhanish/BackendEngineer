@@ -1,0 +1,11 @@
+{
+  "stdout": "t=0     fail      -> CLOSED\nt=0     fail      -> CLOSED\nt=0     fail      -> OPEN\nt=0     call rejected fast\nt=5000  wait 5000 -> OPEN\nt=5000  fail      -> OPEN\nt=10000 wait 5000 -> OPEN\nt=10000 ok        -> CLOSED\nt=10000 call      -> CLOSED",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java BreakerCore.java",
+  "tool": "Java 17.0.17",
+  "hash": "ee89165e451891cb",
+  "at": "2026-10-14T08:44:44.659Z"
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "job 1 accepted, queued=0\njob 2 accepted, queued=0\njob 3 accepted, queued=1\njob 4 accepted, queued=2\njob 5 rejected: pool is full\nresults in submit order: [10, 20, 30, 40]\nterminated=true",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java BoundedPoolDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "d846d7db410107c6",
+  "at": "2026-10-12T11:23:58.876Z"
+}

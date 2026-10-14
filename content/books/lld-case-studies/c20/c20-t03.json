@@ -1,0 +1,302 @@
+{
+  "title": "Event bus core in Java",
+  "idea": "The event bus core queues each event per subscriber, then dispatches in passes: retrying failures, holding later events of a failed key, dead-lettering at the limit.",
+  "analogy": {
+    "text": "A courier serves one office per round. If desk 4 refuses a parcel, desk 4's later parcels wait for the next round; other desks still get theirs.",
+    "breaks": "A real courier would not hold parcels back to keep their order."
+  },
+  "points": [
+    "Publish only enqueues: one `Delivery` per matching subscription, in publish order.",
+    "A handler that returns acknowledges; a handler that throws asks for a retry.",
+    "After one failure, later events with that key wait for the next pass.",
+    "At the attempt limit the event moves to dead letters and the key unblocks."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "lanes",
+    "title": "One subscriber's mailbox across passes",
+    "scenario": {
+      "lanes": [
+        {
+          "id": "box",
+          "label": "Billing mailbox",
+          "kind": "queue"
+        },
+        {
+          "id": "later",
+          "label": "Retry next pass",
+          "kind": "queue"
+        },
+        {
+          "id": "done",
+          "label": "Handled",
+          "kind": "area"
+        },
+        {
+          "id": "dead",
+          "label": "Dead letters",
+          "kind": "area"
+        }
+      ],
+      "tokens": {
+        "e1": {
+          "label": "EV-1 O-1",
+          "tone": "macro"
+        },
+        "e2": {
+          "label": "EV-2 O-1",
+          "tone": "macro"
+        },
+        "e3": {
+          "label": "EV-3 O-2",
+          "tone": "micro"
+        },
+        "e4": {
+          "label": "EV-4 O-3",
+          "tone": "timer"
+        }
+      },
+      "steps": [
+        {
+          "caption": "Four events were published. Billing's mailbox holds one delivery for each, in publish order.",
+          "at": {
+            "box": [
+              "e1",
+              "e2",
+              "e3",
+              "e4"
+            ],
+            "later": [],
+            "done": [],
+            "dead": []
+          }
+        },
+        {
+          "caption": "Pass 1: billing throws on EV-1. It moves to the retry list, and key O-1 is now blocked.",
+          "active": "e1",
+          "at": {
+            "box": [
+              "e2",
+              "e3",
+              "e4"
+            ],
+            "later": [
+              "e1"
+            ],
+            "done": [],
+            "dead": []
+          }
+        },
+        {
+          "caption": "EV-2 shares key O-1, so it is held without calling the handler. O-1 keeps its order.",
+          "active": "e2",
+          "at": {
+            "box": [
+              "e3",
+              "e4"
+            ],
+            "later": [
+              "e1",
+              "e2"
+            ],
+            "done": [],
+            "dead": []
+          }
+        },
+        {
+          "caption": "EV-3 has key O-2, which is not blocked, so it is handled right away.",
+          "active": "e3",
+          "at": {
+            "box": [
+              "e4"
+            ],
+            "later": [
+              "e1",
+              "e2"
+            ],
+            "done": [
+              "e3"
+            ],
+            "dead": []
+          }
+        },
+        {
+          "caption": "EV-4 fails its first try and joins the retry list.",
+          "active": "e4",
+          "at": {
+            "box": [],
+            "later": [
+              "e1",
+              "e2",
+              "e4"
+            ],
+            "done": [
+              "e3"
+            ],
+            "dead": []
+          }
+        },
+        {
+          "caption": "End of pass 1: the retry list becomes the mailbox again, in the same order.",
+          "at": {
+            "box": [
+              "e1",
+              "e2",
+              "e4"
+            ],
+            "later": [],
+            "done": [
+              "e3"
+            ],
+            "dead": []
+          }
+        },
+        {
+          "caption": "Pass 2: EV-1 succeeds, so EV-2 follows it. EV-4 fails a second time.",
+          "at": {
+            "box": [],
+            "later": [
+              "e4"
+            ],
+            "done": [
+              "e3",
+              "e1",
+              "e2"
+            ],
+            "dead": []
+          }
+        },
+        {
+          "caption": "Pass 3: EV-4 fails its third try. With a limit of three, it moves to dead letters.",
+          "active": "e4",
+          "at": {
+            "box": [],
+            "later": [],
+            "done": [
+              "e3",
+              "e1",
+              "e2"
+            ],
+            "dead": [
+              "e4"
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "CoreBus.java",
+      "lang": "java",
+      "title": "Retries and dead letters",
+      "run": "captured",
+      "caption": "A complete single-threaded core. Topic is shortened to a list and unsubscribe is left out; both work as on the previous page.",
+      "walk": [
+        {
+          "lines": [
+            7,
+            8,
+            9,
+            10,
+            11
+          ],
+          "text": "At most three attempts. Billing fails EV-1 once and EV-4 always."
+        },
+        {
+          "lines": [
+            17,
+            18,
+            19,
+            20,
+            21
+          ],
+          "text": "Run passes until nothing is pending, then list the dead letters."
+        },
+        {
+          "lines": [
+            91,
+            92,
+            93,
+            94,
+            95,
+            96
+          ],
+          "text": "Publish only enqueues one Delivery per matching subscription: the fan-out."
+        },
+        {
+          "lines": [
+            101,
+            102,
+            103,
+            104
+          ],
+          "text": "Each pass tracks keys that failed and collects deliveries for later."
+        },
+        {
+          "lines": [
+            105,
+            106,
+            107,
+            108,
+            109,
+            110,
+            111,
+            112
+          ],
+          "text": "A delivery whose key is blocked is held without a call, keeping per-key order."
+        },
+        {
+          "lines": [
+            113,
+            114,
+            115,
+            116,
+            117,
+            118,
+            119,
+            120,
+            121,
+            122,
+            123,
+            124,
+            125,
+            126,
+            127
+          ],
+          "text": "Count the attempt. On failure retry next pass, or dead-letter at the limit."
+        },
+        {
+          "lines": [
+            129
+          ],
+          "text": "Held and failed deliveries return to the mailbox in their original order."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Never retry a failed event at the back while later same-key events run first.",
+    "Keep each subscriber's mailbox separate, so one failing handler never stalls the others.",
+    "Store the full event, error and attempt count, so someone can diagnose and replay it."
+  ],
+  "quiz": {
+    "q": "What is billing's first line in pass 2?",
+    "options": [
+      "billing ok EV-2 O-1 paid",
+      "billing failed EV-4 try 2",
+      "billing holds EV-2, key O-1",
+      "billing ok EV-1 O-1 placed"
+    ],
+    "answer": 3,
+    "why": "The retry list keeps original order, EV-1 then EV-2 then EV-4. A new pass starts with an empty blocked set, so EV-1 runs first and succeeds."
+  },
+  "takeaway": "Enqueue per subscriber, retry in order per key, and dead-letter at the limit.",
+  "chat": {
+    "starters": [
+      "Why does a dead-lettered event unblock its key?",
+      "How would I add a delay between retry passes?",
+      "What changes if order must hold across all keys, not per key?"
+    ]
+  }
+}

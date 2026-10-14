@@ -1,0 +1,11 @@
+{
+  "stdout": "attempt 1: TIMEOUT\nattempt 2: TIMEOUT\nattempt 3: TIMEOUT\nattempt 4: APPROVED\nwaited (ms): [200, 400, 800]\nretry a decline? false",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java BackoffRetry.java",
+  "tool": "Java 17.0.17",
+  "hash": "5711971f0c53b80d",
+  "at": "2026-10-14T08:40:26.700Z"
+}

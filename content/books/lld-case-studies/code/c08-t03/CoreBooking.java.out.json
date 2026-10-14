@@ -1,0 +1,11 @@
+{
+  "stdout": "held [A2, P1] until 2026-01-15T18:10:00Z\nU-9: seat already held [A1, A2]\nBooking[id=BK-1, holdId=H-1, amountMinor=65000, status=CONFIRMED]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java CoreBooking.java",
+  "tool": "Java 17.0.17",
+  "hash": "d1859d4c81eae5a6",
+  "at": "2026-10-12T11:27:02.138Z"
+}

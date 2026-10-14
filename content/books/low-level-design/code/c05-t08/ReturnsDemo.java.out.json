@@ -1,0 +1,11 @@
+{
+  "stdout": "Receipt[copyId=C1, daysLate=0, fineCents=0]\nReceipt[copyId=C2, daysLate=7, fineCents=175]\nReceipt[copyId=C3, daysLate=64, fineCents=500]\nNOT_ON_LOAN -> C2 is not on loan\nReceipt[copyId=C4, daysLate=9, fineCents=0]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ReturnsDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "5299ba44d9ef4cb1",
+  "at": "2026-10-12T11:24:27.511Z"
+}

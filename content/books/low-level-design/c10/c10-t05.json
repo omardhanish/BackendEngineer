@@ -1,0 +1,276 @@
+{
+  "title": "Aggregates and invariants",
+  "idea": "An aggregate is a cluster of objects changed as one unit through a single root entity, which guards the invariants: rules that must always hold.",
+  "analogy": {
+    "text": "A bank teller is the only way into your account. You never open the vault to move cash yourself, so every rule gets checked.",
+    "breaks": "Tellers can bend rules; a root never lets an invariant break."
+  },
+  "points": [
+    "Outsiders hold only the root; inner parts are reached through its methods.",
+    "The root checks every invariant before changing state, so bad changes never land.",
+    "Reference other aggregates by id, not object, so each stays small and loads alone.",
+    "Keep aggregates small; save one aggregate per transaction, as DDD guidance suggests."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "The root guards the boundary",
+    "nodes": [
+      {
+        "id": "client",
+        "label": "Caller",
+        "sub": "service or controller"
+      },
+      {
+        "id": "root",
+        "label": "PurchaseOrder",
+        "sub": "root: addLine, submit"
+      },
+      {
+        "id": "gate",
+        "label": "commit(next)",
+        "sub": "checks every invariant"
+      },
+      {
+        "id": "line",
+        "label": "OrderLine",
+        "sub": "immutable record"
+      },
+      {
+        "id": "supplier",
+        "label": "Supplier",
+        "sub": "another aggregate"
+      },
+      {
+        "id": "repo",
+        "label": "Order repository",
+        "sub": "loads and saves whole"
+      }
+    ],
+    "edges": [
+      {
+        "from": "client",
+        "to": "root",
+        "label": "addLine(...)"
+      },
+      {
+        "from": "root",
+        "to": "gate",
+        "label": "proposed lines"
+      },
+      {
+        "from": "gate",
+        "to": "line",
+        "label": "accept or throw"
+      },
+      {
+        "from": "client",
+        "to": "line",
+        "label": "edit directly",
+        "dashed": true
+      },
+      {
+        "from": "root",
+        "to": "supplier",
+        "label": "supplierId only",
+        "dashed": true
+      },
+      {
+        "from": "repo",
+        "to": "root",
+        "label": "whole aggregate"
+      }
+    ],
+    "steps": [
+      {
+        "caption": "`PurchaseOrder` and its lines form one aggregate. The root is the only object outsiders may hold.",
+        "active": [
+          "root",
+          "line"
+        ],
+        "edges": []
+      },
+      {
+        "caption": "A caller wants a new line. It asks the root; it never touches the list.",
+        "active": [
+          "client",
+          "root"
+        ],
+        "edges": [
+          0
+        ]
+      },
+      {
+        "caption": "The root builds the proposed list and hands it to one private gate.",
+        "active": [
+          "root",
+          "gate"
+        ],
+        "edges": [
+          1
+        ]
+      },
+      {
+        "caption": "The gate checks the budget and the status. On failure it throws and the old lines stay intact.",
+        "active": [
+          "gate",
+          "line"
+        ],
+        "edges": [
+          1,
+          2
+        ]
+      },
+      {
+        "caption": "Going round the root fails: lines are immutable records, and `lines()` returns a copy.",
+        "active": [
+          "client",
+          "line"
+        ],
+        "edges": [
+          3
+        ]
+      },
+      {
+        "caption": "The supplier is a separate aggregate. The order keeps only its id, so loading one never loads both.",
+        "active": [
+          "root",
+          "supplier"
+        ],
+        "edges": [
+          4
+        ]
+      },
+      {
+        "caption": "A repository loads and saves the whole aggregate through its root. Next page covers repositories.",
+        "active": [
+          "repo",
+          "root"
+        ],
+        "edges": [
+          5
+        ]
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "OpenOrder.java",
+      "lang": "java",
+      "title": "The problem",
+      "run": "captured",
+      "caption": "The budget rule is checked in one method, but two side doors skip it.",
+      "walk": [
+        {
+          "lines": [
+            21,
+            30
+          ],
+          "text": "`OrderLine` has a mutable `quantity` field. Any holder can change it."
+        },
+        {
+          "lines": [
+            38,
+            42
+          ],
+          "text": "The budget invariant is checked only inside `addLine`."
+        },
+        {
+          "lines": [
+            43,
+            43
+          ],
+          "text": "`lines()` returns the live list, so callers can add lines without the check."
+        },
+        {
+          "lines": [
+            11,
+            13
+          ],
+          "text": "Two callers use the side doors: one appends a line, one doubles a quantity."
+        },
+        {
+          "lines": [
+            14,
+            17
+          ],
+          "text": "The order now breaks its own rule. Nothing threw; the data is simply wrong."
+        }
+      ]
+    },
+    {
+      "file": "OrderAggregate.java",
+      "lang": "java",
+      "title": "The fix",
+      "run": "captured",
+      "caption": "One root, immutable parts, one gate for every invariant. Rejected changes leave no trace.",
+      "walk": [
+        {
+          "lines": [
+            22,
+            30
+          ],
+          "text": "`OrderLine` is an immutable record. A quantity change creates a new line."
+        },
+        {
+          "lines": [
+            33,
+            33
+          ],
+          "text": "The supplier is held by id only. The other aggregate stays out of this boundary."
+        },
+        {
+          "lines": [
+            42,
+            51
+          ],
+          "text": "Every change builds a proposed list first; the real list is untouched so far."
+        },
+        {
+          "lines": [
+            52,
+            58
+          ],
+          "text": "`commit` checks status and budget, then swaps in the new lines. All or nothing."
+        },
+        {
+          "lines": [
+            60,
+            60
+          ],
+          "text": "The getter returns a copy, closing the side door from the problem code."
+        },
+        {
+          "lines": [
+            7,
+            14
+          ],
+          "text": "Three bad changes are rejected, and the order still holds one valid line."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Returning the live inner list lets callers bypass the root; return `List.copyOf` instead.",
+    "Holding another aggregate by reference can drag it into every load; store its id.",
+    "Checking invariants in a service instead of the root lets a second service skip them."
+  ],
+  "quiz": {
+    "q": "An `Order` must never have more than 10 lines. Where should that check live?",
+    "options": [
+      "In the Order root's method that adds a line",
+      "In the OrderLine constructor",
+      "In the controller before calling addLine",
+      "In a database trigger only"
+    ],
+    "answer": 0,
+    "why": "The rule spans all lines, so only the root sees them all. A controller check is skipped by other callers, and one `OrderLine` cannot count its siblings."
+  },
+  "takeaway": "Change an aggregate only through its root, which keeps every invariant true.",
+  "chat": {
+    "starters": [
+      "How do I decide where one aggregate ends and another begins?",
+      "How do I keep a rule that spans two aggregates consistent?",
+      "Should the root throw checked or unchecked exceptions for broken invariants?"
+    ]
+  }
+}

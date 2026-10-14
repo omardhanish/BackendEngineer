@@ -1,0 +1,177 @@
+{
+  "title": "Elevator system requirements",
+  "idea": "Scoping an elevator system means naming who presses buttons, what the controller must decide, the safety rule it never breaks, and what v1 leaves out.",
+  "points": [
+    "Passengers call a car from a floor, then choose a destination inside.",
+    "The controller picks which car answers each hall call, then moves it.",
+    "The safety rule: a car never moves while its doors are open.",
+    "Assume one building, about 16 floors and 3 cars; label them as assumptions."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Who does what in v1",
+    "nodes": [
+      {
+        "id": "pass",
+        "label": "Passenger",
+        "sub": "on a floor or in a car"
+      },
+      {
+        "id": "hall",
+        "label": "Hall call",
+        "sub": "UP or DOWN button"
+      },
+      {
+        "id": "carc",
+        "label": "Car call",
+        "sub": "floor button inside"
+      },
+      {
+        "id": "ctl",
+        "label": "ElevatorController",
+        "sub": "picks a car"
+      },
+      {
+        "id": "move",
+        "label": "Move and stop",
+        "sub": "doors open at stops"
+      },
+      {
+        "id": "op",
+        "label": "Operator",
+        "sub": "maintenance desk"
+      },
+      {
+        "id": "oos",
+        "label": "Out of service",
+        "sub": "car leaves the pool"
+      },
+      {
+        "id": "out",
+        "label": "Out of scope",
+        "sub": "keypads, fire mode"
+      }
+    ],
+    "edges": [
+      {
+        "from": "pass",
+        "to": "hall",
+        "caption": "A passenger on a floor presses UP or DOWN. That is a hall call: a floor and a direction."
+      },
+      {
+        "from": "hall",
+        "to": "ctl",
+        "caption": "The controller receives the hall call and decides which car answers it."
+      },
+      {
+        "from": "pass",
+        "to": "carc",
+        "caption": "Inside the car, the passenger presses a floor number. That is a car call for that one car."
+      },
+      {
+        "from": "carc",
+        "to": "move",
+        "caption": "A car call needs no choice of car. It becomes a stop on the car the rider is in."
+      },
+      {
+        "from": "ctl",
+        "to": "move",
+        "caption": "The chosen car adds the stop, travels, and opens its doors only when stopped."
+      },
+      {
+        "from": "op",
+        "to": "oos",
+        "caption": "An operator takes a car out of service for repair. Its open calls must go to another car."
+      },
+      {
+        "from": "pass",
+        "to": "out",
+        "dashed": true,
+        "caption": "Destination keypads and fire service mode wait for a later version. Say so out loud."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "Scope.java",
+      "lang": "java",
+      "title": "Use cases as an enum",
+      "run": "captured",
+      "caption": "The scope written as code: each use case has one actor, and v1 is an explicit set.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7,
+            8,
+            9
+          ],
+          "text": "v1 is a named set. Anything missing from it is out of scope by default."
+        },
+        {
+          "lines": [
+            10,
+            11,
+            12,
+            13
+          ],
+          "text": "Print every use case with its actor and an IN or OUT tag."
+        },
+        {
+          "lines": [
+            14
+          ],
+          "text": "Scale is stated as an assumption, not as a measured fact."
+        },
+        {
+          "lines": [
+            18
+          ],
+          "text": "Three actors: the passenger, the operator, and the system itself."
+        },
+        {
+          "lines": [
+            21,
+            22,
+            23,
+            24,
+            25,
+            26
+          ],
+          "text": "Six use cases cover calling, riding, dispatching and maintenance."
+        },
+        {
+          "lines": [
+            27,
+            28
+          ],
+          "text": "Destination keypads and fire mode are listed, so the cut is visible."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not design scheduling before agreeing what hall calls and car calls are.",
+    "State floors, cars and peak traffic as assumptions, never as measured facts.",
+    "Leaving out the operator hides maintenance and failover until too late."
+  ],
+  "quiz": {
+    "q": "Three people on floor 5 press UP within two seconds. What should v1 do?",
+    "options": [
+      "Dispatch three cars, one per press",
+      "Keep one open UP call for floor 5",
+      "Reject the second and third press",
+      "Queue three calls and serve them in order"
+    ],
+    "answer": 1,
+    "why": "A hall call means someone on this floor wants to go up. Extra presses add nothing, so the system keeps one open call per floor and button."
+  },
+  "takeaway": "Name actors, hall and car calls, and the doors-closed rule first.",
+  "chat": {
+    "starters": [
+      "What is the difference between a hall call and a car call?",
+      "Should fire service mode ever be in v1 scope?",
+      "Which scale assumptions should I state for an elevator interview?"
+    ]
+  }
+}

@@ -1,83 +1,271 @@
 {
-  "title": "Singleton and Builder",
-  "idea": "Singleton guarantees a class has exactly one instance with one access point. Builder assembles a complex, immutable object step by step, then validates it once in `build()`.",
+  "title": "Interfaces vs abstract classes",
+  "idea": "An interface names a role a class promises to play; an abstract class is a partial implementation that shares state and steps with its subclasses.",
+  "analogy": {
+    "text": "An interface is a job advert: anyone skilled can apply, and one person may hold several jobs. An abstract class is a franchise kit: shared kitchen, fixed recipe.",
+    "breaks": "Default methods let an interface ship some behaviour too."
+  },
   "points": [
-    "A Singleton hides its constructor and hands out one shared instance.",
-    "The holder idiom and the `enum` form are thread-safe without explicit locking.",
-    "A Builder collects optional values in a mutable helper, then creates the object.",
-    "`build()` checks the rules once, so every built object starts valid."
+    "A class implements many interfaces but extends exactly one class.",
+    "Interfaces hold no instance fields; abstract classes keep state and constructors.",
+    "Depend on the interface; offer an abstract base only to share real code.",
+    "In interviews, start with an interface; add an abstract class when duplication appears."
   ],
   "hero": {
-    "type": "table",
-    "title": "Two creational patterns side by side",
-    "head": ["Question", "Singleton", "Builder"],
-    "rows": [
-      ["Problem it solves", "One shared instance for the whole program", "Many optional fields make constructors unreadable"],
-      ["Java shape", "private constructor plus holder class, or an enum", "static nested Builder class, build() at the end"],
-      ["Thread safety", "JVM class initialisation runs once, safely", "Builder is local to one thread; result is immutable"],
-      ["What you get", "Global access, often to shared state", "A valid object with final fields"],
-      ["Overkill when", "A DI container can share one instance for you", "The class has two or three required fields"],
-      ["Testing cost", "Hard to swap for a fake", "Easy to build varied test data"]
+    "type": "flow",
+    "title": "Clients see the role, not the base",
+    "nodes": [
+      {
+        "id": "dash",
+        "label": "Dashboard",
+        "sub": "List<Report> reports"
+      },
+      {
+        "id": "rep",
+        "label": "Report",
+        "sub": "interface: render()"
+      },
+      {
+        "id": "abs",
+        "label": "AbstractReport",
+        "sub": "title, final render(), body()"
+      },
+      {
+        "id": "sales",
+        "label": "SalesReport",
+        "sub": "body(): totals"
+      },
+      {
+        "id": "stock",
+        "label": "StockReport",
+        "sub": "body(): low items"
+      },
+      {
+        "id": "remote",
+        "label": "RemoteReport",
+        "sub": "render(): fetched text"
+      }
     ],
-    "highlight": { "row": 4 },
-    "caption": "Singleton controls how many objects exist; Builder controls how one object is assembled."
+    "edges": [
+      {
+        "from": "dash",
+        "to": "rep",
+        "label": "depends on"
+      },
+      {
+        "from": "abs",
+        "to": "rep",
+        "label": "implements",
+        "dashed": true
+      },
+      {
+        "from": "sales",
+        "to": "abs",
+        "label": "extends"
+      },
+      {
+        "from": "stock",
+        "to": "abs",
+        "label": "extends"
+      },
+      {
+        "from": "remote",
+        "to": "rep",
+        "label": "implements",
+        "dashed": true
+      }
+    ],
+    "steps": [
+      {
+        "caption": "`Dashboard` knows only the `Report` interface. It calls `render()` and nothing else.",
+        "active": [
+          "dash",
+          "rep"
+        ],
+        "edges": [
+          0
+        ]
+      },
+      {
+        "caption": "`AbstractReport` implements the role once. It owns the title and the fixed layout of `render()`.",
+        "active": [
+          "abs",
+          "rep"
+        ],
+        "edges": [
+          1
+        ]
+      },
+      {
+        "caption": "`SalesReport` extends the base and writes only `body()`. Layout code is not repeated.",
+        "active": [
+          "sales",
+          "abs"
+        ],
+        "edges": [
+          2
+        ]
+      },
+      {
+        "caption": "`StockReport` does the same. A layout change edits one class and reaches every subclass.",
+        "active": [
+          "stock",
+          "abs"
+        ],
+        "edges": [
+          3
+        ]
+      },
+      {
+        "caption": "`RemoteReport` skips the base and implements `Report` directly. The interface leaves that door open.",
+        "active": [
+          "remote",
+          "rep"
+        ],
+        "edges": [
+          4
+        ]
+      },
+      {
+        "caption": "Interface for the type, abstract class for shared code. `List` and `AbstractList` in the JDK follow this shape.",
+        "active": [
+          "rep",
+          "abs"
+        ],
+        "edges": [
+          0,
+          1,
+          4
+        ]
+      }
+    ]
   },
   "code": [
     {
-      "file": "SingletonDemo.java",
+      "file": "RolesDemo.java",
       "lang": "java",
-      "title": "Singleton",
+      "title": "Interfaces as roles",
       "run": "captured",
-      "caption": "Two common Java singletons: a lazy holder class and a one-constant `enum`.",
+      "caption": "One record plays two roles. Each caller depends only on the role it needs.",
       "walk": [
-        { "lines": [19, 19], "text": "A `private` constructor stops any other class from calling `new`." },
-        { "lines": [21, 23], "text": "The nested holder loads on first use; the JVM creates the instance once." },
-        { "lines": [25, 25], "text": "`get` is the single access point. No `synchronized` is needed here." },
-        { "lines": [27, 27], "text": "Shared mutable state still needs guarding, so `next` is `synchronized`." },
-        { "lines": [30, 31], "text": "A one-constant `enum` is also a singleton. Unlike the holder, reflection and deserialization cannot copy it." },
-        { "lines": [6, 9], "text": "Both references point at one object, so the counter is shared." }
+        {
+          "lines": [
+            19,
+            21
+          ],
+          "text": "`Priced` declares what a priced thing can do. It holds no fields, only a contract."
+        },
+        {
+          "lines": [
+            22,
+            23
+          ],
+          "text": "A default method gives shared behaviour. Implementers may keep it or override it."
+        },
+        {
+          "lines": [
+            24,
+            30
+          ],
+          "text": "A static method is a helper tied to the interface, called as `Priced.cheapest`."
+        },
+        {
+          "lines": [
+            37,
+            43
+          ],
+          "text": "`Book` implements two interfaces. A class could never extend two classes this way."
+        },
+        {
+          "lines": [
+            45,
+            48
+          ],
+          "text": "`Ebook` overrides the default to apply its own rate."
+        },
+        {
+          "lines": [
+            9,
+            15
+          ],
+          "text": "The cart sees only `Priced`; shipping sees only `Shippable`. Each depends on less."
+        }
       ]
     },
     {
-      "file": "BuilderDemo.java",
+      "file": "ReportDemo.java",
       "lang": "java",
-      "title": "Builder",
+      "title": "Interface plus abstract base",
       "run": "captured",
-      "caption": "Named steps replace a long constructor. `build()` refuses an email without a subject.",
+      "caption": "Clients use the `Report` interface; `AbstractReport` shares state and a fixed skeleton.",
       "walk": [
-        { "lines": [19, 22], "text": "The product has only `private final` fields: immutable once built." },
-        { "lines": [23, 25], "text": "Its constructor is `private` and copies from the builder, including a safe list copy." },
-        { "lines": [26, 26], "text": "A static entry point takes the required field up front." },
-        { "lines": [32, 39], "text": "The builder holds draft values; each setter returns `this` to allow chaining." },
-        { "lines": [40, 43], "text": "`build()` validates, then creates the product in one step." },
-        { "lines": [5, 16], "text": "`main` builds one valid email and sees a missing subject refused." }
+        {
+          "lines": [
+            18,
+            21
+          ],
+          "text": "The interface is tiny, so fakes and new variants are easy to write."
+        },
+        {
+          "lines": [
+            24,
+            29
+          ],
+          "text": "The abstract class holds state and validates it once in its constructor."
+        },
+        {
+          "lines": [
+            31,
+            34
+          ],
+          "text": "`render()` is `final`: subclasses cannot break the layout, only fill the body."
+        },
+        {
+          "lines": [
+            36,
+            36
+          ],
+          "text": "The abstract `body()` step is the only thing a subclass must supply."
+        },
+        {
+          "lines": [
+            51,
+            59
+          ],
+          "text": "`StockReport` adds its own check after calling `super`."
+        },
+        {
+          "lines": [
+            6,
+            14
+          ],
+          "text": "The client loops over `Report` values and never names a concrete class."
+        }
       ]
     }
   ],
   "pitfalls": [
-    "Do not use a Singleton as a hidden global; pass dependencies through constructors instead.",
-    "Avoid lazy `if (instance == null)` without locking; two threads can create two instances.",
-    "Validate in `build()`, not in setters, so rules that span fields hold."
+    "Making clients depend on the abstract class; tests then inherit its state and constructor rules.",
+    "Two interfaces with the same default method: the class must override it or will not compile.",
+    "Putting mutable shared state in an interface constant; interface fields are always static and final."
   ],
   "quiz": {
-    "q": "What is the second line `SingletonDemo` prints?",
+    "q": "Three payment gateways share retry code. Tests need a simple fake. What do clients depend on?",
     "options": [
-      "1, 1, 2",
-      "1, 2, 3",
-      "1, 1, 1",
-      "same object: true"
+      "An abstract Gateway class holding the retry code",
+      "A Gateway interface; real gateways extend an abstract base",
+      "A concrete class that tests subclass and override",
+      "An interface, with retry code copied into each gateway"
     ],
     "answer": 1,
-    "why": "`a` and `b` are the same `Sequence`, so all three `next()` calls bump one shared counter: 1, then 2, then 3.",
-    "code": "Sequence a = Sequence.get();\nSequence b = Sequence.get();\nSystem.out.println(\"same object: \" + (a == b));\nSystem.out.println(a.next() + \", \" + b.next() + \", \" + a.next());",
-    "lang": "java"
+    "why": "Clients need only the role, so the fake implements the interface freely. The abstract base removes duplicated retry code without forcing it on the fake."
   },
-  "takeaway": "Singleton limits how many exist; Builder makes one valid object readably.",
+  "takeaway": "Interfaces define roles; abstract classes share code behind them.",
   "chat": {
     "starters": [
-      "Why do people call Singleton an anti-pattern?",
-      "Should I use a Java record instead of a Builder?",
-      "How does double-checked locking work, and why does it need volatile?"
+      "When should a default method go in an interface instead of a base class?",
+      "Is an abstract class with no fields better written as an interface?",
+      "How do sealed interfaces in Java 17 change this choice?"
     ]
   }
 }

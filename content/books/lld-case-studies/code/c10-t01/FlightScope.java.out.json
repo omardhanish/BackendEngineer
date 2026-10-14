@@ -1,0 +1,11 @@
+{
+  "stdout": "TRAVELLER:\n  IN  SEARCH_FLIGHTS\n  IN  HOLD_FARE\n  IN  ADD_PASSENGERS\n  IN  PAY_AND_TICKET\n  IN  CHOOSE_SEAT\n  IN  CANCEL_BOOKING\n  OUT MULTI_CITY_TRIP\n  OUT LOYALTY_MILES\nAIRLINE_OPS:\n  OUT SCHEDULE_FLIGHT\n  OUT OVERBOOK_FLIGHT\nSYSTEM:\n  IN  EXPIRE_HOLDS\nin scope 7, deferred 4",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java FlightScope.java",
+  "tool": "Java 17.0.17",
+  "hash": "a7a648f6218327a9",
+  "at": "2026-10-14T08:43:23.436Z"
+}

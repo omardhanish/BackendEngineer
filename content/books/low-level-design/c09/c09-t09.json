@@ -1,0 +1,295 @@
+{
+  "title": "Food delivery model and ordering",
+  "idea": "A food delivery model separates the live menu from the order: a cart serves one restaurant, and placing it freezes each item's price.",
+  "points": [
+    "`Restaurant` owns its menu; `MenuItem` is an immutable record, replaced to change a price.",
+    "`Cart` is bound to one restaurant, so mixed kitchens are rejected at `add` time.",
+    "`OrderService.place` validates the cart, then copies each item into an `OrderLine` snapshot.",
+    "An `Order` never points at live menu objects, so menu edits cannot change receipts."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Classes from cart to order",
+    "nodes": [
+      {
+        "id": "cust",
+        "label": "Customer",
+        "sub": "customerId"
+      },
+      {
+        "id": "rest",
+        "label": "Restaurant",
+        "sub": "menu, find(id)"
+      },
+      {
+        "id": "item",
+        "label": "MenuItem",
+        "sub": "record: id, name, price"
+      },
+      {
+        "id": "cart",
+        "label": "Cart",
+        "sub": "add(itemId, n)"
+      },
+      {
+        "id": "svc",
+        "label": "OrderService",
+        "sub": "place(cart)"
+      },
+      {
+        "id": "order",
+        "label": "Order",
+        "sub": "record, totalCents()"
+      },
+      {
+        "id": "line",
+        "label": "OrderLine",
+        "sub": "name, unitCents, qty"
+      }
+    ],
+    "edges": [
+      {
+        "from": "rest",
+        "to": "item",
+        "label": "has many"
+      },
+      {
+        "from": "cust",
+        "to": "cart",
+        "label": "fills"
+      },
+      {
+        "from": "cart",
+        "to": "rest",
+        "label": "bound to one"
+      },
+      {
+        "from": "svc",
+        "to": "cart",
+        "label": "reads"
+      },
+      {
+        "from": "svc",
+        "to": "order",
+        "label": "creates"
+      },
+      {
+        "from": "order",
+        "to": "line",
+        "label": "holds copies"
+      }
+    ],
+    "steps": [
+      {
+        "caption": "A `Restaurant` holds its menu as `MenuItem` records. A price change puts a new record under the same id.",
+        "active": [
+          "rest",
+          "item"
+        ],
+        "edges": [
+          0
+        ]
+      },
+      {
+        "caption": "The customer fills a `Cart`. The cart stores only item ids and quantities, not prices.",
+        "active": [
+          "cust",
+          "cart"
+        ],
+        "edges": [
+          1
+        ]
+      },
+      {
+        "caption": "The cart is created for one restaurant. An item id from another menu is rejected immediately.",
+        "active": [
+          "cart",
+          "rest"
+        ],
+        "edges": [
+          2
+        ]
+      },
+      {
+        "caption": "`OrderService` reads the cart and looks each id up again, catching items removed since they were added.",
+        "active": [
+          "svc",
+          "cart",
+          "rest"
+        ],
+        "edges": [
+          3
+        ]
+      },
+      {
+        "caption": "It creates an `Order` record. The order's list is copied with `List.copyOf`, so nobody can append to it.",
+        "active": [
+          "svc",
+          "order"
+        ],
+        "edges": [
+          4
+        ]
+      },
+      {
+        "caption": "Each `OrderLine` copies the name and unit price at this moment. The receipt is now history, not a view.",
+        "active": [
+          "order",
+          "line"
+        ],
+        "edges": [
+          5
+        ]
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "OrderNaive.java",
+      "lang": "java",
+      "title": "The problem: live menu objects",
+      "run": "captured",
+      "caption": "The order holds references to shared, mutable menu items, so the receipt changes after checkout.",
+      "walk": [
+        {
+          "lines": [
+            20,
+            21,
+            22,
+            23,
+            24
+          ],
+          "text": "Package-private, non-final fields: any class in the package can change a price, and every order sees it."
+        },
+        {
+          "lines": [
+            26,
+            27
+          ],
+          "text": "The order has no restaurant, so nothing stops two kitchens in one order."
+        },
+        {
+          "lines": [
+            10,
+            11
+          ],
+          "text": "Pizza and sushi land in one order. Which rider collects from which kitchen?"
+        },
+        {
+          "lines": [
+            12
+          ],
+          "text": "Quantity is modelled by adding the same object twice; there is no line or count."
+        },
+        {
+          "lines": [
+            15,
+            16
+          ],
+          "text": "A menu edit an hour later rewrites the customer's receipt. The bill no longer matches the payment."
+        }
+      ]
+    },
+    {
+      "file": "OrderingDemo.java",
+      "lang": "java",
+      "title": "The fix: cart, then snapshot",
+      "run": "captured",
+      "caption": "A one-restaurant cart, a validating service, and an immutable order built from copied lines.",
+      "walk": [
+        {
+          "lines": [
+            22,
+            23,
+            24,
+            25,
+            26,
+            27
+          ],
+          "text": "`MenuItem` is a record with a compact constructor that rejects a missing id or a non-positive price."
+        },
+        {
+          "lines": [
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45
+          ],
+          "text": "The cart is tied to one restaurant at construction. It stores ids and counts only."
+        },
+        {
+          "lines": [
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52
+          ],
+          "text": "`add` rejects bad counts and foreign items; `merge` adds to an existing line."
+        },
+        {
+          "lines": [
+            58,
+            59,
+            60
+          ],
+          "text": "`OrderLine` holds copied values. `List.copyOf` makes the order's lines unmodifiable."
+        },
+        {
+          "lines": [
+            70,
+            71,
+            72,
+            73,
+            74,
+            75,
+            76,
+            77,
+            78,
+            79
+          ],
+          "text": "Placing re-checks every item against the current menu, then freezes name and price."
+        },
+        {
+          "lines": [
+            17,
+            18
+          ],
+          "text": "The price rise after placing does not touch the order's total."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Storing `MenuItem` references in `Order` lets menu edits rewrite past receipts; copy the price.",
+    "Letting a cart hold several restaurants breaks pickup and rider assignment; bind it to one.",
+    "Skipping the menu re-check in `place` lets a removed or sold-out item reach the kitchen."
+  ],
+  "quiz": {
+    "q": "Same classes as the fix. What does this print?",
+    "code": "Cart cart = new Cart(\"C1\", pizza);\ncart.add(\"M2\", 1);\ncart.add(\"M2\", 2);\nOrder o = new OrderService().place(cart);\npizza.put(new MenuItem(\"M2\", \"Garlic bread\", 400));\nSystem.out.println(o);",
+    "lang": "java",
+    "options": [
+      "C1 @ Pizza Place, 2 lines, total 1050",
+      "C1 @ Pizza Place, 1 lines, total 1200",
+      "C1 @ Pizza Place, 2 lines, total 1150",
+      "C1 @ Pizza Place, 1 lines, total 1050"
+    ],
+    "answer": 3,
+    "why": "`merge` sums both adds into one line of 3. The line copied 350 at placing, so the later 400 is ignored."
+  },
+  "takeaway": "The cart points at the live menu; the order holds a frozen copy.",
+  "chat": {
+    "starters": [
+      "Should the cart be stored on the server or only in the app?",
+      "How would I model item add-ons like extra cheese or size options?",
+      "What should happen if the restaurant closes while a customer is checking out?"
+    ]
+  }
+}

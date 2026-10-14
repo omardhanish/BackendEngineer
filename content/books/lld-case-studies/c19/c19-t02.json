@@ -1,0 +1,230 @@
+{
+  "title": "Task scheduler class diagram",
+  "idea": "The class design splits a scheduler into a `Task` that holds state, a `Job` that holds the work, and small interfaces for timing, retries and the clock.",
+  "analogy": {
+    "text": "A hospital ward board. Each card names a patient, a time and an urgency. The nurse reads the board; the doctor does the work.",
+    "breaks": "Cards never fail and come back; tasks do, with a later time."
+  },
+  "points": [
+    "`Scheduler` owns the queue and offers submit, cancel and run-due.",
+    "`Task` holds run time, priority, attempts and a status with guarded moves.",
+    "`Schedule` says when to run again; `RetryPolicy` sets the wait after a failure.",
+    "A `Clock` interface replaces the system clock, so tests control time."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Class diagram",
+    "nodes": [
+      {
+        "id": "sch",
+        "label": "Scheduler",
+        "sub": "submit, cancel, runDue"
+      },
+      {
+        "id": "task",
+        "label": "Task",
+        "sub": "id, runAt, priority, attempts"
+      },
+      {
+        "id": "status",
+        "label": "TaskStatus",
+        "sub": "SCHEDULED to SUCCEEDED"
+      },
+      {
+        "id": "job",
+        "label": "Job",
+        "sub": "run() throws Exception"
+      },
+      {
+        "id": "schedule",
+        "label": "Schedule",
+        "sub": "nextAfter(lastRunAt)"
+      },
+      {
+        "id": "retry",
+        "label": "RetryPolicy",
+        "sub": "maxAttempts, delayMillis"
+      },
+      {
+        "id": "clock",
+        "label": "Clock",
+        "sub": "nowMillis()"
+      },
+      {
+        "id": "impl",
+        "label": "FixedRate, OneShot",
+        "sub": "ExponentialBackoff"
+      }
+    ],
+    "edges": [
+      {
+        "from": "sch",
+        "to": "task",
+        "label": "has many",
+        "caption": "The scheduler keeps tasks in a priority queue ordered by run time, then priority, then submit order."
+      },
+      {
+        "from": "task",
+        "to": "status",
+        "label": "has 1",
+        "caption": "Every status change goes through one method that refuses illegal moves."
+      },
+      {
+        "from": "task",
+        "to": "job",
+        "label": "has 1",
+        "caption": "The task holds the job but never knows what the job does."
+      },
+      {
+        "from": "task",
+        "to": "schedule",
+        "label": "uses",
+        "caption": "After a success, the schedule answers when the task runs again, or never."
+      },
+      {
+        "from": "task",
+        "to": "retry",
+        "label": "uses",
+        "caption": "After a failure, the retry policy answers whether to try again and after what delay."
+      },
+      {
+        "from": "sch",
+        "to": "clock",
+        "label": "uses",
+        "dashed": true,
+        "caption": "The scheduler asks the injected clock for now. Tests pass a manual clock."
+      },
+      {
+        "from": "impl",
+        "to": "schedule",
+        "label": "is-a",
+        "caption": "FixedRate and OneShot implement Schedule. New schedules plug in without edits to the scheduler."
+      },
+      {
+        "from": "impl",
+        "to": "retry",
+        "label": "is-a",
+        "caption": "ExponentialBackoff implements RetryPolicy. New retry policies plug in the same way."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "ClassDesign.java",
+      "lang": "java",
+      "title": "The Java model",
+      "run": "captured",
+      "caption": "The model with its invariants: queue order, a guarded state machine, and exponential backoff with a cap.",
+      "walk": [
+        {
+          "lines": [
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "text": "Three tasks enter a PriorityQueue that uses the task ordering rule."
+        },
+        {
+          "lines": [
+            16,
+            17,
+            18,
+            19,
+            20
+          ],
+          "text": "Polling returns them in run order, not insertion order."
+        },
+        {
+          "lines": [
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50
+          ],
+          "text": "Four small interfaces: work, time, repeat and retry."
+        },
+        {
+          "lines": [
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59,
+            60,
+            61,
+            62
+          ],
+          "text": "The status enum lists which moves are legal from each state."
+        },
+        {
+          "lines": [
+            65,
+            66,
+            67,
+            68
+          ],
+          "text": "Order by run time, then higher priority, then submit sequence."
+        },
+        {
+          "lines": [
+            89,
+            90,
+            91,
+            92,
+            93,
+            94,
+            95
+          ],
+          "text": "Only requeueAt changes the run time, and every move is checked."
+        },
+        {
+          "lines": [
+            119,
+            120,
+            121,
+            122
+          ],
+          "text": "Backoff doubles per attempt, capped, with the shift bounded."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not let the scheduler know job details; it only calls run and catches failures.",
+    "Never change a task's run time while it sits inside the priority queue.",
+    "Add a submit sequence to the comparator, or equal tasks come out in arbitrary order."
+  ],
+  "quiz": {
+    "q": "What does the backoff line of ClassDesign print?",
+    "options": [
+      "backoff: 100 200 300 400 500",
+      "backoff: 100 200 400 800 1600",
+      "backoff: 100 200 400 800 1000",
+      "backoff: 200 400 800 1000 1000"
+    ],
+    "answer": 2,
+    "why": "Attempt 1 waits the base 100 ms; each later attempt doubles it. The fifth would be 1600, but the cap holds it at 1000."
+  },
+  "takeaway": "Task holds state, Job holds work, interfaces hold every policy.",
+  "chat": {
+    "starters": [
+      "Why is Job separate from Task instead of Task having a run method?",
+      "Should TaskStatus be on Task or kept inside the Scheduler?",
+      "How would I add a task that runs every weekday at 9am?"
+    ]
+  }
+}

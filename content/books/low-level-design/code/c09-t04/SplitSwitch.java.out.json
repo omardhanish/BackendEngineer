@@ -1,0 +1,11 @@
+{
+  "stdout": "EQUAL [333, 333, 333] sum 999 of 1000\nPERCENT [333, 333, 333] sum 999 of 1000\nEXACT [500, 300, 100] sum 900 of 1000",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java SplitSwitch.java",
+  "tool": "Java 17.0.17",
+  "hash": "acc766f7238dcc01",
+  "at": "2026-10-12T11:21:44.135Z"
+}

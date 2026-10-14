@@ -1,0 +1,11 @@
+{
+  "stdout": "-- pass 1\nemail ok EV-1 O-1 placed\nemail ok EV-2 O-1 paid\nemail ok EV-3 O-2 placed\nemail ok EV-4 O-3 placed\nbilling failed EV-1 try 1\nbilling holds EV-2, key O-1\nbilling ok EV-3 O-2 placed\nbilling failed EV-4 try 1\n-- pass 2\nbilling ok EV-1 O-1 placed\nbilling ok EV-2 O-1 paid\nbilling failed EV-4 try 2\n-- pass 3\nbilling gives up on EV-4\ndead letter: DeadLetter[subscriber=billing, event=Event[id=EV-4, topic=orders, key=O-3, payload=placed], attempts=3, error=bad]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java CoreBus.java",
+  "tool": "Java 17.0.17",
+  "hash": "ff13e01385ce5faa",
+  "at": "2026-10-14T10:23:01.152Z"
+}

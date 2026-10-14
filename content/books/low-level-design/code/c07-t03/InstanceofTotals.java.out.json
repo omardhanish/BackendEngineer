@@ -1,0 +1,11 @@
+{
+  "stdout": "desk set:  33250\nkit:       47700\nteam pack: 36000",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java InstanceofTotals.java",
+  "tool": "Java 17.0.17",
+  "hash": "db7c7c53eda670d0",
+  "at": "2026-10-12T11:24:03.087Z"
+}

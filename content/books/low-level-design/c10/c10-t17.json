@@ -1,0 +1,110 @@
+{
+  "title": "Locks, atomics and concurrent collections",
+  "idea": "Java gives you three tools for shared state: explicit locks for multi-field invariants, atomics for single lock-free variables, and concurrent collections for safe per-key updates.",
+  "analogy": {
+    "text": "A shared tally board. A lock is the one marker people pass around. An atomic is a clicker counter. A concurrent map is a board split into sections.",
+    "breaks": "A clicker never fails; a compare-and-set can fail and must retry."
+  },
+  "points": [
+    "`ReentrantLock` does what `synchronized` does, plus `tryLock`, timeouts and fair ordering.",
+    "Locking several objects in one global order, such as by id, prevents deadlock.",
+    "Atomics update one variable without locks using compare-and-set, retrying when another thread wins.",
+    "`ConcurrentHashMap` makes `merge` and `compute` atomic per key; `get` then `put` stays racy."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "lanes",
+    "title": "Two threads race with compare-and-set",
+    "scenario": {
+      "code": [
+        "int cur = stock.get();",
+        "if (cur == 0) return false;",
+        "if (stock.compareAndSet(cur, cur - 1))",
+        "    return true;",
+        "// else: loop, read again, retry"
+      ],
+      "lanes": [
+        { "id": "a", "label": "Thread A", "kind": "stack" },
+        { "id": "b", "label": "Thread B", "kind": "stack" },
+        { "id": "mem", "label": "AtomicInteger stock", "kind": "area", "hint": "shared memory" },
+        { "id": "done", "label": "Reserved units", "kind": "queue" }
+      ],
+      "tokens": {
+        "s2": { "label": "stock = 2", "tone": "neutral" },
+        "s1": { "label": "stock = 1", "tone": "neutral" },
+        "s0": { "label": "stock = 0", "tone": "neutral" },
+        "aRead": { "label": "A read 2", "tone": "sync" },
+        "bRead": { "label": "B read 2", "tone": "io" },
+        "aCas": { "label": "A: CAS 2→1 ok", "tone": "sync" },
+        "bFail": { "label": "B: CAS 2→1 fails", "tone": "timer" },
+        "bRead2": { "label": "B read 1", "tone": "io" },
+        "bCas": { "label": "B: CAS 1→0 ok", "tone": "io" },
+        "unitA": { "label": "unit for A", "tone": "micro" },
+        "unitB": { "label": "unit for B", "tone": "micro" }
+      },
+      "steps": [
+        { "caption": "Shared stock holds 2. Threads A and B each want one unit. No lock is taken.", "at": { "mem": ["s2"] } },
+        { "caption": "A reads the current value: 2.", "line": 0, "at": { "a": ["aRead"], "mem": ["s2"] }, "active": "aRead" },
+        { "caption": "B also reads 2 before A writes. With a plain `int`, both would now write 1.", "line": 0, "at": { "a": ["aRead"], "b": ["bRead"], "mem": ["s2"] }, "active": "bRead" },
+        { "caption": "A calls `compareAndSet(2, 1)`. Memory still holds 2, so the swap succeeds in one atomic step.", "line": 2, "at": { "a": ["aCas"], "b": ["bRead"], "mem": ["s1"], "done": ["unitA"] }, "active": "aCas" },
+        { "caption": "B calls `compareAndSet(2, 1)`. Memory now holds 1, not 2, so it returns false and writes nothing.", "line": 2, "at": { "b": ["bFail"], "mem": ["s1"], "done": ["unitA"] }, "active": "bFail" },
+        { "caption": "B loops and reads the fresh value: 1.", "line": 0, "at": { "b": ["bRead2"], "mem": ["s1"], "done": ["unitA"] }, "active": "bRead2" },
+        { "caption": "B calls `compareAndSet(1, 0)`. Nobody interfered this time, so it succeeds.", "line": 2, "at": { "b": ["bCas"], "mem": ["s0"], "done": ["unitA", "unitB"] }, "active": "bCas" },
+        { "caption": "Two units sold, none lost, stock never negative. A third caller would see 0 and return false.", "line": 1, "at": { "mem": ["s0"], "done": ["unitA", "unitB"] } }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "BankTransferDemo.java",
+      "lang": "java",
+      "title": "ReentrantLock transfer",
+      "run": "captured",
+      "caption": "Two threads transfer in opposite directions 1,000 times each. Ordered locking keeps the total intact and avoids deadlock.",
+      "walk": [
+        { "lines": [27, 29], "text": "Each account owns a private lock; the comment records which field it guards." },
+        { "lines": [33, 36], "text": "Even reads take the lock, so a reader never sees a half-finished transfer." },
+        { "lines": [42, 43], "text": "Lock the lower id first. Opposite transfers then queue instead of each holding one lock." },
+        { "lines": [44, 46], "text": "Both locks are held before any check, so check and update form one atomic step." },
+        { "lines": [48, 49], "text": "A failed check throws while locked; the `finally` blocks still release both locks." },
+        { "lines": [52, 53], "text": "Unlock in reverse order, always in `finally`; a missed unlock blocks every later caller." }
+      ]
+    },
+    {
+      "file": "StockDemo.java",
+      "lang": "java",
+      "title": "Atomics and ConcurrentHashMap",
+      "run": "captured",
+      "caption": "Eight threads try 160 reservations against 100 units. The compare-and-set loop never oversells; `merge` counts requests per SKU.",
+      "walk": [
+        { "lines": [11, 16], "text": "Eight buyers, twenty attempts each, spread over three SKUs: more demand than stock." },
+        { "lines": [17, 18], "text": "`join` waits for every thread, so the printed totals are final and repeatable." },
+        { "lines": [26, 30], "text": "Each shared field is a thread-safe type and `final`; there is no lock anywhere." },
+        { "lines": [39, 39], "text": "`merge` reads, adds and writes one key atomically. `get` then `put` could lose counts." },
+        { "lines": [40, 45], "text": "The CAS loop: read, check for zero, swap only if nobody changed the value meanwhile." },
+        { "lines": [48, 50], "text": "`left` and `rejected` are separate atomics, so read them only after the threads finish." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Calling `lock()` without `unlock()` in `finally`: one exception leaves the lock held forever.",
+    "Two atomics updated separately are not atomic together; guard multi-field invariants with one lock.",
+    "Locking accounts in argument order deadlocks when two transfers run in opposite directions."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "var stock = new AtomicInteger(1);\nboolean a = stock.compareAndSet(1, 0);\nboolean b = stock.compareAndSet(1, 0);\nSystem.out.println(a + \" \" + b + \" \" + stock.get());",
+    "lang": "java",
+    "options": ["true true -1", "true false 0", "true true 0", "false false 1"],
+    "answer": 1,
+    "why": "The first call finds 1 and swaps it to 0. The second expects 1, finds 0, returns false and writes nothing."
+  },
+  "takeaway": "One variable: an atomic. One map key: a concurrent map. Several fields: a lock.",
+  "chat": {
+    "starters": [
+      "When should I pick ReentrantLock over synchronized?",
+      "Why does ConcurrentHashMap get then put still race?",
+      "When is an AtomicInteger slower than a lock?"
+    ]
+  }
+}

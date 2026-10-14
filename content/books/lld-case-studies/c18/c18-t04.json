@@ -1,0 +1,243 @@
+{
+  "title": "Thread-safe file tree",
+  "idea": "A thread-safe file system makes each check-and-change one atomic step, so two threads can never both create one name or see a move half done.",
+  "analogy": {
+    "text": "A library with one checkout desk. Many people may browse the shelves at once, but only one person at a time may move books.",
+    "breaks": "Browsers here wait while books move; real browsers do not."
+  },
+  "points": [
+    "Checking a name, then adding it, lets a second thread slip in between.",
+    "`putIfAbsent` on a concurrent map checks and adds in one atomic call.",
+    "A read-write lock lets many readers run together, but a writer runs alone.",
+    "Per-directory locks need one global order, or opposite moves can deadlock."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "Two threads create report.pdf",
+    "actors": [
+      {
+        "id": "a",
+        "label": "Thread A"
+      },
+      {
+        "id": "b",
+        "label": "Thread B"
+      },
+      {
+        "id": "dir",
+        "label": "Directory docs"
+      }
+    ],
+    "messages": [
+      {
+        "from": "a",
+        "to": "dir",
+        "label": "containsKey(report.pdf)",
+        "note": "A checks first. The name is free, so A plans to add it."
+      },
+      {
+        "from": "b",
+        "to": "dir",
+        "label": "containsKey(report.pdf)",
+        "note": "Before A writes, B checks too. It also sees a free name."
+      },
+      {
+        "from": "a",
+        "to": "dir",
+        "label": "put(report.pdf, A)",
+        "note": "A adds its file and reports success to its caller."
+      },
+      {
+        "from": "b",
+        "to": "dir",
+        "label": "put(report.pdf, B)",
+        "note": "B replaces A's file without noticing. Both callers were told created."
+      },
+      {
+        "from": "a",
+        "to": "dir",
+        "label": "putIfAbsent(report.pdf)",
+        "note": "The fix: one atomic call that checks and adds together."
+      },
+      {
+        "from": "dir",
+        "to": "a",
+        "label": "null: you won",
+        "dashed": true,
+        "note": "A null result means the name was free and A now owns it."
+      },
+      {
+        "from": "b",
+        "to": "dir",
+        "label": "putIfAbsent(report.pdf)",
+        "note": "B's call runs entirely before or after A's, never in between."
+      },
+      {
+        "from": "dir",
+        "to": "b",
+        "label": "existing node",
+        "dashed": true,
+        "note": "B gets A's node back, so the facade throws ALREADY_EXISTS."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "CreateRace.java",
+      "lang": "java",
+      "title": "Prove the create race",
+      "run": "captured",
+      "caption": "A barrier forces both threads past the check before either writes, so the bug shows on every run. `ConcurrentSkipListMap` is a thread-safe sorted map, like `TreeMap`.",
+      "walk": [
+        {
+          "lines": [
+            8,
+            9,
+            10,
+            11
+          ],
+          "text": "Two threads create the same name in the unsafe directory."
+        },
+        {
+          "lines": [
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "text": "The same race against the safe directory; count how many won."
+        },
+        {
+          "lines": [
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27
+          ],
+          "text": "Start both threads, then join them before reading results."
+        },
+        {
+          "lines": [
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45
+          ],
+          "text": "Each step is locked, but the pair is not. Both threads pass the check."
+        },
+        {
+          "lines": [
+            54,
+            55,
+            56
+          ],
+          "text": "`putIfAbsent` checks and adds as one step, so only one thread wins."
+        }
+      ]
+    },
+    {
+      "file": "TreeLock.java",
+      "lang": "java",
+      "title": "Read-write lock",
+      "run": "captured",
+      "caption": "A two-level model stands in for the tree. Two movers and a reader run at once under one read-write lock. Without the write lock, the reader could see a file in neither folder.",
+      "walk": [
+        {
+          "lines": [
+            9,
+            10,
+            11,
+            12,
+            13
+          ],
+          "text": "Two folders, one file in each; the total size is always 300."
+        },
+        {
+          "lines": [
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27
+          ],
+          "text": "Two threads move files in opposite directions, many thousands of times."
+        },
+        {
+          "lines": [
+            28,
+            29,
+            30,
+            31
+          ],
+          "text": "A reader sums sizes and counts any total that is not 300."
+        },
+        {
+          "lines": [
+            54,
+            55,
+            56,
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63
+          ],
+          "text": "A move checks and changes both folders while holding the write lock."
+        },
+        {
+          "lines": [
+            66,
+            67,
+            68,
+            69,
+            70,
+            71,
+            72,
+            73
+          ],
+          "text": "Readers share the read lock, so they never see a file in neither folder."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Never check `containsKey` and then `put` as two steps on shared state.",
+    "Hold one lock for the whole move; two separate locks expose a missing file.",
+    "If you lock per directory, always take locks in one fixed order."
+  ],
+  "quiz": {
+    "q": "What is the first line CreateRace prints?",
+    "options": [
+      "unsafe: A=true B=false entries=1",
+      "unsafe: A=true B=true entries=1",
+      "unsafe: A=true B=true entries=2",
+      "It changes from run to run"
+    ],
+    "answer": 1,
+    "why": "The barrier makes both threads finish the check before either writes. Both return true, and the second `put` replaces the first, leaving one entry."
+  },
+  "takeaway": "Check and change in one atomic step; readers share, writers go alone.",
+  "chat": {
+    "starters": [
+      "When is one tree-wide lock too slow for a file system?",
+      "How would per-directory locks with a global order work for move?",
+      "Could I use copy-on-write snapshots so readers never wait?"
+    ]
+  }
+}

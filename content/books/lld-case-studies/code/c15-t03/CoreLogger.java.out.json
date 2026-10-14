@@ -1,0 +1,11 @@
+{
+  "stdout": "2026-01-15T10:00:00Z INFO  [main] orders - order OD-1 placed\n2026-01-15T10:00:00Z ERROR [main] orders - payment failed for OD-1\nfailed appends: 2\nfile has [2026-01-15T10:00:00Z INFO  [main] orders - order OD-1 placed, 2026-01-15T10:00:00Z ERROR [main] orders - payment failed for OD-1]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java CoreLogger.java",
+  "tool": "Java 17.0.17",
+  "hash": "98feee871f4682fc",
+  "at": "2026-10-14T08:33:30.029Z"
+}

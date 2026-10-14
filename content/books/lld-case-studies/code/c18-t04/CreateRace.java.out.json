@@ -1,0 +1,11 @@
+{
+  "stdout": "unsafe: A=true B=true entries=1\nsafe:   wins=1 entries=1",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java CreateRace.java",
+  "tool": "Java 17.0.17",
+  "hash": "ab7e69e8957f1cea",
+  "at": "2026-10-14T08:44:26.732Z"
+}

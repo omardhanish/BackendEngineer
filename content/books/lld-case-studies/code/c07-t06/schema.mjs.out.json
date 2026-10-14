@@ -1,0 +1,11 @@
+{
+  "stdout": "second active cart   23505 one_active_cart\nqty 11 in a cart     23514 cart_item_qty_check\nreserve 2 of 1 tee   23514 reserved_le_on_hand\nreused checkout key  23505 orders_user_id_idempotency_key_key\nline for no order    23503 order_item_order_id_fkey\nsecond success       23505 one_success_per_order",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node schema.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "2957102576b09a7d",
+  "at": "2026-10-14T10:24:55.778Z"
+}

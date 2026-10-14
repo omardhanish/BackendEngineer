@@ -1,0 +1,11 @@
+{
+  "stdout": "rs -> https://example.com/docs\nrt -> https://example.com/blog\nzz -> none\njava.lang.IllegalArgumentException: not a web URL: ftp:/files",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ShortenerDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "574382327d2bde5e",
+  "at": "2026-10-12T11:17:08.054Z"
+}

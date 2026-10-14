@@ -1,0 +1,176 @@
+{
+  "title": "API versioning and compatibility",
+  "idea": "Backward compatibility means clients built against an old version of your API keep working, unchanged, after you release a new one.",
+  "points": [
+    "Additive changes are safe only for tolerant readers: optional fields, `default` methods.",
+    "Renames, removals and unit changes break callers; ship them as a new major version.",
+    "Readers should ignore unknown fields and default missing ones: the tolerant reader.",
+    "A version field lets one reader upcast old shapes and reject unknown future ones."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "Which changes break old clients",
+    "head": [
+      "Change",
+      "What old clients see",
+      "Verdict"
+    ],
+    "rows": [
+      [
+        "Add an optional field",
+        "Nothing, if their reader is tolerant",
+        "Compatible"
+      ],
+      [
+        "Add a default method to an interface",
+        "Usually still compile; a same-named method can clash",
+        "Usually compatible"
+      ],
+      [
+        "Add an abstract method to an interface",
+        "Implementations stop compiling",
+        "Breaking"
+      ],
+      [
+        "Rename or remove a field",
+        "Missing data or a parse error",
+        "Breaking"
+      ],
+      [
+        "Change a field's unit or meaning",
+        "Wrong values, with no error",
+        "Breaking"
+      ],
+      [
+        "Make an optional input required",
+        "Old requests are now rejected",
+        "Breaking"
+      ]
+    ],
+    "highlight": {
+      "col": 2
+    },
+    "caption": "Silent breaks, such as a unit change, are the worst: nothing fails, but the numbers are wrong."
+  },
+  "code": [
+    {
+      "file": "StrictOrderReader.java",
+      "lang": "java",
+      "title": "The problem",
+      "run": "captured",
+      "caption": "A strict v1 consumer. One added field and one rename both take it down.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            10
+          ],
+          "text": "Three producer releases: the original, one that adds `giftWrap`, one that renames `qty`."
+        },
+        {
+          "lines": [
+            25,
+            29
+          ],
+          "text": "The reader rejects any key it does not know, so a harmless addition breaks it."
+        },
+        {
+          "lines": [
+            30,
+            33
+          ],
+          "text": "Even past that check, a renamed `qty` would be missing here. Renames always break old readers."
+        },
+        {
+          "lines": [
+            11,
+            17
+          ],
+          "text": "Look at the output: only the first message survives. Every deploy of the producer is an outage."
+        }
+      ]
+    },
+    {
+      "file": "TolerantOrderReader.java",
+      "lang": "java",
+      "title": "The fix",
+      "run": "captured",
+      "caption": "A versioned, tolerant reader accepts two schema versions and rejects an unknown future one loudly.",
+      "walk": [
+        {
+          "lines": [
+            38,
+            38
+          ],
+          "text": "A missing version means v1, so messages sent before versioning still parse."
+        },
+        {
+          "lines": [
+            39,
+            42
+          ],
+          "text": "`v` is bumped only for breaking changes. A newer one may mean anything, so fail loudly."
+        },
+        {
+          "lines": [
+            43,
+            44
+          ],
+          "text": "Upcasting maps the old name onto the new model in one place."
+        },
+        {
+          "lines": [
+            45,
+            48
+          ],
+          "text": "A required field that is absent fails with a clear message, not a raw null error."
+        },
+        {
+          "lines": [
+            49,
+            50
+          ],
+          "text": "`giftWrap` was added without a version bump; older producers omit it, so it defaults to false."
+        },
+        {
+          "lines": [
+            51,
+            52
+          ],
+          "text": "Unknown keys are skipped, so producers can add fields without a coordinated release."
+        },
+        {
+          "lines": [
+            24,
+            30
+          ],
+          "text": "The record still validates. Tolerance applies to shape, not to bad values."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Deleting a public method in a minor release; mark it `@Deprecated`, delegate, remove later.",
+    "Changing amounts from cents to dollars under the same field name; old clients misread silently.",
+    "Readers that reject unknown fields; every additive change on the producer becomes an outage."
+  ],
+  "quiz": {
+    "q": "Many teams implement your library's public `PaymentGateway` interface. You need to add `refund`. Which change keeps their code compiling?",
+    "options": [
+      "Add refund as an abstract method",
+      "Add refund as a default method",
+      "Change the return type of charge to cover refunds",
+      "Rename the interface and delete the old one"
+    ],
+    "answer": 1,
+    "why": "A `default` method has a body, so existing implementations inherit it and still compile. An abstract method forces every implementer to change at once."
+  },
+  "takeaway": "Add freely, never rename or remove in place, and read tolerantly.",
+  "chat": {
+    "starters": [
+      "Should I version a REST API in the URL or a header?",
+      "What is the expand and contract approach to renaming a field?",
+      "How long should I keep a deprecated method?"
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "N-1 SENT [sms-a:RETRYABLE, sms-a:RETRYABLE, sms-b:OK]\nN-1 SENT [sms-a:RETRYABLE, sms-a:RETRYABLE, sms-b:OK]\nN-2 SKIPPED []\nN-3 FAILED [sms-a:REJECTED]\ncalls: sms-a=3 sms-b=1",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java NotificationCore.java",
+  "tool": "Java 17.0.17",
+  "hash": "01c282bfbd3786f5",
+  "at": "2026-10-14T08:33:45.408Z"
+}

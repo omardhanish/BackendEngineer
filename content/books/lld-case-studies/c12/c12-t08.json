@@ -1,0 +1,248 @@
+{
+  "title": "Room finder and booking UI",
+  "idea": "The booking frontend is a room finder plus a booking dialog, driven by one reducer, so a slow network or double click can never book twice.",
+  "points": [
+    "`RoomFinderPage` owns the reducer; `TimeRangePicker`, `RoomList` and `BookingDialog` render it.",
+    "SUBMIT is ignored while SUBMITTING, and the key survives a network retry.",
+    "A 409 removes that room from the list and asks for another pick.",
+    "Follow-ups: live calendar updates, recurring series, and a room panel for check-in."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "Book a room end to end",
+    "actors": [
+      {
+        "id": "ui",
+        "label": "Browser"
+      },
+      {
+        "id": "api",
+        "label": "Express API"
+      },
+      {
+        "id": "svc",
+        "label": "Booking service"
+      },
+      {
+        "id": "db",
+        "label": "PostgreSQL"
+      }
+    ],
+    "messages": [
+      {
+        "from": "ui",
+        "to": "api",
+        "label": "GET /rooms/available",
+        "note": "The user sets a time range and headcount. The finder shows a spinner meanwhile."
+      },
+      {
+        "from": "api",
+        "to": "db",
+        "label": "free-room query",
+        "note": "Rooms big enough with no active booking overlapping the window, smallest first."
+      },
+      {
+        "from": "api",
+        "to": "ui",
+        "label": "200 [R-1, R-2, R-3]",
+        "dashed": true,
+        "note": "An empty list shows a message, not a blank screen."
+      },
+      {
+        "from": "ui",
+        "to": "api",
+        "label": "POST /bookings + key",
+        "note": "The user picks R-1 and clicks Book. The click makes one Idempotency-Key, and the reducer keeps it for retries."
+      },
+      {
+        "from": "api",
+        "to": "svc",
+        "label": "book(body, key)",
+        "note": "The controller validated the body. The service opens one transaction."
+      },
+      {
+        "from": "svc",
+        "to": "db",
+        "label": "INSERT booking",
+        "note": "Someone else booked R-1 a moment ago, so the exclusion constraint refuses this row."
+      },
+      {
+        "from": "api",
+        "to": "ui",
+        "label": "409 ROOM_TAKEN",
+        "dashed": true,
+        "note": "The reducer drops R-1 from the list and shows a message. The user picks R-2."
+      },
+      {
+        "from": "ui",
+        "to": "api",
+        "label": "POST /bookings + new key",
+        "note": "A new room means a new key. A network failure would retry with this same key."
+      },
+      {
+        "from": "api",
+        "to": "ui",
+        "label": "201 BK-7",
+        "dashed": true,
+        "note": "The dialog shows the confirmation and adds the meeting to My bookings."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "booking.mjs",
+      "lang": "js",
+      "title": "Booking screen reducer",
+      "run": "browser",
+      "caption": "Pure screen logic. Run it, then add a third SUBMIT before BOOK_OK and predict the output.",
+      "walk": [
+        {
+          "lines": [
+            2,
+            3
+          ],
+          "text": "The whole screen state: step, rooms, chosen room, Idempotency-Key and error."
+        },
+        {
+          "lines": [
+            7,
+            8,
+            9,
+            10,
+            11
+          ],
+          "text": "A new search resets everything; an empty result gets its own EMPTY step."
+        },
+        {
+          "lines": [
+            12,
+            13,
+            14,
+            15
+          ],
+          "text": "Picking another room drops the key; re-picking the same room keeps it."
+        },
+        {
+          "lines": [
+            16,
+            17,
+            18
+          ],
+          "text": "SUBMIT works only from RESULTS; an existing key wins over the new one."
+        },
+        {
+          "lines": [
+            21,
+            22,
+            23,
+            24
+          ],
+          "text": "A 409 removes the taken room and clears the choice and key; no rooms left means EMPTY."
+        },
+        {
+          "lines": [
+            25,
+            26
+          ],
+          "text": "A network failure keeps the key, so the retry is safe to repeat."
+        },
+        {
+          "lines": [
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44
+          ],
+          "text": "Double click, conflict, failure, retry. Each `submit()` makes its key up front; the ignored click used bk-2."
+        }
+      ]
+    },
+    {
+      "file": "BookingDialog.jsx",
+      "lang": "js",
+      "title": "BookingDialog component",
+      "run": "static",
+      "illustrative": true,
+      "caption": "A React component that renders state, dispatches events, and sends the request when the step becomes SUBMITTING. Not run here.",
+      "walk": [
+        {
+          "lines": [
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11
+          ],
+          "text": "The request runs once per entry into SUBMITTING, with the reducer's key."
+        },
+        {
+          "lines": [
+            7,
+            8,
+            9
+          ],
+          "text": "409 means BOOK_CONFLICT, 2xx BOOK_OK, else BOOK_FAILED; a real client gives 4xx its own message."
+        },
+        {
+          "lines": [
+            13,
+            14
+          ],
+          "text": "Loading and empty results get their own screens, never a blank list."
+        },
+        {
+          "lines": [
+            17,
+            18
+          ],
+          "text": "Submit passes a fresh UUID; the reducer ignores it when a key exists."
+        },
+        {
+          "lines": [
+            22,
+            23,
+            24
+          ],
+          "text": "The button is disabled with no room or while a request is in flight."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "A disabled button alone is not enough; the reducer must also ignore repeat submits.",
+    "Show times in the room's time zone; the API stores instants in UTC.",
+    "Interview follow-up: polling room lists at scale is costly; mention push updates or short caching."
+  ],
+  "quiz": {
+    "q": "In the run, what is the key after the retry SUBMIT?",
+    "options": [
+      "bk-4",
+      "bk-3",
+      "bk-2",
+      "-"
+    ],
+    "answer": 1,
+    "why": "SUBMIT keeps an existing key. BOOK_FAILED did not clear bk-3, so the retry ignores newKey bk-4 and reuses bk-3."
+  },
+  "takeaway": "One reducer, one key per attempt, and the server decides conflicts.",
+  "chat": {
+    "starters": [
+      "Should the room list update live when someone else books?",
+      "Why is the key created in the event and not in the reducer?",
+      "How would the UI handle a recurring series with one conflict?"
+    ]
+  }
+}

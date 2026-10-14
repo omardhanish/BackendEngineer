@@ -1,0 +1,11 @@
+{
+  "stdout": "PASS ties keep both\nPASS ties break by name\nPASS k above size returns all\nPASS new score replaces old\nPASS k of zero rejected\nPASS negative score rejected\n0 failure(s)",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java LeaderboardChecks.java",
+  "tool": "Java 17.0.17",
+  "hash": "6e845a775d3cc9b5",
+  "at": "2026-10-12T11:27:57.584Z"
+}

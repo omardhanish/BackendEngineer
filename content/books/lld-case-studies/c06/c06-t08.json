@@ -1,0 +1,86 @@
+{
+  "title": "Library screens and UI flow",
+  "idea": "The library frontend is three screens: catalog, book detail and my loans. One reducer owns borrow and reserve state; each borrow carries an Idempotency-Key.",
+  "points": [
+    "`BookDetail` renders state and dispatches; the `bookAction` reducer owns every rule.",
+    "A 409 NO_COPY switches the button to Reserve instead of showing a dead end.",
+    "A retry reuses the first Idempotency-Key, so a slow network never lends twice.",
+    "Follow-ups: multiple branches, push notifications, and search over millions of titles."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Screens and component tree",
+    "nodes": [
+      { "id": "catalog", "label": "CatalogPage", "sub": "search, results list" },
+      { "id": "detail", "label": "BookDetail", "sub": "free copies, action" },
+      { "id": "red", "label": "bookAction reducer", "sub": "step, mode, key" },
+      { "id": "reserve", "label": "ReserveButton", "sub": "join the queue" },
+      { "id": "api", "label": "apiClient", "sub": "fetch + Idempotency-Key" },
+      { "id": "loans", "label": "MyLoansPage", "sub": "due dates, fines" },
+      { "id": "row", "label": "LoanRow", "sub": "renew button" },
+      { "id": "server", "label": "Library API", "sub": "Express + PostgreSQL" }
+    ],
+    "edges": [
+      { "from": "catalog", "to": "detail", "caption": "Picking a search result opens BookDetail with the title and its free copy count." },
+      { "from": "detail", "to": "red", "label": "reads, dispatches", "caption": "BookDetail reads the reducer state and dispatches events. The free count decides Borrow or Reserve." },
+      { "from": "detail", "to": "api", "label": "borrow", "caption": "Borrow sends POST /loans once; the step becomes BORROWING, so repeat clicks do nothing." },
+      { "from": "detail", "to": "reserve", "label": "no copy", "caption": "On 409 NO_COPY the reducer switches to Reserve mode and explains why." },
+      { "from": "reserve", "to": "api", "label": "reserve", "caption": "Reserve sends POST /reservations. An 'already reserved' 409 still counts as success." },
+      { "from": "api", "to": "server", "caption": "The API runs the service transaction: lock a free copy, insert the loan, commit." },
+      { "from": "loans", "to": "row", "caption": "MyLoansPage lists open loans with due dates, overdue badges and any fine owed." },
+      { "from": "row", "to": "api", "label": "renew", "dashed": true, "caption": "Renew is refused with 409 when someone reserved the title; the row shows that reason." }
+    ]
+  },
+  "code": [
+    {
+      "file": "bookAction.mjs",
+      "lang": "js",
+      "title": "Borrow and reserve reducer",
+      "run": "browser",
+      "caption": "Pure screen logic. Run it, then add a BORROW_OK event after the retry and predict the line.",
+      "walk": [
+        { "lines": [2, 3], "text": "The whole action state: step, Borrow or Reserve mode, key, loan and message." },
+        { "lines": [7, 8], "text": "Loading the book picks the mode from the free copy count." },
+        { "lines": [9, 10, 11, 12], "text": "Borrow starts only from IDLE and keeps the first key it was given." },
+        { "lines": [16, 17, 18], "text": "A 409 NO_COPY clears the key and offers Reserve instead." },
+        { "lines": [19, 20, 21, 22], "text": "A network error keeps the key for the retry; any other failure clears it and shows the reason." },
+        { "lines": [26, 27, 28, 29], "text": "Already reserved is treated as success: the member is in the queue." },
+        { "lines": [35, 36, 37, 38, 39, 40, 41, 42], "text": "Double clicks, a network failure, a lost race and a duplicate reserve." }
+      ]
+    },
+    {
+      "file": "BookDetail.jsx",
+      "lang": "js",
+      "title": "BookDetail component",
+      "run": "static",
+      "illustrative": true,
+      "caption": "A React component that renders state and dispatches events. Not run here.",
+      "walk": [
+        { "lines": [4, 5, 6], "text": "Ignore clicks in flight; create the key once and reuse it on retry." },
+        { "lines": [7, 8, 9, 10, 11, 12, 13], "text": "Map the response: network error, NO_COPY, other failures, or the new loan." },
+        { "lines": [15], "text": "No book yet means a loading state, never an empty page." },
+        { "lines": [21], "text": "Messages render in a status region that screen readers announce." },
+        { "lines": [22, 23, 24, 25, 26], "text": "One button at a time: Borrow while copies are free, Reserve otherwise." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Disabling the button is not enough; the reducer and Idempotency-Key also stop repeats.",
+    "Do not show a free count as a promise; the borrow call can still return 409.",
+    "Interview follow-up: per-branch copies add a branch_id and change the free-copy query."
+  ],
+  "quiz": {
+    "q": "In the run, what key does the retry after NETWORK_ERROR use?",
+    "options": ["k-3", "k-2", "k-1", "-"],
+    "answer": 2,
+    "why": "BORROW_CLICKED keeps `s.key` when it is set. NETWORK_ERROR does not clear it, so the retry still sends k-1."
+  },
+  "takeaway": "One reducer owns the screen; one key per borrow survives every retry.",
+  "chat": {
+    "starters": [
+      "How should MyLoansPage show a fine that changes every day?",
+      "Should the free copy count update live while I look at a book?",
+      "How would this flow change for a librarian scanning at the desk?"
+    ]
+  }
+}

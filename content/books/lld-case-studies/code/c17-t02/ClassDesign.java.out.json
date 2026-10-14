@@ -1,0 +1,11 @@
+{
+  "stdout": "evicted dish:2\ndish:1 -> Dosa\ndish:2 -> MISS\ndish:3 -> Vada\nsize 2\nrefused: capacity < 1",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ClassDesign.java",
+  "tool": "Java 17.0.17",
+  "hash": "d5c0260310b11ffb",
+  "at": "2026-10-14T08:36:29.934Z"
+}

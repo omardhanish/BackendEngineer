@@ -1,0 +1,121 @@
+{
+  "title": "Requirements to production design",
+  "idea": "A production design turns a short brief into scoped use cases, then into a domain model, tables, endpoints and screens that each trace back to a use case.",
+  "analogy": {
+    "text": "A restaurant plans its menu before building the kitchen. Each dish decides an appliance and a shelf; dishes left off the menu need no equipment.",
+    "breaks": "A menu rarely changes; requirements change every release."
+  },
+  "points": [
+    "Write functional requirements as use cases: an actor, a verb, an outcome.",
+    "State scale and consistency needs as explicit assumptions, not as given facts.",
+    "List what is out of scope so nobody designs it by accident.",
+    "Trace every use case to an endpoint, a service method and a table."
+  ],
+  "hero": {
+    "type": "timeline",
+    "title": "The playbook every chapter follows",
+    "items": [
+      {
+        "label": "Clarify",
+        "text": "Ask who uses the system and what each actor must do. Write use cases."
+      },
+      {
+        "label": "Scope",
+        "text": "Mark in and out. Assume scale, latency and which data must never be wrong."
+      },
+      {
+        "label": "Model",
+        "text": "Nouns become entities and value objects; lifecycles become state machines in Java."
+      },
+      {
+        "label": "Store",
+        "text": "Map the model to PostgreSQL tables; each invariant becomes a key or constraint."
+      },
+      {
+        "label": "Expose",
+        "text": "Each use case becomes an endpoint with defined errors and safe retries."
+      },
+      {
+        "label": "Show",
+        "text": "Screens follow the use cases. Each screen has loading, empty and error views."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "UseCases.java",
+      "lang": "java",
+      "title": "Scope as code",
+      "run": "captured",
+      "caption": "A clinic appointment system, the running example for this chapter. The scope lives in one enum you can review.",
+      "walk": [
+        {
+          "lines": [
+            23,
+            24,
+            25,
+            26
+          ],
+          "text": "Each in-scope use case names its actor, its endpoint and its main table."
+        },
+        {
+          "lines": [
+            27,
+            28
+          ],
+          "text": "Out-of-scope items stay listed with no endpoint, so the cut is visible and deliberate."
+        },
+        {
+          "lines": [
+            33
+          ],
+          "text": "`inScope` is the rule: no endpoint means not built in this version."
+        },
+        {
+          "lines": [
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "text": "Print the trace matrix: actor, use case, endpoint, table."
+        },
+        {
+          "lines": [
+            14,
+            15,
+            16
+          ],
+          "text": "Scale is an assumption you state and size against, not a fact you were given."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not start with classes; agree on use cases and scope first.",
+    "Write numbers such as 500 doctors as assumptions, and say what changes beyond them.",
+    "Name the data that must stay correct under concurrency, such as one booking per slot."
+  ],
+  "quiz": {
+    "q": "Which use cases does UseCases print under Out of scope?",
+    "options": [
+      "CANCEL and PAY_ONLINE",
+      "VIDEO_CALL only",
+      "PAY_ONLINE and VIDEO_CALL",
+      "None: all six print in scope"
+    ],
+    "answer": 2,
+    "why": "`inScope` returns false when the endpoint is null. Only PAY_ONLINE and VIDEO_CALL were declared without an endpoint or a table."
+  },
+  "takeaway": "Every class, table and endpoint should trace back to a use case.",
+  "chat": {
+    "starters": [
+      "Which questions should I ask the interviewer in the first five minutes?",
+      "How do I turn a non-functional requirement into a design decision?",
+      "How much capacity estimation does an LLD round expect?"
+    ]
+  }
+}

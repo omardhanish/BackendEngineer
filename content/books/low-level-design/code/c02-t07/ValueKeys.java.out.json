@@ -1,0 +1,11 @@
+{
+  "stdout": "equals: true, same hash: true\ncontains copy: true\nstock: 15 in 1 entry\nSkuKey[code=TEA, size=1]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ValueKeys.java",
+  "tool": "Java 17.0.17",
+  "hash": "8da69f9cc13920a7",
+  "at": "2026-10-12T11:16:51.225Z"
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "Playing Night Drive (241s)\nNeon by Kite Lane still has 2 tracks\nOutside code cannot remove album tracks",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java MusicLibraryDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "d730ea93c5c72237",
+  "at": "2026-10-12T11:16:36.230Z"
+}

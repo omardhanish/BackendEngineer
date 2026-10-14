@@ -1,0 +1,184 @@
+{
+  "title": "Flight booking lifecycle",
+  "idea": "A flight booking's lifecycle is a state machine: it starts HELD and may only move along allowed arrows to CONFIRMED, TICKETED, EXPIRED or CANCELLED.",
+  "points": [
+    "HELD moves to CONFIRMED on payment, EXPIRED on timeout, or CANCELLED.",
+    "CONFIRMED means paid; it becomes TICKETED once every passenger has a ticket.",
+    "EXPIRED and CANCELLED are final; their seats return to the fare count.",
+    "Ticketing is a separate step, so a paid booking survives a ticketing failure."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "Hold, pay, ticket",
+    "actors": [
+      {
+        "id": "trav",
+        "label": "Traveller"
+      },
+      {
+        "id": "svc",
+        "label": "FlightBookingService"
+      },
+      {
+        "id": "inv",
+        "label": "FareInventory"
+      },
+      {
+        "id": "pay",
+        "label": "PaymentGateway"
+      },
+      {
+        "id": "tix",
+        "label": "TicketIssuer"
+      }
+    ],
+    "messages": [
+      {
+        "from": "trav",
+        "to": "svc",
+        "label": "hold(AI-101, Y-SAVER, 2 pax)",
+        "note": "The traveller picks a flight, a fare class and the passenger count."
+      },
+      {
+        "from": "svc",
+        "to": "inv",
+        "label": "reserve(2)",
+        "note": "Two seats leave the fare count. The booking is created HELD."
+      },
+      {
+        "from": "svc",
+        "to": "trav",
+        "label": "PNR-1, pay by 09:15",
+        "dashed": true,
+        "note": "The traveller gets a PNR and a deadline to show as a countdown."
+      },
+      {
+        "from": "trav",
+        "to": "svc",
+        "label": "pay(PNR-1)",
+        "note": "Payment starts. The service first checks the hold is still HELD and in time."
+      },
+      {
+        "from": "svc",
+        "to": "pay",
+        "label": "charge(900000)",
+        "note": "The gateway charges the total frozen at hold time."
+      },
+      {
+        "from": "pay",
+        "to": "svc",
+        "label": "captured",
+        "dashed": true,
+        "note": "Money is taken, so the booking moves HELD to CONFIRMED."
+      },
+      {
+        "from": "svc",
+        "to": "tix",
+        "label": "issue(PNR-1)",
+        "note": "Ticket numbers are created per passenger. This step can fail and be retried."
+      },
+      {
+        "from": "tix",
+        "to": "svc",
+        "label": "TK-1, TK-2",
+        "dashed": true,
+        "note": "All passengers have tickets, so CONFIRMED moves to TICKETED."
+      },
+      {
+        "from": "svc",
+        "to": "trav",
+        "label": "PNR-1 TICKETED",
+        "dashed": true,
+        "note": "Had the deadline passed first, the booking would be EXPIRED and the charge refused."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "PnrLifecycle.java",
+      "lang": "java",
+      "title": "Status enum with rules",
+      "run": "captured",
+      "caption": "The allowed moves live in the enum. Booking asks the enum before every change and keeps a history.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7,
+            8
+          ],
+          "text": "PNR-1 takes the happy path, then the traveller cancels."
+        },
+        {
+          "lines": [
+            9,
+            10,
+            11,
+            12
+          ],
+          "text": "PNR-2 tries to skip payment, then expires, then gets a late payment."
+        },
+        {
+          "lines": [
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29
+          ],
+          "text": "An `EnumMap` lists the allowed next states for each state."
+        },
+        {
+          "lines": [
+            30
+          ],
+          "text": "`canMoveTo` is the single question every transition asks."
+        },
+        {
+          "lines": [
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51
+          ],
+          "text": "Refuse and report an illegal move; otherwise change status and record it."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not set `status` from controllers; every change goes through `moveTo`.",
+    "A payment that lands after EXPIRED needs a refund, not a quiet confirm.",
+    "Do not jump HELD to TICKETED; issuing tickets for unpaid bookings loses money."
+  ],
+  "quiz": {
+    "q": "What is the first line PnrLifecycle prints for PNR-2?",
+    "options": [
+      "PNR-2 refused HELD -> TICKETED",
+      "PNR-2 HELD -> TICKETED",
+      "PNR-2 HELD -> EXPIRED",
+      "PNR-2 refused EXPIRED -> CONFIRMED"
+    ],
+    "answer": 0,
+    "why": "HELD allows only CONFIRMED, EXPIRED and CANCELLED. TICKETED is not in that set, so `moveTo` prints the refusal and leaves status HELD."
+  },
+  "takeaway": "Write the allowed transitions once, in the enum, and refuse everything else.",
+  "chat": {
+    "starters": [
+      "Why keep CONFIRMED and TICKETED as separate states?",
+      "What happens to a booking when the airline cancels the flight?",
+      "Should cancellation of a TICKETED booking depend on the fare class?"
+    ]
+  }
+}

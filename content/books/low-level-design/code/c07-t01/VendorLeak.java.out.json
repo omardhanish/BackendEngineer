@@ -1,0 +1,11 @@
+{
+  "stdout": "checkout GB 600\ncheckout US 360\nreturns  GB GBP 3003.00\nreturns  IE ERR unsupported IE",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java VendorLeak.java",
+  "tool": "Java 17.0.17",
+  "hash": "f66907a2bc3ff3a1",
+  "at": "2026-10-12T11:22:51.088Z"
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "weak password\ntexted bob@x.test\nsaved [bob@x.test]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java SolidRegistration.java",
+  "tool": "Java 17.0.17",
+  "hash": "08dadc63b53a0367",
+  "at": "2026-10-12T11:46:02.785Z"
+}

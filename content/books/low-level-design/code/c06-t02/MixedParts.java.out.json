@@ -1,0 +1,11 @@
+{
+  "stdout": "total INR 120.00",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java MixedParts.java",
+  "tool": "Java 17.0.17",
+  "hash": "33800e79ac9ed468",
+  "at": "2026-10-12T11:22:01.333Z"
+}

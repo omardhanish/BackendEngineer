@@ -1,0 +1,11 @@
+{
+  "stdout": "IN  EMPLOYEE -> FIND_FREE_ROOM\nIN  EMPLOYEE -> BOOK_ROOM\nIN  EMPLOYEE -> VIEW_ROOM_CALENDAR\nIN  EMPLOYEE -> CANCEL_BOOKING\nIN  EMPLOYEE -> CHECK_IN\nIN  SYSTEM -> RELEASE_NO_SHOW\nOUT FACILITIES_ADMIN -> MANAGE_ROOMS\nOUT EMPLOYEE -> RECURRING_SERIES\nOUT SYSTEM -> EXTERNAL_CALENDAR_SYNC\n10:00-11:00 vs 11:00-12:00 clash? false\n10:00-11:00 vs 10:30-11:30 clash? true",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java Scope.java",
+  "tool": "Java 17.0.17",
+  "hash": "91ac0efbb1c88a99",
+  "at": "2026-10-14T08:33:43.189Z"
+}

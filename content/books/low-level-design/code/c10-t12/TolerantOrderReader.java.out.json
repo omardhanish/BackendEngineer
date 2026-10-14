@@ -1,0 +1,11 @@
+{
+  "stdout": "read Order[sku=PEN-1, quantity=3, giftWrap=false]\nread Order[sku=PEN-1, quantity=3, giftWrap=true]\nread Order[sku=PEN-1, quantity=3, giftWrap=false]\nREJECTED schema v9 is newer than v2",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java TolerantOrderReader.java",
+  "tool": "Java 17.0.17",
+  "hash": "ef3188e24e45e400",
+  "at": "2026-10-12T11:34:31.797Z"
+}

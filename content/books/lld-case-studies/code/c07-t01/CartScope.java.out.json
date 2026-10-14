@@ -1,0 +1,11 @@
+{
+  "stdout": "IN  SHOPPER browse products and prices\nIN  SHOPPER add, change or remove cart items\nIN  SHOPPER price the cart, reserve stock, place order\nIN  SHOPPER pay once for a placed order\nIN  SHOPPER cancel an order before it ships\nIN  SYSTEM  free stock held by unpaid orders\nOUT ADMIN   edit products, prices and stock\nOUT SHOPPER return a delivered item for a refund\nOUT SYSTEM  suggest related products\nv1 use cases per actor: {SHOPPER=5, SYSTEM=1}",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java CartScope.java",
+  "tool": "Java 17.0.17",
+  "hash": "c864569b0b75411b",
+  "at": "2026-10-14T08:41:03.973Z"
+}

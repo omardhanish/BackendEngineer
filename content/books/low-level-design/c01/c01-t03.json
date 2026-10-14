@@ -1,79 +1,292 @@
 {
-  "title": "The four pillars of OOP",
-  "idea": "Object-oriented programming builds a program from objects that pair data with the behaviour that guards it, shaped by four ideas: encapsulation, abstraction, inheritance and polymorphism.",
+  "title": "A method for any LLD problem",
+  "idea": "A repeatable LLD method turns a vague prompt into classes in fixed steps: clarify use cases, find entities, assign behaviour, connect them, code the core, then extend.",
+  "analogy": {
+    "text": "Staging a play: agree the plot, cast the roles, give each role its lines, decide who speaks to whom, rehearse one scene, then adapt.",
+    "breaks": "Actors improvise when lost; a class does only what its contract says."
+  },
   "points": [
-    "Encapsulation keeps fields `private` and lets only methods change them.",
-    "Abstraction exposes a contract, an `interface`, and hides how it works.",
-    "Inheritance lets a subclass reuse a parent through an is-a link.",
-    "Polymorphism picks the method to run from the object's real class."
+    "Clarify first: list use cases, rules and limits; agree what is out of scope.",
+    "Nouns in use cases become candidate classes; verbs become methods on the data owner.",
+    "Put an interface only where the prompt or interviewer hints that behaviour will vary.",
+    "Code one use case end to end, then walk a failure case through it."
   ],
   "hero": {
-    "type": "table",
-    "title": "Four pillars, four Java tools",
-    "head": ["Pillar", "Java tool", "What it buys you", "In this page"],
-    "rows": [
-      ["Encapsulation", "private fields, guarded methods", "Invalid state cannot be set from outside", "Wallet balance"],
-      ["Abstraction", "interface, abstract class", "Callers depend on what, not how", "Fee interface"],
-      ["Inheritance", "extends, super", "Reuse of a parent that it truly is", "CappedFee extends PercentFee"],
-      ["Polymorphism", "@Override, dynamic dispatch", "One call site, many behaviours", "fee.on(2000) in the loop"]
-    ],
-    "highlight": { "col": 1 },
-    "caption": "Each pillar maps to a Java keyword you already use; LLD is choosing which one fits."
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "Bike-share docks through the six steps",
+    "scenario": {
+      "token": {
+        "label": "share bikes",
+        "tone": "req"
+      },
+      "stages": [
+        {
+          "id": "clarify",
+          "label": "Clarify",
+          "sub": "use cases, rules"
+        },
+        {
+          "id": "entities",
+          "label": "Entities",
+          "sub": "nouns to classes"
+        },
+        {
+          "id": "behaviour",
+          "label": "Behaviour",
+          "sub": "verbs to methods"
+        },
+        {
+          "id": "relations",
+          "label": "Relations",
+          "sub": "has-a, contracts"
+        },
+        {
+          "id": "code",
+          "label": "Code core",
+          "sub": "one use case"
+        },
+        {
+          "id": "extend",
+          "label": "Extend",
+          "sub": "follow-ups",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "Clarify: riders unlock bikes and dock them at any station; a bike has one rider; riders have a ride limit.",
+          "at": "clarify",
+          "slot": "top",
+          "token": {
+            "label": "3 rules",
+            "tone": "req"
+          },
+          "state": {
+            "clarify": "active"
+          }
+        },
+        {
+          "caption": "Entities: Bike, Station, Rider and Ride. A ride is a noun too, and it records who has which bike.",
+          "at": "entities",
+          "slot": "top",
+          "token": {
+            "label": "4 nouns",
+            "tone": "req"
+          },
+          "state": {
+            "clarify": "done",
+            "entities": "active"
+          }
+        },
+        {
+          "caption": "Behaviour: add a `BikeShare` service that owns bikes, docks and active rides; `unlock` and `dock` go there.",
+          "at": "behaviour",
+          "slot": "top",
+          "token": {
+            "label": "2 verbs",
+            "tone": "req"
+          },
+          "state": {
+            "clarify": "done",
+            "entities": "done",
+            "behaviour": "active"
+          }
+        },
+        {
+          "caption": "Relations: a Ride has-a Rider and has-a Bike. The limit may vary, so it becomes `RideLimit`.",
+          "at": "relations",
+          "slot": "top",
+          "token": {
+            "label": "has-a",
+            "tone": "req"
+          },
+          "state": {
+            "clarify": "done",
+            "entities": "done",
+            "behaviour": "done",
+            "relations": "active"
+          }
+        },
+        {
+          "caption": "Code the unlock path first, then walk a failure through it: a stranger docking someone else's bike.",
+          "at": "code",
+          "slot": "top",
+          "token": {
+            "label": "core flow",
+            "tone": "ok"
+          },
+          "state": {
+            "clarify": "done",
+            "entities": "done",
+            "behaviour": "done",
+            "relations": "done",
+            "code": "active"
+          }
+        },
+        {
+          "caption": "Follow-up: family accounts may ride two bikes at once. Find the step this change belongs to.",
+          "at": "extend",
+          "slot": "bottom",
+          "token": {
+            "label": "family limit",
+            "tone": "req"
+          },
+          "state": {
+            "clarify": "done",
+            "entities": "done",
+            "behaviour": "done",
+            "relations": "done",
+            "code": "done",
+            "extend": "active"
+          }
+        },
+        {
+          "caption": "It lands in Relations: `Rider` gains a family flag and a new `RideLimit` lambda reads it. `BikeShare` stays untouched.",
+          "at": "relations",
+          "slot": "bottom",
+          "token": {
+            "label": "RideLimit",
+            "tone": "ok"
+          },
+          "state": {
+            "clarify": "done",
+            "entities": "done",
+            "behaviour": "done",
+            "relations": "active",
+            "code": "done",
+            "extend": "done"
+          }
+        }
+      ]
+    }
   },
   "code": [
     {
-      "file": "FeeDemo.java",
+      "file": "RushedBikeShare.java",
       "lang": "java",
-      "title": "Abstraction and polymorphism",
+      "title": "Skipping the method",
       "run": "captured",
-      "caption": "Three fee rules behind one interface. The loop never asks which class it holds.",
+      "caption": "Straight to code with two maps. No Ride entity, so nobody knows who has a bike.",
       "walk": [
-        { "lines": [13, 19], "text": "`Fee` is the contract: one method to compute, one default method for a name." },
-        { "lines": [21, 23], "text": "A `record` implements the interface: a small immutable value with behaviour." },
-        { "lines": [25, 31], "text": "`PercentFee` keeps its rate `private final`: set once, never changed." },
-        { "lines": [33, 38], "text": "`CappedFee` extends `PercentFee` via `super`; whether it truly is-a percent fee is a Liskov question for later." },
-        { "lines": [41, 44], "text": "The override reuses the parent's result with `super.on`, then applies the cap." },
-        { "lines": [5, 9], "text": "The list holds `Fee`; each `fee.on` call runs the real class's method." }
+        {
+          "lines": [
+            6,
+            7
+          ],
+          "text": "State is two loose maps of strings. The relationship between rider and bike is missing."
+        },
+        {
+          "lines": [
+            9,
+            14
+          ],
+          "text": "Unlock looks fine: it blocks a bike that is out and counts the ride."
+        },
+        {
+          "lines": [
+            17,
+            20
+          ],
+          "text": "Dock trusts the caller. It cannot check the rider, because no record says who unlocked."
+        },
+        {
+          "lines": [
+            25,
+            26
+          ],
+          "text": "Bob docks Alice's bike, then a bike that was never unlocked. Both succeed."
+        },
+        {
+          "lines": [
+            27,
+            30
+          ],
+          "text": "Alice still counts a ride, Bob's count goes negative, and B9 now exists."
+        }
       ]
     },
     {
-      "file": "WalletDemo.java",
+      "file": "BikeShareDemo.java",
       "lang": "java",
-      "title": "Encapsulation",
+      "title": "Following the method",
       "run": "captured",
-      "caption": "The balance can change only through `pay`, which refuses bad amounts.",
+      "caption": "Each step of the method is visible: entities as records, a limit contract, one owning service.",
       "walk": [
-        { "lines": [15, 16], "text": "The field is `private` with no setter, so no caller can write it." },
-        { "lines": [18, 23], "text": "The constructor rejects a bad opening value: objects start valid." },
-        { "lines": [29, 37], "text": "`pay` rejects a bad argument, then a bad state, before it changes anything." },
-        { "lines": [6, 10], "text": "The caller sees the refusal as an exception; the balance is untouched." }
+        {
+          "lines": [
+            23,
+            26
+          ],
+          "text": "Step 2 as code: immutable records. `Ride` is the noun the rushed version missed."
+        },
+        {
+          "lines": [
+            27,
+            30
+          ],
+          "text": "The varying rule is a one-method interface; failures share one unchecked exception type."
+        },
+        {
+          "lines": [
+            32,
+            41
+          ],
+          "text": "`BikeShare` owns bikes, docks and rides, so the verbs live here. The limit arrives by constructor."
+        },
+        {
+          "lines": [
+            42,
+            53
+          ],
+          "text": "`unlock` checks the bike exists, is docked and the rider is under the limit, then records a ride."
+        },
+        {
+          "lines": [
+            54,
+            60
+          ],
+          "text": "`dock` refuses anyone who is not the recorded rider, then docks the bike at any station."
+        },
+        {
+          "lines": [
+            7,
+            7
+          ],
+          "text": "The limit rule is a lambda. The family two-bike limit lives here, not inside `BikeShare`."
+        },
+        {
+          "lines": [
+            13,
+            16
+          ],
+          "text": "Bob's dock and Alice's second unlock are refused; B1 ends up docked at Park."
+        }
       ]
     }
   ],
   "pitfalls": [
-    "Do not extend a class only to reuse code; without a true is-a, use composition.",
-    "Avoid public fields and blind setters; they let any caller break your rules.",
-    "Add `@Override` to every override, so a typo or overload fails to compile."
+    "Coding before listing use cases; you discover a missing entity, like Ride, after the bugs.",
+    "Turning every noun into a class; attributes such as colour or station name belong inside one.",
+    "Adding interfaces everywhere up front; the interviewer sees ceremony instead of design judgement."
   ],
   "quiz": {
-    "q": "What does this print?",
+    "q": "The interviewer adds: rides over 30 minutes cost extra. Where does it fit best?",
     "options": [
-      "PercentFee on 2000 = 40",
-      "CappedFee on 2000 = 40",
-      "CappedFee on 2000 = 30",
-      "PercentFee on 2000 = 30"
+      "A start time on Ride, and a FarePolicy contract",
+      "A fare field on Rider, updated by every method",
+      "A static helper class called from main",
+      "A new subclass of Bike for long rides"
     ],
-    "answer": 2,
-    "why": "Dynamic dispatch uses the runtime class. `getClass()` names `CappedFee`, and its override caps the parent's 40 at 30.",
-    "code": "Fee fee = new CappedFee(2, 30);\nSystem.out.println(fee.name() + \" on 2000 = \" + fee.on(2000));",
-    "lang": "java"
+    "answer": 0,
+    "why": "Ride length is a fact about one ride, so the start time lives on `Ride`. Fare rules vary, so they sit behind a contract like `RideLimit`."
   },
-  "takeaway": "Hide state, code to contracts, inherit only for is-a, let dispatch choose.",
+  "takeaway": "Clarify, find nouns, assign verbs, connect, code one path, then extend.",
   "chat": {
     "starters": [
-      "When should I use an abstract class instead of an interface?",
-      "What is the difference between overloading and overriding?",
-      "Why do people say composition over inheritance?"
+      "How do I decide whether a noun is a class or just a field?",
+      "How many use cases should I clarify before starting to code?",
+      "What should I do if I realise mid-interview that I missed an entity?"
     ]
   }
 }

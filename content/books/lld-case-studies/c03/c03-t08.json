@@ -1,0 +1,250 @@
+{
+  "title": "Checkout UI and payment flow",
+  "idea": "The payment frontend is one checkout screen driven by a reducer that sends each payment once, reuses its Idempotency-Key on retry, and polls until UPI settles.",
+  "points": [
+    "`CheckoutPage` owns the reducer; the picker and pay button only dispatch events.",
+    "A network error keeps the key and locks the method; a decline starts fresh.",
+    "UPI returns PROCESSING; the screen polls a few times, then defers to the webhook.",
+    "Follow-ups: saved cards through gateway tokens, webhook load, and a ledger for reports."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Screens and component tree",
+    "nodes": [
+      {
+        "id": "page",
+        "label": "CheckoutPage",
+        "sub": "route /checkout/:orderId"
+      },
+      {
+        "id": "red",
+        "label": "pay reducer",
+        "sub": "step, method, payKey"
+      },
+      {
+        "id": "summary",
+        "label": "OrderSummary",
+        "sub": "items, total"
+      },
+      {
+        "id": "picker",
+        "label": "MethodPicker",
+        "sub": "UPI id or card"
+      },
+      {
+        "id": "hosted",
+        "label": "Gateway card fields",
+        "sub": "returns a token"
+      },
+      {
+        "id": "button",
+        "label": "Pay button",
+        "sub": "disabled while busy"
+      },
+      {
+        "id": "api",
+        "label": "apiClient",
+        "sub": "Idempotency-Key header"
+      },
+      {
+        "id": "status",
+        "label": "Status poller",
+        "sub": "GET /payments/:id"
+      }
+    ],
+    "edges": [
+      {
+        "from": "page",
+        "to": "red",
+        "label": "owns",
+        "caption": "CheckoutPage owns the reducer state. Children read props and dispatch events."
+      },
+      {
+        "from": "page",
+        "to": "summary",
+        "caption": "OrderSummary shows the items and the total, stored in minor units and formatted only for display."
+      },
+      {
+        "from": "page",
+        "to": "picker",
+        "caption": "MethodPicker collects a UPI id, or shows the gateway's card fields."
+      },
+      {
+        "from": "picker",
+        "to": "hosted",
+        "label": "card",
+        "dashed": true,
+        "caption": "In a typical design, card numbers go into gateway-hosted fields. Your page only receives a token."
+      },
+      {
+        "from": "page",
+        "to": "button",
+        "caption": "The pay button dispatches PAY_CLICKED. The reducer ignores it unless the step allows paying."
+      },
+      {
+        "from": "button",
+        "to": "api",
+        "label": "POST /payments",
+        "caption": "An effect sends one request per SUBMITTING step, with the reducer's Idempotency-Key."
+      },
+      {
+        "from": "api",
+        "to": "status",
+        "label": "PROCESSING",
+        "caption": "For UPI the answer is PROCESSING. The poller asks again until SUCCEEDED, FAILED or the poll limit."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "pay.mjs",
+      "lang": "js",
+      "title": "Checkout reducer",
+      "run": "browser",
+      "caption": "Pure screen logic. Run it, then replace the SUCCEEDED poll with two PROCESSING polls and predict the last step.",
+      "walk": [
+        {
+          "lines": [
+            2,
+            3,
+            4,
+            5
+          ],
+          "text": "The click handler makes the key. State: step, method, key, payment id, polls, error."
+        },
+        {
+          "lines": [
+            9,
+            10,
+            11
+          ],
+          "text": "Changing method works only while choosing, and clears any old key."
+        },
+        {
+          "lines": [
+            12,
+            13,
+            14,
+            15
+          ],
+          "text": "Pay runs only from CHOOSING or RETRY. It keeps an existing key, else takes the event's."
+        },
+        {
+          "lines": [
+            16,
+            17
+          ],
+          "text": "A network error means unknown: keep the key, lock the method, offer retry."
+        },
+        {
+          "lines": [
+            20,
+            21,
+            22,
+            23,
+            24
+          ],
+          "text": "SUCCEEDED ends the flow. FAILED is final: key and poll count reset for a new try."
+        },
+        {
+          "lines": [
+            25,
+            26,
+            27,
+            28,
+            29
+          ],
+          "text": "PROCESSING waits for approval; after three polls the screen stops and defers to the webhook."
+        }
+      ]
+    },
+    {
+      "file": "CheckoutPage.jsx",
+      "lang": "js",
+      "title": "CheckoutPage component",
+      "run": "static",
+      "illustrative": true,
+      "caption": "A React component that renders state and runs effects. In the app, pay.mjs exports `reduce` and `initial`. Not run here.",
+      "walk": [
+        {
+          "lines": [
+            5
+          ],
+          "text": "`useReducer` keeps all screen state in the reducer from pay.mjs."
+        },
+        {
+          "lines": [
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13
+          ],
+          "text": "Effect: one request per SUBMITTING step; a thrown fetch becomes NETWORK_ERROR."
+        },
+        {
+          "lines": [
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21
+          ],
+          "text": "Effect: while awaiting approval, poll every three seconds and clear the timer."
+        },
+        {
+          "lines": [
+            28,
+            29,
+            30
+          ],
+          "text": "The method is locked unless the step is CHOOSING."
+        },
+        {
+          "lines": [
+            31
+          ],
+          "text": "Errors render in an alert region so screen readers announce them."
+        },
+        {
+          "lines": [
+            34,
+            35,
+            36,
+            37,
+            38
+          ],
+          "text": "The button is disabled while busy and sends a fresh key; the reducer ignores extras."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Disabling the button is not enough; the reducer and the key must also stop repeats.",
+    "Never let a card number reach your server; use the gateway's hosted fields.",
+    "Interview follow-up: replace polling with server push when many users wait on UPI."
+  ],
+  "quiz": {
+    "q": "In the run, which key does the retry after NETWORK_ERROR use?",
+    "options": [
+      "pk-4",
+      "pk-3",
+      "pk-1",
+      "- (no key)"
+    ],
+    "answer": 1,
+    "why": "NETWORK_ERROR keeps payKey because the first request may have charged. PAY_CLICKED takes the event's newKey only when payKey is empty."
+  },
+  "takeaway": "One reducer, one key per payment intent, and polling that knows when to stop.",
+  "chat": {
+    "starters": [
+      "How do I show a pending UPI payment if the user closes the tab?",
+      "Should the pay button use an optimistic update?",
+      "What changes if the gateway redirects to a 3-D Secure page?"
+    ]
+  }
+}

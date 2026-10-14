@@ -1,0 +1,172 @@
+{
+  "title": "Cache requirements and scope",
+  "idea": "Scoping a cache system means fixing its operations, its size limit, its eviction and expiry rules, and saying out loud what v1 does not do.",
+  "points": [
+    "Callers need `get`, `put` and `remove` on keys, each in O(1) average time.",
+    "The cache holds at most capacity entries; a policy picks what leaves.",
+    "Entries may carry a time-to-live, and hits and misses are counted.",
+    "Many threads share one cache, so every operation must stay correct."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "What the cache does in v1",
+    "nodes": [
+      {
+        "id": "caller",
+        "label": "Calling service",
+        "sub": "API or worker thread"
+      },
+      {
+        "id": "get",
+        "label": "get(key)",
+        "sub": "hit or miss"
+      },
+      {
+        "id": "put",
+        "label": "put(key, value)",
+        "sub": "insert or replace"
+      },
+      {
+        "id": "remove",
+        "label": "remove(key)",
+        "sub": "invalidate one entry"
+      },
+      {
+        "id": "evict",
+        "label": "Evict when full",
+        "sub": "LRU first, LFU later"
+      },
+      {
+        "id": "expire",
+        "label": "Expire by TTL",
+        "sub": "injected clock"
+      },
+      {
+        "id": "stats",
+        "label": "Hit and miss stats",
+        "sub": "hits, misses, evictions"
+      },
+      {
+        "id": "out",
+        "label": "Out of scope",
+        "sub": "disk, cluster, replication"
+      }
+    ],
+    "edges": [
+      {
+        "from": "caller",
+        "to": "get",
+        "caption": "A read returns the value, or a miss the caller must handle by loading from the source."
+      },
+      {
+        "from": "caller",
+        "to": "put",
+        "caption": "A write stores a value. Writing an existing key replaces it and refreshes its place."
+      },
+      {
+        "from": "caller",
+        "to": "remove",
+        "caption": "When the source data changes, the caller removes the key so nobody reads the old value."
+      },
+      {
+        "from": "put",
+        "to": "evict",
+        "label": "if full",
+        "caption": "A put into a full cache first evicts one key. The eviction policy decides which."
+      },
+      {
+        "from": "get",
+        "to": "expire",
+        "label": "checks",
+        "caption": "A read of an entry past its time-to-live counts as a miss and drops the entry."
+      },
+      {
+        "from": "get",
+        "to": "stats",
+        "label": "counts",
+        "caption": "Each read adds to hits or misses, so you can tell whether the cache earns its memory."
+      },
+      {
+        "from": "caller",
+        "to": "out",
+        "dashed": true,
+        "caption": "Surviving restarts and sharing across servers wait for a later version. Name them so the cut is clear."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "CacheScope.java",
+      "lang": "java",
+      "title": "Scope as an enum",
+      "run": "captured",
+      "caption": "Each requirement is tagged functional or non-functional, and v1 is one explicit range of the enum.",
+      "walk": [
+        {
+          "lines": [
+            5
+          ],
+          "text": "v1 is the range from GET to THREAD_SAFE. Anything after it is out."
+        },
+        {
+          "lines": [
+            6,
+            7,
+            8
+          ],
+          "text": "Print each requirement with an IN or OUT tag and its kind."
+        },
+        {
+          "lines": [
+            14,
+            15,
+            16,
+            17,
+            18,
+            19
+          ],
+          "text": "Six functional needs: the three operations, eviction, expiry and statistics."
+        },
+        {
+          "lines": [
+            20,
+            21,
+            22
+          ],
+          "text": "Three qualities: constant-time operations, a hard size bound, thread safety."
+        },
+        {
+          "lines": [
+            23,
+            24
+          ],
+          "text": "Persistence and clustering are listed on purpose, so the cut is visible."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Ask for the capacity unit early: entry count and bytes need different designs.",
+    "Agree on stale reads: say how old a cached value may be.",
+    "Never promise a distributed cache in v1 unless the interviewer asks for it."
+  ],
+  "quiz": {
+    "q": "Which v1 decision shapes the cache classes the most?",
+    "options": [
+      "Choosing Redis as the backing store",
+      "A hard capacity with a pluggable eviction policy",
+      "Writing entries to disk on every put",
+      "Using string keys only"
+    ],
+    "answer": 1,
+    "why": "A bounded size forces an eviction rule. Making that rule pluggable creates the EvictionPolicy interface the rest of the design depends on."
+  },
+  "takeaway": "Fix operations, capacity, eviction, expiry and thread safety before drawing classes.",
+  "chat": {
+    "starters": [
+      "Should capacity count entries or bytes in an interview answer?",
+      "When is caching null or missing results a good idea?",
+      "Which questions should I ask before designing a cache?"
+    ]
+  }
+}

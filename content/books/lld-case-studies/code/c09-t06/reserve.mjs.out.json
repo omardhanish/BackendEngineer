@@ -1,0 +1,11 @@
+{
+  "stdout": "holds that succeeded: 1\nnights freed at 09:10: 0\nnights freed at 09:15: 2\nG-9 retries 14-16: true\nG-7 retries 13-15: false\n[{\"night\":\"2026-03-13\",\"reserved\":0},{\"night\":\"2026-03-14\",\"reserved\":1},{\"night\":\"2026-03-15\",\"reserved\":1},{\"night\":\"2026-03-16\",\"reserved\":0}]",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node reserve.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "2d7b6d63daa823f4",
+  "at": "2026-10-14T10:24:37.859Z"
+}

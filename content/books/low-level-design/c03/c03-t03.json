@@ -1,141 +1,268 @@
 {
-  "title": "Tic-tac-toe game design",
-  "idea": "A tic-tac-toe design splits the game into cells, a turn order, a status, and a win check that updates counters instead of rescanning the board.",
+  "title": "Extending without editing",
+  "idea": "The Open/Closed Principle (OCP) says a class should be open for extension and closed for modification: new behaviour arrives as new code, not edits.",
+  "analogy": {
+    "text": "A power strip takes a new lamp, charger or fan without rewiring the wall. The socket shape stays fixed; what you plug in varies.",
+    "breaks": "Socket shapes rarely change; your interface sometimes must, and that costs."
+  },
   "points": [
-    "Each row, column and diagonal has a counter: X adds 1, O subtracts 1.",
-    "Mixed marks cancel out, so only a one-mark line reaches `n` or `-n`.",
-    "`play` validates first, then changes state, so a bad move leaves no trace.",
-    "A `Status` enum ends the game; later moves throw instead of passing silently."
+    "Closed means tested callers stay untouched when a new variant arrives.",
+    "Open means the variant ships as a new class behind an existing interface.",
+    "Use it where variants keep arriving: payment methods, discounts, file formats, alert channels.",
+    "In interviews, name the interface where tomorrow's requirement will plug in."
   ],
   "hero": {
-    "type": "table",
-    "title": "Requirements to types",
-    "head": [
-      "Requirement",
-      "Type or member",
-      "Why this shape"
+    "type": "flow",
+    "title": "A new method plugs in, nothing reopens",
+    "nodes": [
+      {
+        "id": "demo",
+        "label": "PaymentFeeDemo",
+        "sub": "wires the methods"
+      },
+      {
+        "id": "calc",
+        "label": "FeeCalculator",
+        "sub": "feeCents(key, amount)"
+      },
+      {
+        "id": "rule",
+        "label": "«interface» PaymentMethod",
+        "sub": "key(), feeCents(amount)"
+      },
+      {
+        "id": "card",
+        "label": "PercentPlusFixed",
+        "sub": "card: 2.9% + 30"
+      },
+      {
+        "id": "bank",
+        "label": "FlatFee",
+        "sub": "bank: 50 flat"
+      },
+      {
+        "id": "wallet",
+        "label": "CappedPercent",
+        "sub": "wallet, added this sprint"
+      }
     ],
-    "rows": [
-      [
-        "Two players alternate",
-        "Mark enum, turn field",
-        "Only two values; the game flips them"
-      ],
-      [
-        "Reject a taken cell",
-        "Game.play throws",
-        "An invalid move never changes state"
-      ],
-      [
-        "Detect a win quickly",
-        "lines counter array",
-        "One update per move, no board rescan"
-      ],
-      [
-        "End on win or draw",
-        "Status enum",
-        "Moves after the end are refused"
-      ],
-      [
-        "Any board size",
-        "n passed to Game",
-        "Counters work for every n"
-      ],
-      [
-        "Humans or bots play",
-        "Player interface, not built here",
-        "A strategy that chooses the next move"
-      ]
+    "edges": [
+      {
+        "from": "demo",
+        "to": "calc",
+        "label": "injects methods"
+      },
+      {
+        "from": "calc",
+        "to": "rule",
+        "label": "looks up"
+      },
+      {
+        "from": "card",
+        "to": "rule",
+        "label": "implements",
+        "dashed": true
+      },
+      {
+        "from": "bank",
+        "to": "rule",
+        "label": "implements",
+        "dashed": true
+      },
+      {
+        "from": "wallet",
+        "to": "rule",
+        "label": "implements",
+        "dashed": true
+      },
+      {
+        "from": "demo",
+        "to": "wallet",
+        "label": "registers"
+      }
     ],
-    "highlight": {
-      "col": 1
-    },
-    "caption": "Read each requirement, then pick the smallest Java type that enforces it."
+    "steps": [
+      {
+        "caption": "`FeeCalculator` knows only `PaymentMethod`. It finds a method by key and asks it for the fee.",
+        "active": [
+          "calc",
+          "rule"
+        ],
+        "edges": [
+          1
+        ]
+      },
+      {
+        "caption": "Card and bank each own their rule: a percentage plus a fixed part, or one flat fee.",
+        "active": [
+          "card",
+          "bank",
+          "rule"
+        ],
+        "edges": [
+          2,
+          3
+        ]
+      },
+      {
+        "caption": "Wallets arrive as `CappedPercent`, a brand-new class. No existing file is reopened.",
+        "active": [
+          "wallet",
+          "rule"
+        ],
+        "edges": [
+          4
+        ]
+      },
+      {
+        "caption": "`PaymentFeeDemo` passes one more method to the constructor. Wiring is the only place that learns about wallets.",
+        "active": [
+          "demo",
+          "wallet",
+          "calc"
+        ],
+        "edges": [
+          0,
+          5
+        ]
+      },
+      {
+        "caption": "An unknown key throws instead of falling to a default price, so a missing method fails loudly.",
+        "active": [
+          "calc"
+        ],
+        "edges": []
+      },
+      {
+        "caption": "The calculator and its tests are unchanged. That already-tested code is exactly what \"closed\" protects.",
+        "active": [
+          "calc",
+          "rule",
+          "card",
+          "bank",
+          "wallet"
+        ],
+        "edges": [
+          1,
+          2,
+          3,
+          4
+        ]
+      }
+    ]
   },
   "code": [
     {
-      "file": "TicTacToeDemo.java",
+      "file": "PaymentFees.java",
       "lang": "java",
-      "title": "Game with counters",
+      "title": "The problem",
       "run": "captured",
-      "caption": "Seven scripted moves: one lands on a taken cell, one comes after the game is over.",
+      "caption": "An `if` chain per method. A new menu entry nobody wired in is charged the card fee.",
       "walk": [
         {
           "lines": [
-            16,
-            17
+            19,
+            20
           ],
-          "text": "Two enums name every mark and every game status."
+          "text": "This class must be reopened for every new payment method, forever."
         },
         {
           "lines": [
-            22,
-            22
+            23,
+            27
           ],
-          "text": "One counter per row, column and diagonal: `2n + 2` in all."
+          "text": "Each method is a branch, so every fee change edits and retests this one method."
         },
         {
           "lines": [
-            34,
-            35
+            28,
+            29
           ],
-          "text": "Reject the move before anything changes: game over or cell taken."
-        },
-        {
-          "lines": [
-            38,
-            42
-          ],
-          "text": "Add this move to its row, column and any diagonal it sits on."
-        },
-        {
-          "lines": [
-            43,
-            49
-          ],
-          "text": "Check only the lines this move touched. A full line wins; a full board draws."
-        },
-        {
-          "lines": [
-            50,
-            52
-          ],
-          "text": "Report the move, then flip the turn for the next player."
+          "text": "The last line doubles as a default. A missing branch is not an error, only a wrong fee."
         },
         {
           "lines": [
             6,
-            12
+            10
           ],
-          "text": "`main` plays the script and prints each result or rejection."
+          "text": "Product added wallet to the menu. It pays 3.20 instead of 0.99, and nothing fails."
+        }
+      ]
+    },
+    {
+      "file": "PaymentFeeDemo.java",
+      "lang": "java",
+      "title": "The fix",
+      "run": "captured",
+      "caption": "One interface, one class per method. Wallets are a new class plus one wiring line.",
+      "walk": [
+        {
+          "lines": [
+            23,
+            24
+          ],
+          "text": "`PaymentMethod` is the extension point: a key and the fee rule for it."
+        },
+        {
+          "lines": [
+            25,
+            38
+          ],
+          "text": "Card and bank are separate records. The card record validates its numbers at construction."
+        },
+        {
+          "lines": [
+            39,
+            45
+          ],
+          "text": "`CappedPercent` is the new variant: 1% capped at 99 cents. Adding it touched no existing class."
+        },
+        {
+          "lines": [
+            46,
+            53
+          ],
+          "text": "The calculator indexes methods by key and rejects duplicate keys at construction."
+        },
+        {
+          "lines": [
+            54,
+            60
+          ],
+          "text": "A map lookup replaces the `if` chain. Unknown keys throw instead of borrowing another fee."
+        },
+        {
+          "lines": [
+            8,
+            20
+          ],
+          "text": "Main wires three methods, prices each one and shows an unknown key being rejected."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Check bounds before indexing `cells`; an off-board move throws `ArrayIndexOutOfBoundsException`.",
-    "Do not rescan the whole board after each move; update the touched counters.",
-    "Flip the turn only after a valid move, or a rejection skips a player."
+    "A catch-all `else` or default hides a missing variant; throw `IllegalArgumentException` instead.",
+    "Interfaces for things that never vary add files, not flexibility; wait for the second variant.",
+    "Changing the interface reopens every implementation; keep extension points small and stable."
   ],
   "quiz": {
-    "q": "What is the fifth line `TicTacToeDemo` prints?",
+    "q": "Next sprint brings a fourth method, buy now pay later. With the fixed design, what changes?",
     "options": [
-      "X at 1,1 -> PLAYING",
-      "rejected: over",
-      "O at 1,1 -> PLAYING",
-      "rejected: taken"
+      "A new branch inside FeeCalculator",
+      "A new PaymentMethod and one wiring line",
+      "Every existing PaymentMethod class",
+      "Nothing, not even the wiring"
     ],
-    "answer": 3,
-    "why": "O already holds 1,1, so `play` throws before changing anything. The turn stays with X, who wins on the next move.",
-    "code": "// X, O, X, O, then X again\nint[][] moves = {{0, 0}, {1, 1}, {0, 1}, {2, 2}, {1, 1}, {0, 2},\n                 {2, 0}};",
-    "lang": "java"
+    "answer": 1,
+    "why": "The calculator only looks methods up by key. Main passes in one more `PaymentMethod`, a new class or another configured record; tested classes stay closed."
   },
-  "takeaway": "Validate, update the counters, set the status, then flip the turn.",
+  "takeaway": "Add new behaviour as a new class; leave tested code closed.",
   "chat": {
     "starters": [
-      "How would I add a computer player without changing `Game`?",
-      "Why does the counter trick work for any board size?",
-      "How would I support undo for the last move?"
+      "Is an enum with a switch expression an OCP violation?",
+      "How does the Strategy pattern relate to the Open/Closed Principle?",
+      "When should I stop adding extension points to a class?"
     ]
   }
 }

@@ -1,0 +1,11 @@
+{
+  "stdout": "read-then-write: sold 2, count left 0\ncompareAndSet:   sold 1, count left 0",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java LastSeatRace.java",
+  "tool": "Java 17.0.17",
+  "hash": "e43d771ba823ee10",
+  "at": "2026-10-14T08:46:49.469Z"
+}

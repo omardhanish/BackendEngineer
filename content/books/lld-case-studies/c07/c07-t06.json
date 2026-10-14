@@ -1,0 +1,356 @@
+{
+  "title": "Cart and order schema",
+  "idea": "The schema maps the Java model to PostgreSQL tables so the database itself refuses overselling, duplicate checkouts and double payments.",
+  "analogy": {
+    "text": "A warehouse ledger with two columns per item: units on the shelf and units promised to customers. The clerk may promise only what the shelf still covers.",
+    "breaks": "A clerk can misread the ledger; a CHECK constraint cannot."
+  },
+  "points": [
+    "`inventory` keeps `on_hand` and `reserved`; a CHECK forbids reserving more than exist.",
+    "A conditional UPDATE checks and reserves stock in one atomic statement.",
+    "Partial unique indexes allow one active cart and one successful payment.",
+    "The `orders_unpaid` partial index serves the sweeper's search for late orders."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "Two checkouts, one T-shirt",
+    "scenario": {
+      "tiers": [
+        [
+          "ta",
+          "tb"
+        ],
+        [
+          "db"
+        ]
+      ],
+      "nodes": {
+        "ta": {
+          "label": "Tx OR-1",
+          "sub": "1 x SKU-TEE",
+          "kind": "client"
+        },
+        "tb": {
+          "label": "Tx OR-2",
+          "sub": "1 x SKU-TEE",
+          "kind": "client"
+        },
+        "db": {
+          "label": "inventory",
+          "sub": "PostgreSQL",
+          "kind": "db"
+        }
+      },
+      "links": [
+        [
+          "ta",
+          "db"
+        ],
+        [
+          "tb",
+          "db"
+        ]
+      ],
+      "steps": [
+        {
+          "caption": "One T-shirt is left: on_hand 1, reserved 0. Two checkouts start together.",
+          "focus": [
+            "ta",
+            "tb"
+          ],
+          "badge": {
+            "db": "1 free"
+          }
+        },
+        {
+          "caption": "OR-1 runs the conditional UPDATE. The row matches, so it is updated and locked.",
+          "send": [
+            {
+              "from": "ta",
+              "to": "db",
+              "label": "reserve 1",
+              "tone": "req"
+            }
+          ],
+          "state": {
+            "ta": "busy"
+          },
+          "badge": {
+            "db": "OR-1 lock"
+          }
+        },
+        {
+          "caption": "OR-2 runs the same UPDATE on the same row. It must wait for the lock.",
+          "send": [
+            {
+              "from": "tb",
+              "to": "db",
+              "label": "reserve 1",
+              "tone": "req"
+            }
+          ],
+          "state": {
+            "tb": "stale"
+          }
+        },
+        {
+          "caption": "OR-1 inserts its order rows and commits. The lock is released.",
+          "send": [
+            {
+              "from": "db",
+              "to": "ta",
+              "label": "COMMIT",
+              "tone": "ok"
+            }
+          ],
+          "state": {
+            "ta": "ok"
+          },
+          "badge": {
+            "db": "0 free"
+          }
+        },
+        {
+          "caption": "PostgreSQL rechecks OR-2's WHERE clause on the new row. No unit is free, so zero rows match.",
+          "send": [
+            {
+              "from": "db",
+              "to": "tb",
+              "label": "0 rows",
+              "tone": "warn"
+            }
+          ],
+          "focus": [
+            "tb"
+          ]
+        },
+        {
+          "caption": "Zero rows means out of stock. OR-2 rolls back and reserves nothing.",
+          "send": [
+            {
+              "from": "tb",
+              "to": "db",
+              "label": "ROLLBACK",
+              "tone": "err"
+            }
+          ],
+          "state": {
+            "tb": "down"
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "schema.mjs",
+      "lang": "js",
+      "title": "Tables and constraints",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "The full schema on a real PostgreSQL 18, then six bad writes the database refuses by itself.",
+      "walk": [
+        {
+          "lines": [
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "text": "Product price as BIGINT paise; inventory with a named CHECK tying reserved to on_hand."
+        },
+        {
+          "lines": [
+            10,
+            11,
+            12,
+            13,
+            14
+          ],
+          "text": "A cart status is TEXT with a CHECK; a partial unique index allows one ACTIVE cart per user."
+        },
+        {
+          "lines": [
+            15,
+            16,
+            17,
+            18
+          ],
+          "text": "One `cart_item` row per SKU per cart; quantity is capped at ten."
+        },
+        {
+          "lines": [
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27
+          ],
+          "text": "`orders` (ORDER is a keyword), an Idempotency-Key unique per user, and indexes for order history and the sweeper."
+        },
+        {
+          "lines": [
+            28,
+            29,
+            30
+          ],
+          "text": "`order_item` copies the unit price, so later price changes leave old orders alone."
+        },
+        {
+          "lines": [
+            31,
+            32,
+            33,
+            34,
+            35,
+            36
+          ],
+          "text": "Many payment attempts per order, but only one SUCCEEDED row."
+        },
+        {
+          "lines": [
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63,
+            64,
+            65,
+            66,
+            67,
+            68,
+            69,
+            70,
+            71
+          ],
+          "text": "Each bad write prints the Postgres error code and the constraint that stopped it."
+        }
+      ]
+    },
+    {
+      "file": "reserve.mjs",
+      "lang": "js",
+      "title": "Reserve, sweep, pay",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "Two parallel checkouts race for the last T-shirt; then a sweeper frees unpaid stock. Uses trimmed tables so the flow stays short.",
+      "walk": [
+        {
+          "lines": [
+            12,
+            18,
+            19,
+            20
+          ],
+          "text": "Reserve each line in SKU order with a conditional UPDATE: check and write in one step."
+        },
+        {
+          "lines": [
+            21,
+            22,
+            23,
+            24
+          ],
+          "text": "Zero rows updated means short stock: roll back every earlier line too."
+        },
+        {
+          "lines": [
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32
+          ],
+          "text": "Insert the order with a fifteen-minute payment window, then commit."
+        },
+        {
+          "lines": [
+            44,
+            45,
+            46,
+            47,
+            48
+          ],
+          "text": "Two clients race in parallel; print the sorted results, never who won."
+        },
+        {
+          "lines": [
+            49,
+            50,
+            51,
+            52
+          ],
+          "text": "A two-line order fails on the T-shirt; its mug reservation is rolled back."
+        },
+        {
+          "lines": [
+            54,
+            55,
+            56,
+            57,
+            58,
+            59,
+            60,
+            61
+          ],
+          "text": "One statement cancels late orders and returns their units to stock."
+        },
+        {
+          "lines": [
+            62,
+            63,
+            64,
+            65
+          ],
+          "text": "Paying is a conditional transition too: in time, but cancelled, so zero rows."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Never check stock with a plain SELECT, then UPDATE; put the check in WHERE.",
+    "Pass `now` as a parameter in tests; calling `now()` makes expiry tests flaky.",
+    "Name a table `orders`, not `order`; ORDER is a reserved word in SQL."
+  ],
+  "quiz": {
+    "q": "What does reserve.mjs print for OR-3?",
+    "options": [
+      "OR-3: placed",
+      "OR-3: OUT_OF_STOCK SKU-MUG",
+      "OR-3: OUT_OF_STOCK SKU-TEE",
+      "A check constraint error 23514"
+    ],
+    "answer": 2,
+    "why": "The race already reserved the only T-shirt. The mug line succeeds first, the T-shirt update matches zero rows, and the whole transaction rolls back."
+  },
+  "takeaway": "Put the stock check in the UPDATE's WHERE clause; keep constraints as the guard.",
+  "chat": {
+    "starters": [
+      "When would optimistic locking with a version column fit better here?",
+      "Should reservations live in their own table instead of a counter?",
+      "How do I run the sweeper safely on several servers at once?"
+    ]
+  }
+}

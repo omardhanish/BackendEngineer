@@ -1,0 +1,11 @@
+{
+  "stdout": "PNR-1 HELD 900000 until 2026-02-10T09:15:00Z\nseats left: 1\nrefused: 1 left in Y-SAVER\nPNR-1 TICKETED\nTicket[ticketNo=TK-1, pnr=PNR-1, passenger=Asha]\nTicket[ticketNo=TK-2, pnr=PNR-1, passenger=Ravi]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java FlightBookingCore.java",
+  "tool": "Java 17.0.17",
+  "hash": "5eab951cf8d59db3",
+  "at": "2026-10-14T08:45:09.478Z"
+}

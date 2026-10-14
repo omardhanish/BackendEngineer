@@ -1,0 +1,338 @@
+{
+  "title": "Parking service and strategies",
+  "idea": "The core design is a ParkingLot facade that gates call to park and check out, with spot choice and pricing behind swappable strategy interfaces.",
+  "analogy": {
+    "text": "A car park office. Gate staff only phone the office; the office checks its floor chart for a spot and its rate card for the price.",
+    "breaks": "Here a new rule is a new class; old ones stay untouched."
+  },
+  "points": [
+    "EntryGate and ExitGate are thin: they call ParkingLot and show the result.",
+    "`SpotAllocationStrategy` picks the spot; NearestFirst prefers small types, then low floors.",
+    "`FeeStrategy` prices a stay; HourlyFee charges per started hour in paise.",
+    "Strategies are injected, not singletons, so tests can build any lot."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "One car through the service",
+    "scenario": {
+      "token": {
+        "label": "KA01 CAR",
+        "tone": "req"
+      },
+      "stages": [
+        {
+          "id": "in",
+          "label": "EntryGate",
+          "sub": "IN-1",
+          "kind": "end"
+        },
+        {
+          "id": "lot",
+          "label": "ParkingLot",
+          "sub": "facade"
+        },
+        {
+          "id": "alloc",
+          "label": "SpotAllocationStrategy",
+          "sub": "NearestFirst"
+        },
+        {
+          "id": "fee",
+          "label": "FeeStrategy",
+          "sub": "HourlyFee"
+        },
+        {
+          "id": "out",
+          "label": "ExitGate",
+          "sub": "OUT-1",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "A car arrives at entry gate IN-1. The gate calls `park` on the lot.",
+          "at": "in",
+          "slot": "top",
+          "state": {
+            "in": "active"
+          }
+        },
+        {
+          "caption": "ParkingLot does not search spots itself. It asks the allocation strategy.",
+          "at": "lot",
+          "slot": "top",
+          "state": {
+            "in": "done",
+            "lot": "active"
+          }
+        },
+        {
+          "caption": "NearestFirst tries COMPACT before LARGE, lowest floor first, and returns F1-C1.",
+          "at": "alloc",
+          "slot": "top",
+          "state": {
+            "in": "done",
+            "lot": "done",
+            "alloc": "active"
+          }
+        },
+        {
+          "caption": "The lot creates ticket T-1, marks the spot taken, and the barrier opens.",
+          "at": "in",
+          "slot": "bottom",
+          "token": {
+            "label": "T-1 at F1-C1",
+            "tone": "ok"
+          },
+          "state": {
+            "in": "active",
+            "lot": "done",
+            "alloc": "done"
+          }
+        },
+        {
+          "caption": "When the lot is full, the strategy returns nothing and the barrier stays down.",
+          "at": "alloc",
+          "slot": "bottom",
+          "token": {
+            "label": "no spot",
+            "tone": "err"
+          },
+          "state": {
+            "lot": "done",
+            "alloc": "blocked"
+          }
+        },
+        {
+          "caption": "Later the car leaves. ExitGate OUT-1 hands T-1 to the lot.",
+          "at": "out",
+          "slot": "top",
+          "token": {
+            "label": "T-1 out",
+            "tone": "req"
+          },
+          "state": {
+            "out": "active"
+          }
+        },
+        {
+          "caption": "The lot measures the stay and asks the fee strategy for the amount.",
+          "at": "fee",
+          "slot": "top",
+          "token": {
+            "label": "CAR, 150 min",
+            "tone": "req"
+          },
+          "state": {
+            "lot": "done",
+            "fee": "active",
+            "out": "done"
+          }
+        },
+        {
+          "caption": "HourlyFee rounds up to whole hours. The spot is freed and the gate opens.",
+          "at": "out",
+          "slot": "bottom",
+          "token": {
+            "label": "paid, spot free",
+            "tone": "ok"
+          },
+          "state": {
+            "lot": "done",
+            "fee": "done",
+            "out": "active"
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "CoreParking.java",
+      "lang": "java",
+      "title": "Facade and strategies",
+      "run": "captured",
+      "caption": "The core flow on one thread. Both rules are interfaces passed into the constructor; the concurrency page shows how to claim a spot safely when gates run at once.",
+      "walk": [
+        {
+          "lines": [
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "text": "Two floors, three spots, and one implementation of each strategy."
+        },
+        {
+          "lines": [
+            18,
+            19,
+            20,
+            21
+          ],
+          "text": "Four arrivals: two cars, a truck, then a car that finds the lot full."
+        },
+        {
+          "lines": [
+            22,
+            23,
+            24
+          ],
+          "text": "T-1 leaves after 150 minutes; the waiting car then gets its spot."
+        },
+        {
+          "lines": [
+            48,
+            49,
+            50,
+            52
+          ],
+          "text": "Two interfaces are the swap points: where to park, and what to charge."
+        },
+        {
+          "lines": [
+            54,
+            55,
+            56,
+            57,
+            58,
+            59,
+            60,
+            61,
+            62
+          ],
+          "text": "NearestFirst loops over fitting types first, then floors, then spots."
+        },
+        {
+          "lines": [
+            64,
+            65,
+            66,
+            67,
+            68,
+            69,
+            70,
+            71
+          ],
+          "text": "HourlyFee rounds minutes up to started hours with integer math."
+        },
+        {
+          "lines": [
+            83,
+            84,
+            85,
+            86,
+            87,
+            88,
+            89,
+            90,
+            91,
+            92,
+            93,
+            94,
+            95,
+            96,
+            97,
+            98,
+            99
+          ],
+          "text": "`park` asks the strategy and issues a ticket; `checkout` prices the stay and frees the spot."
+        }
+      ]
+    },
+    {
+      "file": "SpreadLoad.java",
+      "lang": "java",
+      "title": "A new strategy",
+      "run": "captured",
+      "caption": "A new allocation rule that spreads cars across floors. It is a new class with the same interface; NearestFirst and ParkingLot are not edited.",
+      "walk": [
+        {
+          "lines": [
+            8,
+            9
+          ],
+          "text": "Floor 1 has three of four spots taken, floor 2 one, floor 3 none."
+        },
+        {
+          "lines": [
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "text": "Ask both strategies for a spot for the same car."
+        },
+        {
+          "lines": [
+            48,
+            49,
+            50
+          ],
+          "text": "The interface is the CoreParking one, vehicle type included."
+        },
+        {
+          "lines": [
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59,
+            60
+          ],
+          "text": "The existing rule, unchanged: smallest fitting type, then the lowest floor."
+        },
+        {
+          "lines": [
+            62,
+            63,
+            64,
+            65,
+            66,
+            67,
+            68,
+            69,
+            70,
+            71,
+            72,
+            73
+          ],
+          "text": "Picks the floor with most free fitting spots, ties going lower, then reuses NearestFirst there."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not make ParkingLot a static singleton; inject it so tests build fresh lots.",
+    "Avoid `if (truck)` branches in the facade; put each rule in a strategy class.",
+    "Round started hours up with integer math, never with double division."
+  ],
+  "quiz": {
+    "q": "What does CoreParking print for the second car?",
+    "options": [
+      "IN-1 KA05CD5678: T-2 at F1-L1",
+      "IN-1 KA05CD5678: T-2 at F2-C1",
+      "IN-1 KA05CD5678: LOT_FULL, barrier stays down",
+      "IN-1 KA05CD5678: T-2 at F1-C1"
+    ],
+    "answer": 1,
+    "why": "NearestFirst loops over fitting spot types before floors. COMPACT comes before LARGE, so floor 2's compact spot beats floor 1's large spot."
+  },
+  "takeaway": "One facade for the gates; every changing rule behind an injected strategy.",
+  "chat": {
+    "starters": [
+      "Is it wasteful to park a motorbike in a LARGE spot?",
+      "Should ParkingLot be a singleton in a real system?",
+      "How would I add a weekend flat fee without touching HourlyFee?"
+    ]
+  }
+}

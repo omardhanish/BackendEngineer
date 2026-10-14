@@ -1,0 +1,11 @@
+{
+  "stdout": "Booking[id=B1, roomId=R1, employeeId=ana, start=9.0, end=10.0]\nROOM_TAKEN\nok\nINVALID_SLOT\nNOT_OWNER\nok",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java BookingContractDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "bb9afb1354017ff4",
+  "at": "2026-10-12T11:41:34.272Z"
+}

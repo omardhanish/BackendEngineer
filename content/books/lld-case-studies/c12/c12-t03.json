@@ -1,0 +1,285 @@
+{
+  "title": "Room booking service in Java",
+  "idea": "BookingService is a facade: one `book` call filters free rooms through each Calendar, asks a RoomSelectionStrategy to pick one, stores the Booking, and notifies a listener.",
+  "analogy": {
+    "text": "A front desk clerk. You state a time and headcount; the clerk checks each room's sheet, follows the house rule for choosing, and phones you back.",
+    "breaks": "Changing the house rule here means plugging in a new class."
+  },
+  "points": [
+    "Facade: callers know only `book`, not calendars, strategies or listeners.",
+    "Strategy: RoomSelectionStrategy decides which free room wins; it is injected.",
+    "Observer: a BookingListener hears about confirmed bookings, for email or chat.",
+    "A new policy is a new class; BookingService itself never changes."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "One book() call, stage by stage",
+    "scenario": {
+      "token": {
+        "label": "E-2: 3 people, 10:30",
+        "tone": "req"
+      },
+      "stages": [
+        {
+          "id": "svc",
+          "label": "BookingService",
+          "sub": "facade"
+        },
+        {
+          "id": "cal",
+          "label": "Calendar filter",
+          "sub": "isFree per room"
+        },
+        {
+          "id": "strat",
+          "label": "RoomSelectionStrategy",
+          "sub": "SmallestFit"
+        },
+        {
+          "id": "store",
+          "label": "Calendar.add",
+          "sub": "Booking BK-2"
+        },
+        {
+          "id": "notify",
+          "label": "BookingListener",
+          "sub": "observer",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "E-2 asks for a room for three people from 10:30 to 11:30.",
+          "at": "svc",
+          "slot": "top",
+          "state": {
+            "svc": "active"
+          }
+        },
+        {
+          "caption": "Every room's Calendar answers `isFree`. Orion already holds BK-1 from 10:00, so it drops out.",
+          "at": "cal",
+          "slot": "top",
+          "state": {
+            "svc": "done",
+            "cal": "active"
+          },
+          "token": {
+            "label": "free: Vega, Lyra",
+            "tone": "req"
+          }
+        },
+        {
+          "caption": "The injected strategy picks the smallest room that fits. Lyra seats six, Vega ten.",
+          "at": "strat",
+          "slot": "top",
+          "state": {
+            "cal": "done",
+            "strat": "active"
+          },
+          "token": {
+            "label": "pick: Lyra",
+            "tone": "req"
+          }
+        },
+        {
+          "caption": "The service creates BK-2 and adds it to Lyra's Calendar only.",
+          "at": "store",
+          "slot": "top",
+          "state": {
+            "strat": "done",
+            "store": "active"
+          },
+          "token": {
+            "label": "BK-2 in Lyra",
+            "tone": "ok"
+          }
+        },
+        {
+          "caption": "Listeners hear about the confirmed booking. Email or chat code lives outside the service.",
+          "at": "notify",
+          "slot": "top",
+          "state": {
+            "store": "done",
+            "notify": "active"
+          },
+          "token": {
+            "label": "BK-2 confirmed",
+            "tone": "ok"
+          }
+        },
+        {
+          "caption": "The Booking returns to the caller. With no fitting room, the strategy returns empty instead.",
+          "at": "svc",
+          "slot": "bottom",
+          "state": {
+            "notify": "done",
+            "svc": "done"
+          },
+          "token": {
+            "label": "Optional[BK-2]",
+            "tone": "ok"
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "CoreBooking.java",
+      "lang": "java",
+      "title": "Core flow",
+      "run": "captured",
+      "caption": "The facade, the default strategy and a listener, booking four requests against three rooms.",
+      "walk": [
+        {
+          "lines": [
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "text": "Three rooms, the smallest-fit strategy and a listener that prints notifications."
+        },
+        {
+          "lines": [
+            16,
+            17,
+            18,
+            19
+          ],
+          "text": "Four requests: a fit, a conflict, a group too large, and back-to-back."
+        },
+        {
+          "lines": [
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46
+          ],
+          "text": "The strategy interface and its default: smallest capacity that fits, then by id."
+        },
+        {
+          "lines": [
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56
+          ],
+          "text": "A Calendar per room answers `isFree` with the half-open overlap rule."
+        },
+        {
+          "lines": [
+            65,
+            66,
+            67,
+            68,
+            69
+          ],
+          "text": "Dependencies come in through the constructor, so tests can swap them."
+        },
+        {
+          "lines": [
+            73,
+            74,
+            75,
+            76,
+            77,
+            78,
+            79
+          ],
+          "text": "Filter free rooms, then let the strategy choose; empty means no room."
+        },
+        {
+          "lines": [
+            80,
+            81,
+            82,
+            83,
+            84,
+            85
+          ],
+          "text": "Store the Booking in that room's Calendar, then tell the listener."
+        }
+      ]
+    },
+    {
+      "file": "NearestFloor.java",
+      "lang": "java",
+      "title": "New strategy, no edits",
+      "run": "captured",
+      "caption": "The same free rooms ranked by two policies. The second is a new class; nothing old is edited.",
+      "walk": [
+        {
+          "lines": [
+            7,
+            8,
+            9,
+            10
+          ],
+          "text": "Three free rooms and two policies; the organizer sits on floor 5."
+        },
+        {
+          "lines": [
+            11,
+            12,
+            13,
+            14
+          ],
+          "text": "Run each policy on the same input and print its pick."
+        },
+        {
+          "lines": [
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42
+          ],
+          "text": "NearestFloorStrategy ranks by distance from the organizer's floor, then by capacity."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not branch on policy names inside BookingService; inject a RoomSelectionStrategy.",
+    "Listeners run inside `book`, so a slow mail server blocks it; listeners should only queue.",
+    "Return an empty result for no room; null hides the failure from callers."
+  ],
+  "quiz": {
+    "q": "What does NearestFloor print for NearestFloorStrategy?",
+    "options": [
+      "NearestFloorStrategy -> Orion",
+      "NearestFloorStrategy -> Vega",
+      "NearestFloorStrategy -> Lyra",
+      "NearestFloorStrategy -> none"
+    ],
+    "answer": 2,
+    "why": "The organizer is on floor 5. Lyra is on floor 5, distance zero, and seats six, so it beats both floor 3 rooms."
+  },
+  "takeaway": "One facade call; swappable choice policy; notifications through listeners.",
+  "chat": {
+    "starters": [
+      "Why is the listener an interface instead of a direct email call?",
+      "How would I combine two strategies, such as nearest floor then smallest?",
+      "Where should the room lock go when this runs on many threads?"
+    ]
+  }
+}

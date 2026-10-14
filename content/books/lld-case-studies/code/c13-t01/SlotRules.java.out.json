@@ -1,0 +1,11 @@
+{
+  "stdout": "2026-03-03T07:00 for 2h -> OK, off-peak rate\n2026-03-03T18:00 for 2h -> OK, peak rate\n2026-03-07T09:00 for 1h -> OK, peak rate\n2026-03-03T18:30 for 1h -> REJECT: start on the hour\n2026-03-03T09:00 for 4h -> REJECT: 1 to 3 hours\n2026-03-03T22:00 for 2h -> REJECT: ground is open 06:00-23:00\n2026-03-20T09:00 for 1h -> REJECT: more than 14 days ahead\n2026-03-01T09:00 for 1h -> REJECT: date is in the past",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java SlotRules.java",
+  "tool": "Java 17.0.17",
+  "hash": "e4e2a710096e7936",
+  "at": "2026-10-14T08:33:06.145Z"
+}

@@ -1,0 +1,93 @@
+{
+  "title": "Library service and fine strategies",
+  "idea": "The core design is one LibraryService facade that runs borrow, return and reserve, with the clock, fine rule and notifier passed in as interfaces.",
+  "analogy": {
+    "text": "A circulation desk clerk follows the rule binder on the desk. Swap the fines page in the binder and the clerk works the same way.",
+    "breaks": "A clerk can bend a rule; the service never does."
+  },
+  "points": [
+    "Facade: callers use LibraryService and never touch copies or queues directly.",
+    "Strategy: FinePolicy decides the fine, so new fine rules are new classes.",
+    "Observer-style Notifier tells a waiting member their copy is ready.",
+    "An injected Today clock makes due dates and fines testable and repeatable."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "Borrow, reserve, then a late return",
+    "scenario": {
+      "token": { "label": "borrow ISBN-1", "tone": "req" },
+      "stages": [
+        { "id": "caller", "label": "Caller", "kind": "end" },
+        { "id": "svc", "label": "LibraryService", "sub": "facade" },
+        { "id": "copies", "label": "Copies", "sub": "free or held" },
+        { "id": "queue", "label": "Reservation queue", "sub": "FIFO per ISBN" },
+        { "id": "fine", "label": "FinePolicy", "sub": "strategy" },
+        { "id": "notify", "label": "Notifier", "sub": "message", "kind": "end" }
+      ],
+      "steps": [
+        { "caption": "M-1 borrows ISBN-1. The service finds free copy CP-1 and opens loan LN-1.", "at": "copies", "slot": "top", "state": { "svc": "done", "copies": "active" } },
+        { "caption": "M-2 asks for the same title. No copy is free, so the service refuses.", "at": "copies", "slot": "bottom", "token": { "label": "no copy", "tone": "err" }, "state": { "copies": "blocked" } },
+        { "caption": "M-2 reserves instead. The service appends M-2 to the ISBN-1 queue.", "at": "queue", "slot": "top", "token": { "label": "reserve", "tone": "req" }, "state": { "copies": "done", "queue": "active" } },
+        { "caption": "Three days late, M-1 returns CP-1. The service closes LN-1.", "at": "svc", "slot": "top", "token": { "label": "return CP-1", "tone": "req" }, "state": { "svc": "active", "queue": "done" } },
+        { "caption": "The queue is not empty, so CP-1 goes on the hold shelf for M-2.", "at": "queue", "slot": "top", "token": { "label": "CP-1 to M-2", "tone": "req" }, "state": { "svc": "done", "queue": "active" } },
+        { "caption": "The `Notifier` tells M-2 the copy is ready at the desk.", "at": "notify", "slot": "top", "token": { "label": "ready", "tone": "ok" }, "state": { "queue": "done", "notify": "active" } },
+        { "caption": "The `FinePolicy` prices the late days, and the fine goes back to the caller.", "at": "caller", "slot": "bottom", "token": { "label": "fine", "tone": "ok" }, "state": { "fine": "done", "notify": "done", "caller": "active" } }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "CoreLibrary.java",
+      "lang": "java",
+      "title": "Service and interfaces",
+      "run": "captured",
+      "caption": "The core flow. Clock, fine rule and notifier are interfaces given to the constructor. The next pages add loan states and thread safety. The unpaid-fine block from the scope page is a second check beside the loan limit; it is left out to keep the file short.",
+      "walk": [
+        { "lines": [7, 8, 9, 10, 11], "text": "Wire the service with a hand-moved clock, a per-day fine and a printing notifier." },
+        { "lines": [12, 13, 14, 15], "text": "One copy: M-1 gets it, M-2 is refused and reserves instead." },
+        { "lines": [16, 17, 18, 19], "text": "Move the clock, return late, then M-3 and M-2 both ask for the copy." },
+        { "lines": [28, 29, 30], "text": "Three interfaces: today's date, the fine rule and the message channel." },
+        { "lines": [54, 55, 56, 57, 58, 59, 60, 61, 62, 63], "text": "Borrow checks the loan limit, then takes a free copy or one held for this member." },
+        { "lines": [70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81], "text": "Return closes the loan, hands the copy to the queue head, and prices the fine." },
+        { "lines": [101, 102, 103, 104, 105], "text": "A test clock you move by hand: real code passes a system clock." }
+      ]
+    },
+    {
+      "file": "ClosedDaysFine.java",
+      "lang": "java",
+      "title": "A new fine rule",
+      "run": "captured",
+      "caption": "Open/closed in practice: a new FinePolicy that skips closed days. The service and the old rule are not edited.",
+      "walk": [
+        { "lines": [8, 9], "text": "A copy due on a Monday comes back eight days later." },
+        { "lines": [10, 11, 12, 13], "text": "Two policies side by side: the plain one and the new one." },
+        { "lines": [33, 34, 35, 36, 37, 38, 39, 40, 41, 42], "text": "Count only late days that were open days, then apply the same rate and cap." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not call LocalDate.now() inside the service; inject a clock instead.",
+    "Do not branch on fine type with if-else; add a FinePolicy class.",
+    "Do not let callers edit a copy's status; route every change through the service."
+  ],
+  "quiz": {
+    "q": "What does CoreLibrary print when M-3 asks for ISBN-1?",
+    "options": [
+      "LN-2 for copy CP-1",
+      "refused: no copy for M-3",
+      "refused: loan limit",
+      "refused: no open loan"
+    ],
+    "answer": 1,
+    "why": "CP-1 is on the hold shelf with `heldFor` set to M-2. The filter matches it only for M-2, so M-3 finds nothing."
+  },
+  "takeaway": "One facade runs the rules; every policy that may change is an interface.",
+  "chat": {
+    "starters": [
+      "Why is the reservation queue per ISBN and not per copy?",
+      "When would I split LibraryService into smaller services?",
+      "How do I test FinePolicy without the rest of the service?"
+    ]
+  }
+}

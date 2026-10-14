@@ -1,0 +1,11 @@
+{
+  "stdout": "assign 6:DOWN -> E2\nassign 3:UP -> E2\nassign 9:DOWN -> E1\nt=20 calls {6:DOWN=E2, 3:UP=E2, 9:DOWN=E1}\nt=40 E2 stuck: alarm\nt=40 calls {6:DOWN=E1, 3:UP=E1, 9:DOWN=E1}\nassign 7:UP -> E1\nt=41 E2 ignored: inspect\ncalls {6:DOWN=E1, 3:UP=E1, 9:DOWN=E1, 7:UP=E1}",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java CarFailover.java",
+  "tool": "Java 17.0.17",
+  "hash": "e30af4d44bbd4fc4",
+  "at": "2026-10-14T10:22:39.135Z"
+}

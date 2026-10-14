@@ -1,229 +1,271 @@
 {
-  "title": "Unit tests, test doubles, TDD",
-  "idea": "Testing a low-level design (LLD) checks each class through its public contract, with test doubles for risky collaborators; test-driven development (TDD) writes each test first.",
+  "title": "Designing classes and interfaces",
+  "idea": "Good class design gives each class one job, keeps data with the rules guarding it, and puts varying behaviour behind a small interface named for a role.",
   "analogy": {
-    "text": "A flight simulator. Pilots rehearse an engine failure safely because the cockpit takes its signals from software, not from a real engine.",
-    "breaks": "A simulator can disagree with the real plane; so can a test double."
+    "text": "A hospital rota lists roles such as on-call surgeon, not names. Any qualified surgeon fills the slot, and each patient's chart travels with the patient.",
+    "breaks": "A chart only records data; a Java record also refuses invalid values."
   },
   "points": [
-    "Constructor injection gives every collaborator a seam where a test double plugs in.",
-    "A stub returns canned answers; a mock also records calls you then verify.",
-    "Test behaviour through public methods, never through private fields or helpers.",
-    "TDD loops red, green, refactor: failing test, least code, then tidy up."
+    "Requirement nouns suggest classes; verbs become methods on the class that owns the data.",
+    "Use a record for a value with rules, validated once in its constructor.",
+    "Extract an interface for behaviour that varies, and name it for the role.",
+    "Make classes final with private final fields unless designed for extension."
   ],
   "hero": {
-    "type": "anim",
-    "engine": "pipeline",
-    "title": "One turn of the TDD loop",
-    "scenario": {
-      "token": {
-        "label": "rejects empty cart",
-        "tone": "err"
+    "type": "flow",
+    "title": "From requirement to class diagram",
+    "nodes": [
+      {
+        "id": "desk",
+        "label": "FrontDesk",
+        "sub": "- staff · + earliest(Request)"
       },
-      "stages": [
-        {
-          "id": "red",
-          "label": "Red",
-          "sub": "write a failing test"
-        },
-        {
-          "id": "green",
-          "label": "Green",
-          "sub": "least code to pass"
-        },
-        {
-          "id": "refactor",
-          "label": "Refactor",
-          "sub": "tidy, stay green"
-        },
-        {
-          "id": "next",
-          "label": "Next test",
-          "sub": "one new behaviour",
-          "kind": "end"
-        }
-      ],
-      "steps": [
-        {
-          "caption": "Write a test for behaviour that does not exist yet: `pay` must reject a zero total.",
-          "at": "red",
-          "slot": "top",
-          "state": {
-            "red": "active"
-          }
-        },
-        {
-          "caption": "Run it and watch it fail. A test you never saw fail may test nothing.",
-          "at": "red",
-          "slot": "top",
-          "token": {
-            "label": "FAIL",
-            "tone": "err"
-          },
-          "state": {
-            "red": "error"
-          }
-        },
-        {
-          "caption": "Add the least code that passes: one guard clause at the top of `pay`.",
-          "at": "green",
-          "slot": "top",
-          "token": {
-            "label": "PASS",
-            "tone": "ok"
-          },
-          "state": {
-            "red": "done",
-            "green": "active"
-          }
-        },
-        {
-          "caption": "Rename, extract and remove duplication in small steps. Rerun every test after each one.",
-          "at": "refactor",
-          "slot": "top",
-          "token": {
-            "label": "still PASS",
-            "tone": "ok"
-          },
-          "state": {
-            "red": "done",
-            "green": "done",
-            "refactor": "active"
-          }
-        },
-        {
-          "caption": "Pick the next behaviour, such as \"a declined card returns false\", and start the loop again.",
-          "at": "next",
-          "slot": "top",
-          "token": {
-            "label": "declined",
-            "tone": "req"
-          },
-          "state": {
-            "red": "done",
-            "green": "done",
-            "refactor": "done",
-            "next": "active"
-          }
-        }
-      ]
-    }
+      {
+        "id": "avail",
+        "label": "«interface» Availability",
+        "sub": "+ name() · + firstFree(from)"
+      },
+      {
+        "id": "shift",
+        "label": "ShiftClinician",
+        "sub": "start to end hour"
+      },
+      {
+        "id": "session",
+        "label": "SessionClinician",
+        "sub": "fixed session hours"
+      },
+      {
+        "id": "req",
+        "label": "«record» Request",
+        "sub": "patient · fromHour 0-23"
+      },
+      {
+        "id": "appt",
+        "label": "«record» Appointment",
+        "sub": "clinician · patient · hour"
+      }
+    ],
+    "edges": [
+      {
+        "from": "desk",
+        "to": "avail",
+        "label": "1 → 1..*"
+      },
+      {
+        "from": "shift",
+        "to": "avail",
+        "label": "implements",
+        "dashed": true
+      },
+      {
+        "from": "session",
+        "to": "avail",
+        "label": "implements",
+        "dashed": true
+      },
+      {
+        "from": "desk",
+        "to": "req",
+        "label": "uses",
+        "dashed": true
+      },
+      {
+        "from": "desk",
+        "to": "appt",
+        "label": "creates",
+        "dashed": true
+      }
+    ],
+    "steps": [
+      {
+        "caption": "Requirement: book a patient with the clinician free earliest from a given hour. The nouns request, clinician and appointment are candidate types.",
+        "active": [
+          "req",
+          "avail",
+          "appt"
+        ],
+        "edges": []
+      },
+      {
+        "caption": "`Request` is a value with a rule: the hour must be 0 to 23. A record checks it once, at construction.",
+        "active": [
+          "req"
+        ],
+        "edges": []
+      },
+      {
+        "caption": "Clinicians keep hours differently. That variation becomes the `Availability` interface, named for the role it plays.",
+        "active": [
+          "avail"
+        ],
+        "edges": []
+      },
+      {
+        "caption": "Each way of keeping hours is one small record. Each validates its own hours, so none can exist half-built.",
+        "active": [
+          "shift",
+          "session",
+          "avail"
+        ],
+        "edges": [
+          1,
+          2
+        ]
+      },
+      {
+        "caption": "The verb \"find the earliest\" lands on `FrontDesk`, which holds one or more clinicians by the interface only.",
+        "active": [
+          "desk",
+          "avail"
+        ],
+        "edges": [
+          0
+        ]
+      },
+      {
+        "caption": "The desk only uses `Request` as a parameter: a dashed dependency, not a field.",
+        "active": [
+          "desk",
+          "req"
+        ],
+        "edges": [
+          3
+        ]
+      },
+      {
+        "caption": "The desk returns an immutable `Appointment`. A new kind of clinician adds one class and touches nothing else.",
+        "active": [
+          "desk",
+          "appt",
+          "shift",
+          "session"
+        ],
+        "edges": [
+          4
+        ]
+      }
+    ]
   },
   "code": [
     {
-      "file": "CheckoutTestDemo.java",
+      "file": "AnemicClinic.java",
       "lang": "java",
-      "title": "Hand-written double and checks",
+      "title": "The problem",
       "run": "captured",
-      "caption": "`Checkout` is tested with a hand-written test double that records every charge. No real payment provider is touched.",
+      "caption": "Data in a bag of fields, rules in a `Utils` class. Half-built objects compile and run.",
       "walk": [
         {
           "lines": [
-            5,
+            18,
+            27
+          ],
+          "text": "`Clinician` is public fields plus a setter. Nothing says which fields a valid clinician needs."
+        },
+        {
+          "lines": [
+            8,
             9
           ],
-          "text": "A tiny runner: `check` prints PASS or FAIL and counts failures."
+          "text": "Lee is created, given hours, and never named. The object is half-initialised but looks usable."
         },
         {
           "lines": [
-            26,
-            26
+            29,
+            42
           ],
-          "text": "The collaborator is an interface, so a test can swap the real gateway out."
-        },
-        {
-          "lines": [
-            28,
-            36
-          ],
-          "text": "`RecordingGateway` answers as told, like a stub, and records calls, like a mock."
-        },
-        {
-          "lines": [
-            38,
-            40
-          ],
-          "text": "`Checkout` receives its gateway through the constructor: the seam the test uses."
-        },
-        {
-          "lines": [
-            13,
-            16
-          ],
-          "text": "State check: the result. Interaction check: what the gateway was asked to do."
-        },
-        {
-          "lines": [
-            17,
-            21
-          ],
-          "text": "The bad input throws, and the recorded calls prove no charge leaked through."
-        }
-      ]
-    },
-    {
-      "file": "CheckoutTest.junit.txt",
-      "lang": "java",
-      "title": "Same tests in JUnit 5",
-      "run": "static",
-      "illustrative": true,
-      "caption": "What teams write with JUnit 5 and Mockito. Mockito generates the double, so you write no double class.",
-      "walk": [
-        {
-          "lines": [
-            6,
-            7
-          ],
-          "text": "`mock` builds a `PaymentGateway` double; the real `Checkout` uses it."
+          "text": "The booking rule lives in a utility class, far from the hours it reads."
         },
         {
           "lines": [
             11,
             11
           ],
-          "text": "Stub: `when(...).thenReturn` sets the answer for this exact call."
+          "text": "Lee is free first, so the patient is booked with `null`: the bug surfaces far from its cause."
         },
         {
           "lines": [
             12,
             13
           ],
-          "text": "Assert the result, then `verify` the gateway got exactly this call."
+          "text": "A public field accepts a shift that ends before it starts. Nothing can refuse it."
+        }
+      ]
+    },
+    {
+      "file": "ClinicDemo.java",
+      "lang": "java",
+      "title": "The fix",
+      "run": "captured",
+      "caption": "Validated value objects, a role interface and a coordinator that depends only on that role.",
+      "walk": [
+        {
+          "lines": [
+            25,
+            35
+          ],
+          "text": "`Request` guards its hour in the compact constructor. No invalid request can exist."
         },
         {
           "lines": [
-            18,
-            20
+            37,
+            41
           ],
-          "text": "`assertThrows` checks the guard; `verifyNoInteractions` proves nothing was charged."
+          "text": "`Availability` names a role. `FrontDesk` needs only a name and a first free hour."
+        },
+        {
+          "lines": [
+            42,
+            63
+          ],
+          "text": "Each way of keeping hours is its own record. Every field arrives in the constructor, checked."
+        },
+        {
+          "lines": [
+            66,
+            72
+          ],
+          "text": "The desk copies its list and rejects an empty one, so outside code cannot change its state."
+        },
+        {
+          "lines": [
+            73,
+            78
+          ],
+          "text": "It asks each clinician through the interface and keeps the earliest. No `if` on clinician kinds."
+        },
+        {
+          "lines": [
+            8,
+            22
+          ],
+          "text": "Wiring happens in `main`. Different hours pick different clinicians; a bad shift fails fast."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Mock only collaborators at boundaries, never value objects or the class under test.",
-    "Do not verify every call; tests that pin internals break on each safe refactor.",
-    "If `new` builds a collaborator inside the class, inject it so tests can swap it."
+    "An interface for a class with one implementation adds files, not flexibility; wait for a second.",
+    "Public mutable fields let any caller break invariants; the bug shows up far from the cause.",
+    "A no-arg constructor plus setters lets half-built objects escape; a forgotten name prints `null`."
   ],
   "quiz": {
-    "q": "With this `pay`, what is the last line `CheckoutTestDemo` prints?",
+    "q": "A new on-call clinician is free at any hour. What changes in the fixed design?",
     "options": [
-      "all green",
-      "2 failed",
-      "1 failed",
-      "It crashes with an exception"
+      "Add a branch to FrontDesk.earliest",
+      "Add one class that implements Availability",
+      "Add a new method to the Availability interface",
+      "Make Request mutable so the clinician can set the hour"
     ],
-    "answer": 2,
-    "why": "`RecordingGateway` records the zero charge before the throw, so it holds two calls. Only the \"never charged\" check fails; the throw is still caught.",
-    "code": "boolean pay(String customer, long cents) {\n    boolean ok = gateway.charge(customer, cents);\n    if (cents <= 0) throw new IllegalArgumentException(\"empty cart\");\n    return ok;\n}",
-    "lang": "java"
+    "answer": 1,
+    "why": "The desk talks to the `Availability` role only. An on-call class returns the requested hour from `firstFree`; no existing class changes."
   },
-  "takeaway": "Inject collaborators, swap risky ones for doubles, and let a failing test lead.",
+  "takeaway": "Keep data with its rules; hide varying behaviour behind a role interface.",
   "chat": {
     "starters": [
-      "When should I hand-write a test double instead of a Mockito mock?",
-      "How do I test a class that calls new inside its methods?",
-      "Is TDD worth doing in a timed LLD interview?"
+      "When should I use an abstract class instead of an interface?",
+      "How do I spot the classes in an interview problem statement?",
+      "Should every class be final by default?"
     ]
   }
 }

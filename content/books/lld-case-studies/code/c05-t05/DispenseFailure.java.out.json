@@ -1,0 +1,11 @@
+{
+  "stdout": "debit TX-1, balance 300000\nretry TX-1, balance 300000\nTX-1 REVERSED, balance 500000\nlate confirm: refused, REVERSED",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java DispenseFailure.java",
+  "tool": "Java 17.0.17",
+  "hash": "19836e2b91c5fc69",
+  "at": "2026-10-14T10:24:01.470Z"
+}

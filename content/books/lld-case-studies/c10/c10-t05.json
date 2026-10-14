@@ -1,0 +1,366 @@
+{
+  "title": "Last-seat races and failures",
+  "idea": "A last-seat race happens when two bookings both read one seat left and both subtract it; the fix makes read, check and subtract one atomic step.",
+  "analogy": {
+    "text": "Two cashiers glance at a shelf with one cake left and both ring it up. A single counter where each sale is stamped prevents it.",
+    "breaks": "A hold also hands the cake back if nobody pays in time."
+  },
+  "points": [
+    "Read-then-write on a seat count oversells, even on a thread-safe counter.",
+    "`compareAndSet` subtracts only if the count is still what you read.",
+    "Holds expire, and the sweeper returns their seats to the fare count.",
+    "Payment and ticketing fail apart: refund late money, retry ticketing safely."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "lanes",
+    "title": "Two bookings, one seat left",
+    "scenario": {
+      "lanes": [
+        {
+          "id": "a",
+          "label": "Thread PNR-7",
+          "kind": "area"
+        },
+        {
+          "id": "b",
+          "label": "Thread PNR-9",
+          "kind": "area"
+        },
+        {
+          "id": "count",
+          "label": "Y-SAVER count",
+          "kind": "area",
+          "hint": "seats left"
+        }
+      ],
+      "tokens": {
+        "one": {
+          "label": "left = 1",
+          "tone": "io"
+        },
+        "zero": {
+          "label": "left = 0",
+          "tone": "io"
+        },
+        "ra": {
+          "label": "read 1",
+          "tone": "sync"
+        },
+        "rb": {
+          "label": "read 1",
+          "tone": "sync"
+        },
+        "sa": {
+          "label": "sold",
+          "tone": "micro"
+        },
+        "sb": {
+          "label": "sold too",
+          "tone": "macro"
+        },
+        "ca": {
+          "label": "CAS 1 to 0",
+          "tone": "timer"
+        },
+        "cb": {
+          "label": "CAS 1 to 0",
+          "tone": "timer"
+        },
+        "no": {
+          "label": "refused",
+          "tone": "neutral"
+        }
+      },
+      "steps": [
+        {
+          "caption": "Unsafe version. One Y-SAVER seat is left on AI-101.",
+          "at": {
+            "count": [
+              "one"
+            ]
+          }
+        },
+        {
+          "caption": "PNR-7 reads the count and sees 1.",
+          "at": {
+            "a": [
+              "ra"
+            ],
+            "count": [
+              "one"
+            ]
+          },
+          "active": "ra"
+        },
+        {
+          "caption": "Before PNR-7 writes, PNR-9 reads too. It also sees 1.",
+          "at": {
+            "a": [
+              "ra"
+            ],
+            "b": [
+              "rb"
+            ],
+            "count": [
+              "one"
+            ]
+          },
+          "active": "rb"
+        },
+        {
+          "caption": "PNR-7 writes 1 minus 1 and counts a sale.",
+          "at": {
+            "a": [
+              "sa"
+            ],
+            "b": [
+              "rb"
+            ],
+            "count": [
+              "zero"
+            ]
+          },
+          "active": "sa"
+        },
+        {
+          "caption": "PNR-9 writes its own 1 minus 1. Two seats sold, count says 0.",
+          "at": {
+            "a": [
+              "sa"
+            ],
+            "b": [
+              "sb"
+            ],
+            "count": [
+              "zero"
+            ]
+          },
+          "active": "sb"
+        },
+        {
+          "caption": "Safe version. Both threads call `compareAndSet` expecting 1.",
+          "at": {
+            "a": [
+              "ca"
+            ],
+            "b": [
+              "cb"
+            ],
+            "count": [
+              "one"
+            ]
+          }
+        },
+        {
+          "caption": "Only one swap can see 1. It writes 0 and wins the seat.",
+          "at": {
+            "a": [
+              "sa"
+            ],
+            "b": [
+              "cb"
+            ],
+            "count": [
+              "zero"
+            ]
+          },
+          "active": "sa"
+        },
+        {
+          "caption": "The other swap fails, re-reads 0, and refuses. One seat, one sale.",
+          "at": {
+            "a": [
+              "sa"
+            ],
+            "b": [
+              "no"
+            ],
+            "count": [
+              "zero"
+            ]
+          },
+          "active": "no"
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "LastSeatRace.java",
+      "lang": "java",
+      "title": "Prove the race",
+      "run": "captured",
+      "caption": "A barrier forces both threads to read before either writes, so the race shows up on every run.",
+      "walk": [
+        {
+          "lines": [
+            7,
+            8
+          ],
+          "text": "Run the same race twice: read-then-write first, then compare-and-set."
+        },
+        {
+          "lines": [
+            13,
+            14,
+            15
+          ],
+          "text": "One seat left, a sale counter, and a barrier for two threads."
+        },
+        {
+          "lines": [
+            24,
+            25,
+            26,
+            27,
+            28,
+            29
+          ],
+          "text": "Unsafe: both read 1, wait for each other, then both write 0."
+        },
+        {
+          "lines": [
+            21,
+            22
+          ],
+          "text": "Safe: both threads call `reserve` at the same moment."
+        },
+        {
+          "lines": [
+            38,
+            39
+          ],
+          "text": "Join both threads before printing, so the output is stable."
+        },
+        {
+          "lines": [
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48
+          ],
+          "text": "The swap succeeds only if nobody changed the count since the read."
+        }
+      ]
+    },
+    {
+      "file": "EdgeCases.java",
+      "lang": "java",
+      "title": "Expiry, late pay, retries",
+      "run": "captured",
+      "caption": "Time is passed in and the ticket issuer fails once on purpose, so the story replays the same way.",
+      "walk": [
+        {
+          "lines": [
+            8,
+            9,
+            10,
+            11
+          ],
+          "text": "PNR-1 holds both seats; the sweeper at 09:16 gives them back."
+        },
+        {
+          "lines": [
+            12
+          ],
+          "text": "PNR-1's payment arrives after expiry: the money must be refunded."
+        },
+        {
+          "lines": [
+            13,
+            14
+          ],
+          "text": "PNR-2 pays in time, but the ticket issuer times out once."
+        },
+        {
+          "lines": [
+            15,
+            16,
+            17
+          ],
+          "text": "A retry issues the ticket; another retry and a repeated payment callback change nothing."
+        },
+        {
+          "lines": [
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63,
+            64,
+            65,
+            66
+          ],
+          "text": "Expiry marks the hold EXPIRED and adds its seats back to the count."
+        },
+        {
+          "lines": [
+            68,
+            69,
+            70,
+            71,
+            72,
+            73,
+            74,
+            75,
+            76,
+            77,
+            78,
+            79
+          ],
+          "text": "A payment is applied only to a live HELD booking; otherwise refund or ignore."
+        },
+        {
+          "lines": [
+            81,
+            82,
+            83,
+            84,
+            85,
+            86,
+            87,
+            88,
+            89,
+            90,
+            91,
+            92,
+            93,
+            94,
+            95
+          ],
+          "text": "Runs only from CONFIRMED; the issuer must still dedupe by PNR, as a timeout may have issued tickets."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Never `get` then `set` a seat count; use `compareAndSet` or one locked method.",
+    "Never charge again on a ticketing failure; the booking is already CONFIRMED.",
+    "Treat a second payment callback as a duplicate, not as a reason to refund."
+  ],
+  "quiz": {
+    "q": "What does LastSeatRace print on its first line?",
+    "options": [
+      "read-then-write: sold 1, count left 0",
+      "read-then-write: sold 2, count left 0",
+      "read-then-write: sold 2, count left -1",
+      "It changes from run to run"
+    ],
+    "answer": 1,
+    "why": "The barrier makes both threads read 1 before either writes. Each writes 1 minus 1, so the count ends at 0 while two seats were sold."
+  },
+  "takeaway": "Check and subtract in one atomic step; retry ticketing, never payment.",
+  "chat": {
+    "starters": [
+      "Why does the unsafe version end at 0 instead of -1?",
+      "How often should the hold-expiry sweeper run?",
+      "What if the ticket issuer keeps failing for an hour?"
+    ]
+  }
+}

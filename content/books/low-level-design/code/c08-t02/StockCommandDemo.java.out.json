@@ -1,0 +1,11 @@
+{
+  "stdout": "did  add 10 bolt\n    bolt = 10\ndid  remove 4 bolt\n    bolt = 6\nfailed remove 50 bolt: only 6\n    bolt = 6\nundo remove 4 bolt\n    bolt = 10\nredo remove 4 bolt\n    bolt = 6\nundo remove 4 bolt\n    bolt = 10\ndid  add 1 bolt\n    bolt = 11\nredo possible? false",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java StockCommandDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "ecc8eb8eafd8a495",
+  "at": "2026-10-12T11:32:27.930Z"
+}

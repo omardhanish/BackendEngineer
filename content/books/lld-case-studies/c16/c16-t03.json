@@ -1,0 +1,399 @@
+{
+  "title": "Token bucket and sliding windows",
+  "idea": "A rate limiter's core is per-key state plus one rule: a token bucket spends tokens that refill over time, while window algorithms count recent calls.",
+  "analogy": {
+    "text": "A water jug under a dripping tap. You pour a cup per request; the tap refills slowly, and the jug overflows past full.",
+    "breaks": "Our bucket refills only when someone checks it, not continuously."
+  },
+  "points": [
+    "Token bucket refills lazily: on each call, add tokens for the time elapsed.",
+    "Integer milli-tokens avoid floating-point drift in long-running buckets.",
+    "Fixed windows let a burst through on both sides of a window edge.",
+    "Sliding log is exact but stores one timestamp per allowed call."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "lanes",
+    "title": "Token bucket: capacity 3, one per second",
+    "scenario": {
+      "lanes": [
+        {
+          "id": "in",
+          "label": "Incoming calls",
+          "kind": "queue"
+        },
+        {
+          "id": "bucket",
+          "label": "Bucket for k1",
+          "kind": "area",
+          "hint": "max 3 tokens"
+        },
+        {
+          "id": "ok",
+          "label": "Allowed",
+          "kind": "area"
+        },
+        {
+          "id": "no",
+          "label": "Rejected",
+          "kind": "area"
+        }
+      ],
+      "tokens": {
+        "r1": {
+          "label": "call 1",
+          "tone": "io"
+        },
+        "r2": {
+          "label": "call 2",
+          "tone": "io"
+        },
+        "r3": {
+          "label": "call 3",
+          "tone": "io"
+        },
+        "r4": {
+          "label": "call 4",
+          "tone": "io"
+        },
+        "r5": {
+          "label": "next call",
+          "tone": "io"
+        },
+        "a": {
+          "label": "token",
+          "tone": "micro"
+        },
+        "b": {
+          "label": "token",
+          "tone": "micro"
+        },
+        "c": {
+          "label": "token",
+          "tone": "micro"
+        },
+        "half": {
+          "label": "1.5 tokens",
+          "tone": "timer"
+        },
+        "left": {
+          "label": "0.5 token",
+          "tone": "timer"
+        },
+        "x": {
+          "label": "token",
+          "tone": "micro"
+        },
+        "y": {
+          "label": "token",
+          "tone": "micro"
+        },
+        "z": {
+          "label": "token",
+          "tone": "micro"
+        }
+      },
+      "steps": [
+        {
+          "caption": "At t=0 a new key starts with a full bucket. Four calls arrive together.",
+          "at": {
+            "in": [
+              "r1",
+              "r2",
+              "r3",
+              "r4"
+            ],
+            "bucket": [
+              "a",
+              "b",
+              "c"
+            ]
+          }
+        },
+        {
+          "caption": "Call 1 spends one token and is allowed.",
+          "at": {
+            "in": [
+              "r2",
+              "r3",
+              "r4"
+            ],
+            "bucket": [
+              "b",
+              "c"
+            ],
+            "ok": [
+              "r1"
+            ]
+          },
+          "active": "r1"
+        },
+        {
+          "caption": "Calls 2 and 3 spend the last two tokens. Bursts up to capacity pass at once.",
+          "at": {
+            "in": [
+              "r4"
+            ],
+            "ok": [
+              "r1",
+              "r2",
+              "r3"
+            ]
+          },
+          "active": "r3"
+        },
+        {
+          "caption": "Call 4 finds the bucket empty. It is rejected with a wait until one token returns.",
+          "at": {
+            "ok": [
+              "r1",
+              "r2",
+              "r3"
+            ],
+            "no": [
+              "r4"
+            ]
+          },
+          "active": "r4"
+        },
+        {
+          "caption": "At t=1500 the next call arrives. Refill runs first: 1500 ms since t=0 adds 1.5 tokens.",
+          "at": {
+            "in": [
+              "r5"
+            ],
+            "bucket": [
+              "half"
+            ],
+            "ok": [
+              "r1",
+              "r2",
+              "r3"
+            ],
+            "no": [
+              "r4"
+            ]
+          },
+          "active": "half"
+        },
+        {
+          "caption": "The next call spends one token. Half a token stays for later.",
+          "at": {
+            "bucket": [
+              "left"
+            ],
+            "ok": [
+              "r1",
+              "r2",
+              "r3",
+              "r5"
+            ],
+            "no": [
+              "r4"
+            ]
+          },
+          "active": "r5"
+        },
+        {
+          "caption": "After a long idle gap, refill stops at capacity. The next burst is still capped at 3.",
+          "at": {
+            "bucket": [
+              "x",
+              "y",
+              "z"
+            ],
+            "ok": [
+              "r1",
+              "r2",
+              "r3",
+              "r5"
+            ],
+            "no": [
+              "r4"
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "TokenBucket.java",
+      "lang": "java",
+      "title": "Token bucket",
+      "run": "captured",
+      "caption": "A complete token bucket with lazy refill, integer math, and a retry-after hint, driven by a manual clock.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7,
+            8
+          ],
+          "text": "Capacity 3, one token per second, four calls at time zero."
+        },
+        {
+          "lines": [
+            9,
+            10,
+            11,
+            12,
+            13,
+            14
+          ],
+          "text": "Call again at 500 ms, at 1500 ms, and after a minute idle."
+        },
+        {
+          "lines": [
+            47,
+            48,
+            49
+          ],
+          "text": "Store milli-tokens as a long, so half a token is exactly 500."
+        },
+        {
+          "lines": [
+            53,
+            54,
+            55,
+            56,
+            57
+          ],
+          "text": "Each key owns a bucket: its tokens and the time of its last refill."
+        },
+        {
+          "lines": [
+            69,
+            70,
+            71,
+            72,
+            73
+          ],
+          "text": "Refill lazily: ms elapsed times tokens per second is exactly milli-tokens, capped at capacity."
+        },
+        {
+          "lines": [
+            74,
+            75,
+            76
+          ],
+          "text": "With a whole token available, spend it and report what is left."
+        },
+        {
+          "lines": [
+            78,
+            79,
+            80
+          ],
+          "text": "Otherwise compute how long until one whole token exists, rounded up."
+        }
+      ]
+    },
+    {
+      "file": "Windows.java",
+      "lang": "java",
+      "title": "Three window algorithms",
+      "run": "captured",
+      "caption": "Same limit, same traffic: four calls per 1000 ms around a window edge. Here `tryAcquire` returns a boolean only so the three algorithms can be counted side by side.",
+      "walk": [
+        {
+          "lines": [
+            9,
+            10,
+            11,
+            12,
+            13
+          ],
+          "text": "Three limiters, each allowing four calls per 1000 ms window."
+        },
+        {
+          "lines": [
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22
+          ],
+          "text": "Send bursts of four at 900, 1000 and 1950 ms, and count the allowed calls."
+        },
+        {
+          "lines": [
+            48,
+            49,
+            50,
+            51,
+            52,
+            53
+          ],
+          "text": "Fixed window: reset the count at each aligned start, then compare with the limit."
+        },
+        {
+          "lines": [
+            62,
+            63,
+            64,
+            65,
+            66
+          ],
+          "text": "Sliding log: drop timestamps older than one window from the front."
+        },
+        {
+          "lines": [
+            67,
+            68,
+            69
+          ],
+          "text": "If the log is still full, reject; otherwise record this call."
+        },
+        {
+          "lines": [
+            78,
+            79,
+            80,
+            81,
+            82,
+            83
+          ],
+          "text": "Sliding counter: on a new window, the old current count becomes previous."
+        },
+        {
+          "lines": [
+            84,
+            85,
+            86,
+            87
+          ],
+          "text": "Weight the previous count by its overlap with the sliding window, in integers."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not refill with a background thread per key; refill lazily on each call.",
+    "Avoid double for tokens; drift adds up. Use integer milli-tokens instead.",
+    "Fixed windows can allow twice the limit across an edge; say so in interviews."
+  ],
+  "quiz": {
+    "q": "What does the first line of Windows print?",
+    "options": [
+      "fixed   t=900:4 t=1000:4 t=1950:0",
+      "fixed   t=900:4 t=1000:0 t=1950:4",
+      "fixed   t=900:4 t=1000:4 t=1950:4",
+      "fixed   t=900:4 t=1000:2 t=1950:2"
+    ],
+    "answer": 0,
+    "why": "900 and 1000 fall in different aligned windows, so both bursts pass: eight calls in 100 ms. The 1950 burst shares the full second window."
+  },
+  "takeaway": "Token bucket allows bursts up to capacity; sliding windows smooth out window edges.",
+  "chat": {
+    "starters": [
+      "When would I pick sliding log over token bucket?",
+      "How much error does the sliding counter approximation add?",
+      "How do I charge more tokens for expensive endpoints?"
+    ]
+  }
+}

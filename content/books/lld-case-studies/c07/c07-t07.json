@@ -1,0 +1,203 @@
+{
+  "title": "Cart and checkout API",
+  "idea": "The cart API exposes the cart, checkout and orders as REST resources; checkout runs in one transaction and accepts an Idempotency-Key so retries are safe.",
+  "analogy": {
+    "text": "A pharmacy counter. The assistant checks the prescription is readable, the pharmacist decides what can be dispensed, and the stockroom only fetches boxes.",
+    "breaks": "A pharmacist may phone a doctor; the service never calls out mid-transaction."
+  },
+  "points": [
+    "Repeating a `PUT` or `DELETE` on a cart item leaves the same cart state.",
+    "`POST /checkout` sends the total the shopper saw; a mismatch returns 409.",
+    "A repeated Idempotency-Key returns the stored order with 200, not a new one.",
+    "One error middleware maps validation, domain and duplicate errors to status codes."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "Endpoints",
+    "head": [
+      "Method",
+      "Path",
+      "Request",
+      "Success",
+      "Errors"
+    ],
+    "rows": [
+      [
+        "GET",
+        "/cart",
+        "none",
+        "200 items, totalMinor",
+        "none"
+      ],
+      [
+        "PUT",
+        "/cart/items/:sku",
+        "qty 1 to 10",
+        "200 updated cart",
+        "400 qty, 404 product"
+      ],
+      [
+        "DELETE",
+        "/cart/items/:sku",
+        "none",
+        "204 removed",
+        "404 item"
+      ],
+      [
+        "POST",
+        "/checkout",
+        "expectedTotalMinor + Idempotency-Key",
+        "201 order; 200 on replay",
+        "400, 409 stock, price, empty cart or duplicate key"
+      ],
+      [
+        "POST",
+        "/orders/:id/pay",
+        "payment token + Idempotency-Key",
+        "200 PAID",
+        "409 window closed"
+      ],
+      [
+        "POST",
+        "/orders/:id/cancel",
+        "none",
+        "200 CANCELLED",
+        "404, 409 shipped"
+      ]
+    ],
+    "highlight": {
+      "row": 3
+    },
+    "caption": "The snippet runs POST /checkout, the critical route. The cart and order routes use the same layers."
+  },
+  "code": [
+    {
+      "file": "api.mjs",
+      "lang": "js",
+      "title": "Layered checkout route",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "Repository, service, controller and error mapping in one file, on a real PostgreSQL. The user id comes from a header here; real apps read it from auth. This trimmed version skips the order_item copy; page 6 shows it.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18
+          ],
+          "text": "Trimmed schema and seed: U-7's cart holds two mugs and a T-shirt; U-9 wants the same T-shirt."
+        },
+        {
+          "lines": [
+            23,
+            24,
+            25,
+            26,
+            27,
+            28
+          ],
+          "text": "`tx` gives each service call one transaction and rolls back on any throw."
+        },
+        {
+          "lines": [
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39
+          ],
+          "text": "Repository: plain SQL, including the conditional UPDATE that reserves stock."
+        },
+        {
+          "lines": [
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50
+          ],
+          "text": "Replay a known key first; then refuse an empty cart or a changed total."
+        },
+        {
+          "lines": [
+            51,
+            52,
+            53,
+            54,
+            55,
+            56
+          ],
+          "text": "Reserve each line, create the order PENDING_PAYMENT, and empty the cart."
+        },
+        {
+          "lines": [
+            62,
+            63,
+            64,
+            65,
+            66,
+            67,
+            68
+          ],
+          "text": "The controller demands the key, parses with `zod`, and picks 201 or 200."
+        },
+        {
+          "lines": [
+            69,
+            70,
+            71,
+            72,
+            73,
+            74
+          ],
+          "text": "Error middleware maps each error type to a status; Express 5 forwards async throws here."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Never call the payment provider inside the checkout transaction; row locks stay held while you wait.",
+    "Scope Idempotency-Key lookups to the user, or one shopper could replay another's order.",
+    "Do not return 500 for empty stock; 409 tells the client to refresh the cart."
+  ],
+  "quiz": {
+    "q": "What status does U-7's last POST /checkout print?",
+    "options": [
+      "201",
+      "409",
+      "200",
+      "400"
+    ],
+    "answer": 2,
+    "why": "The previous k-1 request created OR-1. The last one finds it by user and key, returns it unchanged, and the controller marks a replay with 200."
+  },
+  "takeaway": "Validate in the controller, decide in one transaction, replay safely by Idempotency-Key.",
+  "chat": {
+    "starters": [
+      "Why send the expected total with the checkout request?",
+      "How does the pay endpoint avoid charging twice on a retry?",
+      "Should guest carts use a cookie id instead of a user id?"
+    ]
+  }
+}

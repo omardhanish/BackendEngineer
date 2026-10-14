@@ -1,0 +1,196 @@
+{
+  "title": "Replacing conditionals, extracting classes",
+  "idea": "Replace Conditional with Polymorphism turns each branch of a type check into its own class; Extract Class moves fields that change together into a new class.",
+  "points": [
+    "Smells that call for it: a type-code string, fields only one branch uses.",
+    "Each branch becomes a class behind one interface; the caller just delegates.",
+    "A sealed interface lists every variant; a new one needs an edit to `permits`.",
+    "Extract Class moves a data clump and its rules out together, validation included."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "One payslip after the refactoring",
+    "actors": [
+      {
+        "id": "payroll",
+        "label": "PayrollAfter.main"
+      },
+      {
+        "id": "emp",
+        "label": "Employee"
+      },
+      {
+        "id": "scheme",
+        "label": "Hourly (PayScheme)"
+      },
+      {
+        "id": "bank",
+        "label": "BankAccount"
+      }
+    ],
+    "messages": [
+      {
+        "from": "payroll",
+        "to": "emp",
+        "label": "payslip()",
+        "note": "The caller asks the employee. Nobody checks a kind string any more."
+      },
+      {
+        "from": "emp",
+        "to": "scheme",
+        "label": "monthlyPay()",
+        "note": "Java dispatches to `Hourly.monthlyPay` because Raj's scheme is an `Hourly` record."
+      },
+      {
+        "from": "scheme",
+        "to": "emp",
+        "label": "pay",
+        "dashed": true,
+        "note": "Overtime lives only inside `Hourly`, so salaried staff can never receive it."
+      },
+      {
+        "from": "emp",
+        "to": "bank",
+        "label": "masked()",
+        "note": "Bank formatting moved out with the bank fields into the extracted `BankAccount`."
+      },
+      {
+        "from": "bank",
+        "to": "emp",
+        "label": "masked text",
+        "dashed": true,
+        "note": "`BankAccount` validated the IBAN when it was built, so masking cannot fail here."
+      },
+      {
+        "from": "emp",
+        "to": "payroll",
+        "label": "payslip line",
+        "dashed": true,
+        "note": "`Employee` now only composes its parts. Each rule has exactly one home."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "PayrollBefore.java",
+      "lang": "java",
+      "title": "The problem",
+      "run": "captured",
+      "caption": "A type-code `if` chain plus bank fields in one class. A salaried employee gets paid overtime.",
+      "walk": [
+        {
+          "lines": [
+            14,
+            16
+          ],
+          "text": "Fields for every kind of worker live side by side. Most are meaningless for any one employee."
+        },
+        {
+          "lines": [
+            27,
+            33
+          ],
+          "text": "The type check: a `String` kind decides the pay rule. A typo falls through to zero."
+        },
+        {
+          "lines": [
+            34,
+            37
+          ],
+          "text": "Overtime sits after the chain, so it runs for every kind. That is the bug."
+        },
+        {
+          "lines": [
+            41,
+            45
+          ],
+          "text": "Bank formatting is a second job in the same class: the data clump to extract."
+        },
+        {
+          "lines": [
+            3,
+            8
+          ],
+          "text": "Look at the output: Lin is salaried but receives overtime pay on top."
+        }
+      ]
+    },
+    {
+      "file": "PayrollAfter.java",
+      "lang": "java",
+      "title": "The fix",
+      "run": "captured",
+      "caption": "One record per pay rule behind a sealed interface, and bank details in their own class.",
+      "walk": [
+        {
+          "lines": [
+            17,
+            20
+          ],
+          "text": "The sealed interface lists the permitted variants. A new kind must be added here on purpose."
+        },
+        {
+          "lines": [
+            22,
+            24
+          ],
+          "text": "Salaried pay has no hours at all, so overtime cannot leak into it."
+        },
+        {
+          "lines": [
+            26,
+            34
+          ],
+          "text": "Overtime now lives where it belongs, with a named constant instead of a bare 160."
+        },
+        {
+          "lines": [
+            40,
+            52
+          ],
+          "text": "Extract Class: the IBAN, the bank name and their rules now travel together and validate early."
+        },
+        {
+          "lines": [
+            54,
+            58
+          ],
+          "text": "`Employee` delegates: no type check, no bank logic, just composition."
+        },
+        {
+          "lines": [
+            6,
+            13
+          ],
+          "text": "Building an employee now names the scheme. The wrong field cannot be filled by accident."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Logic after an `if` chain applies to every type; check whether it really should.",
+    "Extracting a class but leaving its validation behind; the new class then accepts bad data.",
+    "Building a class hierarchy for a two-way boolean; polymorphism should earn its cost."
+  ],
+  "quiz": {
+    "q": "Lin is salaried: `monthly` 5000, `hourlyRate` 30, `hours` 180. What does this print?",
+    "code": "long pay = 0;\nif (kind.equals(\"SALARIED\")) {\n    pay = monthly;\n} else if (kind.equals(\"HOURLY\")) {\n    pay = hourlyRate * Math.min(hours, 160);\n}\nif (hours > 160) {\n    pay += (hours - 160) * hourlyRate * 3 / 2;\n}\nSystem.out.println(pay);",
+    "lang": "java",
+    "options": [
+      "5000",
+      "4800",
+      "5900",
+      "5450"
+    ],
+    "answer": 2,
+    "why": "The `SALARIED` branch sets 5000, then the overtime `if` runs for everyone: 20 hours at 45 adds 900."
+  },
+  "takeaway": "Give each variant its own class, and each data clump its own home.",
+  "chat": {
+    "starters": [
+      "When is a switch on an enum better than polymorphism?",
+      "How do I extract a class without breaking its callers?",
+      "Could Strategy replace the sealed interface here?"
+    ]
+  }
+}

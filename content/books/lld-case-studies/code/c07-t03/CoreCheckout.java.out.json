@@ -1,0 +1,11 @@
+{
+  "stdout": "OR-1 subtotal 229600 discount 22960 total 206640\nU-9: OUT_OF_STOCK SKU-TEE\nU-8: PAYMENT_DECLINED\nmugs available 2",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java CoreCheckout.java",
+  "tool": "Java 17.0.17",
+  "hash": "60f2894035f42934",
+  "at": "2026-10-14T08:42:18.238Z"
+}

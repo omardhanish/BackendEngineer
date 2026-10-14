@@ -1,0 +1,74 @@
+{
+  "title": "Flight booking requirements",
+  "idea": "Scoping a flight booking system means naming its actors and use cases, separating fare inventory from seat choice, and saying what v1 leaves out.",
+  "points": [
+    "Travellers search flights, hold a fare, add passengers, pay, and get tickets.",
+    "A fare class sells a count of seats; seat numbers are chosen separately.",
+    "Core rule: fare counts in a cabin never add up past its seats.",
+    "Assume heavy search traffic and few bookings; state these numbers as assumptions."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Who does what in v1",
+    "nodes": [
+      { "id": "trav", "label": "Traveller", "sub": "signed-in user" },
+      { "id": "search", "label": "Search flights", "sub": "from, to, date" },
+      { "id": "hold", "label": "Hold a fare", "sub": "seats counted, timed" },
+      { "id": "pax", "label": "Add passengers", "sub": "name, document" },
+      { "id": "pay", "label": "Pay and ticket", "sub": "one ticket each" },
+      { "id": "seat", "label": "Choose seats", "sub": "optional, later" },
+      { "id": "sys", "label": "System timer", "sub": "expires holds" },
+      { "id": "out", "label": "Out of scope", "sub": "multi-city, miles, overbooking" }
+    ],
+    "edges": [
+      { "from": "trav", "to": "search", "caption": "The traveller searches by origin, destination and date. We assume this is the busiest use case." },
+      { "from": "search", "to": "hold", "caption": "Picking a flight and fare class holds that many seats in the fare's count." },
+      { "from": "hold", "to": "pax", "caption": "The traveller enters each passenger's name and travel document while the hold lasts." },
+      { "from": "pax", "to": "pay", "caption": "Payment confirms the booking, and the system issues one ticket per passenger." },
+      { "from": "pay", "to": "seat", "label": "then", "caption": "Seat numbers are picked after the fare is secured. A booking is valid without them." },
+      { "from": "sys", "to": "hold", "label": "expires", "dashed": true, "caption": "The system releases holds that pass their time limit, returning seats to the fare class." },
+      { "from": "trav", "to": "out", "dashed": true, "caption": "Multi-city trips, loyalty miles and deliberate overbooking wait for later. Say so early." }
+    ]
+  },
+  "code": [
+    {
+      "file": "FlightScope.java",
+      "lang": "java",
+      "title": "Use cases per actor",
+      "run": "captured",
+      "caption": "The scope as code: each use case belongs to one actor, and v1 is an explicit set.",
+      "walk": [
+        { "lines": [5, 6, 7, 8], "text": "v1 is a named set; anything missing from it is deferred by default." },
+        { "lines": [9, 10, 11, 12, 13, 14], "text": "Group use cases under their actor and tag each IN or OUT." },
+        { "lines": [17, 18], "text": "Print the size of the cut so the scope discussion has a number." },
+        { "lines": [22], "text": "Three actors: the traveller, airline operations, and the system itself." },
+        { "lines": [25, 26, 27], "text": "Six traveller use cases form the booking path, seat choice included." },
+        { "lines": [28, 29], "text": "Multi-city, miles, scheduling and overbooking are listed so the cut is visible." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not merge fare inventory and seat numbers; travellers often book before choosing seats.",
+    "State traffic and hold length as assumptions, not as facts about real airlines.",
+    "Leaving the system actor out hides hold expiry until late in the design."
+  ],
+  "quiz": {
+    "q": "An interviewer asks for overbooking in v1. What is the best scoping reply?",
+    "options": [
+      "Add it now; every airline needs it on day one",
+      "Drop the capacity rule so overbooking happens on its own",
+      "Allow it only for business class",
+      "Defer it; keep the capacity rule strict in v1"
+    ],
+    "answer": 3,
+    "why": "Overbooking is a deliberate business policy on top of a strict capacity rule. Build the strict rule first; a later policy can raise the limit."
+  },
+  "takeaway": "Agree on actors, use cases and the capacity rule before drawing classes.",
+  "chat": {
+    "starters": [
+      "Why do airlines sell fare classes instead of specific seats?",
+      "How long should a fare hold last in this design?",
+      "How would overbooking change the requirements later?"
+    ]
+  }
+}

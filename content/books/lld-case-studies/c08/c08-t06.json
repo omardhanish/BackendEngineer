@@ -1,0 +1,355 @@
+{
+  "title": "Booking schema in PostgreSQL",
+  "idea": "The schema maps the Java model to tables so PostgreSQL enforces booking rules: one `show_seat` row per seat per show, locked briefly while a hold is written.",
+  "analogy": {
+    "text": "A library catalogue with one card per copy. A clerk pulls a card briefly to stamp it \"on loan\", then files it back.",
+    "breaks": "The row lock lasts milliseconds; the HELD status lasts ten minutes."
+  },
+  "points": [
+    "`show_seat` has one row per seat per show; its primary key forbids duplicates.",
+    "`CHECK` constraints keep status values legal and require `hold_id` when HELD.",
+    "A partial index on `held_until` serves the sweeper that finds expired holds.",
+    "Holding locks rows `FOR UPDATE` in seat order, then checks and updates them."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "Two transactions, one seat A2",
+    "scenario": {
+      "tiers": [
+        [
+          "ta",
+          "tb"
+        ],
+        [
+          "db"
+        ]
+      ],
+      "nodes": {
+        "ta": {
+          "label": "Tx H-A",
+          "sub": "A1, A2",
+          "kind": "client"
+        },
+        "tb": {
+          "label": "Tx H-B",
+          "sub": "A2, A3",
+          "kind": "client"
+        },
+        "db": {
+          "label": "show_seat",
+          "sub": "PostgreSQL",
+          "kind": "db"
+        }
+      },
+      "links": [
+        [
+          "ta",
+          "db"
+        ],
+        [
+          "tb",
+          "db"
+        ]
+      ],
+      "steps": [
+        {
+          "caption": "Two customers try to hold overlapping seats at the same moment. A2 is in both requests.",
+          "focus": [
+            "ta",
+            "tb"
+          ]
+        },
+        {
+          "caption": "H-A runs `SELECT ... FOR UPDATE` and locks A1 then A2, in seat order.",
+          "send": [
+            {
+              "from": "ta",
+              "to": "db",
+              "label": "lock A1, A2",
+              "tone": "req"
+            }
+          ],
+          "state": {
+            "ta": "busy"
+          },
+          "badge": {
+            "db": "A1 A2 locked"
+          }
+        },
+        {
+          "caption": "H-B asks for A2 and A3 in the same order. It must wait at A2.",
+          "send": [
+            {
+              "from": "tb",
+              "to": "db",
+              "label": "lock A2, A3",
+              "tone": "req"
+            }
+          ],
+          "state": {
+            "tb": "stale"
+          }
+        },
+        {
+          "caption": "H-A sets its seats to HELD and commits. Its locks are released.",
+          "send": [
+            {
+              "from": "db",
+              "to": "ta",
+              "label": "COMMIT",
+              "tone": "ok"
+            }
+          ],
+          "state": {
+            "ta": "ok"
+          },
+          "badge": {
+            "db": "A1 A2 HELD"
+          }
+        },
+        {
+          "caption": "H-B wakes and re-checks A2. It is now HELD, so only A3 matches.",
+          "send": [
+            {
+              "from": "db",
+              "to": "tb",
+              "label": "only A3",
+              "tone": "warn"
+            }
+          ],
+          "focus": [
+            "tb"
+          ]
+        },
+        {
+          "caption": "Fewer rows than seats asked means refuse. H-B rolls back and holds nothing.",
+          "send": [
+            {
+              "from": "tb",
+              "to": "db",
+              "label": "ROLLBACK",
+              "tone": "err"
+            }
+          ],
+          "state": {
+            "tb": "down"
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "schema.mjs",
+      "lang": "js",
+      "title": "Tables and constraints",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "The schema on a real PostgreSQL 18, then four bad writes that the database refuses by itself.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12
+          ],
+          "text": "Fixed layout: movie, screen and seat. Enums are TEXT with a CHECK."
+        },
+        {
+          "lines": [
+            13,
+            14,
+            15,
+            16,
+            17
+          ],
+          "text": "A show joins movie and screen. The index serves listing shows per screen by time."
+        },
+        {
+          "lines": [
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26
+          ],
+          "text": "`show_seat`: price in minor units, status, and a CHECK requiring `hold_id` when HELD."
+        },
+        {
+          "lines": [
+            27,
+            28
+          ],
+          "text": "Partial index: only HELD rows, ordered by `held_until`, for the expiry sweeper."
+        },
+        {
+          "lines": [
+            29,
+            30,
+            31,
+            32,
+            33,
+            34
+          ],
+          "text": "`booking` stores money as BIGINT and makes the Idempotency-Key unique."
+        },
+        {
+          "lines": [
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47
+          ],
+          "text": "Seed one show and copy every seat of its screen into `show_seat`."
+        },
+        {
+          "lines": [
+            62,
+            63,
+            64,
+            65,
+            66,
+            67,
+            68,
+            69,
+            70,
+            71
+          ],
+          "text": "Each bad write prints the Postgres error code and the constraint that stopped it."
+        }
+      ]
+    },
+    {
+      "file": "hold.mjs",
+      "lang": "js",
+      "title": "The hold transaction",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "Two parallel holds race for A2; then a hold expires and the seat is taken over. It uses a trimmed show_seat table so the race stays short.",
+      "walk": [
+        {
+          "lines": [
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20
+          ],
+          "text": "Lock the free or expired rows in seat order with `FOR UPDATE`."
+        },
+        {
+          "lines": [
+            21,
+            22,
+            23,
+            24
+          ],
+          "text": "Fewer rows than seats asked means a seat is taken: roll back."
+        },
+        {
+          "lines": [
+            25,
+            26,
+            27,
+            28,
+            29
+          ],
+          "text": "Otherwise mark all seats HELD with a ten-minute deadline and commit."
+        },
+        {
+          "lines": [
+            35,
+            36,
+            37,
+            38,
+            39,
+            40
+          ],
+          "text": "Confirm books only rows of this hold that are still inside the deadline."
+        },
+        {
+          "lines": [
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49
+          ],
+          "text": "Two clients race in parallel; print how many won, never who."
+        },
+        {
+          "lines": [
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58
+          ],
+          "text": "A4: held, refused at 18:05, taken over at 18:11, late confirm fails."
+        },
+        {
+          "lines": [
+            60,
+            61,
+            62
+          ],
+          "text": "Final count of seats per status proves the rules held."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Without `ORDER BY seat_no` before `FOR UPDATE`, overlapping holds can deadlock.",
+    "Pass `now` as a parameter in tests; `now()` makes expiry tests flaky.",
+    "Never trust the application alone; keep `UNIQUE` and `CHECK` as the last guard."
+  ],
+  "quiz": {
+    "q": "What does hold.mjs print for the parallel race?",
+    "options": [
+      "holds that succeeded: 2",
+      "holds that succeeded: 1",
+      "holds that succeeded: 0",
+      "A deadlock error from PostgreSQL"
+    ],
+    "answer": 1,
+    "why": "The second transaction waits on A2's row lock, re-checks it after the first commits, finds it HELD, and rolls back."
+  },
+  "takeaway": "Let PostgreSQL row locks and constraints decide who gets the seat.",
+  "chat": {
+    "starters": [
+      "Why one show_seat row per seat instead of a booked_seats table?",
+      "When would optimistic locking with a version column fit better?",
+      "How should a background job release expired holds?"
+    ]
+  }
+}

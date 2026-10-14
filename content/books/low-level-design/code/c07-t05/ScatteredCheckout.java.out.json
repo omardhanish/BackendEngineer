@@ -1,0 +1,11 @@
+{
+  "stdout": "web: parcel for lamp\nmobile: payment declined\nlamps left: 1 (expected 2)",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ScatteredCheckout.java",
+  "tool": "Java 17.0.17",
+  "hash": "490a443749c766b1",
+  "at": "2026-10-12T11:23:38.186Z"
+}

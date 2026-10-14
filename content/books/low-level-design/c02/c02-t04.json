@@ -1,121 +1,235 @@
 {
-  "title": "Adapter and Bridge",
-  "idea": "Adapter wraps a class with the wrong interface to fit the one your code expects. Bridge splits a class into two hierarchies, linked by has-a, that vary independently.",
+  "title": "Overloading, overriding and dispatch",
+  "idea": "Polymorphism lets one call behave differently per object: the compiler picks an overload from static types, then the JVM picks the override from the runtime class.",
+  "analogy": {
+    "text": "Overloading is a post room sorting parcels by the label on the box, not what is inside. Overriding is phoning a desk: whoever sits there now answers.",
+    "breaks": "An object's class never changes after it is created."
+  },
   "points": [
-    "An adapter implements your interface and translates each call for the wrapped object.",
-    "Adapter fixes a mismatch after the fact, often around code you cannot edit.",
-    "Bridge is planned up front: the abstraction holds an implementor in a field.",
-    "With Bridge, three alerts and three channels need six classes, not nine."
+    "Overloads share a name but differ in parameters; the compiler chooses one.",
+    "Overrides share the exact signature; the JVM chooses by the object's class.",
+    "Static methods and fields never dispatch; they bind to the declared type.",
+    "Replace `instanceof` chains with overrides so new types need no caller edits."
   ],
   "hero": {
-    "type": "flow",
-    "title": "Wrap to fit; split to grow",
-    "nodes": [
-      { "id": "co", "label": "Checkout code", "sub": "client" },
-      { "id": "pg", "label": "PaymentGateway", "sub": "the interface you own" },
-      { "id": "ad", "label": "BankAdapter", "sub": "translates calls" },
-      { "id": "lb", "label": "LegacyBankClient", "sub": "cannot be edited" },
-      { "id": "ur", "label": "Notice, Urgent", "sub": "refined alerts" },
-      { "id": "al", "label": "Alert", "sub": "abstraction" },
-      { "id": "ch", "label": "Channel", "sub": "implementor" },
-      { "id": "em", "label": "Email, SMS", "sub": "concrete channels" }
-    ],
-    "edges": [
-      { "from": "co", "to": "pg", "label": "pay(id, 12.5)" },
-      { "from": "ad", "to": "pg", "label": "implements", "dashed": true },
-      { "from": "ad", "to": "lb", "label": "submit(id, 1250, GBP)" },
-      { "from": "ur", "to": "al", "label": "extends", "dashed": true },
-      { "from": "al", "to": "ch", "label": "has-a (bridge)" },
-      { "from": "em", "to": "ch", "label": "implements", "dashed": true }
-    ],
-    "steps": [
-      {
-        "caption": "Adapter: checkout code calls `pay` on the `PaymentGateway` interface it owns.",
-        "active": ["co", "pg"],
-        "edges": [0]
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "Two decisions behind one call",
+    "scenario": {
+      "token": {
+        "label": "p.fee(1000)",
+        "tone": "req"
       },
-      {
-        "caption": "`BankAdapter` implements that interface, so checkout never sees the vendor class.",
-        "active": ["pg", "ad"],
-        "edges": [1]
-      },
-      {
-        "caption": "It renames the call, turns pounds into pence and maps the status code back.",
-        "active": ["ad", "lb"],
-        "edges": [2]
-      },
-      {
-        "caption": "Bridge: one hierarchy says what an alert is. `Notice` and `Urgent` extend `Alert`.",
-        "active": ["ur", "al"],
-        "edges": [3]
-      },
-      {
-        "caption": "`Alert` holds a `Channel` in a field. That has-a link is the bridge.",
-        "active": ["al", "ch"],
-        "edges": [4]
-      },
-      {
-        "caption": "Channels grow on their own side. A new channel works with every alert at once.",
-        "active": ["ch", "em", "al"],
-        "edges": [4, 5]
-      }
-    ]
+      "stages": [
+        {
+          "id": "javac",
+          "label": "Compiler",
+          "sub": "static types"
+        },
+        {
+          "id": "sig",
+          "label": "Signature",
+          "sub": "fixed in bytecode"
+        },
+        {
+          "id": "jvm",
+          "label": "JVM",
+          "sub": "runtime class"
+        },
+        {
+          "id": "lookup",
+          "label": "Method lookup",
+          "sub": "class, then parents"
+        },
+        {
+          "id": "run",
+          "label": "Body runs",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "`p` is declared as `Payment`. The compiler looks only at methods `Payment` declares or inherits.",
+          "at": "javac",
+          "state": {
+            "javac": "active"
+          }
+        },
+        {
+          "caption": "It picks `fee(long)` and writes that signature into the bytecode. Overloads are settled here, for good.",
+          "at": "sig",
+          "state": {
+            "javac": "done",
+            "sig": "active"
+          }
+        },
+        {
+          "caption": "At run time the JVM reads the object's real class: `CardPayment`, not `Payment`.",
+          "at": "jvm",
+          "state": {
+            "sig": "done",
+            "jvm": "active"
+          }
+        },
+        {
+          "caption": "It searches `CardPayment` for `fee(long)` first, then walks up to parents if missing.",
+          "at": "lookup",
+          "state": {
+            "jvm": "done",
+            "lookup": "active"
+          }
+        },
+        {
+          "caption": "The override in `CardPayment` runs. Same call, different body: that is dynamic dispatch.",
+          "at": "run",
+          "state": {
+            "lookup": "done",
+            "run": "done"
+          },
+          "token": {
+            "label": "CardPayment.fee",
+            "tone": "ok"
+          }
+        },
+        {
+          "caption": "`auditor.log(p)`: the overload is fixed from the argument's static type, `Payment`. The JVM dispatches on `auditor` only, never on `p`.",
+          "at": "sig",
+          "token": {
+            "label": "log(Payment)",
+            "tone": "ok"
+          },
+          "state": {
+            "javac": "done",
+            "sig": "done",
+            "jvm": "done",
+            "lookup": "done",
+            "run": "done"
+          }
+        }
+      ]
+    }
   },
   "code": [
     {
-      "file": "AdapterDemo.java",
+      "file": "DispatchRules.java",
       "lang": "java",
-      "title": "Adapter",
+      "title": "Which method runs?",
       "run": "captured",
-      "caption": "Checkout speaks `PaymentGateway`. The adapter turns that into the vendor's calls and codes. Real money uses `BigDecimal` or minor units; `double` keeps it short.",
+      "caption": "Five lookups on a `CardPayment`: only the overridden instance method follows the runtime class.",
       "walk": [
-        { "lines": [10, 12], "text": "The target: the interface your code is written against." },
-        { "lines": [14, 22], "text": "The adaptee: other method names, amounts in pence, numeric result codes." },
-        { "lines": [24, 31], "text": "The adapter wraps the vendor object it receives through its constructor." },
-        { "lines": [35, 36], "text": "It converts units and renames the call." },
-        { "lines": [37, 38], "text": "It maps the vendor's status code to your own `PAID` or `DECLINED` result." },
-        { "lines": [3, 6], "text": "`main` sees only `PaymentGateway`; swapping vendors means a new adapter." }
+        {
+          "lines": [
+            3,
+            3
+          ],
+          "text": "Static type `Payment`, runtime class `CardPayment`. Every rule below hinges on this gap."
+        },
+        {
+          "lines": [
+            6,
+            6
+          ],
+          "text": "`fee` is overridden, so the JVM runs the `CardPayment` body."
+        },
+        {
+          "lines": [
+            26,
+            30
+          ],
+          "text": "These two `log` methods are overloads: same name, different parameter types."
+        },
+        {
+          "lines": [
+            7,
+            8
+          ],
+          "text": "The compiler picks the overload from the declared type, ignoring the object."
+        },
+        {
+          "lines": [
+            9,
+            9
+          ],
+          "text": "`p.kind()` is static: hidden, not overridden, so the declared type `Payment` decides."
+        },
+        {
+          "lines": [
+            10,
+            10
+          ],
+          "text": "Fields are hidden too. Reading `p.name` uses the `Payment` field."
+        }
       ]
     },
     {
-      "file": "BridgeDemo.java",
+      "file": "FareDemo.java",
       "lang": "java",
-      "title": "Bridge",
+      "title": "Dispatch as a design tool",
       "run": "captured",
-      "caption": "Two alert kinds times two channels, with no `UrgentSmsAlert` class anywhere.",
+      "caption": "Each ride computes its own fare, so callers never branch on type.",
       "walk": [
-        { "lines": [13, 15], "text": "The implementor interface: how a message physically goes out." },
-        { "lines": [17, 23], "text": "Two concrete channels. They know nothing about alert kinds." },
-        { "lines": [25, 31], "text": "The abstraction keeps a `Channel` in a `final` field: the bridge." },
-        { "lines": [33, 43], "text": "Refined alerts decide the wording, then delegate delivery to the channel." },
-        { "lines": [5, 9], "text": "Any alert pairs with any channel at run time." }
+        {
+          "lines": [
+            21,
+            29
+          ],
+          "text": "The base validates shared state once and declares the abstract `fareCents`."
+        },
+        {
+          "lines": [
+            31,
+            39
+          ],
+          "text": "Each subclass overrides one method with its own pricing rule."
+        },
+        {
+          "lines": [
+            14,
+            18
+          ],
+          "text": "`totalFare` has no `instanceof` or `switch`. Dispatch picks the rule per object."
+        },
+        {
+          "lines": [
+            41,
+            50
+          ],
+          "text": "A new ride type is a new class. No caller changes: the Open/Closed Principle (OCP)."
+        },
+        {
+          "lines": [
+            46,
+            46
+          ],
+          "text": "The new class still validates its own extra field."
+        }
       ]
     }
   ],
   "pitfalls": [
-    "Keep adapters thin: translate calls and data, and put business rules elsewhere.",
-    "Map vendor errors to your own results or exceptions; never leak vendor codes upward.",
-    "Skip Bridge when only one dimension varies; plain composition or Strategy is enough."
+    "Writing `equals(Money)` instead of `equals(Object)` overloads it; collections then ignore it.",
+    "Omitting `@Override`; a typo in the signature quietly becomes a new overload.",
+    "Expecting an overload to follow the runtime type; it follows the declared type."
   ],
   "quiz": {
-    "q": "What is the first line `AdapterDemo` prints?",
+    "q": "`Point` declares `equals(Point)`, not `equals(Object)`. What does this print?",
+    "code": "class Point {\n    final int x;\n    Point(int x) { this.x = x; }\n    public boolean equals(Point o) { return o.x == x; }\n}\n// in main:\nObject a = new Point(1);\nPoint b = new Point(1);\nSystem.out.println(b.equals(new Point(1)) + \" \" + a.equals(b));",
+    "lang": "java",
     "options": [
-      "PAID A-17",
-      "bank: 12.5 GBP for A-17",
-      "bank: 1250.0 GBP for A-17",
-      "bank: 1250 GBP for A-17"
+      "true true",
+      "true false",
+      "false false",
+      "false true"
     ],
-    "answer": 3,
-    "why": "The vendor prints before `pay` returns. `Math.round` on a `double` returns a `long`, so 12.5 becomes 1250 with no decimal point.",
-    "code": "long minor = Math.round(amount * 100);   // amount = 12.5\nint code = bank.submit(orderId, minor, currency);\n// submit prints: \"bank: \" + minorUnits + \" \" + currency\n//                 + \" for \" + reference",
-    "lang": "java"
+    "answer": 1,
+    "why": "With static type `Point`, the compiler picks `equals(Point)`. With static type `Object`, it picks `equals(Object)`, never overridden, so identity decides."
   },
-  "takeaway": "Adapter makes an existing class fit; Bridge keeps two dimensions apart.",
+  "takeaway": "Compiler picks the signature; runtime class picks the body.",
   "chat": {
     "starters": [
-      "How is Adapter different from Facade and Decorator?",
-      "Is Bridge just Strategy with another name?",
-      "Should an adapter use inheritance or composition in Java?"
+      "How does the JVM find the override quickly at run time?",
+      "Can I make an overload pick by runtime type, like double dispatch?",
+      "Why can private and static methods not be overridden?"
     ]
   }
 }

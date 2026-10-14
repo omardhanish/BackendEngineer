@@ -1,0 +1,11 @@
+{
+  "stdout": "METHOD_SELECTED CHOOSING          CARD -\nPAY_CLICKED     SUBMITTING        CARD pk-1\nPAY_CLICKED     SUBMITTING        CARD pk-1\nRESPONSE        CHOOSING          CARD - Payment declined. Try another method.\nMETHOD_SELECTED CHOOSING          UPI -\nPAY_CLICKED     SUBMITTING        UPI pk-3\nNETWORK_ERROR   RETRY             UPI pk-3 Connection lost. Retry.\nPAY_CLICKED     SUBMITTING        UPI pk-3\nRESPONSE        AWAITING_APPROVAL UPI pk-3\nPOLL            AWAITING_APPROVAL UPI pk-3\nPOLL            PAID              UPI pk-3\nPAY_CLICKED     PAID              UPI pk-3",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node pay.mjs",
+  "tool": null,
+  "hash": "13a1f706682746ad",
+  "at": "2026-10-14T10:22:28.716Z"
+}

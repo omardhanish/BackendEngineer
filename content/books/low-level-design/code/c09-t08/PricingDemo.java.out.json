@@ -1,0 +1,11 @@
+{
+  "stdout": "XL calm:  1890 cents (x1.00)\nXL busy:  2835 cents (x1.50)\nXL storm: 3780 cents (x2.00)\nBIKE hop: 300 cents (x1.50)",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java PricingDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "6da78752cdcba604",
+  "at": "2026-10-12T11:18:52.996Z"
+}

@@ -1,0 +1,343 @@
+{
+  "title": "Logger core in Java",
+  "idea": "The core logger is one `log` method: check the level, build one LogRecord with an injected clock, then hand it to every appender, isolating each failure.",
+  "analogy": {
+    "text": "A newsroom wire. An editor drops minor stories, stamps the rest with the time, and copies each to every subscribing paper. One paper's broken press does not stop the others.",
+    "breaks": "Papers reprint at leisure; a FileAppender writes during the call."
+  },
+  "points": [
+    "The level check runs first, before the message string is even built.",
+    "A `Supplier` message defers costly string building until the level passes.",
+    "`Clock` and the thread name are captured once, into the record.",
+    "A failing appender is counted and skipped; the caller never sees the exception."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "One log call through the core",
+    "scenario": {
+      "token": {
+        "label": "debug(cart)",
+        "tone": "req"
+      },
+      "stages": [
+        {
+          "id": "caller",
+          "label": "OrderService",
+          "kind": "end"
+        },
+        {
+          "id": "check",
+          "label": "Level check",
+          "sub": "threshold INFO"
+        },
+        {
+          "id": "rec",
+          "label": "LogRecord",
+          "sub": "clock, thread"
+        },
+        {
+          "id": "fan",
+          "label": "Appenders",
+          "sub": "console, broken, file"
+        },
+        {
+          "id": "out",
+          "label": "Outputs",
+          "sub": "stdout, app.log",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "The service calls `debug` with a lambda. No string exists yet.",
+          "at": "caller",
+          "slot": "top",
+          "state": {
+            "caller": "active"
+          }
+        },
+        {
+          "caption": "DEBUG is below INFO. The call returns at once and the lambda never runs.",
+          "at": "check",
+          "slot": "top",
+          "token": {
+            "label": "debug(cart)",
+            "tone": "err"
+          },
+          "state": {
+            "caller": "done",
+            "check": "blocked"
+          }
+        },
+        {
+          "caption": "Next the service calls `error` for payment OD-1.",
+          "at": "caller",
+          "slot": "top",
+          "token": {
+            "label": "error(OD-1)",
+            "tone": "req"
+          },
+          "state": {
+            "caller": "active"
+          }
+        },
+        {
+          "caption": "ERROR passes the check. Now the lambda runs and builds the message.",
+          "at": "check",
+          "slot": "top",
+          "token": {
+            "label": "error(OD-1)",
+            "tone": "req"
+          },
+          "state": {
+            "caller": "done",
+            "check": "active"
+          }
+        },
+        {
+          "caption": "One immutable record captures level, message, clock time and thread name.",
+          "at": "rec",
+          "slot": "top",
+          "token": {
+            "label": "LogRecord",
+            "tone": "req"
+          },
+          "state": {
+            "caller": "done",
+            "check": "done",
+            "rec": "active"
+          }
+        },
+        {
+          "caption": "Each appender gets the same record. The broken one throws; the logger counts it and moves on.",
+          "at": "fan",
+          "slot": "top",
+          "token": {
+            "label": "LogRecord",
+            "tone": "err"
+          },
+          "state": {
+            "caller": "done",
+            "check": "done",
+            "rec": "done",
+            "fan": "error"
+          }
+        },
+        {
+          "caption": "Console and file still write the line. ERROR flushes the file buffer at once.",
+          "at": "out",
+          "slot": "top",
+          "token": {
+            "label": "2 lines",
+            "tone": "ok"
+          },
+          "state": {
+            "caller": "done",
+            "check": "done",
+            "rec": "done",
+            "fan": "done",
+            "out": "active"
+          }
+        },
+        {
+          "caption": "Control returns to the service with no exception, whatever the appenders did.",
+          "at": "caller",
+          "slot": "bottom",
+          "token": {
+            "label": "returns",
+            "tone": "ok"
+          },
+          "state": {
+            "caller": "active",
+            "check": "done",
+            "rec": "done",
+            "fan": "done",
+            "out": "done"
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "CoreLogger.java",
+      "lang": "java",
+      "title": "Logger, appenders, formatter",
+      "run": "captured",
+      "caption": "The complete core: lazy messages, an injected clock, console and file appenders, and failure isolation. The temp file path is never printed.",
+      "walk": [
+        {
+          "lines": [
+            10,
+            11,
+            12,
+            13
+          ],
+          "text": "A fixed clock, a temp log file and one shared pattern formatter."
+        },
+        {
+          "lines": [
+            14,
+            15,
+            16
+          ],
+          "text": "Three appenders, one broken on purpose. try-with-resources closes the file."
+        },
+        {
+          "lines": [
+            17,
+            18,
+            19,
+            20
+          ],
+          "text": "DEBUG is never built; INFO and ERROR are written, and the broken appender fails both."
+        },
+        {
+          "lines": [
+            36,
+            37,
+            38,
+            39,
+            40
+          ],
+          "text": "The formatter pads the level, so columns line up."
+        },
+        {
+          "lines": [
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63,
+            64
+          ],
+          "text": "Buffered file writes, flushed on ERROR so important lines reach the OS at once (flush is not fsync)."
+        },
+        {
+          "lines": [
+            74,
+            86
+          ],
+          "text": "A `volatile` threshold, changed by `setLevel`, is seen at once by every logging thread."
+        },
+        {
+          "lines": [
+            88,
+            89,
+            90,
+            91,
+            92,
+            93,
+            94,
+            95,
+            96
+          ],
+          "text": "The algorithm: filter, build one record, fan out, swallow and count failures."
+        }
+      ]
+    },
+    {
+      "file": "LoggerTree.java",
+      "lang": "java",
+      "title": "Inherited levels",
+      "run": "captured",
+      "caption": "A LogManager hands out one Logger per name and now owns the levels. A logger without its own level inherits from the nearest dotted parent.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7,
+            8
+          ],
+          "text": "Root is WARN; `app` and `app.db` get their own levels."
+        },
+        {
+          "lines": [
+            9,
+            10,
+            11,
+            12,
+            13
+          ],
+          "text": "Ask three loggers for their effective level and whether DEBUG is on."
+        },
+        {
+          "lines": [
+            14,
+            15,
+            16,
+            17
+          ],
+          "text": "The same name returns the same Logger; a parent change reaches it."
+        },
+        {
+          "lines": [
+            31,
+            32,
+            33
+          ],
+          "text": "`computeIfAbsent` creates each named Logger exactly once."
+        },
+        {
+          "lines": [
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44
+          ],
+          "text": "Strip the last segment until a configured level or the root is found."
+        },
+        {
+          "lines": [
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53
+          ],
+          "text": "The Logger asks the manager each time, so level changes apply at once."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Never build log strings before the level check; use a `Supplier` or placeholders.",
+    "Do not let an appender's IOException escape into the business call.",
+    "Do not call `Instant.now()` in the logger; inject a `Clock` for repeatable tests."
+  ],
+  "quiz": {
+    "q": "What does CoreLogger print for failed appends?",
+    "options": [
+      "failed appends: 0",
+      "failed appends: 1",
+      "failed appends: 2",
+      "failed appends: 3"
+    ],
+    "answer": 2,
+    "why": "DEBUG stops at the level check. INFO and ERROR each reach BrokenAppender, which throws. The logger counts both and moves on."
+  },
+  "takeaway": "Filter first, build one record, fan out, and never throw into callers.",
+  "chat": {
+    "starters": [
+      "Why flush only on ERROR instead of after every line?",
+      "Should the failed-append count be exposed as a metric?",
+      "How does the effective-level walk compare to caching levels per logger?"
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "start       [juice=50, coffee=35, tea=20]\nget tea     [tea=20, juice=50, coffee=35]\nput soda    [soda=30, tea=20, juice=50]\nput juice   [juice=55, soda=30, tea=20]\nremove tea  [juice=55, soda=30]\ncoffee -> -1",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java HandBuiltLru.java",
+  "tool": "Java 17.0.17",
+  "hash": "409aae71d6ee3968",
+  "at": "2026-10-14T08:37:06.925Z"
+}

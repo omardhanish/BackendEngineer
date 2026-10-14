@@ -1,0 +1,67 @@
+{
+  "title": "Library API in Express",
+  "idea": "The library API exposes borrow, return, renew and reserve as REST endpoints, with controllers for HTTP, a service for rules and transactions, and a repository for SQL.",
+  "analogy": {
+    "text": "A library's front window, back office and stacks. The window takes forms, the office applies rules, the stacks hold the books.",
+    "breaks": "Here all three run in one process and one transaction."
+  },
+  "points": [
+    "Controllers parse headers and bodies with zod and never write SQL.",
+    "The service runs each use case in one transaction and throws domain errors.",
+    "Borrow takes an Idempotency-Key, so a retried click returns the same loan.",
+    "One error middleware maps zod, domain and Postgres errors to HTTP codes."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "Endpoints",
+    "head": ["Method", "Path", "Request", "Success", "Errors"],
+    "rows": [
+      ["GET", "/books?q=", "search text", "200 titles, free copies", "400"],
+      ["POST", "/loans", "isbn + Idempotency-Key", "201 loan; 200 on replay", "400, 409 no copy or limit"],
+      ["POST", "/loans/:id/return", "none", "200 fineMinor, heldFor", "404 no open loan"],
+      ["POST", "/loans/:id/renew", "none", "200 new dueOn", "404, 409 reserved"],
+      ["POST", "/reservations", "isbn", "201 WAITING", "400, 409 already reserved"],
+      ["DELETE", "/reservations/:id", "none", "204 cancelled", "404"]
+    ],
+    "highlight": { "row": 1 },
+    "caption": "The snippet runs borrow and return; the loan-limit check from the schema page (lock member, count open loans) is left out for length. The other routes reuse the same layers and error mapping."
+  },
+  "code": [
+    {
+      "file": "api.mjs",
+      "lang": "js",
+      "title": "Layered Express app",
+      "run": "captured",
+      "needs": ["postgres"],
+      "caption": "Repository, service, controllers and error mapping in one file on a real PostgreSQL. X-Member-Id stands in for real authentication.",
+      "walk": [
+        { "lines": [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], "text": "Demo schema: one copy, one waiting reservation, and a unique key per member for idempotency." },
+        { "lines": [16, 17, 18, 19, 20, 21, 22, 23], "text": "A fixed demo clock, a domain error type, and `tx` for one transaction per call." },
+        { "lines": [26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36], "text": "Repository: find a loan by key, lock a free copy, update it, insert the loan." },
+        { "lines": [37, 38, 39, 40, 41, 42, 43], "text": "Close the open loan with its fine, then mark the oldest reservation READY." },
+        { "lines": [45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64], "text": "Service: replay by key, else lock and lend; return hands the copy to the queue." },
+        { "lines": [65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82], "text": "Controllers validate and call the service. Express 5 forwards async throws to the one error middleware." },
+        { "lines": [90, 91, 92, 93, 94, 95, 96], "text": "Happy path, replay, conflict, bad body, a late return and a repeated return." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not put SQL in controllers; keep HTTP, rules and queries in separate layers.",
+    "Scope the Idempotency-Key per member, or two members can collide on one key.",
+    "Do not return 500 for a known rule; map each domain error to 404 or 409."
+  ],
+  "quiz": {
+    "q": "What status does the second POST /loans with key k-1 print?",
+    "options": ["201", "409", "200", "400"],
+    "answer": 2,
+    "why": "The service finds a loan stored under M-1 and k-1 and returns it without touching copies. The controller marks a replay with 200."
+  },
+  "takeaway": "Controllers speak HTTP, services own rules and transactions, repositories own SQL.",
+  "chat": {
+    "starters": [
+      "Should return also take an Idempotency-Key?",
+      "Where should the member's loan limit check live in this API?",
+      "How would I add pagination to GET /books?"
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "ivy may not read reports\n  connecting to warehouse...\nreport q1\n  cache hit\nreport q1\nreport q2\nwarehouse queries: 2",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ReportProxyDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "f1af588b8cee8e77",
+  "at": "2026-10-12T11:31:29.518Z"
+}

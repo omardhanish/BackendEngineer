@@ -1,0 +1,11 @@
+{
+  "stdout": "P-1 UPI asha@okbank 49900 SUCCEEDED refunded=0\nP-1 UPI asha@okbank 49900 PARTIALLY_REFUNDED refunded=20000\nP-1 UPI asha@okbank 49900 REFUNDED refunded=49900 refunds=2\nrejected: cannot refund in REFUNDED\nrejected: bad UPI id asha\nrejected: last4 must be 4 digits\nrejected: negative amount",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java PaymentModel.java",
+  "tool": "Java 17.0.17",
+  "hash": "f74753975185ae0e",
+  "at": "2026-10-14T10:23:36.083Z"
+}

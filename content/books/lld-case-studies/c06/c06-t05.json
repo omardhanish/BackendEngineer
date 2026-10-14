@@ -1,0 +1,103 @@
+{
+  "title": "Last-copy races and pickup expiry",
+  "idea": "Concurrency in a library system means two requests touching the same copy or member at once; the fix makes each check-and-change one atomic step.",
+  "analogy": {
+    "text": "Two people see the last loaf on a shelf and both walk over. Whoever grabs it first wins; looking is not owning.",
+    "breaks": "In code, without an atomic step, both can 'grab' the same loaf."
+  },
+  "points": [
+    "Check-then-act on a copy's status lets two members borrow one copy.",
+    "An atomic replace from AVAILABLE to ON_LOAN lets exactly one caller win.",
+    "The loan limit is per member, so lock the member, not the whole library.",
+    "Pickup windows expire: a sweep passes the copy to the next waiting member."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "lanes",
+    "title": "Two members, last copy CP-7",
+    "scenario": {
+      "lanes": [
+        { "id": "a", "label": "Thread M-1", "kind": "area" },
+        { "id": "b", "label": "Thread M-2", "kind": "area" },
+        { "id": "copy", "label": "CP-7 status", "kind": "area", "hint": "map entry" }
+      ],
+      "tokens": {
+        "av": { "label": "AVAILABLE", "tone": "io" },
+        "ga": { "label": "get: free", "tone": "sync" },
+        "gb": { "label": "get: free", "tone": "sync" },
+        "la": { "label": "ON_LOAN (M-1)", "tone": "micro" },
+        "lb": { "label": "ON_LOAN (M-2)", "tone": "err" },
+        "ra": { "label": "replace", "tone": "timer" },
+        "rb": { "label": "replace", "tone": "timer" },
+        "ok": { "label": "true: loan", "tone": "micro" },
+        "no": { "label": "false: refused", "tone": "neutral" }
+      },
+      "steps": [
+        { "caption": "Unsafe version. CP-7 is the last free copy of the title.", "at": { "copy": ["av"] } },
+        { "caption": "M-1 reads the status and sees it is free.", "at": { "a": ["ga"], "copy": ["av"] }, "active": "ga" },
+        { "caption": "M-2 reads too, before M-1 writes. It also sees free.", "at": { "a": ["ga"], "b": ["gb"], "copy": ["av"] }, "active": "gb" },
+        { "caption": "M-1 writes ON_LOAN and opens a loan.", "at": { "b": ["gb"], "copy": ["la"] }, "active": "la" },
+        { "caption": "M-2 acts on its old answer and overwrites. One copy, two loans.", "at": { "copy": ["lb"] }, "active": "lb" },
+        { "caption": "Safe version. Both threads call `replace` with the expected old value.", "at": { "a": ["ra"], "b": ["rb"], "copy": ["av"] } },
+        { "caption": "The map applies one call at a time for this key. Whichever runs first, here M-1, matches and writes.", "at": { "b": ["rb"], "copy": ["la"], "a": ["ok"] }, "active": "ok" },
+        { "caption": "M-2's call expects AVAILABLE but finds ON_LOAN, so it returns false.", "at": { "a": ["ok"], "b": ["no"], "copy": ["la"] }, "active": "no" }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "LastCopyRace.java",
+      "lang": "java",
+      "title": "Prove the race",
+      "run": "captured",
+      "caption": "A barrier makes both threads look before either writes, so the bug shows on every run, not by luck.",
+      "walk": [
+        { "lines": [7, 8, 9], "text": "Run the copy race unsafe, then atomic, then the member-limit case." },
+        { "lines": [20, 21, 22, 23], "text": "Safe: `replace(key, old, new)` succeeds only if the value is still AVAILABLE." },
+        { "lines": [24, 25, 26, 27, 28], "text": "Unsafe: read, wait for the other thread, then both write and both count a loan." },
+        { "lines": [36, 37, 38, 39, 40], "text": "A member with four loans borrows twice at once under a limit of five." },
+        { "lines": [43, 44, 45, 46, 47], "text": "Join both threads before reading results, so the output never depends on timing." },
+        { "lines": [50, 51, 52, 53, 54, 55, 56, 57], "text": "`synchronized` makes the limit check and the increment one step per member." }
+      ]
+    },
+    {
+      "file": "PickupExpiry.java",
+      "lang": "java",
+      "title": "Edge cases on the hold shelf",
+      "run": "captured",
+      "caption": "Missed pickups, a late pickup, a double scan and a cancel. Dates are passed in, so every run prints the same.",
+      "walk": [
+        { "lines": [6, 7, 8, 9], "text": "Two members wait; the returned copy goes to M-2 for three days." },
+        { "lines": [10, 11, 12], "text": "Last pickup day kept; next day the sweep moves to M-3 and refuses M-2's late pickup." },
+        { "lines": [13, 14], "text": "A second scan of the same copy is ignored; M-3 then cancels." },
+        { "lines": [31, 32, 33, 34, 35, 36, 37], "text": "Return is idempotent: only a copy that is ON_LOAN can be returned." },
+        { "lines": [44, 45, 46, 47, 48, 49, 50, 51], "text": "Pickup checks both the member and the deadline under the same lock as the sweep." },
+        { "lines": [57, 58, 59, 60, 61, 62, 63, 64, 65], "text": "One method hands the copy on: next member with a deadline, or back to AVAILABLE." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not read status, then write it later; use one atomic compare-and-set.",
+    "Run the pickup sweep and the pickup under one lock, or both can win.",
+    "Treat a second return scan as a no-op; never charge the fine twice."
+  ],
+  "quiz": {
+    "q": "What is the first line LastCopyRace prints?",
+    "options": [
+      "check-then-act loans: 1",
+      "check-then-act loans: 2",
+      "check-then-act loans: 0",
+      "It changes from run to run"
+    ],
+    "answer": 1,
+    "why": "The barrier lets both threads read AVAILABLE before either writes. Both then write and both count a loan: 2."
+  },
+  "takeaway": "Looking is not owning: make check and change one atomic step.",
+  "chat": {
+    "starters": [
+      "Why not lock the whole LibraryService with one big lock?",
+      "How does this change when two servers share one database?",
+      "What should happen if a pickup and the sweep run at the same moment?"
+    ]
+  }
+}

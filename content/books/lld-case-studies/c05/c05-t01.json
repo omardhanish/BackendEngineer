@@ -1,0 +1,164 @@
+{
+  "title": "ATM requirements and scope",
+  "idea": "Scoping an ATM system means naming who uses it, what they can do, the money rule that must never break, and what v1 leaves out.",
+  "points": [
+    "A customer inserts a card, enters a PIN, checks balance and withdraws cash.",
+    "The core rule: cash leaves the machine only if the account was debited.",
+    "Limits apply per withdrawal and per day, enforced by the bank for every ATM.",
+    "Assume many ATMs share one bank; two ATMs may use one account at once."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Who does what in v1",
+    "nodes": [
+      {
+        "id": "cust",
+        "label": "Customer",
+        "sub": "card holder"
+      },
+      {
+        "id": "auth",
+        "label": "Authenticate",
+        "sub": "card + 4-digit PIN"
+      },
+      {
+        "id": "bal",
+        "label": "Check balance",
+        "sub": "read only"
+      },
+      {
+        "id": "wd",
+        "label": "Withdraw cash",
+        "sub": "notes from cassettes"
+      },
+      {
+        "id": "op",
+        "label": "Operator",
+        "sub": "refills cassettes"
+      },
+      {
+        "id": "sys",
+        "label": "System",
+        "sub": "reverses failed dispense"
+      },
+      {
+        "id": "out",
+        "label": "Out of scope",
+        "sub": "deposit, transfer, PIN change"
+      }
+    ],
+    "edges": [
+      {
+        "from": "cust",
+        "to": "auth",
+        "caption": "Every session starts with a card and a PIN. Three wrong PINs and the card is kept."
+      },
+      {
+        "from": "auth",
+        "to": "bal",
+        "caption": "Once authenticated, the customer can read the balance. Nothing changes."
+      },
+      {
+        "from": "auth",
+        "to": "wd",
+        "caption": "Withdrawal is the risky use case: the bank debits money and the machine hands out notes."
+      },
+      {
+        "from": "op",
+        "to": "wd",
+        "label": "refills",
+        "dashed": true,
+        "caption": "An operator loads note cassettes. The ATM can only pay amounts its notes can make."
+      },
+      {
+        "from": "sys",
+        "to": "wd",
+        "label": "reverses",
+        "dashed": true,
+        "caption": "The system is an actor too: if notes jam after a debit, it credits the money back."
+      },
+      {
+        "from": "cust",
+        "to": "out",
+        "dashed": true,
+        "caption": "Deposits, transfers and PIN change wait for a later version. Say the cut out loud."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "WithdrawRules.java",
+      "lang": "java",
+      "title": "Scope and limits as code",
+      "run": "captured",
+      "caption": "Use cases tagged IN or OUT of v1, and the withdrawal rules checked in a fixed order. The limit values are stated assumptions.",
+      "walk": [
+        {
+          "lines": [
+            2,
+            3,
+            4
+          ],
+          "text": "Money is `long` paise. The two limits are assumptions you state, not facts."
+        },
+        {
+          "lines": [
+            7,
+            8
+          ],
+          "text": "Print each use case with its actor and whether v1 includes it."
+        },
+        {
+          "lines": [
+            9,
+            10,
+            11,
+            12
+          ],
+          "text": "Check four amounts against an account that already took Rs 20,000 today."
+        },
+        {
+          "lines": [
+            15,
+            16,
+            17
+          ],
+          "text": "The ATM holds only whole notes, so the amount must be a multiple of Rs 100."
+        },
+        {
+          "lines": [
+            18,
+            19,
+            20,
+            21
+          ],
+          "text": "Then the per-withdrawal cap, then the daily total including this amount."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not jump to classes before agreeing which use cases are in v1.",
+    "Keep the daily limit at the bank; one ATM cannot see another ATM's withdrawals.",
+    "Forgetting the System actor hides the reversal flow until the failure case appears."
+  ],
+  "quiz": {
+    "q": "Where should the daily withdrawal limit be enforced?",
+    "options": [
+      "Inside each ATM's local memory",
+      "In the screen, before the request is sent",
+      "At the bank, for every ATM together",
+      "In the cash dispenser, by counting notes"
+    ],
+    "answer": 2,
+    "why": "A customer can visit two ATMs in one day. Only the bank sees all withdrawals for the account, so only it can add them up."
+  },
+  "takeaway": "No cash without a debit; limits live at the bank, not the machine.",
+  "chat": {
+    "starters": [
+      "Should balance inquiry count as a transaction in v1?",
+      "Which scale assumptions should I state for an ATM interview?",
+      "How would deposits change the design if added later?"
+    ]
+  }
+}

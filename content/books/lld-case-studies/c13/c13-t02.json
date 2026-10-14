@@ -1,0 +1,228 @@
+{
+ "title": "Ground booking domain model",
+ "idea": "The domain model separates the fixed venue (Ground, Court, Sport) from time-bound facts (TimeSlot, Booking), with PricingStrategy as a swappable rule.",
+ "analogy": {
+  "text": "A sports club's wall planner. The court names down the side never change; each week you pencil names into hour boxes.",
+  "breaks": "A pencilled box never expires; an unpaid booking does."
+ },
+ "points": [
+  "A Ground has one or more Courts; each Court plays one Sport.",
+  "A TimeSlot is half-open whole hours; page 1's rules keep it to one day.",
+  "A Booking ties one player to one Court for one TimeSlot.",
+  "PricingStrategy turns a Court and TimeSlot into a price in minor units."
+ ],
+ "hero": {
+  "type": "flow",
+  "title": "Class diagram",
+  "nodes": [
+   {
+    "id": "ground",
+    "label": "Ground",
+    "sub": "id, name, courts"
+   },
+   {
+    "id": "court",
+    "label": "Court",
+    "sub": "id, sport, outdoor"
+   },
+   {
+    "id": "sport",
+    "label": "Sport",
+    "sub": "enum"
+   },
+   {
+    "id": "booking",
+    "label": "Booking",
+    "sub": "amountMinor, status"
+   },
+   {
+    "id": "slot",
+    "label": "TimeSlot",
+    "sub": "start, end, overlaps()"
+   },
+   {
+    "id": "player",
+    "label": "Player",
+    "sub": "id only here"
+   },
+   {
+    "id": "status",
+    "label": "BookingStatus",
+    "sub": "enum"
+   },
+   {
+    "id": "pricing",
+    "label": "PricingStrategy",
+    "sub": "priceOf(court, slot)"
+   }
+  ],
+  "edges": [
+   {
+    "from": "ground",
+    "to": "court",
+    "label": "has 1..*",
+    "caption": "A Ground owns its Courts. A Court never moves to another Ground."
+   },
+   {
+    "from": "court",
+    "to": "sport",
+    "label": "plays 1",
+    "caption": "Each Court plays one Sport, so a search by sport is a filter on Courts."
+   },
+   {
+    "from": "booking",
+    "to": "court",
+    "label": "for 1",
+    "caption": "A Booking points at exactly one Court. A Court has many Bookings over time."
+   },
+   {
+    "from": "booking",
+    "to": "slot",
+    "label": "covers 1",
+    "caption": "A Booking covers one TimeSlot of one to three whole hours."
+   },
+   {
+    "from": "booking",
+    "to": "player",
+    "label": "by 1",
+    "caption": "A Booking belongs to one Player. The model keeps only the player id."
+   },
+   {
+    "from": "booking",
+    "to": "status",
+    "label": "has",
+    "caption": "BookingStatus is an enum. Page 4 turns it into a state machine."
+   },
+   {
+    "from": "pricing",
+    "to": "slot",
+    "label": "uses",
+    "dashed": true,
+    "caption": "PricingStrategy reads the Court and the TimeSlot. Peak and off-peak rules plug in here."
+   },
+   {
+    "from": "pricing",
+    "to": "court",
+    "label": "uses",
+    "dashed": true,
+    "caption": "It also reads the Court, so outdoor or indoor courts can be priced differently."
+   }
+  ]
+ },
+ "code": [
+  {
+   "file": "SportsModel.java",
+   "lang": "java",
+   "title": "The model in Java 17",
+   "run": "captured",
+   "caption": "Records for fixed data, a class for Booking because its status changes. Each constructor checks the invariants it owns; slot length rules live in page 1's checks.",
+   "walk": [
+    {
+     "lines": [
+      6,
+      7,
+      8
+     ],
+     "text": "One Ground with an outdoor football turf and an indoor badminton hall."
+    },
+    {
+     "lines": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+     ],
+     "text": "Three slots on one Friday. Ask which pairs overlap."
+    },
+    {
+     "lines": [
+      17,
+      18,
+      19,
+      20
+     ],
+     "text": "A lambda is a PricingStrategy. The Booking freezes the price it returns."
+    },
+    {
+     "lines": [
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29
+     ],
+     "text": "Three bad inputs: an unknown court, a half-hour start, a zero-hour slot."
+    },
+    {
+     "lines": [
+      48,
+      49,
+      50,
+      51,
+      52,
+      53,
+      54,
+      55
+     ],
+     "text": "The compact constructor refuses off-hour times and empty ranges."
+    },
+    {
+     "lines": [
+      61,
+      62,
+      63
+     ],
+     "text": "Half-open ranges: 18:00-20:00 and 20:00-21:00 touch but do not overlap."
+    },
+    {
+     "lines": [
+      71,
+      72,
+      73,
+      74,
+      75,
+      76,
+      77,
+      78,
+      79,
+      80,
+      81,
+      82
+     ],
+     "text": "Booking changes only its status. Money is a long in minor units."
+    }
+   ]
+  }
+ ],
+ "pitfalls": [
+  "Do not store booked hours on Court; that mixes fixed layout with daily state.",
+  "Use half-open ranges, or back-to-back bookings will look like overlaps.",
+  "Keep money as long minor units; never use double for prices."
+ ],
+ "quiz": {
+  "q": "What does the second line of SportsModel print?",
+  "options": [
+   "18:00-20:00 overlaps 20:00-21:00? true",
+   "18:00-20:00 overlaps 20:00-21:00? false",
+   "rejected: slots start on the hour",
+   "18:00-20:00 overlaps 19:00-20:00? false"
+  ],
+  "answer": 1,
+  "why": "The first slot ends at 20:00 and the second starts at 20:00. With half-open ranges, start before other end fails, so they do not overlap."
+ },
+ "takeaway": "Venue classes stay fixed; bookings are time ranges placed on courts.",
+ "chat": {
+  "starters": [
+   "Why model TimeSlot as a range instead of a single hour?",
+   "Should Player be a full class in the domain model?",
+   "Where would opening hours per ground live in this model?"
+  ]
+ }
+}

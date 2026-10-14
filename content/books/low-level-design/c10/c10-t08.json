@@ -1,0 +1,90 @@
+{
+  "title": "Defensive and error-resilient design",
+  "idea": "Defensive programming makes a class reject bad input and protect its own state; resilient design decides how each failure is handled: retry, fall back or fail fast.",
+  "points": [
+    "Validate at the boundary with guard clauses, so bad data never enters the object.",
+    "Copy mutable inputs in and hand out unmodifiable copies, so callers cannot reach inside.",
+    "Retry only transient failures, a bounded number of times, with growing waits between tries.",
+    "Fail fast on permanent errors; fall back only when a stale value is acceptable."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "One rate request meets failures",
+    "scenario": {
+      "token": { "label": "rate(GBP)", "tone": "req" },
+      "stages": [
+        { "id": "guard", "label": "Guard clauses", "sub": "reject bad input" },
+        { "id": "call", "label": "Remote call", "sub": "fetch(currency)" },
+        { "id": "retry", "label": "Retry policy", "sub": "transient only" },
+        { "id": "fallback", "label": "Fallback", "sub": "last good rate per currency" },
+        { "id": "caller", "label": "Caller", "sub": "gets a value or error", "kind": "end" }
+      ],
+      "steps": [
+        { "caption": "The request enters. Guard clauses check the arguments before any work starts.", "at": "guard", "slot": "top", "state": { "guard": "active" } },
+        { "caption": "Input is valid, so the remote source is called.", "at": "call", "slot": "top", "state": { "guard": "done", "call": "active" } },
+        { "caption": "A timeout comes back. It is transient, so the retry policy takes over.", "at": "retry", "slot": "top", "token": { "label": "timeout", "tone": "err" }, "state": { "call": "error", "retry": "active" } },
+        { "caption": "The policy waits longer each time and tries again, up to `maxAttempts`.", "at": "call", "slot": "top", "token": { "label": "try 2, 3", "tone": "req" }, "state": { "call": "active", "retry": "done" } },
+        { "caption": "Every try timed out. The retry budget is spent, so no more calls are made.", "at": "retry", "slot": "bottom", "token": { "label": "exhausted", "tone": "err" }, "state": { "call": "error", "retry": "blocked" } },
+        { "caption": "A stale rate is acceptable here, so the fallback returns the last good value.", "at": "fallback", "slot": "bottom", "token": { "label": "1.17 (stale)", "tone": "ok" }, "state": { "fallback": "active" } },
+        { "caption": "The caller gets 1.17, marked stale. An unknown currency would skip the retries and arrive here as an error instead.", "at": "caller", "slot": "bottom", "token": { "label": "1.17", "tone": "ok" }, "state": { "fallback": "done", "caller": "done" } }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "DefensiveShift.java",
+      "lang": "java",
+      "title": "Guard clauses and copies",
+      "run": "captured",
+      "caption": "Both classes get the same list. The caller then clears it: one object is emptied, the other is untouched.",
+      "walk": [
+        { "lines": [25, 35], "text": "The leaky class keeps the caller's list and accepts negative hours." },
+        { "lines": [5, 10], "text": "Clearing the caller's list empties the leaky shift too: aliasing." },
+        { "lines": [41, 43], "text": "Guard clauses fail fast with a message naming the bad value." },
+        { "lines": [44, 46], "text": "`List.copyOf` takes a private, immutable copy and rejects null elements." },
+        { "lines": [49, 49], "text": "The getter can return the field itself because the copy is unmodifiable." },
+        { "lines": [11, 14], "text": "Each misuse is rejected at the door with a specific exception." }
+      ]
+    },
+    {
+      "file": "ResilientRates.java",
+      "lang": "java",
+      "title": "Retry, fallback, fail fast",
+      "run": "captured",
+      "caption": "A scripted source times out on cue. The service retries, then falls back, but never retries a bad currency.",
+      "walk": [
+        { "lines": [17, 20], "text": "A distinct exception type marks failures worth retrying." },
+        { "lines": [24, 37], "text": "A scripted fake replays a fixed sequence, so the run is repeatable." },
+        { "lines": [43, 47], "text": "The constructor rejects a zero retry budget and a missing source." },
+        { "lines": [49, 53], "text": "Bounded loop: success stores the value as this currency's fallback." },
+        { "lines": [54, 58], "text": "Only transient errors are caught. Waits double each try; real code sleeps with jitter." },
+        { "lines": [60, 64], "text": "Out of tries: return this currency's last good rate, or fail loudly if none exists." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "An empty `catch (Exception e) {}` turns a failure into wrong data that surfaces much later.",
+    "Retrying a non-idempotent call, like a charge, without an idempotency key can bill twice.",
+    "Storing a caller's mutable list lets them change your state after validation passed."
+  ],
+  "quiz": {
+    "q": "A payment call fails with 'card declined'. What should a resilient client do?",
+    "options": [
+      "Retry three times with exponential backoff",
+      "Return the result of the last successful payment",
+      "Fail fast and report the decline to the caller",
+      "Log the error and return a success status"
+    ],
+    "answer": 2,
+    "why": "A decline is permanent: retrying cannot change it, and faking success is worse. Retries and fallbacks are for transient faults like timeouts."
+  },
+  "takeaway": "Reject bad input early; retry transient faults; fail fast on permanent ones.",
+  "chat": {
+    "starters": [
+      "When should I throw a checked exception instead of an unchecked one?",
+      "Why add random jitter to retry backoff?",
+      "How does a circuit breaker differ from a retry?"
+    ]
+  }
+}

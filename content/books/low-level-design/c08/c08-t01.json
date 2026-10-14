@@ -1,0 +1,302 @@
+{
+  "title": "Chain of Responsibility pattern",
+  "idea": "The Chain of Responsibility pattern passes a request along linked handlers until one handles it, so the sender never chooses the receiver.",
+  "analogy": {
+    "text": "A customer email reaches a help bot first, then an agent, then a team lead. Each one answers it or passes it up.",
+    "breaks": "People can share a case; one handler owns the whole answer."
+  },
+  "points": [
+    "Each handler either handles the request or forwards it to its `next` link.",
+    "The sender knows only the first handler; a new rule is one new class.",
+    "Servlet `Filter` chains are a variant: each link may act, then pass on.",
+    "Skip it for one fixed rule; always define what happens when nobody handles."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "Three refunds walk one chain",
+    "scenario": {
+      "token": {
+        "label": "R-3 · 320",
+        "tone": "req"
+      },
+      "stages": [
+        {
+          "id": "caller",
+          "label": "Caller",
+          "sub": "knows the head",
+          "kind": "end"
+        },
+        {
+          "id": "fraud",
+          "label": "FraudCheck",
+          "sub": "holds flagged"
+        },
+        {
+          "id": "auto",
+          "label": "auto",
+          "sub": "limit 50"
+        },
+        {
+          "id": "agent",
+          "label": "agent",
+          "sub": "limit 500"
+        },
+        {
+          "id": "finance",
+          "label": "finance",
+          "sub": "limit 5000"
+        },
+        {
+          "id": "none",
+          "label": "End of chain",
+          "sub": "handle(): no next",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "The caller hands refund R-3 to the head of the chain. It never sees the other links.",
+          "at": "caller",
+          "slot": "top",
+          "state": {
+            "caller": "active"
+          }
+        },
+        {
+          "caption": "`FraudCheck` finds no flag and returns empty, so `handle` forwards to `next`.",
+          "at": "fraud",
+          "slot": "top",
+          "state": {
+            "caller": "done",
+            "fraud": "active"
+          }
+        },
+        {
+          "caption": "320 is over the auto limit of 50. This link passes it on too.",
+          "at": "auto",
+          "slot": "top",
+          "state": {
+            "caller": "done",
+            "fraud": "done",
+            "auto": "active"
+          }
+        },
+        {
+          "caption": "The agent limit is 500, so this link answers. The walk stops; finance never runs.",
+          "at": "agent",
+          "slot": "bottom",
+          "token": {
+            "label": "APPROVED",
+            "tone": "ok"
+          },
+          "state": {
+            "caller": "done",
+            "fraud": "done",
+            "auto": "done",
+            "agent": "done"
+          }
+        },
+        {
+          "caption": "Flagged R-2 asks for only 40, but it stops at the first link. Order is policy.",
+          "at": "fraud",
+          "slot": "bottom",
+          "token": {
+            "label": "R-2 HELD",
+            "tone": "err"
+          },
+          "state": {
+            "caller": "done",
+            "fraud": "blocked"
+          }
+        },
+        {
+          "caption": "R-4 for 9000 passes every link. The last one has no `next`.",
+          "at": "finance",
+          "slot": "top",
+          "token": {
+            "label": "R-4 · 9000",
+            "tone": "req"
+          },
+          "state": {
+            "caller": "done",
+            "fraud": "done",
+            "auto": "done",
+            "agent": "done",
+            "finance": "active"
+          }
+        },
+        {
+          "caption": "The fallback rejects it with a reason, instead of returning nothing.",
+          "at": "none",
+          "slot": "bottom",
+          "token": {
+            "label": "REJECTED",
+            "tone": "err"
+          },
+          "state": {
+            "caller": "done",
+            "fraud": "done",
+            "auto": "done",
+            "agent": "done",
+            "finance": "done",
+            "none": "error"
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "RefundIfChain.java",
+      "lang": "java",
+      "title": "The problem: one if-chain",
+      "run": "captured",
+      "caption": "Every approval rule sits in one method, in one fixed order, and the order hides a bug.",
+      "walk": [
+        {
+          "lines": [
+            11,
+            12,
+            13
+          ],
+          "text": "One method holds every rule and knows every approver by name."
+        },
+        {
+          "lines": [
+            15,
+            16,
+            17,
+            18
+          ],
+          "text": "The small-amount branch returns first, so flagged R-2 is approved instead of held."
+        },
+        {
+          "lines": [
+            19,
+            20,
+            21,
+            22
+          ],
+          "text": "Limits are welded into `else if` order. You cannot reorder, reuse or test one alone."
+        },
+        {
+          "lines": [
+            24
+          ],
+          "text": "The fallback is a bare string with no reason, added as an afterthought."
+        },
+        {
+          "lines": [
+            26
+          ],
+          "text": "Each new rule edits this method again, against the Open/Closed Principle (OCP)."
+        }
+      ]
+    },
+    {
+      "file": "RefundChainDemo.java",
+      "lang": "java",
+      "title": "The fix: a handler chain",
+      "run": "captured",
+      "caption": "Small handlers, linked once at startup; each one decides or passes the refund on.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7,
+            8,
+            9,
+            10
+          ],
+          "text": "The chain is built in one place. Reading it top-down shows the policy order."
+        },
+        {
+          "lines": [
+            19,
+            20,
+            21,
+            22,
+            23,
+            24
+          ],
+          "text": "The request is an immutable record, validated once, so no handler can alter it."
+        },
+        {
+          "lines": [
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34
+          ],
+          "text": "`link` wires each handler to the next and rejects a null at build time."
+        },
+        {
+          "lines": [
+            35,
+            36,
+            37,
+            38,
+            39,
+            40
+          ],
+          "text": "`handle` is final: answer, else forward, else fall back. No subclass can skip forwarding."
+        },
+        {
+          "lines": [
+            41
+          ],
+          "text": "Subclasses answer one question: can I handle this? Empty means pass it on."
+        },
+        {
+          "lines": [
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59,
+            60,
+            61
+          ],
+          "text": "One configurable approver replaces three near-identical classes; the limit is data."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Putting a cheap approver before `FraudCheck` lets flagged refunds through; order is policy, so test it.",
+    "No fallback at the end makes unhandled requests vanish silently; return a reason or throw.",
+    "A link pointing back to an earlier one loops on unhandled requests until `StackOverflowError`."
+  ],
+  "quiz": {
+    "q": "Same classes as the demo. What does this print?",
+    "code": "RefundHandler chain = RefundHandler.link(\n    new LimitApprover(\"auto\", 50), new FraudCheck());\nSystem.out.println(chain.handle(new Refund(\"R-9\", 40, true)));",
+    "lang": "java",
+    "options": [
+      "HELD for fraud review",
+      "APPROVED by auto",
+      "REJECTED: nobody can approve",
+      "IllegalStateException"
+    ],
+    "answer": 1,
+    "why": "`auto` is the head and 40 is within its limit, so it answers and the walk stops. `FraudCheck` never sees the flagged refund."
+  },
+  "takeaway": "Each handler handles or forwards; the chain's order is the policy.",
+  "chat": {
+    "starters": [
+      "How is Chain of Responsibility different from the Decorator pattern?",
+      "Should a handler stop the chain or let every handler run, like servlet filters?",
+      "How would I make the chain order configurable without editing code?"
+    ]
+  }
+}

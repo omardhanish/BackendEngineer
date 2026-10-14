@@ -1,0 +1,36 @@
+classDiagram
+    class BookingService {
+        +searchFree(capacity, start, end) List~Room~
+        +book(employeeId, roomId, start, end) Booking
+        +cancel(bookingId, employeeId) void
+    }
+    class RoomRepository {
+        <<interface>>
+        +findById(String id) Optional~Room~
+        +findAll() List~Room~
+    }
+    class BookingRepository {
+        <<interface>>
+        +save(Booking b) void
+        +findById(String id) Optional~Booking~
+        +forRoom(String roomId) List~Booking~
+        +remove(String id) void
+    }
+    class ConflictPolicy {
+        <<interface>>
+        +conflicts(candidate, existing) boolean
+    }
+    class BookingListener {
+        <<interface>>
+        +onBooked(Booking b) void
+        +onCancelled(Booking b) void
+    }
+    BookingService --> RoomRepository
+    BookingService --> BookingRepository
+    BookingService --> ConflictPolicy
+    BookingService --> "0..*" BookingListener
+    BookingListener <|.. NotificationService
+    BookingListener <|.. AuditLogger
+    Building "1" *-- "1..*" Room
+    Booking --> Room : roomId
+    Booking --> Employee : employeeId

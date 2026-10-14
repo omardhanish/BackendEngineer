@@ -1,0 +1,271 @@
+{
+  "title": "Order alerts and live ETA",
+  "idea": "Notifications in a food delivery system are observers of the order's state machine, and the ETA is a phase-aware estimate built from a swappable travel strategy.",
+  "points": [
+    "`Order` publishes one `OrderEvent` per real transition; it never knows channels exist.",
+    "Each audience gets its own listener that picks states worth a message.",
+    "ETA depends on the phase: while food cooks, the rider rides in parallel.",
+    "A `TravelModel` strategy hides speed; rain becomes a wrapper, not an `if`."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "One order, two audiences, one ETA",
+    "actors": [
+      {
+        "id": "order",
+        "label": "Order"
+      },
+      {
+        "id": "cust",
+        "label": "CustomerAlerts"
+      },
+      {
+        "id": "rider",
+        "label": "RiderAlerts"
+      },
+      {
+        "id": "eta",
+        "label": "EtaCalculator + EtaWatcher"
+      },
+      {
+        "id": "chan",
+        "label": "Channel"
+      }
+    ],
+    "messages": [
+      {
+        "from": "order",
+        "to": "cust",
+        "label": "PLACED → ACCEPTED",
+        "note": "The kitchen accepts. `Order` builds one `OrderEvent` and hands it to every listener in turn."
+      },
+      {
+        "from": "cust",
+        "to": "eta",
+        "label": "minutes(ACCEPTED, leg)",
+        "note": "The customer message needs a time. The calculator takes the longer of prep and rider pickup, then adds the drop."
+      },
+      {
+        "from": "cust",
+        "to": "chan",
+        "label": "push: cooking",
+        "note": "`CustomerAlerts` chose the message; the injected `Channel` decides how it travels."
+      },
+      {
+        "from": "order",
+        "to": "rider",
+        "label": "ACCEPTED → READY",
+        "note": "Food is packed. Only `RiderAlerts` cares about this state; the customer listener stays quiet."
+      },
+      {
+        "from": "rider",
+        "to": "chan",
+        "label": "sms: ready for pickup",
+        "note": "The rider gets an SMS. A new audience means a new listener, not an edit to `Order`."
+      },
+      {
+        "from": "order",
+        "to": "cust",
+        "label": "READY → PICKED_UP",
+        "note": "The rider has the bag. Prep time no longer matters to the estimate."
+      },
+      {
+        "from": "cust",
+        "to": "eta",
+        "label": "minutes(PICKED_UP, leg)",
+        "note": "Only the drop leg is left, so the ETA shrinks to the travel time to the customer."
+      },
+      {
+        "from": "eta",
+        "to": "cust",
+        "label": "ETA moved ≥ 3 min: send",
+        "dashed": true,
+        "note": "`EtaWatcher` drops a new ETA within 3 minutes of the last one sent. This drop is far larger, so it goes out."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "OrderAlertsDemo.java",
+      "lang": "java",
+      "title": "Alerts as observers",
+      "run": "captured",
+      "caption": "The order publishes events; per-audience listeners choose the text and the channel.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13
+          ],
+          "text": "Wiring happens outside `Order`. A failing listener goes first, so later listeners show they still run."
+        },
+        {
+          "lines": [
+            20,
+            21,
+            22,
+            23
+          ],
+          "text": "States from the lifecycle page, an immutable event record, and two one-method contracts."
+        },
+        {
+          "lines": [
+            35,
+            36,
+            37,
+            38
+          ],
+          "text": "A repeated state is ignored, so a retried call cannot send a duplicate message."
+        },
+        {
+          "lines": [
+            39,
+            40,
+            41,
+            42,
+            43,
+            44
+          ],
+          "text": "Each listener runs in its own `try`; the analytics failure is reported, then the customer still gets \"delivered\"."
+        },
+        {
+          "lines": [
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57
+          ],
+          "text": "A `switch` maps states to customer text. Unlisted states return `null` and send nothing."
+        },
+        {
+          "lines": [
+            61,
+            62,
+            63,
+            64,
+            65,
+            66,
+            67
+          ],
+          "text": "The rider cares about one state only. Same event, different audience, separate class."
+        }
+      ]
+    },
+    {
+      "file": "EtaDemo.java",
+      "lang": "java",
+      "title": "Phase-aware ETA",
+      "run": "captured",
+      "caption": "The ETA formula changes with the order state; travel speed is a strategy; a watcher throttles updates. In a full system `CustomerAlerts` would call the calculator; here they are shown apart.",
+      "walk": [
+        {
+          "lines": [
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26
+          ],
+          "text": "A `Leg` holds what the estimate needs. The compact constructor rejects negative inputs early."
+        },
+        {
+          "lines": [
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34
+          ],
+          "text": "`TravelModel` is the strategy. `Slowdown` wraps any model, so rain needs no new branch."
+        },
+        {
+          "lines": [
+            40,
+            41,
+            42,
+            43,
+            44
+          ],
+          "text": "While cooking, the rider rides to the restaurant in parallel: take the longer, then add the drop."
+        },
+        {
+          "lines": [
+            45,
+            46,
+            47,
+            48
+          ],
+          "text": "Later phases drop the parts already done. A `switch` expression must cover every state."
+        },
+        {
+          "lines": [
+            49
+          ],
+          "text": "Round up. A customer forgives early food, not a late promise."
+        },
+        {
+          "lines": [
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63,
+            64,
+            65,
+            66
+          ],
+          "text": "`EtaWatcher` sends a new ETA only when it moved by the threshold since the last one sent."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Calling SMS and push inside `moveTo` ties order logic to every channel; publish an event instead.",
+    "One listener throwing stops the rest of the loop unless each call is isolated.",
+    "Adding prep time and pickup travel overstates ETA; the rider rides while the kitchen cooks."
+  ],
+  "quiz": {
+    "q": "Same classes as `EtaDemo`. What does this print?",
+    "code": "EtaCalculator calc =\n    new EtaCalculator(new ConstantSpeed(30));\nLeg leg = new Leg(15, 2.0, 5.0);\nSystem.out.println(calc.minutes(Status.ACCEPTED, leg));",
+    "lang": "java",
+    "options": [
+      "29",
+      "19",
+      "25",
+      "15"
+    ],
+    "answer": 2,
+    "why": "At 30 km/h, 2 km takes 4 minutes and 5 km takes 10. The rider waits for the 15-minute prep: max(15, 4) + 10 = 25."
+  },
+  "takeaway": "Orders publish events; listeners pick the words; strategies estimate the time.",
+  "chat": {
+    "starters": [
+      "Should notifications be sent synchronously inside the state change or through a queue?",
+      "How would I add a restaurant tablet alert without touching the Order class?",
+      "How do real apps refine the ETA once live rider GPS updates arrive?"
+    ]
+  }
+}

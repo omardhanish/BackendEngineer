@@ -1,0 +1,11 @@
+{
+  "stdout": "total 90000 / limit 100000\ntotal 210000 / limit 100000\nwithin budget? false",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java OpenOrder.java",
+  "tool": "Java 17.0.17",
+  "hash": "0144a431034b5024",
+  "at": "2026-10-12T11:19:51.948Z"
+}

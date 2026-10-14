@@ -1,0 +1,11 @@
+{
+  "stdout": "POST /orders k-1 201 {\"id\":\"OR-1\",\"customerId\":\"C-1\",\"amountMinor\":25000}\nPOST /orders k-1 200 {\"id\":\"OR-1\",\"customerId\":\"C-1\",\"amountMinor\":25000}\nPOST /orders k-1 422 {\"error\":\"KEY_REUSED\"}\nPOST /orders - 400 {\"error\":\"IDEMPOTENCY_KEY_REQUIRED\"}\nPOST /orders k-2 400 {\"error\":\"VALIDATION\"}\nPOST /orders k-3 201 {\"id\":\"OR-2\",\"customerId\":\"C-1\",\"amountMinor\":12000}\nemail: OR-1 placed\nemail: OR-2 placed\nrelay crashed\nemail: OR-1 placed\nloyalty: skip duplicate event 1\nemail: OR-2 placed\nloyalty: skip duplicate event 2\nrelay published 2\nrelay published 0\nC-1 loyalty points: 370",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node service.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "d354af5ace189263",
+  "at": "2026-10-14T11:03:30.553Z"
+}

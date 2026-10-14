@@ -1,178 +1,372 @@
 {
-  "title": "Facade and Flyweight",
-  "idea": "Facade gives a busy subsystem one simple front door. Flyweight shares one immutable object among many users, so look-alikes store only what differs.",
+  "title": "Immutable value types",
+  "idea": "An `enum` fixes a closed set of named values, a `record` declares an immutable data carrier in one line, and immutable objects never change after construction.",
   "points": [
-    "A facade class holds the subsystem parts and calls them in the right order.",
-    "Callers depend on the facade only, so the parts can change behind it.",
-    "Shared intrinsic state, like an icon, stays apart from per-object extrinsic state, like position.",
-    "A factory caches flyweights by key and hands back the same instance each time."
+    "An `enum` turns string states into a closed set; typos stop compiling.",
+    "A `record` generates final fields, accessors, `equals`, `hashCode` and `toString`.",
+    "Records are only shallowly immutable: copy mutable inputs with `List.copyOf`.",
+    "Immutable objects can be shared and cached across threads without locks."
   ],
   "hero": {
-    "type": "seq",
-    "title": "One call, three subsystems",
-    "actors": [
-      {
-        "id": "main",
-        "label": "main"
-      },
-      {
-        "id": "checkout",
-        "label": "Checkout (facade)"
-      },
-      {
-        "id": "stock",
-        "label": "Stock"
-      },
-      {
-        "id": "pay",
-        "label": "Payments"
-      },
-      {
-        "id": "courier",
-        "label": "Courier"
-      }
-    ],
-    "messages": [
-      {
-        "from": "main",
-        "to": "checkout",
-        "label": "placeOrder(\"lamp\", 25.0)",
-        "note": "The caller makes one call. It knows nothing about the three parts."
-      },
-      {
-        "from": "checkout",
-        "to": "stock",
-        "label": "reserve(\"lamp\")",
-        "note": "The facade checks stock first, because charging for missing goods is wrong."
-      },
-      {
-        "from": "stock",
-        "to": "checkout",
-        "label": "true",
-        "dashed": true,
-        "note": "Stock says yes, so the facade may go on."
-      },
-      {
-        "from": "checkout",
-        "to": "pay",
-        "label": "charge(25.0)",
-        "note": "Next it charges the customer and keeps the payment id."
-      },
-      {
-        "from": "checkout",
-        "to": "courier",
-        "label": "book(\"lamp\")",
-        "note": "Then it books a pickup and gets a tracking id."
-      },
-      {
-        "from": "checkout",
-        "to": "main",
-        "label": "\"placed: …\"",
-        "dashed": true,
-        "note": "The caller gets one result. The order of steps lives in one place."
-      }
-    ]
+    "type": "anim",
+    "engine": "memory",
+    "title": "Shared mutable object vs immutable record",
+    "scenario": {
+      "code": [
+        "Money base = new Money(500, \"GBP\");",
+        "Item tea = new Item(\"Tea\", base);",
+        "Item coffee = new Item(\"Coffee\", base);",
+        "coffee.price.cents = 650; // mutable class",
+        "",
+        "// immutable record instead",
+        "Money p = new Money(500, \"GBP\");",
+        "Money dear = p.plus(new Money(150, \"GBP\"));"
+      ],
+      "steps": [
+        {
+          "caption": "`base` refers to one `Money` object on the heap.",
+          "line": 0,
+          "stack": [
+            {
+              "name": "main",
+              "vars": {
+                "base": {
+                  "ref": "o1"
+                }
+              }
+            }
+          ],
+          "heap": [
+            {
+              "id": "o1",
+              "label": "Money",
+              "props": {
+                "cents": "500",
+                "currency": "\"GBP\""
+              }
+            }
+          ]
+        },
+        {
+          "caption": "`tea` stores the reference, not a copy of the money.",
+          "line": 1,
+          "stack": [
+            {
+              "name": "main",
+              "vars": {
+                "base": {
+                  "ref": "o1"
+                },
+                "tea": {
+                  "ref": "o2"
+                }
+              }
+            }
+          ],
+          "heap": [
+            {
+              "id": "o1",
+              "label": "Money",
+              "props": {
+                "cents": "500",
+                "currency": "\"GBP\""
+              }
+            },
+            {
+              "id": "o2",
+              "label": "Item",
+              "props": {
+                "name": "\"Tea\"",
+                "price": {
+                  "ref": "o1"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "caption": "`coffee` points at the same `Money`. Two items now share one price object.",
+          "line": 2,
+          "stack": [
+            {
+              "name": "main",
+              "vars": {
+                "base": {
+                  "ref": "o1"
+                },
+                "tea": {
+                  "ref": "o2"
+                },
+                "coffee": {
+                  "ref": "o3"
+                }
+              }
+            }
+          ],
+          "heap": [
+            {
+              "id": "o1",
+              "label": "Money",
+              "props": {
+                "cents": "500",
+                "currency": "\"GBP\""
+              }
+            },
+            {
+              "id": "o2",
+              "label": "Item",
+              "props": {
+                "name": "\"Tea\"",
+                "price": {
+                  "ref": "o1"
+                }
+              }
+            },
+            {
+              "id": "o3",
+              "label": "Item",
+              "props": {
+                "name": "\"Coffee\"",
+                "price": {
+                  "ref": "o1"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "caption": "One write through `coffee` changes the shared object. Tea's price changed too.",
+          "line": 3,
+          "stack": [
+            {
+              "name": "main",
+              "vars": {
+                "base": {
+                  "ref": "o1"
+                },
+                "tea": {
+                  "ref": "o2"
+                },
+                "coffee": {
+                  "ref": "o3"
+                }
+              }
+            }
+          ],
+          "heap": [
+            {
+              "id": "o1",
+              "label": "Money",
+              "props": {
+                "cents": "650",
+                "currency": "\"GBP\""
+              }
+            },
+            {
+              "id": "o2",
+              "label": "Item",
+              "props": {
+                "name": "\"Tea\"",
+                "price": {
+                  "ref": "o1"
+                }
+              }
+            },
+            {
+              "id": "o3",
+              "label": "Item",
+              "props": {
+                "name": "\"Coffee\"",
+                "price": {
+                  "ref": "o1"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "caption": "A `record` has final fields. Nobody can assign to `cents` after construction.",
+          "line": 6,
+          "stack": [
+            {
+              "name": "main",
+              "vars": {
+                "p": {
+                  "ref": "o4"
+                }
+              }
+            }
+          ],
+          "heap": [
+            {
+              "id": "o4",
+              "label": "Money (record)",
+              "props": {
+                "cents": "500",
+                "currency": "\"GBP\""
+              }
+            }
+          ]
+        },
+        {
+          "caption": "`plus` returns a new object. `p` still holds 500, so sharing it is safe.",
+          "line": 7,
+          "stack": [
+            {
+              "name": "main",
+              "vars": {
+                "p": {
+                  "ref": "o4"
+                },
+                "dear": {
+                  "ref": "o5"
+                }
+              }
+            }
+          ],
+          "heap": [
+            {
+              "id": "o4",
+              "label": "Money (record)",
+              "props": {
+                "cents": "500",
+                "currency": "\"GBP\""
+              }
+            },
+            {
+              "id": "o5",
+              "label": "Money (record)",
+              "props": {
+                "cents": "650",
+                "currency": "\"GBP\""
+              }
+            }
+          ]
+        }
+      ]
+    }
   },
   "code": [
     {
-      "file": "FacadeDemo.java",
+      "file": "MutableTrap.java",
       "lang": "java",
-      "title": "Facade",
+      "title": "The problem",
       "run": "captured",
-      "caption": "`Checkout` hides three classes and their order behind one method.",
+      "caption": "Mutable fields, a stored caller list and string states. Three bugs, all compile.",
       "walk": [
         {
           "lines": [
-            10,
-            30
+            24,
+            31
           ],
-          "text": "Three subsystem classes, each with its own small job and its own method."
+          "text": "`Money` has mutable fields and no checks, so any holder can change it."
         },
         {
           "lines": [
-            32,
-            38
+            6,
+            10
           ],
-          "text": "The facade receives the parts through its constructor and keeps them `private final`."
+          "text": "Both items share one `Money`. Raising coffee's price silently raises tea's."
         },
         {
           "lines": [
-            40,
-            44
+            12,
+            16
           ],
-          "text": "`placeOrder` owns the sequence and stops early when stock is missing."
+          "text": "The item keeps the caller's list. The caller's later edit appears inside the item."
         },
         {
           "lines": [
-            3,
-            6
+            18,
+            19
           ],
-          "text": "`main` wires the parts once, then only ever talks to `Checkout`."
+          "text": "Status is a free `String`. The misspelt state is stored as if valid."
+        },
+        {
+          "lines": [
+            33,
+            42
+          ],
+          "text": "`Item` leaves every field non-private, so no invariant can be enforced anywhere."
         }
       ]
     },
     {
-      "file": "FlyweightDemo.java",
+      "file": "ValueTypes.java",
       "lang": "java",
-      "title": "Flyweight",
+      "title": "The fix",
       "run": "captured",
-      "caption": "Four map markers share two `Style` objects. Only the position is stored per marker.",
+      "caption": "Records for values, an `enum` for states, defensive copies, and `with` methods.",
       "walk": [
         {
           "lines": [
-            21,
-            22
+            28,
+            32
           ],
-          "text": "`Style` is the flyweight: immutable, so sharing it is safe."
+          "text": "The compact constructor validates before fields are assigned. Bad money never exists."
         },
         {
           "lines": [
-            24,
-            29
+            33,
+            37
           ],
-          "text": "`Marker` keeps its own position and a reference to a shared style."
+          "text": "`plus` returns a new `Money` and refuses mixed currencies."
         },
         {
           "lines": [
-            31,
-            40
+            40,
+            48
           ],
-          "text": "`StyleCache` builds a style once per key and returns the cached one after."
+          "text": "`Status` is a closed set. The `switch` expression must cover every constant."
         },
         {
           "lines": [
-            7,
-            17
+            50,
+            55
           ],
-          "text": "`main` asks for `cafe` three times and compares two styles with `==`."
+          "text": "`List.copyOf` copies the caller's list and makes it unmodifiable."
+        },
+        {
+          "lines": [
+            56,
+            58
+          ],
+          "text": "`withPrice` is how you \"change\" an immutable value: build a new one."
+        },
+        {
+          "lines": [
+            8,
+            16
+          ],
+          "text": "Tea keeps its price, and the caller's later tag edit does not leak in."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Keep the facade thin: it orders calls, it should not absorb the subsystem's rules.",
-    "Never put mutable state in a flyweight; one change would alter every user.",
-    "Skip Flyweight until you have many objects and measured memory pressure."
+    "Storing a caller's `List` in a record unchanged: the caller's later edits leak inside.",
+    "Persisting `ordinal()`: reordering enum constants silently changes the stored meaning.",
+    "Adding setters to a value class: every holder of a shared instance sees the change."
   ],
   "quiz": {
-    "q": "What does the last line print?",
+    "q": "What does this print?",
+    "code": "record Tag(List<String> names) {}\n\nvar list = new ArrayList<>(List.of(\"a\"));\nvar t = new Tag(list);\nlist.add(\"b\");\nSystem.out.println(t.names().size());",
+    "lang": "java",
     "options": [
-      "styles: 4",
-      "styles: 3",
-      "styles: 2",
-      "styles: 1"
+      "2",
+      "1",
+      "A compile error",
+      "UnsupportedOperationException"
     ],
-    "answer": 1,
-    "why": "The cache keys on icon and colour. `cafe/brown`, `cafe/red` and `park/green` are three distinct keys; the repeat reuses one.",
-    "code": "StyleCache styles = new StyleCache();\nstyles.get(\"cafe\", \"brown\");\nstyles.get(\"cafe\", \"red\");\nstyles.get(\"park\", \"green\");\nstyles.get(\"cafe\", \"brown\");\nSystem.out.println(\"styles: \" + styles.size());",
-    "lang": "java"
+    "answer": 0,
+    "why": "The record's field is final, but it holds the same list object. Without `List.copyOf`, the caller's edit is visible through the record."
   },
-  "takeaway": "Facade simplifies access to many parts; Flyweight shares state to save memory.",
+  "takeaway": "Enums for closed sets, records for values, copies for anything mutable.",
   "chat": {
     "starters": [
-      "Is a service class in Spring just a facade?",
-      "Is Java's string pool an example of Flyweight?",
-      "How do I stop a facade from becoming a god class?"
+      "When should I use a final class instead of a record?",
+      "Can an enum hold fields and behaviour per constant?",
+      "How do I change one field of an immutable object cheaply?"
     ]
   }
 }

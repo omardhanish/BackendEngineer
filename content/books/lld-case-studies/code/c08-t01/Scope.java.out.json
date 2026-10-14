@@ -1,0 +1,11 @@
+{
+  "stdout": "IN  CUSTOMER -> BROWSE_SHOWS\nIN  CUSTOMER -> VIEW_SEAT_MAP\nIN  CUSTOMER -> HOLD_SEATS\nIN  CUSTOMER -> PAY_AND_CONFIRM\nIN  CUSTOMER -> CANCEL_BOOKING\nIN  SYSTEM -> EXPIRE_HOLDS\nOUT THEATRE_ADMIN -> SCHEDULE_SHOW\nOUT CUSTOMER -> FOOD_ADD_ONS",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java Scope.java",
+  "tool": "Java 17.0.17",
+  "hash": "eca29f17a32d37d0",
+  "at": "2026-10-12T11:17:24.613Z"
+}

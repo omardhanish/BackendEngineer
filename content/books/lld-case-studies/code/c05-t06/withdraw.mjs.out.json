@@ -1,0 +1,11 @@
+{
+  "stdout": "two ATMs at once: [\"DECLINED (funds)\",\"PENDING\"]\nbalance: 20000\nretry same request: replay PENDING\nreverse: 1 again: 0 balance: 100000\nR-2 for 50000: PENDING\nR-3 for 50000: DECLINED (daily limit)",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node withdraw.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "dfc771ea6fc21d27",
+  "at": "2026-10-14T08:39:55.112Z"
+}

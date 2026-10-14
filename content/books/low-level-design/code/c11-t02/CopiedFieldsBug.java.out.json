@@ -1,0 +1,11 @@
+{
+  "stdout": "reminder B1 -> asha@old.example\nreminder B2 -> asha@old.example\ndirectory e7 -> asha@new.example",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java CopiedFieldsBug.java",
+  "tool": "Java 17.0.17",
+  "hash": "fa497e6d7f451548",
+  "at": "2026-10-12T11:23:24.828Z"
+}

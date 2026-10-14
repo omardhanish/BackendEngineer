@@ -1,0 +1,11 @@
+{
+  "stdout": "/shows/SH-1/holds 201 {\"holdId\":\"H-1\",\"seats\":[\"A1\",\"A2\"],\"heldUntil\":\"2026-01-15T18:10:00.000Z\"}\n/shows/SH-1/holds 409 {\"error\":\"SEAT_UNAVAILABLE\"}\n/shows/SH-1/holds 400 {\"error\":\"VALIDATION\"}\n/bookings 201 {\"id\":\"BK-1\",\"amountMinor\":50000}\n/bookings 200 {\"id\":\"BK-1\",\"amountMinor\":50000}",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node api.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "174dcaaaeaa383e4",
+  "at": "2026-10-12T11:24:25.665Z"
+}

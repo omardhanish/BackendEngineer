@@ -1,0 +1,274 @@
+{
+  "title": "Rate limiter as Express middleware",
+  "idea": "In a Node.js service the rate limiter becomes middleware: it keys each request, asks the limiter, and either calls `next()` or answers 429 with a retry hint.",
+  "points": [
+    "Middleware picks the key, such as an API key header, before any handler runs.",
+    "Rejected calls get 429 and a `Retry-After` header, in seconds.",
+    "Follow-up: in-memory limits are per process; N instances allow N times the limit.",
+    "A shared counter in PostgreSQL enforces one limit across instances with one atomic upsert."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "One request through the limiter",
+    "scenario": {
+      "token": {
+        "label": "GET /api/search",
+        "tone": "req"
+      },
+      "stages": [
+        {
+          "id": "client",
+          "label": "Client",
+          "sub": "X-Api-Key: key-A"
+        },
+        {
+          "id": "mw",
+          "label": "rateLimit",
+          "sub": "middleware"
+        },
+        {
+          "id": "lim",
+          "label": "Limiter",
+          "sub": "bucket per key"
+        },
+        {
+          "id": "route",
+          "label": "Route handler",
+          "sub": "/api/search",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "A client sends a search request with its API key.",
+          "at": "client",
+          "slot": "top"
+        },
+        {
+          "caption": "The middleware runs first and reads the key from the `X-Api-Key` header.",
+          "at": "mw",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "mw": "active"
+          }
+        },
+        {
+          "caption": "It asks the limiter for a decision. The bucket for key-A still has tokens.",
+          "at": "lim",
+          "slot": "top",
+          "state": {
+            "client": "done",
+            "mw": "done",
+            "lim": "active"
+          }
+        },
+        {
+          "caption": "Allowed: the middleware sets `X-RateLimit-Remaining` and calls `next()`.",
+          "at": "route",
+          "slot": "top",
+          "token": {
+            "label": "200 results",
+            "tone": "ok"
+          },
+          "state": {
+            "client": "done",
+            "mw": "done",
+            "lim": "done",
+            "route": "active"
+          }
+        },
+        {
+          "caption": "Later key-A has spent every token. The limiter answers no.",
+          "at": "lim",
+          "slot": "bottom",
+          "token": {
+            "label": "no tokens",
+            "tone": "err"
+          },
+          "state": {
+            "client": "done",
+            "mw": "done",
+            "lim": "blocked",
+            "route": "done"
+          }
+        },
+        {
+          "caption": "The middleware stops the chain and replies 429 with `Retry-After`. The handler never runs.",
+          "at": "client",
+          "slot": "bottom",
+          "token": {
+            "label": "429 Retry-After",
+            "tone": "err"
+          },
+          "state": {
+            "client": "error",
+            "mw": "done",
+            "lim": "blocked",
+            "route": "done"
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "middleware.mjs",
+      "lang": "js",
+      "title": "Express middleware",
+      "run": "captured",
+      "caption": "A token bucket per API key in one Express process, with an injected clock. Tokens are integer milli-tokens, as on the Java page. The demo trusts the X-Api-Key header to stay short. In production, run authentication middleware first and key on the verified identity it sets.",
+      "walk": [
+        {
+          "lines": [
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "text": "The limiter takes capacity, refill rate and a clock function."
+        },
+        {
+          "lines": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14
+          ],
+          "text": "Lazy refill: ms elapsed times tokens per second is milli-tokens, capped at capacity."
+        },
+        {
+          "lines": [
+            15,
+            16,
+            17,
+            18,
+            19,
+            20
+          ],
+          "text": "Spend a token, or report how long until one returns."
+        },
+        {
+          "lines": [
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32
+          ],
+          "text": "The middleware sets headers, then calls `next()` or replies 429."
+        },
+        {
+          "lines": [
+            34,
+            35,
+            36,
+            37,
+            38,
+            39
+          ],
+          "text": "Capacity 3 per key; only routes under /api are limited."
+        },
+        {
+          "lines": [
+            52,
+            53,
+            54,
+            55,
+            56
+          ],
+          "text": "Four calls from key-A, one from key-B, then key-A one second later."
+        }
+      ]
+    },
+    {
+      "file": "shared.mjs",
+      "lang": "js",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "title": "One limit across instances",
+      "caption": "A fixed window counter in PostgreSQL, chosen because it fits one atomic upsert. Ten parallel requests race, and the database lets exactly the limit through.",
+      "walk": [
+        {
+          "lines": [
+            3,
+            4,
+            5,
+            6
+          ],
+          "text": "One row per key and window; the CHECK keeps hits positive."
+        },
+        {
+          "lines": [
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17
+          ],
+          "text": "Insert the first hit, or add one only while hits stay below the limit."
+        },
+        {
+          "lines": [
+            18
+          ],
+          "text": "No returned row means the window is full: reject."
+        },
+        {
+          "lines": [
+            22,
+            23,
+            24,
+            25,
+            26
+          ],
+          "text": "Ten requests in parallel over pooled connections, as if from several instances."
+        },
+        {
+          "lines": [
+            27,
+            28
+          ],
+          "text": "A new window starts a fresh row, so the key is allowed again."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Key only on verified identities; a raw client header lets callers rotate keys and skip limits.",
+    "Follow-up: decide fail-open or fail-closed when the shared store is down.",
+    "Behind a proxy, `req.ip` is the proxy unless you configure `trust proxy`."
+  ],
+  "quiz": {
+    "q": "What does shared.mjs print first?",
+    "options": [
+      "window 1 allowed: 10 rejected: 0",
+      "window 1 allowed: 1 rejected: 9",
+      "window 1 allowed: 5 rejected: 5",
+      "It changes from run to run"
+    ],
+    "answer": 2,
+    "why": "Conflicting upserts on one row run one after another. The update's WHERE sees the true count, so only five succeed."
+  },
+  "takeaway": "Limit in middleware; share the counter when the service runs on many instances.",
+  "chat": {
+    "starters": [
+      "How would I build this with Redis instead of PostgreSQL?",
+      "Should health checks and webhooks skip the limiter?",
+      "How do I evict idle buckets so random keys cannot grow the Map?"
+    ]
+  }
+}

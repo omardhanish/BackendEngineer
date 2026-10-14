@@ -1,0 +1,358 @@
+{
+  "title": "Payment schema in PostgreSQL",
+  "idea": "The schema maps Payment and Refund to tables where PostgreSQL enforces the money rules: unique keys, one success per order, and refunds never above the amount.",
+  "analogy": {
+    "text": "A bank ledger with printed columns. The form will not accept a refund line bigger than the deposit, whoever writes in it.",
+    "breaks": "A ledger has one writer at a time; a database has many."
+  },
+  "points": [
+    "`idempotency_key` is UNIQUE, so a retried insert fails with 23505.",
+    "A partial unique index allows many failed tries but one success per order.",
+    "`CHECK` keeps refunded_minor between zero and amount_minor, whatever the code does.",
+    "Refunds lock the payment row `FOR UPDATE`, check the balance, then write."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "Two refunds, one payment row",
+    "scenario": {
+      "tiers": [
+        [
+          "ta",
+          "tb"
+        ],
+        [
+          "db"
+        ]
+      ],
+      "nodes": {
+        "ta": {
+          "label": "Tx R-A",
+          "sub": "refund 30000",
+          "kind": "client"
+        },
+        "tb": {
+          "label": "Tx R-B",
+          "sub": "refund 30000",
+          "kind": "client"
+        },
+        "db": {
+          "label": "payment P-1",
+          "sub": "amount 50000",
+          "kind": "db"
+        }
+      },
+      "links": [
+        [
+          "ta",
+          "db"
+        ],
+        [
+          "tb",
+          "db"
+        ]
+      ],
+      "steps": [
+        {
+          "caption": "Two agents refund 30000 each from P-1, a 50000 payment, at the same moment.",
+          "focus": [
+            "ta",
+            "tb"
+          ]
+        },
+        {
+          "caption": "R-A runs `SELECT ... FOR UPDATE` on P-1 and gets the row lock.",
+          "send": [
+            {
+              "from": "ta",
+              "to": "db",
+              "label": "lock P-1",
+              "tone": "req"
+            }
+          ],
+          "state": {
+            "ta": "busy"
+          },
+          "badge": {
+            "db": "R-A lock"
+          }
+        },
+        {
+          "caption": "R-B asks for the same row lock and must wait.",
+          "send": [
+            {
+              "from": "tb",
+              "to": "db",
+              "label": "lock P-1",
+              "tone": "req"
+            }
+          ],
+          "state": {
+            "tb": "stale"
+          }
+        },
+        {
+          "caption": "R-A sees 50000 left, inserts its refund, adds 30000 and commits. The lock is released.",
+          "send": [
+            {
+              "from": "db",
+              "to": "ta",
+              "label": "COMMIT",
+              "tone": "ok"
+            }
+          ],
+          "state": {
+            "ta": "ok"
+          },
+          "badge": {
+            "db": "refund 30000"
+          }
+        },
+        {
+          "caption": "R-B wakes and reads the committed row: only 20000 is left.",
+          "send": [
+            {
+              "from": "db",
+              "to": "tb",
+              "label": "20000 left",
+              "tone": "warn"
+            }
+          ],
+          "focus": [
+            "tb"
+          ]
+        },
+        {
+          "caption": "30000 is more than 20000, so R-B rolls back. Nothing is written.",
+          "send": [
+            {
+              "from": "tb",
+              "to": "db",
+              "label": "ROLLBACK",
+              "tone": "err"
+            }
+          ],
+          "state": {
+            "tb": "down"
+          }
+        },
+        {
+          "caption": "Even a buggy code path cannot push refunded_minor past the amount: the CHECK refuses it.",
+          "badge": {
+            "db": "CHECK guards"
+          },
+          "focus": [
+            "db"
+          ]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "schema.mjs",
+      "lang": "js",
+      "title": "Tables and constraints",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "The schema on a real PostgreSQL 18, then bad writes that the database refuses by itself.",
+      "walk": [
+        {
+          "lines": [
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18
+          ],
+          "text": "payment: BIGINT money, TEXT enums with CHECK, a UNIQUE Idempotency-Key and a version."
+        },
+        {
+          "lines": [
+            19,
+            20
+          ],
+          "text": "A plain index serves listing the payments of one order."
+        },
+        {
+          "lines": [
+            21,
+            22,
+            23
+          ],
+          "text": "Partial unique index: an order may hold only one successful payment."
+        },
+        {
+          "lines": [
+            24,
+            25,
+            26
+          ],
+          "text": "Partial index for the reconciler: only PROCESSING rows, oldest first."
+        },
+        {
+          "lines": [
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33
+          ],
+          "text": "refund references payment and has its own unique Idempotency-Key."
+        },
+        {
+          "lines": [
+            46,
+            47,
+            48,
+            49,
+            50,
+            51
+          ],
+          "text": "Three valid rows: a success, a failed try, then a retry that succeeds."
+        },
+        {
+          "lines": [
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59,
+            60,
+            61
+          ],
+          "text": "Five bad writes; each prints the Postgres error code and the constraint."
+        }
+      ]
+    },
+    {
+      "file": "refund.mjs",
+      "lang": "js",
+      "title": "The refund transaction",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "Two parallel refunds race for one balance; then a webhook is applied twice. It uses trimmed tables so the race stays short. In a full design the refund row starts PENDING; the gateway is called after COMMIT and its answer settles the row.",
+      "walk": [
+        {
+          "lines": [
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21
+          ],
+          "text": "Open a transaction and lock the payment row with `FOR UPDATE`."
+        },
+        {
+          "lines": [
+            22,
+            23,
+            24,
+            25,
+            26,
+            27
+          ],
+          "text": "Refuse if the payment is not refundable or the balance is too small."
+        },
+        {
+          "lines": [
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35
+          ],
+          "text": "Insert the refund, add to refunded_minor, set the status and bump version."
+        },
+        {
+          "lines": [
+            45,
+            46,
+            47,
+            48,
+            49,
+            50
+          ],
+          "text": "A webhook updates only from PROCESSING: compare-and-set in one statement."
+        },
+        {
+          "lines": [
+            52,
+            53,
+            54,
+            55
+          ],
+          "text": "Two refunds race in parallel; print how many won, never which."
+        },
+        {
+          "lines": [
+            56,
+            57,
+            58,
+            59,
+            60,
+            61
+          ],
+          "text": "Follow-up refunds, a refund on a PROCESSING payment, and a duplicate webhook."
+        },
+        {
+          "lines": [
+            62,
+            63,
+            64,
+            65
+          ],
+          "text": "Final rows prove the totals and the versions."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Keep the gateway call outside the transaction; a row lock must not wait on the network.",
+    "Without `FOR UPDATE`, two refunds can read the same balance and both pass.",
+    "Never trust application checks alone; CHECK and UNIQUE are the last guard."
+  ],
+  "quiz": {
+    "q": "What does refund.mjs print for the parallel refunds?",
+    "options": [
+      "parallel refunds accepted: 1",
+      "parallel refunds accepted: 2",
+      "parallel refunds accepted: 0",
+      "A deadlock error from PostgreSQL"
+    ],
+    "answer": 0,
+    "why": "R-B waits on the row lock, then reads P-1 again after R-A commits. Only 20000 is left, so R-B rolls back."
+  },
+  "takeaway": "Lock the payment row for refunds; let constraints refuse impossible money.",
+  "chat": {
+    "starters": [
+      "Why a partial unique index instead of a paid flag on the order?",
+      "When would optimistic locking with version fit better than FOR UPDATE?",
+      "How should the reconciler query stuck PROCESSING payments?"
+    ]
+  }
+}

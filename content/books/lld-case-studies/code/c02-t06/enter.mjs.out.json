@@ -1,0 +1,11 @@
+{
+  "stdout": "three gates at once: [\"F1-C1\",\"F2-C1\",\"LOT_FULL\"]\ntruck: LOT_FULL\nunpaid exit F1-C1: NOT_PAID\npaid exit F1-C1: EXITED\nnext car: F1-C1\n[{\"status\":\"OCCUPIED\",\"n\":3}]",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node enter.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "4cb1b936ee06cf12",
+  "at": "2026-10-14T08:38:27.968Z"
+}

@@ -1,0 +1,193 @@
+{
+  "title": "Order lifecycle and checkout flow",
+  "idea": "The order lifecycle is a state machine: an Order starts PENDING_PAYMENT, moves only along allowed arrows, and every move tells Inventory what to do.",
+  "points": [
+    "PENDING_PAYMENT moves to PAID on payment, or to CANCELLED on timeout or cancel.",
+    "PAID can ship or be cancelled; SHIPPED only becomes DELIVERED in v1.",
+    "Each move has a stock effect: commit, release, or restock with a refund.",
+    "An illegal move is refused in one place, not checked by every caller."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "Place, pay, commit stock",
+    "actors": [
+      {
+        "id": "shopper",
+        "label": "Shopper"
+      },
+      {
+        "id": "svc",
+        "label": "CheckoutService"
+      },
+      {
+        "id": "inv",
+        "label": "Inventory"
+      },
+      {
+        "id": "pay",
+        "label": "PaymentGateway"
+      }
+    ],
+    "messages": [
+      {
+        "from": "shopper",
+        "to": "svc",
+        "label": "checkout(cart C-1)",
+        "note": "The shopper presses Place order. The service reprices the cart first."
+      },
+      {
+        "from": "svc",
+        "to": "inv",
+        "label": "reserveAll(lines)",
+        "note": "All lines are reserved together, or none are. Reserved units leave the available count."
+      },
+      {
+        "from": "svc",
+        "to": "shopper",
+        "label": "OR-1 PENDING_PAYMENT",
+        "dashed": true,
+        "note": "The order exists now, with frozen prices and a deadline to pay."
+      },
+      {
+        "from": "shopper",
+        "to": "svc",
+        "label": "pay(OR-1, token)",
+        "note": "Payment is a separate step; stock stays reserved while the shopper enters card details."
+      },
+      {
+        "from": "svc",
+        "to": "pay",
+        "label": "charge(total)",
+        "note": "The service charges the frozen total, once, with the order's idempotency key."
+      },
+      {
+        "from": "pay",
+        "to": "svc",
+        "label": "ok",
+        "dashed": true,
+        "note": "Payment succeeded, so the Order moves PENDING_PAYMENT to PAID."
+      },
+      {
+        "from": "svc",
+        "to": "inv",
+        "label": "commit(OR-1)",
+        "note": "Reserved units become sold: on-hand and reserved both drop by the quantity."
+      },
+      {
+        "from": "svc",
+        "to": "shopper",
+        "label": "OR-1 PAID",
+        "dashed": true,
+        "note": "Had the deadline passed first, the sweeper would have cancelled and released the stock."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "OrderLifecycle.java",
+      "lang": "java",
+      "title": "Status enum with effects",
+      "run": "captured",
+      "caption": "Allowed moves live in the enum. Each accepted move updates one SKU's stock, so you can watch the counts.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "text": "OR-1 is paid and shipped; cancelling after shipping is refused."
+        },
+        {
+          "lines": [
+            10,
+            11,
+            12
+          ],
+          "text": "OR-2 is never paid, so it is cancelled; a late payment is refused."
+        },
+        {
+          "lines": [
+            13,
+            14,
+            15
+          ],
+          "text": "OR-3 is paid and then cancelled by the shopper."
+        },
+        {
+          "lines": [
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31
+          ],
+          "text": "An `EnumMap` lists the allowed next states; `canMoveTo` asks it."
+        },
+        {
+          "lines": [
+            47,
+            48,
+            49,
+            50,
+            51
+          ],
+          "text": "Placing an order reserves its units straight away."
+        },
+        {
+          "lines": [
+            53,
+            54,
+            55,
+            56
+          ],
+          "text": "Refuse an illegal move and leave the status unchanged."
+        },
+        {
+          "lines": [
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63,
+            64
+          ],
+          "text": "Pay commits stock; cancel releases it, or restocks and refunds if paid."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not set `status` from controllers or jobs; every change goes through `moveTo`.",
+    "A payment that lands after cancellation needs a refund, not a silent PAID.",
+    "Cancelling a PAID order must restock on-hand units, not reduce reserved ones."
+  ],
+  "quiz": {
+    "q": "What does the last line of OrderLifecycle print?",
+    "options": [
+      "OR-3 PAID -> CANCELLED, onHand=1 reserved=2, refund",
+      "OR-3 refused PAID -> CANCELLED",
+      "OR-3 PAID -> CANCELLED, onHand=3 reserved=0, refund",
+      "OR-3 PAID -> CANCELLED, onHand=3 reserved=0"
+    ],
+    "answer": 2,
+    "why": "Paying OR-3 moved two units out of on-hand. Cancelling a PAID order puts them back, giving 3, and adds the refund note."
+  },
+  "takeaway": "Allowed moves live in one enum; each move carries its stock effect.",
+  "chat": {
+    "starters": [
+      "Should there be a PAYMENT_FAILED state instead of staying PENDING_PAYMENT?",
+      "How would returns after delivery fit into this state machine?",
+      "Would the State pattern be better than an enum with a map?"
+    ]
+  }
+}

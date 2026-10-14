@@ -1,0 +1,11 @@
+{
+  "stdout": "BucketStore: purged\nLegalArchive: crashed, archive is read-only",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java FatStoreDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "205609d53ad8be49",
+  "at": "2026-10-12T11:15:02.388Z"
+}

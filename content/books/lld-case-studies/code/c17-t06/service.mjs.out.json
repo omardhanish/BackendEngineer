@@ -1,0 +1,11 @@
+{
+  "stdout": "GET /products/P-1 200 {\"id\":\"P-1\",\"name\":\"Masala tea\",\"priceMinor\":2000,\"source\":\"db\"}\nGET /products/P-1 200 {\"id\":\"P-1\",\"name\":\"Masala tea\",\"priceMinor\":2000,\"source\":\"cache\"}\nPUT /products/P-1/price 400 {\"error\":\"VALIDATION\"}\nPUT /products/P-1/price 204\nGET /products/P-1 200 {\"id\":\"P-1\",\"name\":\"Masala tea\",\"priceMinor\":2200,\"source\":\"db\"}\nGET /products/P-9 404 {\"error\":\"PRODUCT_NOT_FOUND\"}\nGET /products/P-2 200 {\"id\":\"P-2\",\"name\":\"Filter coffee\",\"priceMinor\":3500,\"source\":\"db\"}\nGET /products/P-3 200 {\"id\":\"P-3\",\"name\":\"Lassi\",\"priceMinor\":5000,\"source\":\"db\"}\nGET /cache/stats 200 {\"hits\":1,\"misses\":5,\"evictions\":1,\"dbReads\":5}\nDB reads for 3 parallel cold GETs: 1",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node service.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "9262da0ce8ae0ff3",
+  "at": "2026-10-14T08:37:54.373Z"
+}

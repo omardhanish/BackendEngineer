@@ -1,0 +1,11 @@
+{
+  "stdout": "POST /notifications 202 {\"id\":\"N-1\",\"status\":\"PENDING\",\"provider\":null}\nPOST /notifications 200 {\"id\":\"N-1\",\"status\":\"PENDING\",\"provider\":null}\nPOST /notifications 400 {\"error\":\"VALIDATION\"}\nPOST /notifications 400 {\"error\":\"MISSING_PARAM_code\"}\nPOST /notifications 202 {\"id\":\"N-2\",\"status\":\"PENDING\",\"provider\":null}\nprovider calls {\"mail-a\":1,\"sms-a\":1,\"sms-b\":1}\nGET /notifications/N-1 200 {\"id\":\"N-1\",\"status\":\"SENT\",\"provider\":\"sms-b\"}\nGET /notifications/N-404 404 {\"error\":\"NOT_FOUND\"}",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node notify-api.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "e2e73986dcd4a74f",
+  "at": "2026-10-14T08:49:05.788Z"
+}

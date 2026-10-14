@@ -1,0 +1,11 @@
+{
+  "stdout": "breakers created: 2\ncalls: 8000\npayments: OPEN\nsearch:   CLOSED",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java SharedBreakers.java",
+  "tool": "Java 17.0.17",
+  "hash": "a26537b05bbad7ad",
+  "at": "2026-10-14T08:46:02.076Z"
+}

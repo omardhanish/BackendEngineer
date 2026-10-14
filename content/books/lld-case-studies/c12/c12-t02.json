@@ -1,0 +1,229 @@
+{
+  "title": "Meeting room domain model",
+  "idea": "The meeting room domain model separates what exists (Room, Employee), what is planned (Meeting), and what claims a room for an Interval (Booking).",
+  "analogy": {
+    "text": "A paper sign-up sheet taped to each room's door. Each line names who booked, when, and for what meeting.",
+    "breaks": "A sheet cannot refuse an overlapping line; Calendar does."
+  },
+  "points": [
+    "Room and Employee are records: fixed facts with ids.",
+    "Interval is a half-open value object; end must be after start.",
+    "A Meeting has an organizer, guests and an Interval; Booking adds a Room.",
+    "Each Room has one Calendar of active Bookings, sorted by start time."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Class diagram",
+    "nodes": [
+      {
+        "id": "emp",
+        "label": "Employee",
+        "sub": "id, name, email"
+      },
+      {
+        "id": "meet",
+        "label": "Meeting",
+        "sub": "title, guestIds, headcount()"
+      },
+      {
+        "id": "iv",
+        "label": "Interval",
+        "sub": "start, end, overlaps()"
+      },
+      {
+        "id": "bk",
+        "label": "Booking",
+        "sub": "id, status"
+      },
+      {
+        "id": "room",
+        "label": "Room",
+        "sub": "id, floor, capacity"
+      },
+      {
+        "id": "cal",
+        "label": "Calendar",
+        "sub": "isFree(), add()"
+      },
+      {
+        "id": "st",
+        "label": "BookingStatus",
+        "sub": "enum"
+      }
+    ],
+    "edges": [
+      {
+        "from": "meet",
+        "to": "emp",
+        "label": "organized by 1",
+        "caption": "A Meeting has one organizer. Guests are stored as Employee ids, not objects."
+      },
+      {
+        "from": "meet",
+        "to": "iv",
+        "label": "has 1",
+        "caption": "A Meeting owns one Interval. Interval is a value object: equal fields mean equal values."
+      },
+      {
+        "from": "bk",
+        "to": "meet",
+        "label": "for 1",
+        "caption": "A Booking is for one Meeting. A meeting with no room yet has no Booking."
+      },
+      {
+        "from": "bk",
+        "to": "room",
+        "label": "in 1",
+        "caption": "A Booking claims exactly one Room. A Room has many Bookings over time."
+      },
+      {
+        "from": "cal",
+        "to": "room",
+        "label": "for 1",
+        "caption": "Each Room has one Calendar. It is the only place that answers isFree."
+      },
+      {
+        "from": "cal",
+        "to": "bk",
+        "label": "holds 0..*",
+        "caption": "The Calendar keeps active Bookings keyed by start, so a lookup checks only one neighbour."
+      },
+      {
+        "from": "bk",
+        "to": "st",
+        "label": "has",
+        "caption": "BookingStatus is an enum. The lifecycle page turns it into a state machine."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "DomainModel.java",
+      "lang": "java",
+      "title": "The model in Java 17",
+      "run": "captured",
+      "caption": "Records for facts and values, a class for Booking because its status changes, and invariants in constructors.",
+      "walk": [
+        {
+          "lines": [
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14
+          ],
+          "text": "Build an Employee, a Room for six, a Calendar, and book a 10:00 meeting."
+        },
+        {
+          "lines": [
+            17,
+            18,
+            19,
+            20,
+            21
+          ],
+          "text": "Ask about a back-to-back slot and an overlapping slot."
+        },
+        {
+          "lines": [
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32
+          ],
+          "text": "Two bad inputs are refused: an empty interval and too many people."
+        },
+        {
+          "lines": [
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55
+          ],
+          "text": "Interval rejects end before or equal to start and owns the overlap rule."
+        },
+        {
+          "lines": [
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63,
+            64,
+            65
+          ],
+          "text": "Meeting copies the guest list and counts the organizer in its headcount."
+        },
+        {
+          "lines": [
+            82,
+            83,
+            84,
+            85,
+            86,
+            87,
+            88,
+            89
+          ],
+          "text": "`lowerEntry` returns the latest booking starting before our end; only it can clash."
+        },
+        {
+          "lines": [
+            90,
+            91,
+            92,
+            93,
+            94,
+            95,
+            96
+          ],
+          "text": "`add` checks capacity and overlap before storing the Booking."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not put a busy flag on Room; a room is busy only for some intervals.",
+    "Store guests as ids; embedding Employee objects copies data that later changes.",
+    "Count the organizer in headcount, or a full room gets one person too many."
+  ],
+  "quiz": {
+    "q": "What does the last line of DomainModel print?",
+    "options": [
+      "rejected: 6 people > capacity 6",
+      "rejected: 7 people > capacity 6",
+      "rejected: start must be before end",
+      "Nothing; the meeting fits"
+    ],
+    "answer": 1,
+    "why": "Six guests plus the organizer make seven. `checkFits` compares seven with capacity six and throws, and the catch prints it."
+  },
+  "takeaway": "Rooms exist, meetings are planned, bookings claim a room for an interval.",
+  "chat": {
+    "starters": [
+      "Why is Interval a record and Booking a class?",
+      "Why does lowerEntry find every possible clash?",
+      "Should Meeting and Booking be one class in a smaller design?"
+    ]
+  }
+}

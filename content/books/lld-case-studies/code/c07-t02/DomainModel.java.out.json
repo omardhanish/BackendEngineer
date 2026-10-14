@@ -1,0 +1,11 @@
+{
+  "stdout": "[CartItem[sku=SKU-MUG, qty=3, unitPriceMinor=49900], CartItem[sku=SKU-TEE, qty=1, unitPriceMinor=79900]]\ncart subtotal 229600\ncart after edit 279500, order still 229600 PENDING_PAYMENT\nrejected: qty must be 1..10, got 13\nrejected: negative price\nrejected: payment must be positive\navailable SKU-TEE 1",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java DomainModel.java",
+  "tool": "Java 17.0.17",
+  "hash": "76708635667add37",
+  "at": "2026-10-14T08:41:05.044Z"
+}

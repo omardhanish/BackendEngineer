@@ -1,0 +1,11 @@
+{
+  "stdout": "unsafe: [T2, T2]\nsafe:   [T2, T4]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java TableRace.java",
+  "tool": "Java 17.0.17",
+  "hash": "4e3fb86a025304a4",
+  "at": "2026-10-14T08:47:45.473Z"
+}

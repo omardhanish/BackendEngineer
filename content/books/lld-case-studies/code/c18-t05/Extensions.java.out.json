@@ -1,0 +1,11 @@
+{
+  "stdout": "refused    BLOCKED .exe\nrefused    NAME_TOO_LONG\nrefused    QUOTA_EXCEEDED\nlogs       [/logs/app.log, /logs/old.log]\nbig logs   [/logs/app.log]\nnot logs   [/docs/cv.pdf, /docs/notes.txt]\nby ext     {.log=4200, .pdf=1200, .txt=300}\nrefused    UNKNOWN_RULE virusScan",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java Extensions.java",
+  "tool": "Java 17.0.17",
+  "hash": "94b5dd881960cd8c",
+  "at": "2026-10-14T10:22:36.521Z"
+}

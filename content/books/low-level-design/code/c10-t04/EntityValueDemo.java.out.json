@@ -1,0 +1,11 @@
+{
+  "stdout": "price: Money[cents=500, currency=EUR], total: Money[cents=600, currency=EUR]\n500 equals 500? true\nada still VIP? true\nRejected: currency mismatch",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java EntityValueDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "8808e78937c88a7f",
+  "at": "2026-10-12T11:19:15.314Z"
+}

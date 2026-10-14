@@ -1,0 +1,270 @@
+{
+ "title": "Slot grid and booking UI",
+ "idea": "The frontend shows a court's hourly grid, lets the player pick neighbouring hours, and sends one idempotent booking request per click, however often the network fails.",
+ "points": [
+  "The page owns server data; SlotGrid owns the pick, its step and an error.",
+  "The API client makes one Idempotency-Key per click and reuses it on retries.",
+  "A 409 clears the pick; onTaken tells the page to refetch the grid.",
+  "Follow-up: cache the grid briefly at scale; the unique index still guards writes."
+ ],
+ "hero": {
+  "type": "seq",
+  "title": "One click, end to end",
+  "actors": [
+   {
+    "id": "ui",
+    "label": "SlotGrid"
+   },
+   {
+    "id": "client",
+    "label": "apiClient"
+   },
+   {
+    "id": "api",
+    "label": "Express API"
+   },
+   {
+    "id": "svc",
+    "label": "BookingService"
+   },
+   {
+    "id": "db",
+    "label": "PostgreSQL"
+   }
+  ],
+  "messages": [
+   {
+    "from": "ui",
+    "to": "client",
+    "label": "book(C-1, 18:00, 1h)",
+    "note": "The player clicks Book. The button disables and the step becomes SUBMITTING."
+   },
+   {
+    "from": "client",
+    "to": "api",
+    "label": "POST /bookings + key ik-1",
+    "note": "The client makes one Idempotency-Key for this click. A second click gets the same promise."
+   },
+   {
+    "from": "api",
+    "to": "svc",
+    "label": "create(ik-1, body)",
+    "note": "The controller validates the body with zod, then calls the service."
+   },
+   {
+    "from": "svc",
+    "to": "db",
+    "label": "INSERT booking, slots",
+    "note": "One transaction inserts the PENDING booking and one row per hour."
+   },
+   {
+    "from": "db",
+    "to": "svc",
+    "label": "COMMIT",
+    "dashed": true,
+    "note": "The partial unique index accepts the 18:00 row, so the transaction commits."
+   },
+   {
+    "from": "api",
+    "to": "client",
+    "label": "201 BK-1 (lost)",
+    "dashed": true,
+    "note": "The reply is lost on the way back. The booking exists, but the browser does not know."
+   },
+   {
+    "from": "client",
+    "to": "api",
+    "label": "retry with key ik-1",
+    "note": "The client retries with the SAME key, never a new one."
+   },
+   {
+    "from": "api",
+    "to": "client",
+    "label": "200 BK-1 (replay)",
+    "dashed": true,
+    "note": "The API's create call finds ik-1 already stored and returns that booking. No second booking is made."
+   },
+   {
+    "from": "client",
+    "to": "ui",
+    "label": "HELD BK-1",
+    "dashed": true,
+    "note": "The screen moves to payment with a countdown to the hold deadline."
+   }
+  ]
+ },
+ "code": [
+  {
+   "file": "bookingClient.mjs",
+   "lang": "js",
+   "title": "Idempotent API client",
+   "run": "browser",
+   "caption": "Pure logic with a fake server in the same file. Run it, then add 18:00 to `taken` and predict the output.",
+   "walk": [
+    {
+     "lines": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+     ],
+     "text": "The fake server saves by key, refuses 17:00, and loses its first reply."
+    },
+    {
+     "lines": [
+      15,
+      16,
+      17,
+      18,
+      19
+     ],
+     "text": "While a request is in flight, another click returns the same promise."
+    },
+    {
+     "lines": [
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29
+     ],
+     "text": "One key per click; every retry of that click sends the same key."
+    },
+    {
+     "lines": [
+      36,
+      37,
+      38,
+      39,
+      40
+     ],
+     "text": "Map the response to the next screen step: held, taken, or error."
+    },
+    {
+     "lines": [
+      43,
+      44,
+      45,
+      46,
+      47,
+      48,
+      49,
+      50
+     ],
+     "text": "Book 18:00 with a double click, then try 17:00, which is taken."
+    }
+   ]
+  },
+  {
+   "file": "SlotGrid.jsx",
+   "lang": "js",
+   "title": "SlotGrid component",
+   "run": "static",
+   "illustrative": true,
+   "caption": "A React component that renders state and calls the client. Not run here.",
+   "walk": [
+    {
+     "lines": [
+      3,
+      4,
+      5,
+      6
+     ],
+     "text": "Props bring server data and the client; local state is the pick, the step and an error."
+    },
+    {
+     "lines": [
+      7,
+      8,
+      9,
+      10,
+      11
+     ],
+     "text": "SUBMITTING disables the button on the next render; the client's shared promise covers clicks before then."
+    },
+    {
+     "lines": [
+      12,
+      13,
+      14,
+      15
+     ],
+     "text": "A 409 clears the pick, shows why, and calls onTaken so the parent refetches the grid."
+    },
+    {
+     "lines": [
+      16,
+      17,
+      18,
+      19
+     ],
+     "text": "Any other error status stays here with a message; only success goes to payment."
+    },
+    {
+     "lines": [
+      21,
+      22,
+      23,
+      24
+     ],
+     "text": "A network failure after retries returns to selecting with a message."
+    },
+    {
+     "lines": [
+      26,
+      27
+     ],
+     "text": "Loading and empty states are explicit, never a blank grid."
+    },
+    {
+     "lines": [
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37
+     ],
+     "text": "Picks stay contiguous up to three hours; the button shows progress."
+    }
+   ]
+  }
+ ],
+ "pitfalls": [
+  "Reuse the Idempotency-Key on retries; a new key after a lost reply gets a false 409.",
+  "Show prices from the server response, not only the client's preview.",
+  "Follow-up: weekly bookings become several bookings created in one transaction."
+ ],
+ "quiz": {
+  "q": "What does bookingClient print for the 18:00 status line?",
+  "options": [
+   "  status 201 -> HELD BK-1",
+   "  status 200 -> HELD BK-1",
+   "  status 201 -> HELD BK-2",
+   "  status 409 -> TAKEN: refresh grid, pick again"
+  ],
+  "answer": 1,
+  "why": "The first try saved BK-1 but lost the reply. The retry sends the same key, so the server replays BK-1 with 200."
+ },
+ "takeaway": "One click, one key, many retries: the server books once.",
+ "chat": {
+  "starters": [
+   "Should the grid update live when someone else books an hour?",
+   "Where should the hold countdown get its deadline from?",
+   "How would I add booking for a whole team with split payment?"
+  ]
+ }
+}

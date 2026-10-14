@@ -1,0 +1,11 @@
+{
+  "stdout": "t=0    k1 ALLOW remaining=2\nt=0    k1 ALLOW remaining=1\nt=0    k1 ALLOW remaining=0\nt=0    k1 REJECT retryAfter=1000ms\nt=0    k2 ALLOW remaining=2\nt=1000 k1 ALLOW remaining=2",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ClassDesign.java",
+  "tool": "Java 17.0.17",
+  "hash": "22b9556deb308cdf",
+  "at": "2026-10-14T08:32:38.034Z"
+}

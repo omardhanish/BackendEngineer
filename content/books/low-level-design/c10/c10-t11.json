@@ -1,0 +1,234 @@
+{
+  "title": "Test-driven development",
+  "idea": "Test-driven development (TDD) lets tests drive the design: you write one failing test, make it pass with the least code, then clean up.",
+  "points": [
+    "Red: write one small test for the next behaviour and watch it fail.",
+    "Green: write the simplest code that passes, even if it looks naive.",
+    "Refactor: rename, extract and remove duplication while every test stays green.",
+    "Tests written first force a small public API that is easy to call."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "Three turns of the late-fee cycle",
+    "scenario": {
+      "token": {
+        "label": "3 days late",
+        "tone": "req"
+      },
+      "stages": [
+        {
+          "id": "list",
+          "label": "Test list",
+          "sub": "behaviours to cover",
+          "kind": "end"
+        },
+        {
+          "id": "red",
+          "label": "Red",
+          "sub": "one failing test"
+        },
+        {
+          "id": "green",
+          "label": "Green",
+          "sub": "least code to pass"
+        },
+        {
+          "id": "refactor",
+          "label": "Refactor",
+          "sub": "clean, still green",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "Pick the next behaviour from the list: a book three days late costs 75 cents.",
+          "at": "list",
+          "slot": "top",
+          "state": {
+            "list": "active"
+          }
+        },
+        {
+          "caption": "Write the test first. `cents(3)` still returns 0, so the run shows FAIL.",
+          "at": "red",
+          "slot": "top",
+          "token": {
+            "label": "FAIL",
+            "tone": "err"
+          },
+          "state": {
+            "list": "done",
+            "red": "error"
+          }
+        },
+        {
+          "caption": "Add the least code that passes: past two grace days, 25 cents per late day. Every test now prints PASS.",
+          "at": "green",
+          "slot": "top",
+          "token": {
+            "label": "PASS",
+            "tone": "ok"
+          },
+          "state": {
+            "list": "done",
+            "red": "done",
+            "green": "active"
+          }
+        },
+        {
+          "caption": "Refactor: replace the magic numbers with `GRACE_DAYS` and `CENTS_PER_DAY`. Run tests again.",
+          "at": "refactor",
+          "slot": "top",
+          "token": {
+            "label": "PASS",
+            "tone": "ok"
+          },
+          "state": {
+            "list": "done",
+            "red": "done",
+            "green": "done",
+            "refactor": "active"
+          }
+        },
+        {
+          "caption": "Back to the list. Cap tests at 19 and 20 days go red, then green, and the cycle repeats.",
+          "at": "list",
+          "slot": "bottom",
+          "token": {
+            "label": "cap at 500",
+            "tone": "req"
+          },
+          "state": {
+            "list": "active",
+            "red": "done",
+            "green": "done",
+            "refactor": "done"
+          }
+        },
+        {
+          "caption": "A test for 90 million days goes red: the `int` multiply overflowed. Using `long` turns it green.",
+          "at": "red",
+          "slot": "bottom",
+          "token": {
+            "label": "overflow",
+            "tone": "err"
+          },
+          "state": {
+            "list": "done",
+            "red": "error",
+            "green": "done",
+            "refactor": "done"
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "LateFeeRed.java",
+      "lang": "java",
+      "title": "Red",
+      "run": "captured",
+      "caption": "The third test is written before the code. The failure names the next job.",
+      "walk": [
+        {
+          "lines": [
+            24,
+            30
+          ],
+          "text": "Two earlier cycles needed only `return 0`. TDD forbids writing more than tests demand."
+        },
+        {
+          "lines": [
+            9,
+            10
+          ],
+          "text": "The new test states the rule as an example: three days late costs 75 cents."
+        },
+        {
+          "lines": [
+            14,
+            21
+          ],
+          "text": "JUnit is not here, so a tiny `check` runner prints PASS or FAIL and collects failures."
+        },
+        {
+          "lines": [
+            11,
+            11
+          ],
+          "text": "The summary shows exactly one failing test. One red test means one clear next step."
+        }
+      ]
+    },
+    {
+      "file": "LateFeeGreen.java",
+      "lang": "java",
+      "title": "After many cycles",
+      "run": "captured",
+      "caption": "Eight tests, each added red first. The code is small because nothing untested was written.",
+      "walk": [
+        {
+          "lines": [
+            9,
+            12
+          ],
+          "text": "Boundary tests at 19 and 20 days pin exactly where the cap starts."
+        },
+        {
+          "lines": [
+            13,
+            14
+          ],
+          "text": "This test failed with `int` arithmetic: the product wrapped negative, so the fee went negative."
+        },
+        {
+          "lines": [
+            15,
+            15
+          ],
+          "text": "Bad input is a behaviour too. The test demands an `IllegalArgumentException`."
+        },
+        {
+          "lines": [
+            41,
+            43
+          ],
+          "text": "Refactor steps named the rules. Tests stayed green after each rename."
+        },
+        {
+          "lines": [
+            50,
+            54
+          ],
+          "text": "Multiplying as `long` before the cap is the fix the overflow test forced."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Writing five tests before any code; you lose the single red signal that guides you.",
+    "Skipping the refactor step; green but messy code piles up quickly.",
+    "Never seeing a new test fail; it may pass by accident and test nothing."
+  ],
+  "quiz": {
+    "q": "Your new test passes the first time you run it, before any code change. What should you do?",
+    "options": [
+      "Commit it; a passing test is the goal",
+      "Make it fail first to prove it tests something",
+      "Delete the production code and start the cycle again",
+      "Write the next three tests before checking anything"
+    ],
+    "answer": 1,
+    "why": "A test that was never red may test nothing, or the behaviour already exists. Break the code briefly or sharpen the test so you see it fail."
+  },
+  "takeaway": "Red, green, refactor: one failing test at a time drives the design.",
+  "chat": {
+    "starters": [
+      "How would I test-drive a class that needs a repository?",
+      "Should I use TDD in an LLD interview?",
+      "How small should each red-green step be?"
+    ]
+  }
+}

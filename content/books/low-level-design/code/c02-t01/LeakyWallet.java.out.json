@@ -1,0 +1,11 @@
+{
+  "stdout": "Balance 30, log [deposit 50, withdraw 20]\nBalance -500, log [deposit 1000]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java LeakyWallet.java",
+  "tool": "Java 17.0.17",
+  "hash": "6b3db6156c4cffd3",
+  "at": "2026-10-12T11:14:37.663Z"
+}

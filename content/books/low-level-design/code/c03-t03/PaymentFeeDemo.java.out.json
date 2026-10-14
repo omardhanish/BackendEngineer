@@ -1,0 +1,11 @@
+{
+  "stdout": "card: 3.20\nbank: 0.50\nwallet: 0.99\nrejected: unknown crypto",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java PaymentFeeDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "6a06020e403db648",
+  "at": "2026-10-12T11:41:02.417Z"
+}

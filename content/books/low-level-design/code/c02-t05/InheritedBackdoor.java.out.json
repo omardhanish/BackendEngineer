@@ -1,0 +1,11 @@
+{
+  "stdout": "Items: [SKU-9, SKU-3]\nAudit: [added SKU-1]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java InheritedBackdoor.java",
+  "tool": "Java 17.0.17",
+  "hash": "af540cb049dd8702",
+  "at": "2026-10-12T11:16:46.534Z"
+}

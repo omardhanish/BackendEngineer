@@ -1,0 +1,11 @@
+{
+  "stdout": "check-then-act allowed=2 tokensLeft=-1\nsynchronized   allowed=1 tokensLeft=0\ncompareAndSet  allowed=1 tokensLeft=0",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java LimiterRace.java",
+  "tool": "Java 17.0.17",
+  "hash": "7c587396e3757746",
+  "at": "2026-10-14T08:35:42.635Z"
+}

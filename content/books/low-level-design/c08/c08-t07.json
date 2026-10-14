@@ -1,0 +1,284 @@
+{
+  "title": "State pattern",
+  "idea": "The State pattern moves each state's behaviour into its own object, so the context changes behaviour by swapping that object, not by switching on a flag.",
+  "analogy": {
+    "text": "A phone's side button: when off, it boots; when unlocked, it locks; when locked, it wakes the screen. One button, behaviour set by the mode.",
+    "breaks": "A phone has fixed modes; in code each state is a class you add."
+  },
+  "points": [
+    "Each state class implements only the actions legal in that state.",
+    "An action returns the next state; the context stores it and delegates again.",
+    "Unlike Strategy, states choose their successor; with Strategy, the client chooses.",
+    "Use it when many methods switch on one status; skip it for two states."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "A document moving through its states",
+    "scenario": {
+      "token": {
+        "label": "doc v1",
+        "tone": "req"
+      },
+      "stages": [
+        {
+          "id": "draft",
+          "label": "Draft",
+          "sub": "edit, submit"
+        },
+        {
+          "id": "review",
+          "label": "InReview",
+          "sub": "approve, reject"
+        },
+        {
+          "id": "pub",
+          "label": "Published",
+          "sub": "no actions",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "`Document` starts in a `Draft` state. `edit` is legal here, so the text changes.",
+          "at": "draft",
+          "slot": "top",
+          "state": {
+            "draft": "active"
+          }
+        },
+        {
+          "caption": "`submit` asks `Draft`, which returns a new `InReview`. The document stores it.",
+          "at": "review",
+          "slot": "top",
+          "state": {
+            "draft": "done",
+            "review": "active"
+          }
+        },
+        {
+          "caption": "`reject` in review returns a fresh `Draft`, so the document can be edited again.",
+          "at": "draft",
+          "slot": "bottom",
+          "token": {
+            "label": "rejected",
+            "tone": "err"
+          },
+          "state": {
+            "draft": "active",
+            "review": "done"
+          }
+        },
+        {
+          "caption": "The author edits and submits again. Same calls, new state objects each time.",
+          "at": "review",
+          "slot": "top",
+          "token": {
+            "label": "doc v2",
+            "tone": "req"
+          },
+          "state": {
+            "draft": "done",
+            "review": "active"
+          }
+        },
+        {
+          "caption": "`approve` returns `Published`. It overrides nothing, so every action falls to the defaults.",
+          "at": "pub",
+          "slot": "top",
+          "token": {
+            "label": "doc v2",
+            "tone": "ok"
+          },
+          "state": {
+            "draft": "done",
+            "review": "done",
+            "pub": "active"
+          }
+        },
+        {
+          "caption": "A late `edit` reaches the default method and throws. `Document` needed no `if` for this.",
+          "at": "pub",
+          "slot": "bottom",
+          "token": {
+            "label": "edit refused",
+            "tone": "err"
+          },
+          "state": {
+            "draft": "done",
+            "review": "done",
+            "pub": "blocked"
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "DocumentSwitch.java",
+      "lang": "java",
+      "title": "The problem: status flags",
+      "run": "captured",
+      "caption": "An enum status with checks spread across methods. One check is out of date.",
+      "walk": [
+        {
+          "lines": [
+            12
+          ],
+          "text": "A bare enum. The behaviour for each status is spread across every method."
+        },
+        {
+          "lines": [
+            18,
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "text": "`edit` checks one bad status. It predates `PUBLISHED`, so published text stays editable."
+        },
+        {
+          "lines": [
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35
+          ],
+          "text": "Each method repeats a `switch` on status. A new status means revisiting all of them."
+        },
+        {
+          "lines": [
+            7,
+            8
+          ],
+          "text": "The output shows a published document silently changed: no exception, no log."
+        }
+      ]
+    },
+    {
+      "file": "DocumentStateDemo.java",
+      "lang": "java",
+      "title": "The fix: state objects",
+      "run": "captured",
+      "caption": "Each state is a class; the document delegates and stores whatever state comes back.",
+      "walk": [
+        {
+          "lines": [
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30
+          ],
+          "text": "Default methods refuse every action. A state overrides only what it allows."
+        },
+        {
+          "lines": [
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40
+          ],
+          "text": "`Draft` allows `edit` and `submit`; `submit` also refuses an empty document."
+        },
+        {
+          "lines": [
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47
+          ],
+          "text": "`InReview` returns the next state from both actions, including the way back."
+        },
+        {
+          "lines": [
+            48
+          ],
+          "text": "`Published` overrides nothing, so every action throws with a clear message."
+        },
+        {
+          "lines": [
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56
+          ],
+          "text": "`Document` holds no `switch`. Each method delegates and stores the returned state."
+        },
+        {
+          "lines": [
+            57,
+            58,
+            59,
+            60,
+            61
+          ],
+          "text": "Every transition passes through `move`: the one place for logging or auditing."
+        },
+        {
+          "lines": [
+            12,
+            13,
+            14,
+            15,
+            16,
+            17
+          ],
+          "text": "The late edit now fails loudly, and the approved text stays unchanged."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Letting outside code set the state field skips every transition rule; keep it private.",
+    "Storing per-document data in shared state objects leaks it between documents; keep data in the context.",
+    "A missed override in a new state throws on a legal action; test every transition."
+  ],
+  "quiz": {
+    "q": "Same classes as the demo. What does the last line print?",
+    "lang": "java",
+    "code": "Document doc = new Document();\ndoc.edit(\"x\");\ndoc.submit();\ndoc.reject(\"typo\");\nSystem.out.println(doc.stateName());",
+    "options": [
+      "InReview",
+      "Rejected",
+      "Draft",
+      "IllegalStateException: reject"
+    ],
+    "answer": 2,
+    "why": "`reject` is legal in `InReview` and returns a new `Draft`. `name()` uses the simple class name of the current state."
+  },
+  "takeaway": "Each state object knows its legal actions and the state that follows.",
+  "chat": {
+    "starters": [
+      "How do I tell State and Strategy apart in an interview?",
+      "Should state objects be singletons or created per transition?",
+      "When is an enum with a switch good enough instead of the State pattern?"
+    ]
+  }
+}

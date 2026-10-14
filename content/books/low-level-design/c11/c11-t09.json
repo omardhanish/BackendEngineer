@@ -1,0 +1,294 @@
+{
+  "title": "Refining the booking search",
+  "idea": "Refinement is changing a working design to be clearer or faster without changing its behaviour; optimization is the part driven by a measured bottleneck.",
+  "points": [
+    "Measure first: count work done, such as bookings read, before guessing at slowness.",
+    "`searchFree` scanned every booking for every room; an index per room removes that.",
+    "The change stays inside `BookingRepository`, so callers and tests stay as they are.",
+    "State the trade-off aloud: more memory and an invariant for fewer reads."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "The refine-and-measure loop",
+    "nodes": [
+      {
+        "id": "green",
+        "label": "Tests green",
+        "sub": "baseline behaviour"
+      },
+      {
+        "id": "measure",
+        "label": "Measure",
+        "sub": "bookings read per search"
+      },
+      {
+        "id": "hot",
+        "label": "Find the hotspot",
+        "sub": "flat list scan"
+      },
+      {
+        "id": "change",
+        "label": "Change one thing",
+        "sub": "TreeMap per room"
+      },
+      {
+        "id": "retest",
+        "label": "Re-run tests",
+        "sub": "same results?"
+      },
+      {
+        "id": "compare",
+        "label": "Measure again",
+        "sub": "keep or revert"
+      }
+    ],
+    "edges": [
+      {
+        "from": "green",
+        "to": "measure"
+      },
+      {
+        "from": "measure",
+        "to": "hot"
+      },
+      {
+        "from": "hot",
+        "to": "change"
+      },
+      {
+        "from": "change",
+        "to": "retest"
+      },
+      {
+        "from": "retest",
+        "to": "compare"
+      },
+      {
+        "from": "compare",
+        "to": "measure",
+        "label": "next hotspot",
+        "back": true,
+        "dashed": true
+      }
+    ],
+    "steps": [
+      {
+        "caption": "Start only from passing tests. They define the behaviour the refactor must keep.",
+        "active": [
+          "green"
+        ],
+        "edges": []
+      },
+      {
+        "caption": "Count the work one `searchFree` call does. A count is repeatable; a stopwatch is not.",
+        "active": [
+          "green",
+          "measure"
+        ],
+        "edges": [
+          0
+        ]
+      },
+      {
+        "caption": "The count points at `forRoom`: it walks every booking of every room, once per room.",
+        "active": [
+          "measure",
+          "hot"
+        ],
+        "edges": [
+          1
+        ]
+      },
+      {
+        "caption": "Change one thing: index bookings by room, sorted by start time, inside the repository.",
+        "active": [
+          "hot",
+          "change"
+        ],
+        "edges": [
+          2
+        ]
+      },
+      {
+        "caption": "Re-run the tests and compare the free-room list. Same answer means same behaviour.",
+        "active": [
+          "change",
+          "retest"
+        ],
+        "edges": [
+          3
+        ]
+      },
+      {
+        "caption": "Measure again. Keep the change only if the count dropped and the code is still clear.",
+        "active": [
+          "retest",
+          "compare"
+        ],
+        "edges": [
+          4
+        ]
+      },
+      {
+        "caption": "Then look for the next hotspot, or stop when the count is good enough.",
+        "active": [
+          "compare",
+          "measure"
+        ],
+        "edges": [
+          5
+        ]
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "NaiveSearch.java",
+      "lang": "java",
+      "title": "Before: one flat list",
+      "run": "captured",
+      "caption": "Forty rooms, seven bookings each. Correct results, but every `forRoom` call walks the whole list.",
+      "walk": [
+        {
+          "lines": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14
+          ],
+          "text": "Fixed test data: each room has one free hour, so the output is the same on every run."
+        },
+        {
+          "lines": [
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30
+          ],
+          "text": "The same `ConflictPolicy` that `book` uses. Search must never invent its own overlap rule."
+        },
+        {
+          "lines": [
+            32,
+            33
+          ],
+          "text": "Every booking of every room sits in one list. `reads` counts the work instead of timing it."
+        },
+        {
+          "lines": [
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42
+          ],
+          "text": "`forRoom` reads other rooms' bookings only to skip them. That is the hotspot."
+        },
+        {
+          "lines": [
+            17,
+            18
+          ],
+          "text": "Note the free list and the read count. The refactor must match the first and shrink the second."
+        }
+      ]
+    },
+    {
+      "file": "IndexedSearch.java",
+      "lang": "java",
+      "title": "After: a sorted index per room",
+      "run": "captured",
+      "caption": "Same data, same `SearchService` and policy, a different repository inside. Each call reads one room only.",
+      "walk": [
+        {
+          "lines": [
+            32,
+            33
+          ],
+          "text": "A map from room to a `TreeMap` keyed by start time. Finding a room's bookings needs no scan."
+        },
+        {
+          "lines": [
+            35,
+            36,
+            37,
+            38
+          ],
+          "text": "`computeIfAbsent` creates a room's map on its first booking, so no room needs pre-registering."
+        },
+        {
+          "lines": [
+            39,
+            40,
+            41,
+            42,
+            43,
+            44
+          ],
+          "text": "`forRoom` keeps its contract: that room's bookings, now sorted by start. Only they are counted."
+        },
+        {
+          "lines": [
+            30
+          ],
+          "text": "Keying by start is safe only because `book` rejects clashes before `save`. Write the invariant down."
+        },
+        {
+          "lines": [
+            46,
+            47,
+            48,
+            53,
+            54
+          ],
+          "text": "Search still asks `policy.conflicts`, exactly as in c11-t04, so search and `book` cannot disagree."
+        },
+        {
+          "lines": [
+            24,
+            25,
+            26,
+            27,
+            28
+          ],
+          "text": "The policy is untouched. Swap in another one and both search and booking follow it."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Keying by start silently replaces a same-start booking; reject clashes before every save.",
+    "Adding a faster overlap check inside the repository makes search list rooms `book` rejects.",
+    "Optimizing before measuring adds complexity to code that was never slow; show the count first."
+  ],
+  "quiz": {
+    "q": "Room R1's index gets three saves. What does this print?",
+    "code": "TreeMap<Double, String> day = new TreeMap<>();\nday.put(11.0, \"B2\");\nday.put(9.0, \"B1\");\nday.put(9.0, \"B3\");\nSystem.out.println(day.values());",
+    "lang": "java",
+    "options": [
+      "[B2, B1, B3]",
+      "[B3, B2]",
+      "[B1, B2, B3]",
+      "[B1, B2]"
+    ],
+    "answer": 1,
+    "why": "A `TreeMap` orders by key, and `put` on an existing key replaces its value. B3 silently overwrote B1, which is why clashes must be rejected first."
+  },
+  "takeaway": "Measure, change one thing behind the interface, prove behaviour is unchanged.",
+  "chat": {
+    "starters": [
+      "How do I explain time complexity of searchFree in an interview?",
+      "Would an interval tree be better than a TreeMap here?",
+      "How do I make the indexed repository safe for concurrent bookings?"
+    ]
+  }
+}

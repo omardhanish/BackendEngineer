@@ -1,0 +1,11 @@
+{
+  "stdout": "total at checkout: 2500\ntotal on receipt:  3100",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java OrderNaive.java",
+  "tool": "Java 17.0.17",
+  "hash": "aa355400f93c2144",
+  "at": "2026-10-12T11:32:52.289Z"
+}

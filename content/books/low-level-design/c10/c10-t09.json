@@ -1,0 +1,83 @@
+{
+  "title": "Unit testing a design",
+  "idea": "A unit test runs one class in isolation with chosen inputs and checks one behaviour, so a broken rule fails fast with a name that says which rule.",
+  "points": [
+    "Each test follows Arrange, Act, Assert: set up, call once, check the result.",
+    "Pick boundary inputs: just before, on and just after every limit.",
+    "Inject time, randomness and I/O through the constructor, so tests can freeze them.",
+    "Teams write these with JUnit 5; a hard-to-test class usually signals a design problem."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "Choosing test cases for a late fee",
+    "head": ["Days late", "Why this case", "Expected cents"],
+    "rows": [
+      ["-1", "returned early", "0"],
+      ["0", "on the due date", "0"],
+      ["2", "last grace day: the boundary", "0"],
+      ["3", "first charged day", "75"],
+      ["20", "cap reached exactly", "500"],
+      ["40", "far past the cap", "500"]
+    ],
+    "highlight": { "row": 2 },
+    "caption": "Rule: free up to 2 days late; after that, 25 cents for every day late, capped at 500. Off-by-one bugs live on the highlighted row."
+  },
+  "code": [
+    {
+      "file": "BuggyFeeTest.java",
+      "lang": "java",
+      "title": "Tests catch a boundary bug",
+      "run": "captured",
+      "caption": "Six boundary tests run against a fee rule with one wrong comparison. Exactly one test names the broken rule.",
+      "walk": [
+        { "lines": [20, 23], "text": "A tiny `check` stands in for JUnit's assertions: count and report each result." },
+        { "lines": [10, 12], "text": "Each test pins one rule, and its name reads like a line of the spec." },
+        { "lines": [13, 13], "text": "The boundary case: the last grace day must still be free." },
+        { "lines": [28, 31], "text": "The bug: `<` instead of `<=`. Every non-boundary input still gives the right fee." },
+        { "lines": [14, 16], "text": "Charged and capped cases pass, so only boundary tests would ever expose this." },
+        { "lines": [17, 17], "text": "The summary line shows how many rules hold and how many broke." }
+      ]
+    },
+    {
+      "file": "FeeTest.java",
+      "lang": "java",
+      "title": "Fixed rule, frozen clock",
+      "run": "captured",
+      "caption": "The fixed rule passes. `ReturnDesk` takes a `Clock`, so the test controls what today means.",
+      "walk": [
+        { "lines": [46, 56], "text": "`ReturnDesk` asks the injected `Clock` for today instead of the system clock." },
+        { "lines": [10, 13], "text": "Arrange: freeze the clock five days after the due date." },
+        { "lines": [15, 15], "text": "Act and Assert in one line: five days late is 125 cents, on any machine." },
+        { "lines": [26, 33], "text": "`checkThrows` asserts the exception type, like JUnit's `assertThrows`." },
+        { "lines": [18, 19], "text": "Failure paths are behaviours too: a null due date must be rejected." },
+        { "lines": [35, 44], "text": "The fix is `<=`, plus guard clauses that name the missing argument." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Calling `LocalDate.now()` inside a class makes tests pass today and fail next month.",
+    "One test asserting five things hides which rule broke; split it into five named tests.",
+    "Testing private methods couples tests to internals; test through the public contract instead."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "long late = 2;   // grace is 2 days\nlong fee = late < 2 ? 0 : late * 25;\ncheck(\"grace day free\", fee == 0);\ncheck(\"not negative\", fee >= 0);",
+    "lang": "java",
+    "options": [
+      "PASS grace day free / PASS not negative",
+      "FAIL grace day free / PASS not negative",
+      "FAIL grace day free / FAIL not negative",
+      "PASS grace day free / FAIL not negative"
+    ],
+    "answer": 1,
+    "why": "With `<`, two days late is charged 50 cents, so the boundary test fails. The fee is still positive, so the second check passes."
+  },
+  "takeaway": "Test one behaviour per case, at the boundaries, with time injected.",
+  "chat": {
+    "starters": [
+      "How do I write these checks in JUnit 5?",
+      "How many boundary cases are enough for one rule?",
+      "Should I test getters and setters?"
+    ]
+  }
+}

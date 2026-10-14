@@ -1,0 +1,267 @@
+{
+  "title": "Hotel schema in PostgreSQL",
+  "idea": "The hotel schema stores one inventory row per room type per night, so taking a stay is a locked, conditional update of exactly its nights.",
+  "analogy": {
+    "text": "A wall calendar per room type, with one square per night showing rooms sold out of rooms owned. A stay crosses out one unit in each of its squares.",
+    "breaks": "Squares here are locked while written; a wall calendar is not."
+  },
+  "points": [
+    "`room_inventory` has key (room type, night) and a CHECK that reserved stays within total.",
+    "`reservation` maps the Java model: TEXT status with CHECK, BIGINT money, DATE stay.",
+    "An exclusion constraint stops two live stays sharing one physical room on any night.",
+    "Partial index on HELD rows by `hold_until` serves the expiry sweeper only."
+  ],
+  "hero": {
+    "type": "anatomy",
+    "title": "The update that takes a stay",
+    "parts": [
+      {
+        "text": "UPDATE room_inventory ",
+        "label": "table",
+        "note": "One row per room type per night. The PRIMARY KEY is (room_type_id, night).",
+        "tone": "a"
+      },
+      {
+        "text": "SET reserved = reserved + 1 ",
+        "label": "take one",
+        "note": "Add one unit relative to the row's current value, never a value read earlier.",
+        "tone": "b"
+      },
+      {
+        "text": "WHERE room_type_id = $1 ",
+        "label": "which type",
+        "note": "The guest books a room type, so inventory is counted per type.",
+        "tone": "c"
+      },
+      {
+        "text": "AND night >= $2 AND night < $3 ",
+        "label": "half-open stay",
+        "note": "Check-in night included, check-out night excluded. Back-to-back stays never collide.",
+        "tone": "d"
+      },
+      {
+        "text": "AND reserved < total ",
+        "label": "guard",
+        "note": "A sold-out night is skipped, so fewer rows come back than nights asked.",
+        "tone": "e"
+      },
+      {
+        "text": "RETURNING rate_minor",
+        "label": "price",
+        "note": "Each night returns its own rate. Row count below nights means roll back.",
+        "tone": "a"
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "schema.mjs",
+      "lang": "js",
+      "title": "Tables and constraints",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "The schema on a real PostgreSQL 18, then five bad writes the database refuses by itself, and one valid back-to-back stay.",
+      "walk": [
+        {
+          "lines": [
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14
+          ],
+          "text": "Hotel, room type, room and guest. `btree_gist` lets an exclusion constraint compare TEXT ids."
+        },
+        {
+          "lines": [
+            15,
+            16,
+            17,
+            18,
+            19,
+            20
+          ],
+          "text": "`room_inventory`: one row per type and night, with a CHECK on reserved."
+        },
+        {
+          "lines": [
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30
+          ],
+          "text": "`reservation` keeps status as TEXT with CHECK, money as BIGINT, and a unique Idempotency-Key."
+        },
+        {
+          "lines": [
+            31,
+            32,
+            33
+          ],
+          "text": "Same room, no overlapping live stays: `&&` means date ranges overlap; refusals fail with 23P01, an exclusion violation."
+        },
+        {
+          "lines": [
+            34,
+            35,
+            36
+          ],
+          "text": "Partial index for the sweeper; a second index serves a guest's trip list."
+        },
+        {
+          "lines": [
+            42,
+            43,
+            44
+          ],
+          "text": "Seed seven nights of Deluxe inventory, two rooms each, at one rate."
+        },
+        {
+          "lines": [
+            60,
+            61,
+            62,
+            63
+          ],
+          "text": "Each bad write prints the Postgres error code and the constraint that stopped it."
+        }
+      ]
+    },
+    {
+      "file": "reserve.mjs",
+      "lang": "js",
+      "title": "Hold and sweep transactions",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "Two overlapping holds race for the last Deluxe room on the 14th; then the sweeper frees it. Trimmed tables keep it short.",
+      "walk": [
+        {
+          "lines": [
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13
+          ],
+          "text": "One Deluxe room per night from the 13th to the 16th."
+        },
+        {
+          "lines": [
+            20,
+            21,
+            22
+          ],
+          "text": "Lock the stay's nights in date order with `FOR UPDATE`, so overlapping stays queue."
+        },
+        {
+          "lines": [
+            23,
+            24,
+            25,
+            26,
+            27,
+            28
+          ],
+          "text": "Take one unit from each night that still has room."
+        },
+        {
+          "lines": [
+            29,
+            30,
+            31,
+            32
+          ],
+          "text": "A missing or sold-out night means fewer rows: roll back everything."
+        },
+        {
+          "lines": [
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41
+          ],
+          "text": "Otherwise sum the nightly rates and insert a HELD reservation for 15 minutes."
+        },
+        {
+          "lines": [
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59,
+            60,
+            61
+          ],
+          "text": "Sweeper: expire due holds, then GROUP BY night so each inventory row joins once."
+        },
+        {
+          "lines": [
+            64,
+            65,
+            66,
+            67,
+            68,
+            69
+          ],
+          "text": "Two holds in parallel on separate connections; the locks decide one winner."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not use UPDATE ... FROM with duplicate join rows; Postgres updates each target once.",
+    "Lock nights in one fixed order, or two long stays can deadlock each other.",
+    "Keep a CHECK on reserved even with careful code; it catches every forgotten path."
+  ],
+  "quiz": {
+    "q": "What does reserve.mjs print for 'nights freed at 09:10'?",
+    "options": [
+      "nights freed at 09:10: 2",
+      "nights freed at 09:10: 1",
+      "nights freed at 09:10: 0",
+      "nights freed at 09:10: 4"
+    ],
+    "answer": 2,
+    "why": "The winning hold lasts until 09:15. At 09:10 no HELD row is due, so the sweeper changes no inventory rows."
+  },
+  "takeaway": "One row per type per night turns overbooking into a failed conditional update.",
+  "chat": {
+    "starters": [
+      "Why count inventory per night instead of searching overlapping reservations?",
+      "When is the exclusion constraint better than the inventory table?",
+      "How do I add a new night of inventory every day automatically?"
+    ]
+  }
+}

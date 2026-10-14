@@ -1,118 +1,188 @@
 {
-  "title": "Use cases to entities",
-  "idea": "Requirement analysis turns a loose brief into use cases, who does what, and entities, the nouns that hold data and rules, before any class is drawn.",
+  "title": "Exception hierarchies with error codes",
+  "idea": "A custom exception hierarchy gives each failure its own type under one base class, and each type carries a stable error code that callers map to responses.",
   "points": [
-    "A use case names an actor, a goal and the result the system returns.",
-    "Nouns in the requirements become candidate entities; verbs become service methods.",
-    "Constraints such as capacity or valid hours become checks inside the entity.",
-    "Ask about unclear rules early: back-to-back slots, time zones, who may cancel."
+    "Domain errors are unchecked so middle layers stay clean; one boundary catches and recovers.",
+    "Each subclass carries a code from an `enum`; message text stays free to change.",
+    "Wrap low-level checked exceptions in domain ones, passing the original as the cause.",
+    "Translate at one boundary: domain codes become HTTP statuses there, nowhere else."
   ],
   "hero": {
-    "type": "anatomy",
-    "title": "One requirement, taken apart",
-    "parts": [
+    "type": "seq",
+    "title": "A bank timeout becomes a stable code",
+    "actors": [
       {
-        "text": "An employee",
-        "label": "Actor",
-        "note": "Becomes the Employee entity and the caller of the use case."
+        "id": "client",
+        "label": "Client"
       },
       {
-        "text": " books",
-        "label": "Use case",
-        "note": "A verb, so it becomes a service method: BookingService.book."
+        "id": "api",
+        "label": "respond()"
       },
       {
-        "text": " a free room",
-        "label": "Rule",
-        "note": "Free means no overlapping booking; the ConflictPolicy decides that."
+        "id": "svc",
+        "label": "PaymentService"
       },
       {
-        "text": " for 6 people",
-        "label": "Constraint",
-        "note": "Search filters by capacity; a Room must seat at least one person."
+        "id": "bank",
+        "label": "BankGateway"
+      }
+    ],
+    "messages": [
+      {
+        "from": "client",
+        "to": "api",
+        "label": "pay 777 cents",
+        "note": "The client asks to pay. `respond` is the boundary that will build the answer."
       },
       {
-        "text": " from 10:00 to 11:30",
-        "label": "Value",
-        "note": "A slot stored as hours, 10.0 to 11.5. The end must come after the start."
+        "from": "api",
+        "to": "svc",
+        "label": "charge(777)",
+        "note": "`respond` calls the service. It knows nothing about banks or sockets."
       },
       {
-        "text": ", and attendees are notified.",
-        "label": "Side effect",
-        "note": "Something reacts after the booking is saved: the NotificationService."
+        "from": "svc",
+        "to": "bank",
+        "label": "send(777)",
+        "note": "The service calls the gateway, whose `send` declares a checked `IOException`."
+      },
+      {
+        "from": "bank",
+        "to": "svc",
+        "label": "IOException",
+        "dashed": true,
+        "note": "The bank times out. A low-level checked exception comes back."
+      },
+      {
+        "from": "svc",
+        "to": "api",
+        "label": "GatewayDownException",
+        "dashed": true,
+        "note": "The service wraps it in `GatewayDownException` with code `GATEWAY_DOWN`, keeping the cause."
+      },
+      {
+        "from": "api",
+        "to": "client",
+        "label": "503 GATEWAY_DOWN",
+        "note": "`respond` catches the base type and reads `code()`. No message text is parsed anywhere."
       }
     ]
   },
   "code": [
     {
-      "file": "EntityDemo.java",
+      "file": "MessageParsingDemo.java",
       "lang": "java",
-      "title": "Entities with invariants",
+      "title": "The problem",
       "run": "captured",
-      "caption": "Four entities as records. The rules from the brief live in their constructors.",
+      "caption": "A bare `RuntimeException` and a handler that parses its message: one rewording breaks the API.",
       "walk": [
         {
           "lines": [
-            21,
-            23
+            24,
+            28
           ],
-          "text": "`Building` and `Employee` are plain data for now: an id and a name."
+          "text": "`PaymentGateway` rejects charges over its limit. Its only failure signal is an exception message."
         },
         {
           "lines": [
-            25,
-            31
+            29,
+            30
           ],
-          "text": "The compact constructor guards capacity, so no room can seat zero people."
+          "text": "Someone reworded the message. The compiler cannot notice, and no test pinned the text."
         },
+        {
+          "lines": [
+            15,
+            21
+          ],
+          "text": "The handler matches a message prefix, so the new wording falls through to 500."
+        },
+        {
+          "lines": [
+            4,
+            12
+          ],
+          "text": "Compare the declined line with the expected line: the client sees a server fault."
+        }
+      ]
+    },
+    {
+      "file": "ErrorCodeDemo.java",
+      "lang": "java",
+      "title": "The fix",
+      "run": "captured",
+      "caption": "An abstract base, `final` subclasses, an `ErrorCode` enum, and one boundary that maps codes.",
+      "walk": [
         {
           "lines": [
             33,
-            41
+            33
           ],
-          "text": "`Booking` rejects slots outside the day or ending before they start."
+          "text": "`ErrorCode` is the stable contract. Clients key on the constant names; the enum knows nothing about HTTP."
         },
         {
           "lines": [
-            3,
-            7
+            35,
+            43
           ],
-          "text": "Entities refer to each other by id, not by holding whole objects."
+          "text": "`PaymentException` is an abstract, unchecked base: middle layers need no `throws`, and the boundary catches it."
         },
         {
           "lines": [
-            8,
-            17
+            45,
+            55
           ],
-          "text": "Bad input fails at construction, so invalid state never enters the system."
+          "text": "Each subclass is `final` and writes its own message. Rewording one cannot change behaviour."
+        },
+        {
+          "lines": [
+            62,
+            69
+          ],
+          "text": "The service wraps the checked `IOException` from the bank and passes it as the cause."
+        },
+        {
+          "lines": [
+            16,
+            30
+          ],
+          "text": "The boundary catches the base type, maps `code()` to a status, and is where c05-t01's recoveries happen."
+        },
+        {
+          "lines": [
+            7,
+            13
+          ],
+          "text": "The 777 case shows the wrapped cause is still there for logs and debugging."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Do not make every noun a class; attendees can start as a list of ids.",
-    "Put invariants in constructors, not in callers that may forget to check them.",
-    "Settle edge rules early: does 10:00 to 11:00 clash with 11:00 to 12:00?"
+    "One class per message bloats the hierarchy; add a type only when callers react differently.",
+    "Mapping by `getMessage()` breaks when someone rewords it; switch on the code instead.",
+    "Renaming or reusing a published code breaks clients; add new codes and keep old ones."
   ],
   "quiz": {
-    "q": "What does this print?",
-    "code": "try {\n    new Booking(\"BK3\", \"R-101\", \"E7\", 9, 9);\n} catch (IllegalArgumentException e) {\n    System.out.println(\"rejected: \" + e.getMessage());\n}",
+    "q": "Using the classes above, what does this print?",
+    "code": "try {\n    throw new CardDeclinedException(100);\n} catch (GatewayDownException e) {\n    System.out.println(\"A\");\n} catch (PaymentException e) {\n    System.out.println(\"B \" + e.code());\n} catch (RuntimeException e) {\n    System.out.println(\"C\");\n}",
     "lang": "java",
     "options": [
-      "rejected: slot 9-9 is not valid",
-      "Booking[id=BK3, roomId=R-101, employeeId=E7, start=9.0, end=9.0]",
-      "rejected: slot 9.0-9.0 is not valid",
-      "rejected: capacity must be >= 1"
+      "C",
+      "A",
+      "B 402",
+      "B CARD_DECLINED"
     ],
-    "answer": 2,
-    "why": "`end <= start` holds for 9 and 9, so the compact constructor throws. The `double` fields print as `9.0` in the message."
+    "answer": 3,
+    "why": "Java picks the first matching `catch`. `CardDeclinedException` is a `PaymentException`, and an enum prints its constant name, not its status."
   },
-  "takeaway": "Use cases give methods, nouns give entities, rules become constructor checks.",
+  "takeaway": "Type per reaction, stable code per type, translation at one boundary.",
   "chat": {
     "starters": [
-      "How do I find the use cases in a vague interview prompt?",
-      "Should Booking hold a Room object or just the room id?",
-      "Why use records for entities here instead of normal classes?"
+      "Should the base exception of a module be checked or unchecked?",
+      "How do error codes appear in a JSON error response?",
+      "How deep should an exception hierarchy go in an LLD interview?"
     ]
   }
 }

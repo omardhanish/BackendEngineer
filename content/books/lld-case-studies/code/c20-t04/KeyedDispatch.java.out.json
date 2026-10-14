@@ -1,0 +1,11 @@
+{
+  "stdout": "shared pool: [paid, placed]\nkey lanes:   [placed, paid]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java KeyedDispatch.java",
+  "tool": "Java 17.0.17",
+  "hash": "d6c555e4fe92df08",
+  "at": "2026-10-14T08:43:10.674Z"
+}

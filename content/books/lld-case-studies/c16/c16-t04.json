@@ -1,0 +1,88 @@
+{
+  "title": "Thread-safe rate limiting",
+  "idea": "A thread-safe rate limiter makes read-refill-check-spend one atomic step per key, so two threads can never both spend the last token.",
+  "analogy": {
+    "text": "One cookie left in a jar. Two hands reach in; whoever grabs it first takes it, and the other finds the jar empty.",
+    "breaks": "Hands cannot overlap; threads can, unless a lock or CAS stops them."
+  },
+  "points": [
+    "Check-then-act on a shared count lets two threads pass on one token.",
+    "Separate atomic get and decrement still race; check and spend must be one step.",
+    "Lock per key, not per limiter, so no key waits on another key's lock.",
+    "In a `ConcurrentHashMap`, `computeIfAbsent` builds one bucket per key under contention."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "Two threads, one token left",
+    "actors": [
+      { "id": "a", "label": "Thread A" },
+      { "id": "bk", "label": "Bucket k1" },
+      { "id": "b", "label": "Thread B" }
+    ],
+    "messages": [
+      { "from": "a", "to": "bk", "label": "tokens?", "note": "Unsafe version. Thread A reads one token left." },
+      { "from": "b", "to": "bk", "label": "tokens?", "note": "Before A spends, Thread B reads the same single token." },
+      { "from": "a", "to": "bk", "label": "spend, allow", "note": "A decrements and allows its request. Tokens are now zero." },
+      { "from": "b", "to": "bk", "label": "spend, allow", "note": "B acts on its stale read. Two calls passed; tokens are now minus one." },
+      { "from": "a", "to": "bk", "label": "lock, check, spend", "note": "Safe version. A holds the bucket lock while it checks and spends." },
+      { "from": "b", "to": "bk", "label": "lock (waits)", "dashed": true, "note": "B blocks on the same lock until A has finished." },
+      { "from": "bk", "to": "b", "label": "0 tokens: reject", "note": "B sees the true count and is rejected. Exactly one call passed." }
+    ]
+  },
+  "code": [
+    {
+      "file": "LimiterRace.java",
+      "lang": "java",
+      "title": "Prove the race",
+      "run": "captured",
+      "caption": "A barrier holds both threads between check and spend, so the race shows every run. Then two fixes.",
+      "walk": [
+        { "lines": [7, 8, 9, 10], "text": "Race two threads for one token: unsafe, locked, and compare-and-set." },
+        { "lines": [15, 16, 17, 18, 19, 20], "text": "Each thread tries once; join both before reading the result." },
+        { "lines": [33, 34, 35, 36, 37], "text": "Check, wait for the other thread to check too, then spend." },
+        { "lines": [46, 47, 48, 49, 50], "text": "`synchronized` makes check and spend one step for this bucket." },
+        { "lines": [57, 58, 59, 60, 61, 62], "text": "Lock-free: write only if the value is still what you read." }
+      ]
+    },
+    {
+      "file": "PerKeyLimiter.java",
+      "lang": "java",
+      "title": "Many threads, many keys",
+      "run": "captured",
+      "caption": "Eight threads hammer two keys. Each key gets exactly its budget, and each bucket is built once.",
+      "walk": [
+        { "lines": [11, 12], "text": "Capacity 100, refill 50 per second, with a manual clock shared by threads." },
+        { "lines": [13, 14, 15, 16], "text": "Run a storm at time 0, then another one second later." },
+        { "lines": [24, 25, 26, 27, 28, 29, 30, 31, 32, 33], "text": "Eight threads each send 500 calls, alternating k1 and k2." },
+        { "lines": [49, 50, 51], "text": "Buckets live in a ConcurrentHashMap; a counter records how many get built." },
+        { "lines": [65, 66, 67, 68], "text": "`computeIfAbsent` runs the factory at most once per key." },
+        { "lines": [69, 70, 71, 72, 73], "text": "Lock only this key's bucket, then refill. A clock step back adds nothing." },
+        { "lines": [74, 75, 76], "text": "Check and spend inside the same lock." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Never `get` then `put` a new bucket; two threads may each create one.",
+    "Avoid one global lock; it serializes every key and caps throughput.",
+    "Do not hold a bucket lock while doing I/O, such as logging to a remote sink."
+  ],
+  "quiz": {
+    "q": "What does the first line of LimiterRace print?",
+    "options": [
+      "check-then-act allowed=1 tokensLeft=0",
+      "check-then-act allowed=2 tokensLeft=0",
+      "check-then-act allowed=2 tokensLeft=-1",
+      "It changes from run to run"
+    ],
+    "answer": 2,
+    "why": "The barrier makes both threads see one token before either spends. Both atomic decrements then run, leaving minus one."
+  },
+  "takeaway": "Refill, check and spend under one lock per key, never across keys.",
+  "chat": {
+    "starters": [
+      "When is compare-and-set better than synchronized here?",
+      "How do I remove idle buckets without racing a live request?",
+      "Does a striped lock help with millions of keys?"
+    ]
+  }
+}

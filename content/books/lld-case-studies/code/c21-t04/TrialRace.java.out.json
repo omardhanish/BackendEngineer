@@ -1,0 +1,11 @@
+{
+  "stdout": "check-then-act  trial calls sent: 2\ncompare-and-set trial calls sent: 1",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java TrialRace.java",
+  "tool": "Java 17.0.17",
+  "hash": "f179e81d3132d000",
+  "at": "2026-10-14T08:46:00.846Z"
+}

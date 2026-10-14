@@ -1,0 +1,88 @@
+{
+  "title": "Flight checkout UI and flow",
+  "idea": "The flight booking frontend is a results list, a passenger form and a payment step driven by one reducer, with an Idempotency-Key made before each request.",
+  "points": [
+    "`BookingPage` owns the reducer; `PassengerForm` calls the API client and dispatches results.",
+    "Keys are made when a step starts, so retries and double submits reuse them.",
+    "A 409 sold out sends the user back to results with a clear message.",
+    "Follow-ups: cache search results, add round trips, push live seat counts."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "From form to ticket",
+    "actors": [
+      { "id": "ui", "label": "PassengerForm" },
+      { "id": "client", "label": "apiClient" },
+      { "id": "api", "label": "Express API" },
+      { "id": "svc", "label": "Service + PostgreSQL" }
+    ],
+    "messages": [
+      { "from": "ui", "to": "ui", "label": "SUBMIT_PAX", "note": "The reducer moves to HOLDING, so the button disables and repeats are ignored." },
+      { "from": "ui", "to": "client", "label": "holdFare(F1, Y-FLEX, hk-2)", "note": "The client sends the key made when the fare was selected." },
+      { "from": "client", "to": "api", "label": "POST /flights/F1/bookings", "note": "The Idempotency-Key header travels with the body of passenger names." },
+      { "from": "api", "to": "svc", "label": "hold in one transaction", "note": "The conditional UPDATE takes seats from the fare and inserts the HELD booking." },
+      { "from": "svc", "to": "client", "label": "timeout", "dashed": true, "note": "The response is lost. The UI cannot tell whether the hold happened." },
+      { "from": "client", "to": "api", "label": "retry with hk-2", "note": "The retry reuses the same key, so the server finds the stored booking." },
+      { "from": "api", "to": "ui", "label": "200 PNR-4 HELD", "dashed": true, "note": "Same PNR, no second hold. The reducer moves to PAYING with a fresh payment key." },
+      { "from": "ui", "to": "api", "label": "POST /bookings/PNR-4/payment", "note": "Payment carries its own key, so a retried charge is applied once." },
+      { "from": "api", "to": "ui", "label": "200 TICKETED", "dashed": true, "note": "The confirmation screen shows the PNR and ticket numbers." }
+    ]
+  },
+  "code": [
+    {
+      "file": "booking-flow.mjs",
+      "lang": "js",
+      "title": "Checkout reducer",
+      "run": "browser",
+      "caption": "Pure screen logic. Run it, then add a second PAY_CLICKED after the first and predict the output.",
+      "walk": [
+        { "lines": [3, 4], "text": "The whole screen state: step, fare, passengers, PNR, two keys and an error." },
+        { "lines": [8, 9, 10, 11], "text": "Selecting a fare starts a hold attempt; the event carries its new key." },
+        { "lines": [12, 13, 14, 15, 16], "text": "Invalid names show an error; a submit outside PASSENGERS is ignored." },
+        { "lines": [17, 18, 19, 20], "text": "A failure keeps the key for the retry; sold out resets to results." },
+        { "lines": [21, 22, 23, 24, 25], "text": "A held booking gets its payment key; pay is ignored unless PAYING." },
+        { "lines": [30, 31, 32], "text": "Hold expiry resets the screen, unless payment is in flight or tickets are issued." },
+        { "lines": [50, 51, 52, 53, 54, 55], "text": "Replay the events and print step, keys and error after each one." }
+      ]
+    },
+    {
+      "file": "PassengerForm.jsx",
+      "lang": "js",
+      "title": "PassengerForm component",
+      "run": "static",
+      "illustrative": true,
+      "caption": "A React component that renders state, calls the API and dispatches events. Not run here.",
+      "walk": [
+        { "lines": [2, 3, 4], "text": "Local state holds only the form fields, one entry per passenger." },
+        { "lines": [7, 8, 9, 10], "text": "Guard the step, validate names, then move the reducer to HOLDING." },
+        { "lines": [11, 12, 13, 14, 15, 16, 17, 18], "text": "Call the API with the existing key; map each outcome to an event, making the payment key." },
+        { "lines": [23], "text": "Errors render in an alert region so screen readers announce them." },
+        { "lines": [28], "text": "The button is disabled outside PASSENGERS, so a held fare cannot be resubmitted." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not make a new key on every click; make it once when the step starts.",
+    "Disabling a button is not enough; a fast double submit still needs the same key.",
+    "Show the server's `holdUntil` as the countdown; device clocks drift."
+  ],
+  "quiz": {
+    "q": "In the run, what is holdKey after the second SELECT_FARE?",
+    "options": [
+      "hk-1",
+      "hk-2",
+      "-",
+      "pk-2"
+    ],
+    "answer": 1,
+    "why": "The sold-out reset cleared hk-1. Selecting Y-FLEX starts a new hold attempt, so SELECT_FARE makes the next key, hk-2."
+  },
+  "takeaway": "One reducer owns the screen; keys made early make retries safe.",
+  "chat": {
+    "starters": [
+      "Why make the Idempotency-Key when the fare is selected?",
+      "How would a round-trip booking change this reducer?",
+      "Should the results screen poll for seats left?"
+    ]
+  }
+}

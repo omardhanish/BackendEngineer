@@ -1,0 +1,39 @@
+{
+  "title": "Your system design roadmap",
+  "idea": "Your next step after low-level design (LLD) is high-level design (HLD): choosing the services, data stores and network calls your classes live inside.",
+  "points": [
+    "You can now turn a vague prompt into tested, extensible Java classes.",
+    "Deepen LLD with full case studies that add a database schema and an API.",
+    "Then learn HLD: how services, caches, queues and data stores fit together.",
+    "Keep one timed practice problem a week so the method stays automatic."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Where to go after this book",
+    "nodes": [
+      { "id": "lld", "label": "Low-Level Design", "sub": "classes, SOLID, patterns" },
+      { "id": "mock", "label": "Timed mock interviews", "sub": "one problem a week" },
+      { "id": "cases", "label": "LLD Case Studies", "sub": "schema, API, frontend" },
+      { "id": "backend", "label": "Backend Engineering", "sub": "HTTP, databases, deploys" },
+      { "id": "hld", "label": "High-level design", "sub": "services, data, scaling" },
+      { "id": "work", "label": "Design at work", "sub": "reviews, refactors, docs" }
+    ],
+    "edges": [
+      { "from": "lld", "to": "mock", "label": "practise", "caption": "Turn the book into habit: one graded problem a week, against a 45-minute clock." },
+      { "from": "lld", "to": "cases", "label": "go deeper", "caption": "The LLD Case Studies book takes each design on to a database schema, an API and a frontend." },
+      { "from": "lld", "to": "backend", "label": "broaden", "caption": "Backend Engineering covers HTTP, databases and deployment: the ground HLD stands on." },
+      { "from": "cases", "to": "hld", "label": "zoom out", "caption": "A case study's API and schema become one box in a larger HLD diagram." },
+      { "from": "backend", "to": "hld", "label": "scale", "caption": "HLD chooses services and data stores, and how caching, sharding and queues connect them." },
+      { "from": "mock", "to": "work", "label": "apply", "caption": "Use the same method at work: write use cases, sketch classes, then code and review." },
+      { "from": "hld", "to": "work", "label": "combine", "caption": "Senior design work mixes both: HLD for the system, LLD inside each service." }
+    ]
+  },
+  "takeaway": "Design the classes well, then learn the system around them.",
+  "chat": {
+    "starters": [
+      "Which HLD topics should I study first after this book?",
+      "How do LLD and HLD rounds differ in a senior interview loop?",
+      "How can I practise design in my current job, not just in interviews?"
+    ]
+  }
+}

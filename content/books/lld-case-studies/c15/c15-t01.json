@@ -1,0 +1,159 @@
+{
+  "title": "Logger requirements",
+  "idea": "Scoping a logger system means fixing who writes logs, which levels exist, where lines go, and which promises the logger keeps while the app runs.",
+  "points": [
+    "Application code logs a message at a level: DEBUG, INFO, WARN, ERROR or FATAL.",
+    "Each logger has a threshold; messages below it are dropped cheaply.",
+    "Accepted messages become one record, formatted by and written to console, file, or both.",
+    "Logging must never crash the app or block it for long."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Who uses the logger in v1",
+    "nodes": [
+      {
+        "id": "dev",
+        "label": "Application code",
+        "sub": "calls info, error"
+      },
+      {
+        "id": "filter",
+        "label": "Level filter",
+        "sub": "drop below threshold"
+      },
+      {
+        "id": "fmt",
+        "label": "Format line",
+        "sub": "time, level, name"
+      },
+      {
+        "id": "out",
+        "label": "Write to outputs",
+        "sub": "console, file"
+      },
+      {
+        "id": "ops",
+        "label": "Operator",
+        "sub": "edits config"
+      },
+      {
+        "id": "cfg",
+        "label": "Change levels",
+        "sub": "at runtime"
+      },
+      {
+        "id": "none",
+        "label": "Out of scope",
+        "sub": "shipping, search, retention"
+      }
+    ],
+    "edges": [
+      {
+        "from": "dev",
+        "to": "filter",
+        "caption": "Code calls the logger with a level and a message. That is the main use case."
+      },
+      {
+        "from": "filter",
+        "to": "fmt",
+        "caption": "Only messages at or above the threshold go on. The rest cost almost nothing."
+      },
+      {
+        "from": "fmt",
+        "to": "out",
+        "caption": "One accepted message becomes one line, sent to every configured output."
+      },
+      {
+        "from": "ops",
+        "to": "cfg",
+        "caption": "An operator raises or lowers a logger's level without a redeploy."
+      },
+      {
+        "from": "cfg",
+        "to": "filter",
+        "caption": "The new threshold applies to the very next call.",
+        "dashed": true
+      },
+      {
+        "from": "out",
+        "to": "none",
+        "caption": "Sending logs to a central store and searching them is a separate system.",
+        "dashed": true
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "Requirements.java",
+      "lang": "java",
+      "title": "Levels and threshold",
+      "run": "captured",
+      "caption": "The core rule as code: a message is written only if its level is at or above the threshold.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6
+          ],
+          "text": "Pick WARN as the threshold, the way an operator would in config."
+        },
+        {
+          "lines": [
+            7,
+            8,
+            9,
+            10
+          ],
+          "text": "Check every level against the threshold and print the decision."
+        },
+        {
+          "lines": [
+            11,
+            12,
+            13
+          ],
+          "text": "Write the out-of-scope list down, so nobody builds it by accident."
+        },
+        {
+          "lines": [
+            17,
+            18
+          ],
+          "text": "Levels are declared from least to most severe."
+        },
+        {
+          "lines": [
+            20,
+            21,
+            22
+          ],
+          "text": "Comparing positions answers \"is this severe enough?\" in one step."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not promise every line reaches disk if the process is killed; state the guarantee.",
+    "Never let a full disk or a broken file throw into business code.",
+    "Do not scope log search or shipping into the logger; that is another system."
+  ],
+  "quiz": {
+    "q": "An interviewer asks for logs searchable across 50 servers. What is the best v1 scoping answer?",
+    "options": [
+      "Add a search index inside the Logger class",
+      "Write locally; a separate agent ships lines centrally",
+      "Make every Logger call POST to a search service",
+      "Refuse, because loggers never leave the machine"
+    ],
+    "answer": 1,
+    "why": "The logger's job is to write lines fast and safely. Collecting and searching them belongs to a separate pipeline, which keeps the logger small."
+  },
+  "takeaway": "Levels, a threshold, formatting and outputs; never crash or stall the app.",
+  "chat": {
+    "starters": [
+      "Why is FATAL a level if the app is about to die anyway?",
+      "Should the logger guarantee lines survive a crash?",
+      "How do I explain non-functional requirements for a logger in an interview?"
+    ]
+  }
+}

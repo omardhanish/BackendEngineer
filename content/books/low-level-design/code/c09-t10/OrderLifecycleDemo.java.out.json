@@ -1,0 +1,11 @@
+{
+  "stdout": "O-7: CUSTOMER may not move ACCEPTED -> CANCELLED\nO-7: RESTAURANT may not move READY -> PICKED_UP\nO-7 [RESTAURANT:ACCEPTED, RESTAURANT:PREPARING, RESTAURANT:READY, RIDER:PICKED_UP, RIDER:DELIVERED]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java OrderLifecycleDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "8dc29bbca736a3fe",
+  "at": "2026-10-12T11:20:47.252Z"
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "t=0 sync-users ok\nt=100 send-email failed: smtp busy\nt=300 send-email failed: smtp busy\nt=300 sync-users ok\nt=600 sync-users ok\nt=650 send-email ok\nt=900 sync-users ok",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java Extensions.java",
+  "tool": "Java 17.0.17",
+  "hash": "c42d650530781085",
+  "at": "2026-10-14T10:23:25.995Z"
+}

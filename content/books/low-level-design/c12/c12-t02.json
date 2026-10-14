@@ -1,0 +1,109 @@
+{
+  "title": "Practice problems and live demos",
+  "idea": "Good LLD interview practice means solving graded problems under a 45-minute clock, then demoing each design with checks that cover its edge cases.",
+  "points": [
+    "Think aloud: state each assumption and trade-off at the moment you make it.",
+    "Climb the levels in order; beat the 45-minute clock on warm-ups before concurrency.",
+    "Demo with named checks for ties, limits and bad input, beyond the happy path.",
+    "After each mock, list what you skipped; that list is your next practice session."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "A graded practice list",
+    "head": ["Level", "Problems", "What it tests", "Where to study"],
+    "rows": [
+      ["1 Warm-up", "Tic-Tac-Toe, vending machine, leaderboard", "Enums, state, input guards", "c09, this chapter"],
+      ["2 Core", "Library, parking lot, shopping cart", "Entities, repositories, business rules", "c05, LLD Case Studies"],
+      ["3 Patterns", "Splitwise, notification system", "Strategy, Observer, Factory together", "c08, c09"],
+      ["4 Stateful", "Cab trip, elevator, ATM", "State machines and edge cases", "c09, LLD Case Studies"],
+      ["5 Concurrent", "Movie ticket booking, payment system", "Locking, double booking, retries", "LLD Case Studies"],
+      ["6 Capstone", "Meeting room booking, food delivery", "Combining patterns, defending trade-offs", "c11, c09"]
+    ],
+    "caption": "Move up a level once you finish a problem from it in 45 minutes, with a running demo."
+  },
+  "code": [
+    {
+      "file": "HappyPathDemo.java",
+      "lang": "java",
+      "title": "Happy-path demo",
+      "run": "captured",
+      "caption": "A leaderboard demo that only shows the happy path. One interviewer question exposes the bug.",
+      "walk": [
+        {
+          "lines": [9, 13],
+          "text": "Three distinct scores, top two printed. The output looks right, so the candidate moves on."
+        },
+        {
+          "lines": [14, 16],
+          "text": "The interviewer asks about a tie. A second player scores 90."
+        },
+        {
+          "lines": [22, 24],
+          "text": "The design keys a `TreeMap` by score. Keys are unique, so it can hold one player per score."
+        },
+        {
+          "lines": [26, 28],
+          "text": "`put` on an existing key replaces the value. The earlier player at 90 vanishes without an error."
+        },
+        {
+          "lines": [17, 17],
+          "text": "Four players recorded, fewer counted. A demo with a tie check would have caught this in minute one."
+        }
+      ]
+    },
+    {
+      "file": "LeaderboardChecks.java",
+      "lang": "java",
+      "title": "Demo as checks",
+      "run": "captured",
+      "caption": "The fixed design, demoed as named checks. Each line answers a question the interviewer would ask.",
+      "walk": [
+        {
+          "lines": [12, 19],
+          "text": "Each check names one edge case: ties, tie order, oversized k, an update and two bad inputs."
+        },
+        {
+          "lines": [23, 35],
+          "text": "A small runner prints PASS or FAIL. No JUnit is needed in an interview editor."
+        },
+        {
+          "lines": [38, 40],
+          "text": "The map is keyed by player, the true identity. Equal scores can no longer collide."
+        },
+        {
+          "lines": [42, 46],
+          "text": "`record` rejects a null player and a negative score before touching state."
+        },
+        {
+          "lines": [48, 56],
+          "text": "`top` sorts by score descending, then name, so ties have a fixed, explainable order."
+        },
+        {
+          "lines": [20, 20],
+          "text": "The final count gives a one-line verdict the interviewer can read at a glance."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Memorising one parking-lot answer; a changed requirement shows you cannot adapt it.",
+    "Demoing only the happy path; ties, empty input and limits are where bugs hide.",
+    "Keying a map by a value that can repeat, such as a score; entries silently overwrite."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "code": "var m = new TreeMap<Integer, String>();\nm.put(90, \"ana\");\nm.put(75, \"ben\");\nm.put(90, \"dee\");\nSystem.out.println(m.size() + \" \" + m.get(90));",
+    "lang": "java",
+    "options": ["3 ana", "2 dee", "2 ana", "3 dee"],
+    "answer": 1,
+    "why": "Keys in a `TreeMap` are unique. The second `put` with key 90 replaces the value, so two keys remain and 90 maps to dee."
+  },
+  "takeaway": "Practise by level, under a clock, and demo the edge cases.",
+  "chat": {
+    "starters": [
+      "Which problem should I practise first if I have one week?",
+      "How do I run a realistic mock interview on my own?",
+      "What edge cases do interviewers usually ask about?"
+    ]
+  }
+}

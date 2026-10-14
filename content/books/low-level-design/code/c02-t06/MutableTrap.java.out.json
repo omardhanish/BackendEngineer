@@ -1,0 +1,11 @@
+{
+  "stdout": "Tea costs 650\nSoup tags [hot, vegan?]\nTea status SHIPED",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java MutableTrap.java",
+  "tool": "Java 17.0.17",
+  "hash": "d6e9a08d4557a041",
+  "at": "2026-10-12T11:29:31.749Z"
+}

@@ -1,0 +1,203 @@
+{
+  "title": "Logger class diagram",
+  "idea": "The logger's class design splits one job into five types: a Logger filters, a LogRecord carries facts, a LogLevel ranks, an Appender writes, a Formatter shapes text.",
+  "analogy": {
+    "text": "A mail room. The clerk (Logger) rejects junk mail, and each courier (Appender) packs letters in its own envelope style (Formatter).",
+    "breaks": "One letter goes to one place; a record goes to every appender."
+  },
+  "points": [
+    "`Logger` owns a name, a threshold and a list of appenders.",
+    "`LogRecord` is an immutable value: level, logger name, message, time, thread.",
+    "`Appender` and `Formatter` are interfaces, so outputs and layouts swap freely.",
+    "Each appender holds its own formatter: console can be plain while files are JSON."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Logger classes and links",
+    "nodes": [
+      {
+        "id": "logger",
+        "label": "Logger",
+        "sub": "name, threshold, log()"
+      },
+      {
+        "id": "level",
+        "label": "LogLevel",
+        "sub": "DEBUG ... FATAL"
+      },
+      {
+        "id": "record",
+        "label": "LogRecord",
+        "sub": "level, message, time"
+      },
+      {
+        "id": "app",
+        "label": "Appender",
+        "sub": "append(record)"
+      },
+      {
+        "id": "fmt",
+        "label": "Formatter",
+        "sub": "format(record)"
+      },
+      {
+        "id": "console",
+        "label": "ConsoleAppender",
+        "sub": "PrintStream"
+      },
+      {
+        "id": "file",
+        "label": "FileAppender",
+        "sub": "Writer, path"
+      }
+    ],
+    "edges": [
+      {
+        "from": "logger",
+        "to": "level",
+        "label": "uses",
+        "caption": "A Logger compares each call's LogLevel against its own threshold."
+      },
+      {
+        "from": "logger",
+        "to": "record",
+        "label": "creates",
+        "caption": "Only accepted calls become a LogRecord, built once per call."
+      },
+      {
+        "from": "logger",
+        "to": "app",
+        "label": "has 0..*",
+        "caption": "The Logger hands that one record to each of its appenders."
+      },
+      {
+        "from": "app",
+        "to": "fmt",
+        "label": "has-a",
+        "caption": "Each Appender asks its own Formatter to turn the record into text."
+      },
+      {
+        "from": "console",
+        "to": "app",
+        "label": "is-a",
+        "dashed": true,
+        "caption": "ConsoleAppender implements Appender and writes to a PrintStream."
+      },
+      {
+        "from": "file",
+        "to": "app",
+        "label": "is-a",
+        "dashed": true,
+        "caption": "FileAppender implements Appender and writes to a file. New outputs are new classes."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "LoggerModel.java",
+      "lang": "java",
+      "title": "The model in Java",
+      "run": "captured",
+      "caption": "The five types with their invariants. A list stands in for the console so the output is easy to read.",
+      "walk": [
+        {
+          "lines": [
+            8,
+            9,
+            10,
+            11,
+            12
+          ],
+          "text": "A plain formatter, one appender, and an `orders` logger at INFO."
+        },
+        {
+          "lines": [
+            13,
+            14,
+            15
+          ],
+          "text": "DEBUG is dropped by the threshold; ERROR reaches the appender."
+        },
+        {
+          "lines": [
+            16,
+            17,
+            18,
+            19,
+            20
+          ],
+          "text": "Building a record without a level breaks an invariant and is refused."
+        },
+        {
+          "lines": [
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33
+          ],
+          "text": "An immutable record; the compact constructor requires level and name, and turns a null message into empty text."
+        },
+        {
+          "lines": [
+            35,
+            36,
+            37
+          ],
+          "text": "Two single-method interfaces: the swap points of the whole design."
+        },
+        {
+          "lines": [
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54
+          ],
+          "text": "Logger copies its appender list, so callers cannot change it later."
+        },
+        {
+          "lines": [
+            55,
+            56,
+            57,
+            58,
+            59
+          ],
+          "text": "`log` filters first, then builds one record and fans it out."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not put formatting inside `Logger`; each output may need a different layout.",
+    "Do not make `LogRecord` mutable; appenders may read it on other threads.",
+    "Avoid a class per level (`ErrorLogger`); a level is data, not a type."
+  ],
+  "quiz": {
+    "q": "What is the last line LoggerModel prints?",
+    "options": [
+      "rejected: level is required",
+      "ERROR orders - payment declined",
+      "rejected: null",
+      "DEBUG orders - cart loaded"
+    ],
+    "answer": 0,
+    "why": "The compact constructor calls `requireNonNull` with a message. The exception carries that message, and the catch prints it."
+  },
+  "takeaway": "Logger filters, LogRecord carries, Appender writes, Formatter shapes, LogLevel ranks.",
+  "chat": {
+    "starters": [
+      "Why does each Appender own a Formatter instead of the Logger?",
+      "Should LogRecord also carry key-value context like a request id?",
+      "Is Logger a good candidate for the singleton pattern?"
+    ]
+  }
+}

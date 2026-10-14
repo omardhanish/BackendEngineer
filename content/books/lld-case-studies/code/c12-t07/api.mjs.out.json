@@ -1,0 +1,11 @@
+{
+  "stdout": "POST /bookings 201 {\"id\":\"BK-1\",\"room\":\"R-1\",\"status\":\"BOOKED\"}\nPOST /bookings 200 {\"id\":\"BK-1\",\"room\":\"R-1\",\"status\":\"BOOKED\"}\nPOST /bookings 409 {\"error\":\"ROOM_TAKEN\"}\nPOST /bookings 400 {\"error\":\"VALIDATION\"}\nPOST /bookings 404 {\"error\":\"ROOM_NOT_FOUND\"}\nGET /rooms/available?attendees=3&start=2026-01-15T10:30:00Z&end=2026-01-15T11:30:00Z 200 [\"R-2\"]\nPOST /bookings/BK-1/cancel 200 {\"id\":\"BK-1\",\"room\":\"R-1\",\"status\":\"CANCELLED\"}\nPOST /bookings/BK-1/cancel 409 {\"error\":\"NOT_CANCELLABLE\"}\nPOST /bookings/BK-99/cancel 404 {\"error\":\"BOOKING_NOT_FOUND\"}",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node api.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "e2d366900b35190e",
+  "at": "2026-10-14T10:22:32.340Z"
+}

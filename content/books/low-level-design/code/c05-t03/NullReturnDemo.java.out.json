@@ -1,0 +1,11 @@
+{
+  "stdout": "c1 -> example.com\nc2 -> NullPointerException",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java NullReturnDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "8c3b964e952e7e3c",
+  "at": "2026-10-12T11:22:06.553Z"
+}

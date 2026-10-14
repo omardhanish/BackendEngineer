@@ -1,0 +1,102 @@
+{
+  "title": "Net balances and debt simplification",
+  "idea": "Simplifying debts replaces the web of who-owes-whom with one net balance per person, then has the largest debtor pay the largest creditor until everyone reaches zero.",
+  "analogy": {
+    "text": "Chips at the end of a card night. Nobody repays each hand; each player cashes out their final chip count.",
+    "breaks": "There is no central bank here; debtors pay creditors directly."
+  },
+  "points": [
+    "A user's net balance is everything they paid minus every share they owe.",
+    "Nets always sum to zero; any other sum means an expense was recorded wrongly.",
+    "Each greedy transfer zeroes someone, so n people need at most n − 1.",
+    "Greedy is not always minimal; finding the true minimum is NP-hard in general."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "lanes",
+    "title": "Greedy settlement of four net balances",
+    "scenario": {
+      "lanes": [
+        { "id": "owing", "label": "Owes money", "kind": "area", "hint": "largest first" },
+        { "id": "owed", "label": "Is owed", "kind": "area", "hint": "largest first" },
+        { "id": "done", "label": "Settled", "kind": "area" }
+      ],
+      "tokens": {
+        "chen": { "label": "Chen −6000", "tone": "macro" },
+        "dev": { "label": "Dev −1000", "tone": "macro" },
+        "asha": { "label": "Asha +7000", "tone": "sync" },
+        "asha2": { "label": "Asha +1000", "tone": "sync" },
+        "ben": { "label": "Ben 0", "tone": "neutral" },
+        "chen0": { "label": "Chen 0", "tone": "neutral" },
+        "dev0": { "label": "Dev 0", "tone": "neutral" },
+        "asha0": { "label": "Asha 0", "tone": "neutral" }
+      },
+      "steps": [
+        { "caption": "Start from net balances in cents. Ben paid 6000 and owes 6000 in shares, so Ben is already settled.", "at": { "owing": ["chen", "dev"], "owed": ["asha"], "done": ["ben"] } },
+        { "caption": "Pick the largest debtor and the largest creditor: Chen and Asha.", "at": { "owing": ["chen", "dev"], "owed": ["asha"], "done": ["ben"] }, "active": "chen" },
+        { "caption": "Chen pays the smaller of the two amounts. Chen reaches zero; Asha is still owed 1000.", "at": { "owing": ["dev"], "owed": ["asha2"], "done": ["ben", "chen0"] }, "out": ["Chen pays Asha 6000"] },
+        { "caption": "Repeat with what is left: Dev is the only debtor, Asha the only creditor.", "at": { "owing": ["dev"], "owed": ["asha2"], "done": ["ben", "chen0"] }, "active": "dev", "out": ["Chen pays Asha 6000"] },
+        { "caption": "Dev pays 1000 and both reach zero in the same transfer.", "at": { "owing": [], "owed": [], "done": ["ben", "chen0", "dev0", "asha0"] }, "out": ["Chen pays Asha 6000", "Dev pays Asha 1000"] },
+        { "caption": "Every transfer zeroed at least one person. Compare this with the pairwise list in the first example.", "at": { "owing": [], "owed": [], "done": ["ben", "chen0", "dev0", "asha0"] }, "out": ["Chen pays Asha 6000", "Dev pays Asha 1000"] }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "PairwiseDebts.java",
+      "lang": "java",
+      "title": "The problem: pairwise debts",
+      "run": "captured",
+      "caption": "Three expenses settled pair by pair, then the same data reduced to one net number per person.",
+      "walk": [
+        { "lines": [7, 8, 9, 10, 11], "text": "Three expenses. Shares come from a split strategy, so each already sums to its total." },
+        { "lines": [14, 15, 16, 17, 18, 19, 20, 21], "text": "Each share becomes a debt from that user to the payer. Your own share is skipped." },
+        { "lines": [22, 23, 24, 25, 26, 27, 28, 29, 30], "text": "Settling pair by pair needs one transfer per entry, including cycles like Asha and Dev." },
+        { "lines": [32, 33, 34, 35, 36, 37, 38], "text": "The net view keeps one number per person: the payer gains each share, each user loses their own." },
+        { "lines": [39, 40], "text": "Nets sum to zero. Money moves between people; it is never created or lost." }
+      ]
+    },
+    {
+      "file": "SimplifyDebts.java",
+      "lang": "java",
+      "title": "The fix: net and settle",
+      "run": "captured",
+      "caption": "A `BalanceSheet` keeps net balances and settles them greedily with two priority queues.",
+      "walk": [
+        { "lines": [24], "text": "One `long` per user. A `TreeMap` keeps printing and iteration order stable." },
+        { "lines": [27, 28, 29, 30, 31, 32, 33, 34], "text": "Recording costs O(shares · log users) with a TreeMap. Inputs are checked first; bad calls change nothing." },
+        { "lines": [40, 41], "text": "The invariant check: if nets do not sum to zero, settling would be wrong." },
+        { "lines": [42, 43, 44, 45], "text": "Two max-heaps. Ties break by name, so the same input always gives the same transfers." },
+        { "lines": [51, 52, 53, 54], "text": "The largest debtor pays the largest creditor the smaller of their two amounts." },
+        { "lines": [55, 56, 57, 58, 59], "text": "Whoever is not at zero goes back in the queue with what remains." },
+        { "lines": [61], "text": "Each loop zeroes at least one person, so there are at most n − 1 transfers." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Keeping only pairwise debts preserves cycles, such as Asha owing Dev while Dev owes Asha.",
+    "Settling from a `HashMap` or `Map.of` without tie-breaks leaves transfer order unspecified.",
+    "Storing balances apart from expenses lets them drift; update both in one place."
+  ],
+  "quiz": {
+    "q": "Same `BalanceSheet` as the fix. What does this print?",
+    "code": "BalanceSheet s = new BalanceSheet();\ns.record(\"A\", Map.of(\"B\", 500L, \"C\", 500L));\ns.record(\"B\", Map.of(\"C\", 500L));\ns.settle().forEach(System.out::println);",
+    "lang": "java",
+    "options": [
+      "Transfer[from=C, to=B, cents=500] then Transfer[from=B, to=A, cents=500]",
+      "Transfer[from=B, to=A, cents=500] then Transfer[from=C, to=A, cents=500]",
+      "Transfer[from=C, to=A, cents=1000]",
+      "Transfer[from=C, to=A, cents=500]"
+    ],
+    "answer": 2,
+    "why": "B is owed 500 by C and owes 500 to A, so B nets to zero. Only C (−1000) and A (+1000) remain: one transfer."
+  },
+  "takeaway": "Net each person to one number, then match biggest debtor with biggest creditor.",
+  "chat": {
+    "starters": [
+      "Can you show a case where greedy settlement is not the minimum?",
+      "Should balances be computed on demand or updated on every expense?",
+      "How would simplifying debts work across several groups at once?"
+    ]
+  }
+}

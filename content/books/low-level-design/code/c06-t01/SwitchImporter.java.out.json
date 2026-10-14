@@ -1,0 +1,11 @@
+{
+  "stdout": "csv: 1 rows [1,Ada]\njson: 1 rows [{\"id\":1}]\nfailed: unknown format: xml",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java SwitchImporter.java",
+  "tool": "Java 17.0.17",
+  "hash": "b404d192ea8fe205",
+  "at": "2026-10-12T11:22:00.166Z"
+}

@@ -1,0 +1,193 @@
+{
+  "title": "Table reservation lifecycle",
+  "idea": "The reservation lifecycle is a small state machine: a Reservation starts CONFIRMED, moves to SEATED, CANCELLED or NO_SHOW, and only SEATED moves on to COMPLETED.",
+  "points": [
+    "CONFIRMED moves to SEATED on arrival, CANCELLED by the customer, or NO_SHOW.",
+    "SEATED can only become COMPLETED; the other three end states are final.",
+    "NO_SHOW is allowed only after the start time plus a grace period.",
+    "Active states (CONFIRMED, SEATED) block the table; final states free it."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "Book, arrive, or no-show",
+    "actors": [
+      {
+        "id": "cust",
+        "label": "Customer"
+      },
+      {
+        "id": "svc",
+        "label": "ReservationService"
+      },
+      {
+        "id": "host",
+        "label": "Host"
+      },
+      {
+        "id": "sys",
+        "label": "NoShowSweeper"
+      }
+    ],
+    "messages": [
+      {
+        "from": "cust",
+        "to": "svc",
+        "label": "book(4, 19:00)",
+        "note": "The customer asks for a table for four. Page 3's allocation picks T3."
+      },
+      {
+        "from": "svc",
+        "to": "cust",
+        "label": "RV-1 CONFIRMED",
+        "dashed": true,
+        "note": "The reservation starts CONFIRMED. It now blocks T3 from 19:00 to 20:30."
+      },
+      {
+        "from": "host",
+        "to": "svc",
+        "label": "seat(RV-1)",
+        "note": "Happy path: the party arrives and the host seats them. CONFIRMED moves to SEATED."
+      },
+      {
+        "from": "host",
+        "to": "svc",
+        "label": "finish(RV-1)",
+        "note": "The party leaves. SEATED moves to COMPLETED, a final state."
+      },
+      {
+        "from": "sys",
+        "to": "svc",
+        "label": "sweep(19:10)",
+        "note": "Other path: the sweeper runs at 19:10. Grace is 15 minutes, so nothing changes yet."
+      },
+      {
+        "from": "sys",
+        "to": "svc",
+        "label": "sweep(19:16)",
+        "note": "At 19:16 the sweeper moves RV-2, another 19:00 booking whose party is absent, to NO_SHOW. Its table frees."
+      },
+      {
+        "from": "host",
+        "to": "svc",
+        "label": "seat(RV-2)",
+        "note": "That party walks in at 19:20. NO_SHOW is final, so the service refuses."
+      },
+      {
+        "from": "svc",
+        "to": "host",
+        "label": "refused: final",
+        "dashed": true,
+        "note": "The host seats them as a walk-in instead, if a table is free."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "ReservationLifecycle.java",
+      "lang": "java",
+      "title": "Status enum with rules",
+      "run": "captured",
+      "caption": "The allowed moves live in the enum. Times are passed in, so the no-show rule replays the same way.",
+      "walk": [
+        {
+          "lines": [
+            7,
+            8,
+            9
+          ],
+          "text": "RV-1 takes the happy path: seated, then completed."
+        },
+        {
+          "lines": [
+            10,
+            11,
+            12,
+            13
+          ],
+          "text": "RV-2: a no-show check too early, one after grace, then a late arrival."
+        },
+        {
+          "lines": [
+            14,
+            15,
+            16
+          ],
+          "text": "RV-3 is cancelled, then cancelled again by a double click."
+        },
+        {
+          "lines": [
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30
+          ],
+          "text": "An `EnumMap` lists allowed next states; missing states get an empty set."
+        },
+        {
+          "lines": [
+            31,
+            32,
+            33,
+            34
+          ],
+          "text": "`canMoveTo` is the one question; `isFinal` means no arrows leave."
+        },
+        {
+          "lines": [
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55
+          ],
+          "text": "A time guard sits on top of the state rule for no-shows."
+        },
+        {
+          "lines": [
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63,
+            64,
+            65
+          ],
+          "text": "Refuse and report an illegal move; otherwise record the new state."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not set `status` from controllers; every change goes through one `moveTo`.",
+    "Mark no-shows only after the grace period, using the injected time, never the wall clock.",
+    "Treat a second cancel as a refused move, not a crash or a silent success."
+  ],
+  "quiz": {
+    "q": "What does ReservationLifecycle print when RV-2 is seated late?",
+    "options": [
+      "RV-2 CONFIRMED -> SEATED",
+      "RV-2 refused NO_SHOW -> SEATED (final)",
+      "RV-2 too early for no-show at 19:20",
+      "RV-2 NO_SHOW -> SEATED"
+    ],
+    "answer": 1,
+    "why": "The 19:16 sweep moved RV-2 to NO_SHOW. NO_SHOW has no allowed next states, so `moveTo` refuses and tags it final."
+  },
+  "takeaway": "Write allowed transitions once, in the enum, and refuse everything else.",
+  "chat": {
+    "starters": [
+      "Should a late party be able to undo a no-show?",
+      "How does the sweeper find reservations to mark?",
+      "Would a PENDING state help if deposits were added?"
+    ]
+  }
+}

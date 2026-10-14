@@ -1,0 +1,177 @@
+{
+  "title": "Room booking lifecycle",
+  "idea": "The room booking lifecycle is a state machine: a Booking starts BOOKED and may move only through allowed transitions to CHECKED_IN, COMPLETED, CANCELLED or RELEASED.",
+  "points": [
+    "BOOKED becomes CHECKED_IN, CANCELLED, or RELEASED when nobody checks in.",
+    "CHECKED_IN becomes COMPLETED at the end time; three states are final.",
+    "Only BOOKED and CHECKED_IN block the room; other states free it.",
+    "Every change goes through `moveTo`, so illegal moves are refused in one place."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "Book, check in, finish",
+    "actors": [
+      {
+        "id": "emp",
+        "label": "Employee"
+      },
+      {
+        "id": "api",
+        "label": "BookingService"
+      },
+      {
+        "id": "cal",
+        "label": "Calendar R-1"
+      },
+      {
+        "id": "sweep",
+        "label": "Sweeper"
+      }
+    ],
+    "messages": [
+      {
+        "from": "emp",
+        "to": "api",
+        "label": "book(4, 10:00-11:00)",
+        "note": "The organizer asks for a room for four people."
+      },
+      {
+        "from": "api",
+        "to": "cal",
+        "label": "isFree, add(BK-1)",
+        "note": "The service checks the room's Calendar and stores BK-1 as BOOKED."
+      },
+      {
+        "from": "api",
+        "to": "emp",
+        "label": "BK-1 BOOKED",
+        "dashed": true,
+        "note": "The organizer gets the booking id and the room name."
+      },
+      {
+        "from": "sweep",
+        "to": "api",
+        "label": "sweep(10:05)",
+        "note": "The sweeper runs every minute. At 10:05 BK-1 is still inside its grace period."
+      },
+      {
+        "from": "emp",
+        "to": "api",
+        "label": "checkIn(BK-1)",
+        "note": "The organizer taps check in at the room panel. BK-1 moves BOOKED to CHECKED_IN."
+      },
+      {
+        "from": "sweep",
+        "to": "api",
+        "label": "sweep(10:12)",
+        "note": "At 10:12 BK-1 is CHECKED_IN, so the sweeper leaves it alone."
+      },
+      {
+        "from": "sweep",
+        "to": "api",
+        "label": "sweep(11:00)",
+        "note": "At the end time the sweeper moves BK-1 to COMPLETED."
+      },
+      {
+        "from": "api",
+        "to": "cal",
+        "label": "remove(BK-1)",
+        "note": "A final state no longer blocks the room. Without a check-in, RELEASED would free it at 10:10."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "BookingLifecycle.java",
+      "lang": "java",
+      "title": "Status enum with rules",
+      "run": "captured",
+      "caption": "Allowed moves live in the enum. Booking asks the enum before every change.",
+      "walk": [
+        {
+          "lines": [
+            8,
+            9,
+            10,
+            11
+          ],
+          "text": "BK-1 checks in, completes, then a late cancel is tried."
+        },
+        {
+          "lines": [
+            12,
+            13,
+            14
+          ],
+          "text": "BK-2 is released as a no-show; a late check-in is tried."
+        },
+        {
+          "lines": [
+            15,
+            16,
+            17
+          ],
+          "text": "BK-3 is cancelled early, then we ask whether it still blocks the room."
+        },
+        {
+          "lines": [
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32
+          ],
+          "text": "An `EnumMap` lists the allowed next states for each state."
+        },
+        {
+          "lines": [
+            33,
+            34
+          ],
+          "text": "`canMoveTo` answers legality; `blocksRoom` answers availability."
+        },
+        {
+          "lines": [
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49
+          ],
+          "text": "Refuse and report an illegal move; otherwise record the new state."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not set `status` from controllers; route every change through `moveTo`.",
+    "A released no-show must not be revived; the room may already be rebooked.",
+    "Run the sweeper with an injected clock, so tests can replay any minute."
+  ],
+  "quiz": {
+    "q": "What does the fifth line of BookingLifecycle print?",
+    "options": [
+      "BK-2 RELEASED -> CHECKED_IN",
+      "BK-2 refused RELEASED -> CHECKED_IN",
+      "BK-2 BOOKED -> CHECKED_IN",
+      "BK-2 refused BOOKED -> RELEASED"
+    ],
+    "answer": 1,
+    "why": "RELEASED has no allowed next states. `canMoveTo(CHECKED_IN)` is false, so `moveTo` prints the refusal and keeps RELEASED."
+  },
+  "takeaway": "Allowed moves live in one enum; everything else is refused.",
+  "chat": {
+    "starters": [
+      "Should an organizer be able to extend a CHECKED_IN meeting?",
+      "Why not delete cancelled bookings instead of keeping a status?",
+      "How often should the no-show sweeper run?"
+    ]
+  }
+}

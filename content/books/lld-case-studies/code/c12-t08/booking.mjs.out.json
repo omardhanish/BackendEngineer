@@ -1,0 +1,11 @@
+{
+  "stdout": "SEARCH        SEARCHING  room - key - rooms\nSEARCH_OK     RESULTS    room - key - rooms R-1,R-2,R-3\nPICK          RESULTS    room R-1 key - rooms R-1,R-2,R-3\nSUBMIT        SUBMITTING room R-1 key bk-1 rooms R-1,R-2,R-3\nSUBMIT        SUBMITTING room R-1 key bk-1 rooms R-1,R-2,R-3\nBOOK_CONFLICT RESULTS    room - key - rooms R-2,R-3\nPICK          RESULTS    room R-2 key - rooms R-2,R-3\nSUBMIT        SUBMITTING room R-2 key bk-3 rooms R-2,R-3\nBOOK_FAILED   RESULTS    room R-2 key bk-3 rooms R-2,R-3\nSUBMIT        SUBMITTING room R-2 key bk-3 rooms R-2,R-3\nBOOK_OK       BOOKED     room R-2 key bk-3 rooms R-2,R-3",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node booking.mjs",
+  "tool": null,
+  "hash": "45b4a92487f44d0b",
+  "at": "2026-10-14T10:22:24.956Z"
+}

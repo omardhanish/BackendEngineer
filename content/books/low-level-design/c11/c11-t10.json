@@ -1,0 +1,218 @@
+{
+  "title": "Documenting the capstone design",
+  "idea": "Design documentation is the short set of diagrams and contract comments that lets another engineer understand, use and change your system without asking you.",
+  "points": [
+    "A class diagram shows structure: types, key members, and their dependencies.",
+    "A sequence diagram shows one use case in time, like one `book` call.",
+    "Javadoc states each method's contract: inputs, units, edge cases, and error codes thrown.",
+    "Keep diagrams as text beside the code, so reviews show diagram changes too."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "Sequence diagram: booking a room",
+    "actors": [
+      {
+        "id": "emp",
+        "label": "Employee"
+      },
+      {
+        "id": "svc",
+        "label": "BookingService"
+      },
+      {
+        "id": "repo",
+        "label": "BookingRepository"
+      },
+      {
+        "id": "policy",
+        "label": "ConflictPolicy"
+      },
+      {
+        "id": "lis",
+        "label": "BookingListener"
+      }
+    ],
+    "messages": [
+      {
+        "from": "emp",
+        "to": "svc",
+        "label": "book(ana, R1, 9.0, 10.0)",
+        "note": "One use case, one diagram. The employee only ever talks to `BookingService`."
+      },
+      {
+        "from": "svc",
+        "to": "repo",
+        "label": "forRoom(R1)",
+        "note": "The service loads only this room's bookings. The repository hides how they are stored."
+      },
+      {
+        "from": "repo",
+        "to": "svc",
+        "label": "List<Booking>",
+        "dashed": true,
+        "note": "Dashed arrows are returns. Draw them only when the value matters to the story."
+      },
+      {
+        "from": "svc",
+        "to": "policy",
+        "label": "conflicts(candidate, existing)",
+        "note": "The Strategy decides. The diagram makes the dependency on an interface visible."
+      },
+      {
+        "from": "policy",
+        "to": "svc",
+        "label": "false",
+        "dashed": true,
+        "note": "No clash. On true, the diagram would end here with `RoomTakenException`."
+      },
+      {
+        "from": "svc",
+        "to": "repo",
+        "label": "save(B1)",
+        "note": "The save happens before any listener runs: the order is a design decision worth showing."
+      },
+      {
+        "from": "svc",
+        "to": "lis",
+        "label": "onBooked(B1)",
+        "note": "Each listener is told in turn. Email and audit stay outside the core flow."
+      },
+      {
+        "from": "svc",
+        "to": "emp",
+        "label": "Booking B1",
+        "dashed": true,
+        "note": "The caller gets the saved booking, with its new id, to cancel it later."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "booking.mmd",
+      "lang": "text",
+      "title": "Class diagram as Mermaid",
+      "run": "static",
+      "illustrative": true,
+      "caption": "The capstone's structure as Mermaid text. Kept in the repository, it renders inside a mermaid code block on GitHub or GitLab.",
+      "walk": [
+        {
+          "lines": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10
+          ],
+          "text": "Show fields that are dependencies, and public methods with types. Skip getters and private helpers."
+        },
+        {
+          "lines": [
+            11,
+            12,
+            13,
+            14
+          ],
+          "text": "The `<<interface>>` label tells the reader this is an extension point, not a concrete class."
+        },
+        {
+          "lines": [
+            26
+          ],
+          "text": "Filled diamond is composition: rooms belong to one building and do not exist without it."
+        },
+        {
+          "lines": [
+            27,
+            28,
+            29,
+            30
+          ],
+          "text": "Plain arrows are associations the service holds as fields. `*` means any number of listeners."
+        },
+        {
+          "lines": [
+            31,
+            32
+          ],
+          "text": "Dotted arrows with a hollow head mean implements: two Observers of one interface."
+        }
+      ]
+    },
+    {
+      "file": "BookingContractDemo.java",
+      "lang": "java",
+      "title": "Javadoc with a runnable demo",
+      "run": "captured",
+      "caption": "The contract in Javadoc, and a `main` that runs each documented case so a reviewer can compare output with the docs.",
+      "walk": [
+        {
+          "lines": [
+            31
+          ],
+          "text": "The class comment fixes the unit once. Every reader now knows 9.5 means 09:30."
+        },
+        {
+          "lines": [
+            35,
+            36
+          ],
+          "text": "State the edge case in words: half-open slots, so touching bookings do not clash."
+        },
+        {
+          "lines": [
+            37,
+            38,
+            39
+          ],
+          "text": "Each `@throws` names an exception with a stable code. Callers can rely on these."
+        },
+        {
+          "lines": [
+            52,
+            53
+          ],
+          "text": "Short methods still list every failure, including an unknown id: `IllegalArgumentException`."
+        },
+        {
+          "lines": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13
+          ],
+          "text": "Each documented case runs here, back-to-back included. A reviewer compares this output with the docs."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Drawing every getter and private field hides the dependencies the reader actually needs.",
+    "Diagrams saved as images go stale; keep Mermaid text in the repository next to the code.",
+    "Javadoc that repeats the method name adds nothing; document units, edge cases and exceptions."
+  ],
+  "quiz": {
+    "q": "A reviewer must see why a cancelled booking still sent an email. Which diagram helps most?",
+    "options": [
+      "A class diagram of every capstone type",
+      "A sequence diagram of the `cancel` use case",
+      "A use case diagram listing all actors",
+      "A package diagram of the modules"
+    ],
+    "answer": 1,
+    "why": "The question is about the order of calls in one flow. Only a sequence diagram shows order; the others show structure or scope."
+  },
+  "takeaway": "Draw structure once, draw each key flow in time, and document every contract.",
+  "chat": {
+    "starters": [
+      "Which UML diagrams should I draw in a 45-minute LLD interview?",
+      "How do I show an exception path in a sequence diagram?",
+      "What belongs in a README for a low-level design project?"
+    ]
+  }
+}

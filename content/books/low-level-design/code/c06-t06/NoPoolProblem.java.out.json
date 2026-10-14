@@ -1,0 +1,11 @@
+{
+  "stdout": "connections opened: 1000\nrequest 21 failed: too many connections",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java NoPoolProblem.java",
+  "tool": "Java 17.0.17",
+  "hash": "870ae61b5bec1726",
+  "at": "2026-10-12T11:30:35.172Z"
+}

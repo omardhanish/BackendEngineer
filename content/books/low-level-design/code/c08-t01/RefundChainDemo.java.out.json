@@ -1,0 +1,11 @@
+{
+  "stdout": "R-1 -> APPROVED by auto\nR-2 -> HELD for fraud review\nR-3 -> APPROVED by agent\nR-4 -> REJECTED: nobody can approve",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java RefundChainDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "71847bb8763a1ba0",
+  "at": "2026-10-12T11:25:47.247Z"
+}

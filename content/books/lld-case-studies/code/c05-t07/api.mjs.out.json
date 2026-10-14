@@ -1,0 +1,11 @@
+{
+  "stdout": "/withdrawals 201 {\"txId\":\"TX-1\",\"status\":\"PENDING\",\"amountMinor\":250000,\"balanceMinor\":250000}\n/withdrawals 200 {\"txId\":\"TX-1\",\"status\":\"PENDING\",\"amountMinor\":250000,\"balanceMinor\":250000}\n/withdrawals 422 {\"error\":\"KEY_REUSED\"}\n/withdrawals 400 {\"error\":\"VALIDATION\"}\n/withdrawals 409 {\"error\":\"INSUFFICIENT_FUNDS\"}\n/withdrawals/TX-1/reverse 200 {\"txId\":\"TX-1\",\"status\":\"REVERSED\",\"amountMinor\":250000,\"balanceMinor\":500000}\n/withdrawals/TX-1/reverse 409 {\"error\":\"NOT_PENDING\"}",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node api.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "3505641e21090635",
+  "at": "2026-10-14T10:24:04.127Z"
+}

@@ -1,0 +1,198 @@
+{
+  "title": "ATM state machine and flows",
+  "idea": "The ATM lifecycle is a state machine: the machine is in exactly one ATMState, and only listed transitions are allowed, so no step can be skipped.",
+  "points": [
+    "IDLE goes to CARD_INSERTED; a correct PIN moves it to AUTHENTICATED.",
+    "Only AUTHENTICATED may enter DISPENSING; it ends at IDLE, or OUT_OF_SERVICE on a jam.",
+    "Three wrong PINs retain the card and return the machine to IDLE.",
+    "A jam or empty cassette sends it OUT_OF_SERVICE until an operator resets it."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "Card in, cash out",
+    "actors": [
+      {
+        "id": "user",
+        "label": "Customer"
+      },
+      {
+        "id": "atm",
+        "label": "ATM"
+      },
+      {
+        "id": "bank",
+        "label": "BankService"
+      },
+      {
+        "id": "cash",
+        "label": "CashDispenser"
+      }
+    ],
+    "messages": [
+      {
+        "from": "user",
+        "to": "atm",
+        "label": "insert card",
+        "note": "The machine moves IDLE to CARD_INSERTED and asks for a PIN."
+      },
+      {
+        "from": "atm",
+        "to": "bank",
+        "label": "verifyPin(card, pin)",
+        "note": "The bank checks the PIN and counts failures. The ATM never stores PINs."
+      },
+      {
+        "from": "bank",
+        "to": "atm",
+        "label": "ok, AC-1",
+        "dashed": true,
+        "note": "Success moves the machine to AUTHENTICATED."
+      },
+      {
+        "from": "user",
+        "to": "atm",
+        "label": "withdraw 2600",
+        "note": "The ATM plans notes first. If they cannot make 2600, it refuses here."
+      },
+      {
+        "from": "atm",
+        "to": "bank",
+        "label": "debit(AC-1, 2600, R-1)",
+        "note": "R-1 is the request id. A retry with R-1 cannot debit twice."
+      },
+      {
+        "from": "bank",
+        "to": "atm",
+        "label": "TX-1 PENDING",
+        "dashed": true,
+        "note": "Page 3's one-step debit now becomes two: the money is held PENDING until the cash really leaves."
+      },
+      {
+        "from": "atm",
+        "to": "cash",
+        "label": "dispense(plan)",
+        "note": "The machine moves to DISPENSING and pushes the notes out."
+      },
+      {
+        "from": "atm",
+        "to": "bank",
+        "label": "confirm(TX-1)",
+        "note": "Notes taken: TX-1 becomes COMPLETED. A jam would send reverse(TX-1) instead."
+      },
+      {
+        "from": "atm",
+        "to": "user",
+        "label": "card back",
+        "dashed": true,
+        "note": "The card is returned and the machine is IDLE again."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "AtmLifecycle.java",
+      "lang": "java",
+      "title": "ATMState with rules",
+      "run": "captured",
+      "caption": "The allowed moves live in the enum. ATM asks the enum before every change.",
+      "walk": [
+        {
+          "lines": [
+            6
+          ],
+          "text": "Dispensing with no card is refused before anything else happens."
+        },
+        {
+          "lines": [
+            7,
+            8,
+            9,
+            10
+          ],
+          "text": "One wrong PIN, then a right one, a withdrawal, and back to IDLE."
+        },
+        {
+          "lines": [
+            11,
+            12
+          ],
+          "text": "The next customer fails the PIN three times; the card is kept."
+        },
+        {
+          "lines": [
+            13,
+            14
+          ],
+          "text": "The cassette runs out. No new card is accepted until a reset."
+        },
+        {
+          "lines": [
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30
+          ],
+          "text": "An `EnumMap` lists the allowed next states; `canMoveTo` asks it."
+        },
+        {
+          "lines": [
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48
+          ],
+          "text": "`moveTo` is the only way to change state, so illegal moves are refused in one place."
+        },
+        {
+          "lines": [
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57
+          ],
+          "text": "The third wrong PIN retains the card and returns to IDLE."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not set `state` from many methods; route every change through `moveTo`.",
+    "Count PIN failures at the bank too; a local count resets at the next ATM.",
+    "Keep ATMState and TransactionStatus separate; a jam changes both for different reasons."
+  ],
+  "quiz": {
+    "q": "What does the last line of AtmLifecycle print?",
+    "options": [
+      "ATM-7 OUT_OF_SERVICE -> CARD_INSERTED",
+      "ATM-7 refused OUT_OF_SERVICE -> CARD_INSERTED",
+      "ATM-7 card retained",
+      "ATM-7 IDLE -> OUT_OF_SERVICE"
+    ],
+    "answer": 1,
+    "why": "OUT_OF_SERVICE may only move to IDLE. `canMoveTo` returns false, so `moveTo` prints the refusal and keeps the state."
+  },
+  "takeaway": "One enum lists the legal moves; one method makes every move.",
+  "chat": {
+    "starters": [
+      "Should I use the State pattern with one class per state instead?",
+      "What happens if the customer walks away during DISPENSING?",
+      "How does the ATM recover its state after a power cut?"
+    ]
+  }
+}

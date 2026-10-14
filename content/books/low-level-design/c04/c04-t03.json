@@ -1,294 +1,201 @@
 {
-  "title": "DDD language and models",
-  "idea": "Domain-driven design (DDD) shapes code around the business's own language, splits it into bounded contexts, and builds each model from entities and value objects.",
-  "analogy": {
-    "text": "In a hospital, \"patient\" means a bed and a chart on the ward, but an account and a bill in finance. Each department keeps its own meaning.",
-    "breaks": "Departments share people; your contexts share data only through explicit translation."
-  },
+  "title": "Sequence diagrams for one use case",
+  "idea": "A sequence diagram shows one scenario as messages between objects over time, so you can check who calls whom, in what order, and what comes back.",
   "points": [
-    "Ubiquitous language: class and method names use the domain experts' exact words.",
-    "A bounded context is a boundary inside which each term has one meaning.",
-    "An entity has an identity that stays while its attributes change.",
-    "A value object is immutable and equal to any other with the same values."
+    "Objects sit across the top; time runs down each dashed lifeline.",
+    "Solid arrow with filled head is a call; dashed arrow is its return.",
+    "`alt` draws branches; `loop` repeats a block; `opt` runs only if true.",
+    "Draw it after the class diagram to find missing methods and wrong owners."
   ],
   "hero": {
-    "type": "anim",
-    "engine": "topology",
-    "title": "Two contexts, one translator",
-    "scenario": {
-      "tiers": [
-        [
-          "buyer"
-        ],
-        [
-          "order"
-        ],
-        [
-          "xlate"
-        ],
-        [
-          "parcel",
-          "recip"
-        ]
-      ],
-      "nodes": {
-        "buyer": {
-          "label": "Buyer",
-          "sub": "id C-7",
-          "kind": "user"
-        },
-        "order": {
-          "label": "SalesOrder",
-          "sub": "entity O-1",
-          "kind": "box"
-        },
-        "xlate": {
-          "label": "ShippingTranslator",
-          "sub": "translation",
-          "kind": "proxy"
-        },
-        "parcel": {
-          "label": "Parcel",
-          "sub": "shipping model",
-          "kind": "box"
-        },
-        "recip": {
-          "label": "Recipient",
-          "sub": "value object",
-          "kind": "box"
-        }
+    "type": "seq",
+    "title": "Placing an order, happy path",
+    "actors": [
+      {
+        "id": "c",
+        "label": "Controller"
       },
-      "links": [
-        [
-          "buyer",
-          "order",
-          {
-            "label": "places"
-          }
-        ],
-        [
-          "order",
-          "xlate"
-        ],
-        [
-          "xlate",
-          "parcel"
-        ],
-        [
-          "xlate",
-          "recip"
-        ]
-      ],
-      "groups": [
-        {
-          "label": "Sales context",
-          "nodes": [
-            "buyer",
-            "order"
-          ]
-        },
-        {
-          "label": "Shipping context",
-          "nodes": [
-            "parcel",
-            "recip"
-          ]
-        }
-      ],
-      "steps": [
-        {
-          "caption": "In Sales, a customer is a `Buyer`: an entity with id C-7 and a credit limit.",
-          "badge": {
-            "buyer": "limit 2000"
-          },
-          "focus": [
-            "buyer"
-          ]
-        },
-        {
-          "caption": "`SalesOrder` O-1 checks its amount against the buyer's limit, in Sales words.",
-          "send": [
-            {
-              "from": "buyer",
-              "to": "order",
-              "label": "1500",
-              "tone": "req"
-            }
-          ],
-          "state": {
-            "order": "ok"
-          },
-          "badge": {
-            "order": "credit ok"
-          }
-        },
-        {
-          "caption": "Shipping never asks about credit. Its model holds only what a courier needs.",
-          "focus": [
-            "parcel",
-            "recip"
-          ]
-        },
-        {
-          "caption": "The order crosses the boundary through one translator, not by sharing the `Buyer` class.",
-          "send": [
-            {
-              "from": "order",
-              "to": "xlate",
-              "label": "O-1",
-              "tone": "info"
-            }
-          ],
-          "state": {
-            "xlate": "busy"
-          }
-        },
-        {
-          "caption": "The translator builds a `Parcel` and a `Recipient` value from the sales data.",
-          "send": [
-            {
-              "from": "xlate",
-              "to": "parcel",
-              "label": "Parcel",
-              "tone": "ok"
-            },
-            {
-              "from": "xlate",
-              "to": "recip",
-              "label": "Ana",
-              "tone": "ok"
-            }
-          ],
-          "state": {
-            "xlate": "ok",
-            "parcel": "new",
-            "recip": "new"
-          }
-        },
-        {
-          "caption": "Renaming the buyer keeps entity C-7. A new address means a whole new `Recipient` value.",
-          "focus": [
-            "buyer",
-            "recip"
-          ]
-        }
-      ]
-    }
+      {
+        "id": "o",
+        "label": "OrderService"
+      },
+      {
+        "id": "i",
+        "label": "Inventory"
+      },
+      {
+        "id": "p",
+        "label": "Payment"
+      }
+    ],
+    "messages": [
+      {
+        "from": "c",
+        "to": "o",
+        "label": "placeOrder(sku, qty)",
+        "note": "The controller makes one call. `OrderService` is now active until it replies."
+      },
+      {
+        "from": "o",
+        "to": "i",
+        "label": "reserve(sku, qty)",
+        "note": "The service coordinates. It holds stock first, so payment never charges for missing goods."
+      },
+      {
+        "from": "i",
+        "to": "o",
+        "label": "reserved",
+        "dashed": true,
+        "note": "A dashed arrow is the return. Control is back with the caller."
+      },
+      {
+        "from": "o",
+        "to": "p",
+        "label": "charge(cents)",
+        "note": "The service computes the amount itself. Each arrow is a method the receiver must own."
+      },
+      {
+        "from": "p",
+        "to": "o",
+        "label": "approved",
+        "dashed": true,
+        "note": "The reply picks a branch. A decline would take the `else` path shown in the Mermaid code below."
+      },
+      {
+        "from": "o",
+        "to": "i",
+        "label": "commit(sku, qty)",
+        "note": "Approved: the reservation becomes a sale. Declined would send `release` here instead."
+      },
+      {
+        "from": "o",
+        "to": "c",
+        "label": "CONFIRMED",
+        "dashed": true,
+        "note": "The final return ends the activation. Read top to bottom, this is the method body."
+      }
+    ]
   },
   "code": [
     {
-      "file": "ValueVsEntityDemo.java",
-      "lang": "java",
-      "title": "Value object vs entity",
-      "run": "captured",
-      "caption": "`Money` is equal by value and never changes. `Customer` is equal by id, whatever its name.",
+      "file": "checkout.mmd",
+      "lang": "text",
+      "title": "The diagram",
+      "run": "static",
+      "illustrative": true,
+      "caption": "Both paths in one Mermaid diagram, with an `alt` frame for the payment result.",
       "walk": [
         {
           "lines": [
-            23,
-            27
+            2,
+            5
           ],
-          "text": "The compact constructor checks every value, so an invalid `Money` can never exist."
+          "text": "Each participant gets a lifeline. Order them left to right in the order they are first called."
         },
         {
           "lines": [
-            28,
-            33
-          ],
-          "text": "`plus` returns a new `Money`; neither operand changes."
-        },
-        {
-          "lines": [
-            5,
+            6,
             8
           ],
-          "text": "Records compare by fields, so two separate 500-cent EUR values are equal."
+          "text": "`->>` is a call and `-->>` its return. `+` and `-` open and close activation bars."
         },
         {
           "lines": [
-            36,
-            45
+            9,
+            10
           ],
-          "text": "`Customer` bases `equals` and `hashCode` on the id alone."
+          "text": "The payment reply decides which branch below runs."
         },
         {
           "lines": [
-            10,
-            13
+            11,
+            17
           ],
-          "text": "A renamed customer is still the same customer: identity outlives attributes."
+          "text": "`alt` and `else` show mutually exclusive branches. Name each guard so readers know the condition."
         },
         {
           "lines": [
-            15,
-            19
+            18,
+            18
           ],
-          "text": "Domain rules live in the value: mixing currencies is refused."
+          "text": "Deactivate the service once it has replied in either branch."
         }
       ]
     },
     {
-      "file": "ContextsDemo.java",
+      "file": "CheckoutTrace.java",
       "lang": "java",
-      "title": "Two bounded contexts",
+      "title": "The code behind it",
       "run": "captured",
-      "caption": "Sales and Shipping each model the same person their own way. One translator connects them.",
+      "caption": "The service prints each outgoing call, so the run reproduces both branches of the diagram.",
       "walk": [
         {
           "lines": [
-            12,
-            17
+            46,
+            48
           ],
-          "text": "Sales words: a `Buyer` with a credit limit, and an order that checks it. Records keep it short."
+          "text": "First arrow from the service: reserve stock. It throws if stock is short."
         },
         {
           "lines": [
-            19,
-            22
+            49,
+            50
           ],
-          "text": "Shipping words: a `Recipient` value and a `Parcel`. No credit, no id."
+          "text": "The service computes the amount, then sends the `charge` message."
         },
         {
           "lines": [
-            24,
-            29
+            51,
+            55
           ],
-          "text": "The translator is the one place that knows both models."
+          "text": "The `alt` approved branch: commit the reservation and return `CONFIRMED`."
         },
         {
           "lines": [
-            3,
-            8
+            56,
+            58
           ],
-          "text": "Each context answers its own question: credit in Sales, delivery in Shipping."
+          "text": "The `else` branch: release the stock, or it leaks, then report the decline."
+        },
+        {
+          "lines": [
+            35,
+            37
+          ],
+          "text": "A fake gateway with a fixed limit keeps both paths deterministic."
+        },
+        {
+          "lines": [
+            8,
+            13
+          ],
+          "text": "The second order is declined, yet stock returns: free plus sold equals the start."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Do not share one huge `Customer` class across contexts; each context models its own.",
-    "Do not give value objects setters; replace the whole value instead.",
-    "Do not base an entity's `equals` on mutable fields like name; compare ids."
+    "Drawing every getter call hides the flow; show messages that change state or cross objects.",
+    "Forgetting the failure branch; reviewers ask what happens when payment fails and stock stays held.",
+    "An arrow naming a method the receiver lacks means the class diagram is stale."
   ],
   "quiz": {
-    "q": "Using the classes above, what does this print?",
-    "code": "Money a = new Money(500, \"EUR\");\nMoney b = new Money(500, \"EUR\");\nCustomer x = new Customer(\"C-1\", \"Li\");\nCustomer y = new Customer(\"C-1\", \"Lee\");\nSystem.out.println(a.equals(b) + \" \" + x.equals(y));",
-    "lang": "java",
+    "q": "In the diagram, a dashed arrow with an open head goes from Inventory to OrderService. What is it?",
     "options": [
-      "false true",
-      "true false",
-      "false false",
-      "true true"
+      "An asynchronous message from Inventory",
+      "Inventory creating a new OrderService",
+      "The return of OrderService's earlier call",
+      "A dependency between the two classes"
     ],
-    "answer": 3,
-    "why": "`Money` is a record, so equality compares fields. `Customer.equals` compares only the id, and both ids are C-1."
+    "answer": 2,
+    "why": "In sequence diagrams a dashed arrow is a reply to an earlier synchronous call. Asynchronous sends use a solid line with an open arrowhead."
   },
-  "takeaway": "Speak the domain's language; values compare by content, entities by identity.",
+  "takeaway": "One scenario, top to bottom: every arrow must be a real method.",
   "chat": {
     "starters": [
-      "How do I find the bounded contexts in a new system?",
-      "Should a value object ever be mutable?",
-      "What is an anti-corruption layer?"
+      "How many sequence diagrams should I draw in an LLD interview?",
+      "How do I show an asynchronous event or a callback?",
+      "Should the controller or the service own the payment call?"
     ]
   }
 }

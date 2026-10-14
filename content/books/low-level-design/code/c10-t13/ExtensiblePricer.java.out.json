@@ -1,0 +1,11 @@
+{
+  "stdout": "  MemberDiscount[percent=10]: 10000 -> 10000\n  CouponDiscount[cents=1500]: 10000 -> 8500\n  HolidaySurcharge[percent=5]: 8500 -> 8500\ncoupon holder pays 8500",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ExtensiblePricer.java",
+  "tool": "Java 17.0.17",
+  "hash": "c8a61fe1928ec3f8",
+  "at": "2026-10-12T11:34:32.557Z"
+}

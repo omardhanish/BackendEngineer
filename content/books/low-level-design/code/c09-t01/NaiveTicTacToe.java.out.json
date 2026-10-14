@@ -1,0 +1,11 @@
+{
+  "stdout": "centre is now X\ncrash: ArrayIndexOutOfBoundsException\nX..\n.X.\n..Z\nnext turn: O",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java NaiveTicTacToe.java",
+  "tool": "Java 17.0.17",
+  "hash": "0a122f8126c4df53",
+  "at": "2026-10-12T11:33:28.921Z"
+}

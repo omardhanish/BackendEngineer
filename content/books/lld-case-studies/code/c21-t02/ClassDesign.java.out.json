@@ -1,0 +1,11 @@
+{
+  "stdout": "attempt 1 -> 503\nattempt 2 -> 503\nattempt 3 -> 200\nresult Response[status=200] at t=620",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ClassDesign.java",
+  "tool": "Java 17.0.17",
+  "hash": "fbf1c41b3e737849",
+  "at": "2026-10-14T08:43:30.462Z"
+}

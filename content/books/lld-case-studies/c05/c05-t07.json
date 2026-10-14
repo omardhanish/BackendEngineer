@@ -1,0 +1,277 @@
+{
+  "title": "ATM REST API in Express",
+  "idea": "The ATM API is the bank's REST service that ATMs call: it opens a session after a PIN check, then debits, confirms or reverses withdrawals in transactions.",
+  "analogy": {
+    "text": "A phone line from each branch till to head office. The till reads out a reference number with every request, so a repeated call changes nothing.",
+    "breaks": "Head office here is code; it never mishears a reference."
+  },
+  "points": [
+    "Routes call controllers; controllers validate with `zod` and call the service.",
+    "The service owns one transaction per call; the repository holds only SQL.",
+    "Withdrawals need an Idempotency-Key; a repeat returns 200 and the same transaction.",
+    "Domain errors carry a status; one middleware maps every error to JSON."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "Endpoints",
+    "head": [
+      "Method",
+      "Path",
+      "Request",
+      "Success",
+      "Errors"
+    ],
+    "rows": [
+      [
+        "POST",
+        "/sessions",
+        "cardToken, pin",
+        "201 sessionId",
+        "400, 401 wrong PIN, 403 blocked"
+      ],
+      [
+        "GET",
+        "/sessions/:id/balance",
+        "none",
+        "200 balanceMinor",
+        "404 session"
+      ],
+      [
+        "POST",
+        "/withdrawals",
+        "sessionId, amountMinor + Idempotency-Key",
+        "201 PENDING; 200 on replay",
+        "400, 404, 409 funds, 422 key reused"
+      ],
+      [
+        "POST",
+        "/withdrawals/:id/confirm",
+        "none",
+        "200 COMPLETED",
+        "409 not pending"
+      ],
+      [
+        "POST",
+        "/withdrawals/:id/reverse",
+        "none",
+        "200 REVERSED",
+        "409 not pending"
+      ]
+    ],
+    "highlight": {
+      "row": 2
+    },
+    "caption": "The snippets run sessions, withdrawals and reverse. Balance and confirm follow the same layers."
+  },
+  "code": [
+    {
+      "file": "api.mjs",
+      "lang": "js",
+      "title": "Withdraw and reverse",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "Repository, service, controllers and error mapping in one file, on a real PostgreSQL. The ATM sends its request id as the Idempotency-Key header; page 6's request_id column holds it. This trimmed table has no ATM column, so it scopes keys per account; page 6 uses (atm_id, request_id). A session row is seeded; pin.mjs shows how one is created.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13
+          ],
+          "text": "A trimmed copy of page 6's table; `idempotency_key` plays the role of the request id."
+        },
+        {
+          "lines": [
+            15,
+            16,
+            17,
+            18,
+            19,
+            20
+          ],
+          "text": "`tx` wraps each service call in BEGIN and COMMIT, or ROLLBACK on error."
+        },
+        {
+          "lines": [
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33
+          ],
+          "text": "Repository: plain SQL, including the account lock and the PENDING-only reverse."
+        },
+        {
+          "lines": [
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51
+          ],
+          "text": "`withdraw`: lock the account, replay a known key, refuse a reused key, else debit."
+        },
+        {
+          "lines": [
+            52,
+            53,
+            54,
+            55,
+            56,
+            57
+          ],
+          "text": "`reverse` credits back only if the row was still PENDING; otherwise 409."
+        },
+        {
+          "lines": [
+            59,
+            60,
+            61,
+            62,
+            63,
+            64,
+            65,
+            66,
+            67,
+            68,
+            69
+          ],
+          "text": "Controllers parse the header and body with `zod`, then pick 201 or 200."
+        },
+        {
+          "lines": [
+            70,
+            71,
+            72,
+            73,
+            74
+          ],
+          "text": "Error middleware maps validation, domain and unknown errors to status codes."
+        }
+      ]
+    },
+    {
+      "file": "pin.mjs",
+      "lang": "js",
+      "title": "PIN check and lockout",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "Opening a session. The PIN is checked against a salted scrypt hash (a demo stand-in for HSM verification), and failures are counted at the bank.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7,
+            12,
+            13
+          ],
+          "text": "Each card stores a random salt and the scrypt hash of its PIN."
+        },
+        {
+          "lines": [
+            20,
+            21,
+            22
+          ],
+          "text": "Lock the card row; a card with three failures is refused with 403."
+        },
+        {
+          "lines": [
+            24,
+            25,
+            26,
+            27,
+            28,
+            29
+          ],
+          "text": "A match resets the counter and creates a session."
+        },
+        {
+          "lines": [
+            30,
+            31,
+            32,
+            33
+          ],
+          "text": "A miss adds one failure and still commits, so the count survives."
+        },
+        {
+          "lines": [
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52
+          ],
+          "text": "The controller rejects a non-numeric PIN with 400 before any database work."
+        },
+        {
+          "lines": [
+            58,
+            59,
+            60,
+            61,
+            62,
+            63
+          ],
+          "text": "Try a bad format, wrong and right PINs, then three wrong ones in a row."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not throw after counting a failed PIN; the rollback would erase the count.",
+    "Scope a key to its ATM or account, and refuse a reused key whose amount differs.",
+    "Only 10,000 PINs exist, so a leaked salted hash falls; verify PINs in an HSM."
+  ],
+  "quiz": {
+    "q": "What does api.mjs print for the second reverse call?",
+    "options": [
+      "/withdrawals/TX-1/reverse 200 REVERSED, balance 750000",
+      "/withdrawals/TX-1/reverse 409 {\"error\":\"NOT_PENDING\"}",
+      "/withdrawals/TX-1/reverse 404 {\"error\":\"NOT_FOUND\"}",
+      "/withdrawals/TX-1/reverse 500 {\"error\":\"INTERNAL\"}"
+    ],
+    "answer": 1,
+    "why": "The first call moved TX-1 to REVERSED. The second UPDATE matches no PENDING row, so the service throws a 409."
+  },
+  "takeaway": "Validate at the edge, decide in one transaction, and replay by Idempotency-Key.",
+  "chat": {
+    "starters": [
+      "Why is insufficient funds a 409 and not a 400?",
+      "How should an ATM authenticate itself to this API?",
+      "What should happen if confirm never arrives for a PENDING row?"
+    ]
+  }
+}

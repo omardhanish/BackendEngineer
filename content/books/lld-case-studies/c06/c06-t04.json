@@ -1,0 +1,74 @@
+{
+  "title": "Loan lifecycle and flows",
+  "idea": "A Loan's lifecycle is a state machine over ACTIVE, OVERDUE, RETURNED and LOST: each state lists where it may go, and every other move is refused.",
+  "points": [
+    "ACTIVE can become OVERDUE, RETURNED or LOST; RETURNED is final.",
+    "A nightly job moves ACTIVE loans past their due date to OVERDUE.",
+    "Renewal stays inside ACTIVE and is refused when someone reserved the title.",
+    "LOST can still become RETURNED when a paid-for copy turns up."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "Borrow, renew, overdue, return",
+    "actors": [
+      { "id": "mem", "label": "Member" },
+      { "id": "svc", "label": "LibraryService" },
+      { "id": "loan", "label": "Loan" },
+      { "id": "queue", "label": "ReservationQueue" },
+      { "id": "job", "label": "Nightly job" }
+    ],
+    "messages": [
+      { "from": "mem", "to": "svc", "label": "borrow(ISBN-1)", "note": "The member asks for a title. The service picks a free copy." },
+      { "from": "svc", "to": "loan", "label": "new Loan, ACTIVE", "note": "The loan starts ACTIVE with a due date 14 days out." },
+      { "from": "mem", "to": "svc", "label": "renew(LN-1)", "note": "Before the due date the member asks for more time." },
+      { "from": "svc", "to": "queue", "label": "anyone waiting?", "note": "Renewal is refused if another member reserved this title." },
+      { "from": "queue", "to": "svc", "label": "no", "dashed": true, "note": "Nobody is waiting, so the due date moves forward once." },
+      { "from": "job", "to": "loan", "label": "markOverdueIfLate", "note": "After the new due date passes, the nightly job moves ACTIVE to OVERDUE." },
+      { "from": "mem", "to": "svc", "label": "return(CP-1)", "note": "The member finally brings the copy back to the desk." },
+      { "from": "svc", "to": "loan", "label": "move(RETURNED)", "note": "OVERDUE to RETURNED is allowed. The fine is priced from the dates." },
+      { "from": "svc", "to": "queue", "label": "next waiting?", "note": "The copy goes to the queue head, or back to the shelf if empty." }
+    ]
+  },
+  "code": [
+    {
+      "file": "LoanLifecycle.java",
+      "lang": "java",
+      "title": "Status enum with rules",
+      "run": "captured",
+      "caption": "The allowed moves live in the enum. Loan asks the enum before every change, so no caller can skip a rule.",
+      "walk": [
+        { "lines": [6, 7, 8], "text": "LN-1 renews once; the second renewal hits the limit." },
+        { "lines": [9, 10, 11], "text": "It goes overdue, is returned, then the same copy is scanned again." },
+        { "lines": [13, 14, 15, 16], "text": "LN-2 cannot renew because the title is reserved, then it is lost and found." },
+        { "lines": [23, 24, 25, 26, 27, 28, 29, 30], "text": "An `EnumMap` lists the allowed next states for each state." },
+        { "lines": [42, 43, 44, 45, 46, 47, 48], "text": "`move` is the only way to change status, and it refuses illegal moves." },
+        { "lines": [50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62], "text": "Renewal checks three rules, then pushes the due date by one loan period." },
+        { "lines": [63, 64, 65, 66], "text": "The nightly job only moves loans that are ACTIVE and past due." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not set status with a public setter; one move method must check rules.",
+    "Make a repeated return a refused no-op, not a second fine or error page.",
+    "Do not model renewal as a state; it changes the due date, not the lifecycle."
+  ],
+  "quiz": {
+    "q": "What does LoanLifecycle print for the second giveBack() on LN-1?",
+    "options": [
+      "LN-1 OVERDUE -> RETURNED",
+      "LN-1 RETURNED -> RETURNED",
+      "LN-1 refused RETURNED -> RETURNED",
+      "Nothing; the call is ignored"
+    ],
+    "answer": 2,
+    "why": "RETURNED has an empty set of next states, so `canMoveTo` is false and `move` prints the refusal without changing anything."
+  },
+  "takeaway": "Put allowed transitions in the enum and route every change through one method.",
+  "chat": {
+    "starters": [
+      "Should OVERDUE be a stored state or computed on read?",
+      "How do I handle a lost copy that was already paid for?",
+      "Does BookCopy need its own state machine too?"
+    ]
+  }
+}

@@ -1,0 +1,168 @@
+{
+  "title": "Movie booking lifecycle",
+  "idea": "The booking lifecycle is a small state machine: a Booking starts PENDING and may only move along allowed arrows to CONFIRMED, EXPIRED or CANCELLED.",
+  "points": [
+    "PENDING moves to CONFIRMED on payment, EXPIRED on timeout, or CANCELLED.",
+    "CONFIRMED can only become CANCELLED; EXPIRED and CANCELLED are final.",
+    "Seats go AVAILABLE, HELD, BOOKED; expiry or cancel returns them to AVAILABLE.",
+    "An illegal move is refused in one place, not checked in every caller."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "Hold, pay, confirm",
+    "actors": [
+      {
+        "id": "user",
+        "label": "Customer"
+      },
+      {
+        "id": "svc",
+        "label": "BookingService"
+      },
+      {
+        "id": "locks",
+        "label": "SeatLockProvider"
+      },
+      {
+        "id": "pay",
+        "label": "PaymentGateway"
+      }
+    ],
+    "messages": [
+      {
+        "from": "user",
+        "to": "svc",
+        "label": "hold(SH-1, [A2, P1])",
+        "note": "The customer picks two seats and asks to hold them."
+      },
+      {
+        "from": "svc",
+        "to": "locks",
+        "label": "lockAll(seats, H-1)",
+        "note": "All seats lock together or none do. Seats move AVAILABLE to HELD."
+      },
+      {
+        "from": "svc",
+        "to": "user",
+        "label": "H-1, expires 18:10",
+        "dashed": true,
+        "note": "The customer gets a hold id and a deadline to show as a timer."
+      },
+      {
+        "from": "user",
+        "to": "svc",
+        "label": "confirm(H-1, token)",
+        "note": "Checkout starts. A PENDING Booking is created; page 3 skipped this step for brevity."
+      },
+      {
+        "from": "svc",
+        "to": "pay",
+        "label": "charge(total)",
+        "note": "The service prices the seats and charges the total once."
+      },
+      {
+        "from": "pay",
+        "to": "svc",
+        "label": "ok",
+        "dashed": true,
+        "note": "Payment succeeded, so the Booking moves PENDING to CONFIRMED."
+      },
+      {
+        "from": "svc",
+        "to": "locks",
+        "label": "markBooked(H-1)",
+        "note": "The held seats become BOOKED. This adds a markBooked method to the SeatLockProvider interface from page 3."
+      },
+      {
+        "from": "svc",
+        "to": "user",
+        "label": "BK-1 CONFIRMED",
+        "dashed": true,
+        "note": "If the hold had expired first, the Booking would be EXPIRED instead."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "BookingLifecycle.java",
+      "lang": "java",
+      "title": "Status enum with rules",
+      "run": "captured",
+      "caption": "The allowed moves live in the enum. Booking asks the enum before changing state.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7
+          ],
+          "text": "BK-1 takes the happy path, then the customer cancels it."
+        },
+        {
+          "lines": [
+            8,
+            9,
+            10
+          ],
+          "text": "BK-2 expires, then a late payment tries to confirm it."
+        },
+        {
+          "lines": [
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24
+          ],
+          "text": "An `EnumMap` lists the allowed next states for each state."
+        },
+        {
+          "lines": [
+            25
+          ],
+          "text": "`canMoveTo` is the single question every transition asks."
+        },
+        {
+          "lines": [
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40
+          ],
+          "text": "Refuse and report an illegal move; otherwise record the new state."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not set `status` directly from controllers; every change goes through `moveTo`.",
+    "A late payment for an EXPIRED booking needs a refund, not a silent confirm.",
+    "Keep seat state and booking state separate; they change for different reasons."
+  ],
+  "quiz": {
+    "q": "What does the last line of BookingLifecycle print?",
+    "options": [
+      "BK-2 EXPIRED -> CONFIRMED",
+      "BK-2 PENDING -> EXPIRED",
+      "BK-2 refused EXPIRED -> CONFIRMED",
+      "BK-1 CONFIRMED -> CANCELLED"
+    ],
+    "answer": 2,
+    "why": "EXPIRED has no allowed next states, so `canMoveTo(CONFIRMED)` is false and `moveTo` prints the refusal without changing status."
+  },
+  "takeaway": "Write allowed transitions once, in the enum, and refuse everything else.",
+  "chat": {
+    "starters": [
+      "Should a booking have a PAYMENT_FAILED state?",
+      "How do I handle a payment that succeeds after the hold expired?",
+      "Would the State pattern be better than an enum here?"
+    ]
+  }
+}

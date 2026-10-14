@@ -1,41 +1,241 @@
 {
-  "title": "Your system design roadmap",
-  "idea": "Your next step is practising low-level design (LLD) on fresh problems, then widen to high-level design (HLD), where whole services, data stores and networks are the parts.",
+  "title": "Abstract Factory pattern",
+  "idea": "The Abstract Factory pattern gives you one interface that creates a whole family of related objects, so everything a client uses is guaranteed to match.",
+  "analogy": {
+    "text": "A furniture shop sells matching collections. Choose the oak collection and the table, chairs and shelf all arrive in oak.",
+    "breaks": "Shoppers can mix collections; an abstract factory makes mixing hard on purpose."
+  },
   "points": [
-    "You can now apply SOLID, pick patterns for real needs, and build booking systems.",
-    "LLD shapes classes inside one service; HLD shapes services inside one system.",
-    "The same habits carry over: clarify, model, choose trade-offs, explain.",
-    "Practise one timed problem a week, and seek design reviews at work."
+    "An abstract factory is an interface with one create method per product.",
+    "Each concrete factory returns one consistent family, like `UkKit` or `IndiaKit`.",
+    "Adding a family is one class; adding a product type edits every factory.",
+    "A JDBC `Connection` acts like one: its statements all match its driver."
   ],
   "hero": {
-    "type": "flow",
-    "title": "From this book to system design",
-    "dir": "TB",
-    "nodes": [
-      { "id": "lld", "label": "LLD foundations", "sub": "SOLID, patterns, capstone" },
-      { "id": "practice", "label": "Timed practice problems", "sub": "one a week, reviewed" },
-      { "id": "hld", "label": "HLD fundamentals", "sub": "caching, queues, databases" },
-      { "id": "dist", "label": "Distributed trade-offs", "sub": "consistency, failure, scale" },
-      { "id": "work", "label": "Design reviews at work", "sub": "write, defend, revise" }
+    "type": "seq",
+    "title": "One quote through the UK kit",
+    "actors": [
+      {
+        "id": "app",
+        "label": "main"
+      },
+      {
+        "id": "kit",
+        "label": "UkKit"
+      },
+      {
+        "id": "co",
+        "label": "Checkout"
+      },
+      {
+        "id": "tax",
+        "label": "TaxPolicy"
+      },
+      {
+        "id": "fmt",
+        "label": "MoneyFormat"
+      }
     ],
-    "edges": [
-      { "from": "lld", "to": "practice", "caption": "Turn what you learned into speed: solve unseen problems against the clock." },
-      { "from": "practice", "to": "hld", "caption": "Zoom out: the service you designed class by class becomes one box in a larger system." },
-      { "from": "hld", "to": "dist", "caption": "Learn what breaks across machines: partial failure, stale data, uneven load." },
-      { "from": "dist", "to": "work", "caption": "Apply it on real features: short design notes, reviewed by peers." },
-      { "from": "work", "to": "practice", "caption": "Feedback from reviews tells you which problems to practise next.", "back": true, "dashed": true }
+    "messages": [
+      {
+        "from": "app",
+        "to": "kit",
+        "label": "kitFor(\"UK\"): new UkKit()",
+        "note": "One decision, in one place, picks the whole family."
+      },
+      {
+        "from": "app",
+        "to": "co",
+        "label": "new Checkout(kit)",
+        "note": "The client receives the kit, not three separate parts."
+      },
+      {
+        "from": "co",
+        "to": "kit",
+        "label": "tax(), money(), postcode()",
+        "note": "`Checkout` asks the kit for each product and never names a concrete class."
+      },
+      {
+        "from": "kit",
+        "to": "co",
+        "label": "UK tax, GBP, UK postcode",
+        "dashed": true,
+        "note": "All three products come from the same kit, so they cannot disagree."
+      },
+      {
+        "from": "app",
+        "to": "co",
+        "label": "quote(10000, \"SW1A 1AA\")",
+        "note": "The postcode rule from the same family accepts a UK postcode."
+      },
+      {
+        "from": "co",
+        "to": "tax",
+        "label": "addTax(10000)",
+        "note": "The UK tax policy adds its rate to the amount in minor units."
+      },
+      {
+        "from": "co",
+        "to": "fmt",
+        "label": "format(total)",
+        "note": "The matching formatter prints pounds, never rupees."
+      },
+      {
+        "from": "co",
+        "to": "app",
+        "label": "formatted total",
+        "dashed": true,
+        "note": "Swap `UkKit` for `IndiaKit` and every product changes together."
+      }
     ]
   },
-  "pitfalls": [
-    "Do not jump to HLD while your class designs still need many rewrites.",
-    "Avoid only reading solutions; solve first, then compare and note the gaps."
+  "code": [
+    {
+      "file": "MixedParts.java",
+      "lang": "java",
+      "title": "The problem: mixed parts",
+      "run": "captured",
+      "caption": "Three products wired one by one: a single wrong setting mixes two regions silently.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6
+          ],
+          "text": "The caller picks each product by hand. Rupee formatting slipped into a UK shop."
+        },
+        {
+          "lines": [
+            11,
+            12,
+            13
+          ],
+          "text": "Three product interfaces. Each is fine; the danger is combining them."
+        },
+        {
+          "lines": [
+            18,
+            19,
+            20,
+            21,
+            22
+          ],
+          "text": "An Indian formatter is a valid `MoneyFormat`, so the compiler accepts it."
+        },
+        {
+          "lines": [
+            34,
+            35,
+            36,
+            37,
+            38
+          ],
+          "text": "The constructor takes three independent parts and cannot check that they belong together."
+        },
+        {
+          "lines": [
+            39,
+            40,
+            41,
+            42
+          ],
+          "text": "UK tax, UK postcode, Indian currency: the output is wrong, with no error."
+        }
+      ]
+    },
+    {
+      "file": "RegionKitDemo.java",
+      "lang": "java",
+      "title": "The fix: one kit",
+      "run": "captured",
+      "caption": "A `RegionKit` creates the whole family, so `Checkout` gets parts that match.",
+      "walk": [
+        {
+          "lines": [
+            30,
+            31,
+            32,
+            33
+          ],
+          "text": "The abstract factory: one method per product type in the family."
+        },
+        {
+          "lines": [
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47
+          ],
+          "text": "`UkKit` returns only UK products. Lambdas work because each product has one method."
+        },
+        {
+          "lines": [
+            48,
+            49,
+            50,
+            51,
+            52
+          ],
+          "text": "`IndiaKit` is the second family. A third region is one new class plus one `case` in `kitFor`."
+        },
+        {
+          "lines": [
+            58,
+            59,
+            60,
+            61,
+            62,
+            63
+          ],
+          "text": "`Checkout` takes one kit and asks it for every product it needs."
+        },
+        {
+          "lines": [
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "text": "Only `kitFor` names concrete kits. An unknown region fails fast with a clear message."
+        },
+        {
+          "lines": [
+            9
+          ],
+          "text": "Each family validates its own way: a UK postcode fails the Indian rule."
+        }
+      ]
+    }
   ],
-  "takeaway": "Design small things well, then design bigger things the same way.",
+  "pitfalls": [
+    "Letting callers build products directly again brings back mixed families; route creation through the kit.",
+    "An abstract factory for one product type is ceremony; one factory method is enough.",
+    "Kits sharing one mutable product leak state between clients; return fresh or immutable objects."
+  ],
+  "quiz": {
+    "q": "Every region now also needs an `InvoiceTemplate`. What must change?",
+    "options": [
+      "Only a new InvoiceTemplate interface",
+      "Only the Checkout class",
+      "The RegionKit interface and every concrete kit",
+      "Nothing: kits can create any type"
+    ],
+    "answer": 2,
+    "why": "A new product type means a new method on `RegionKit`, which every concrete kit must implement. New families are cheap; new product types are not."
+  },
+  "takeaway": "One factory per family keeps every created part consistent.",
   "chat": {
     "starters": [
-      "What should I study first for high-level design interviews?",
-      "How do I practise LLD without someone to review my answers?",
-      "How is a senior engineer's design work different from an interview?"
+      "How is Abstract Factory different from the Factory Method pattern?",
+      "Can I combine Abstract Factory with dependency injection in Spring?",
+      "How do I add a new product type without editing every kit?"
     ]
   }
 }

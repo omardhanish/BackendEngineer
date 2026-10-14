@@ -1,0 +1,250 @@
+{
+  "title": "Cart screen and checkout UI",
+  "idea": "The cart frontend is a cart screen driven by one reducer: quantity edits show at once and roll back on failure, and checkout can never place two orders.",
+  "points": [
+    "`CartPage` renders state and dispatches events; the reducer owns every screen rule.",
+    "Edits are optimistic; a failed save restores the last server-confirmed quantity.",
+    "One Idempotency-Key per checkout survives retries, so a lost response never duplicates orders.",
+    "Follow-ups: merge guest carts at login, queue flash-sale checkouts, add coupons as PricingRules."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "Checkout with a lost response",
+    "actors": [
+      {
+        "id": "page",
+        "label": "CartPage"
+      },
+      {
+        "id": "client",
+        "label": "apiClient"
+      },
+      {
+        "id": "api",
+        "label": "Express API"
+      },
+      {
+        "id": "db",
+        "label": "PostgreSQL"
+      }
+    ],
+    "messages": [
+      {
+        "from": "page",
+        "to": "client",
+        "label": "checkout(key, total)",
+        "note": "Place order makes a key, dispatches CHECKOUT_CLICKED, and the button disables."
+      },
+      {
+        "from": "client",
+        "to": "api",
+        "label": "POST /checkout",
+        "note": "The request carries the Idempotency-Key header and the total the shopper saw."
+      },
+      {
+        "from": "api",
+        "to": "db",
+        "label": "reserve, insert, COMMIT",
+        "note": "The service reserves stock and stores OR-1 under the key in one transaction."
+      },
+      {
+        "from": "api",
+        "to": "client",
+        "label": "201 OR-1 (lost)",
+        "dashed": true,
+        "note": "The network drops the response. The order exists, but the browser does not know."
+      },
+      {
+        "from": "client",
+        "to": "page",
+        "label": "network error",
+        "dashed": true,
+        "note": "NETWORK_ERROR returns the screen to CART but keeps the same key."
+      },
+      {
+        "from": "page",
+        "to": "client",
+        "label": "retry, same key",
+        "note": "The shopper presses Place order again. The reducer reuses the stored key."
+      },
+      {
+        "from": "client",
+        "to": "api",
+        "label": "POST /checkout",
+        "note": "Same Idempotency-Key, same body."
+      },
+      {
+        "from": "api",
+        "to": "db",
+        "label": "find order by key",
+        "note": "The key is already stored, so nothing is reserved or created again."
+      },
+      {
+        "from": "api",
+        "to": "client",
+        "label": "200 OR-1",
+        "dashed": true,
+        "note": "The replay returns the original order unchanged."
+      },
+      {
+        "from": "client",
+        "to": "page",
+        "label": "ORDER_PLACED",
+        "dashed": true,
+        "note": "The screen moves to payment and counts down to payBy from the server."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "cart.mjs",
+      "lang": "js",
+      "title": "Cart screen reducer",
+      "run": "browser",
+      "caption": "Pure screen logic. Run it, then add a QTY_FAILED for MUG and predict the line.",
+      "walk": [
+        {
+          "lines": [
+            2,
+            3
+          ],
+          "text": "Screen state: step, quantities shown, quantities the server saved, key, error."
+        },
+        {
+          "lines": [
+            13,
+            14,
+            15
+          ],
+          "text": "An edit shows at once, but only while the screen is in CART."
+        },
+        {
+          "lines": [
+            16,
+            17,
+            18,
+            19,
+            20
+          ],
+          "text": "A save confirms the quantity; a failure rolls the shown value back."
+        },
+        {
+          "lines": [
+            21,
+            22,
+            23,
+            24
+          ],
+          "text": "Checkout starts once, only with items, and keeps the first key it saw."
+        },
+        {
+          "lines": [
+            25,
+            26,
+            27,
+            28,
+            29,
+            30
+          ],
+          "text": "Network, price and refusal errors return to CART with a message; the key stays."
+        },
+        {
+          "lines": [
+            45,
+            46,
+            47,
+            48,
+            49,
+            50
+          ],
+          "text": "A double click and two retries each bring a new key; the reducer keeps ck-1."
+        }
+      ]
+    },
+    {
+      "file": "CartPage.jsx",
+      "lang": "js",
+      "title": "CartPage component",
+      "run": "static",
+      "illustrative": true,
+      "caption": "A React component that renders state and dispatches events. Not run here.",
+      "walk": [
+        {
+          "lines": [
+            3
+          ],
+          "text": "A ref blocks a second click that lands before React re-renders."
+        },
+        {
+          "lines": [
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "text": "Dispatch the edit first, then save; the reply confirms or rolls back."
+        },
+        {
+          "lines": [
+            13,
+            14
+          ],
+          "text": "Use the stored key if a retry, else a new random one, and pass it in the event."
+        },
+        {
+          "lines": [
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22
+          ],
+          "text": "Map no response, a price change, any other error, and success to reducer events."
+        },
+        {
+          "lines": [
+            24,
+            25
+          ],
+          "text": "Distinct loading and empty states, never a blank page."
+        },
+        {
+          "lines": [
+            28,
+            34
+          ],
+          "text": "Errors render in an alert region; the button disables outside CART."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Disabling the button is not enough; the key and the reducer must also stop repeats.",
+    "Never generate a fresh key on retry; that turns a lost response into a second order.",
+    "Interview follow-up: a flash sale needs stock checks in the database, not the browser."
+  ],
+  "quiz": {
+    "q": "In the run, which key does the retry use?",
+    "options": [
+      "ck-3",
+      "ck-2",
+      "ck-1",
+      "-"
+    ],
+    "answer": 2,
+    "why": "CHECKOUT_CLICKED keeps `s.key` when one exists. NETWORK_ERROR left ck-1 in state, so the retry's ck-3 is ignored."
+  },
+  "takeaway": "One reducer owns the cart screen; one key per checkout makes retries safe.",
+  "chat": {
+    "starters": [
+      "How should a guest cart merge into the user's cart at login?",
+      "When should the cart page refetch prices from the server?",
+      "How would I show live stock warnings during a flash sale?"
+    ]
+  }
+}

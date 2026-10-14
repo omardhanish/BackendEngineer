@@ -1,0 +1,11 @@
+{
+  "stdout": "fixed   t=900:4 t=1000:4 t=1950:0\nlog     t=900:4 t=1000:0 t=1950:4\ncounter t=900:4 t=1000:0 t=1950:4",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java Windows.java",
+  "tool": "Java 17.0.17",
+  "hash": "363165b20f5282f9",
+  "at": "2026-10-14T08:34:09.711Z"
+}

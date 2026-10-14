@@ -1,0 +1,11 @@
+{
+  "stdout": "ran at t=0: 1000\nran in total: 1200, most runs of one task: 1",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java WorkerPool.java",
+  "tool": "Java 17.0.17",
+  "hash": "5e3b654548d44c85",
+  "at": "2026-10-14T08:43:35.940Z"
+}

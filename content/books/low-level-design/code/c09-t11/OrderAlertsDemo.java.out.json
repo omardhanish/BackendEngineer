@@ -1,0 +1,11 @@
+{
+  "stdout": "push customer: F-101 the kitchen is cooking\nsms  rider: F-101 is ready for pickup\npush customer: F-101 your rider is on the way\nlistener failed: analytics down\npush customer: F-101 delivered, enjoy",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java OrderAlertsDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "78c0778406acd35a",
+  "at": "2026-10-12T11:31:57.914Z"
+}

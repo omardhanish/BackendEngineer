@@ -1,0 +1,11 @@
+{
+  "stdout": "t=0 ALLOW remaining=2\nt=0 ALLOW remaining=1\nt=0 ALLOW remaining=0\nt=0 REJECT retryAfter=1000ms\nt=500 REJECT retryAfter=500ms\nt=1500 ALLOW remaining=0\nt=60000 ALLOW remaining=2",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java TokenBucket.java",
+  "tool": "Java 17.0.17",
+  "hash": "0ac83280c4d9f987",
+  "at": "2026-10-14T10:22:22.324Z"
+}

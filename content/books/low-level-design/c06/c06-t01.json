@@ -1,115 +1,244 @@
 {
-  "title": "The 45-minute LLD interview",
-  "idea": "A low-level design (LLD) interview tests whether you can turn a vague problem into clear classes, a working core and sound trade-offs, while talking through each step.",
+  "title": "Factory Method pattern",
+  "idea": "The Factory Method pattern lets a base class run a fixed workflow while subclasses decide which concrete object it creates, through one overridable creation method.",
+  "analogy": {
+    "text": "A coffee chain gives every branch the same recipe card, but each branch buys milk from its local dairy. The recipe never names the supplier.",
+    "breaks": "A branch can switch dairies daily; a subclass's choice is fixed in code."
+  },
   "points": [
-    "Spend the first minutes asking questions and writing a short requirement list.",
-    "Name the entities and one interface where behaviour will vary.",
-    "Code the core use case end to end, then demo it and name extensions.",
-    "Practise classic prompts the same way: parking lot, elevator, vending machine, library, rate limiter."
+    "The creator runs the workflow and calls an abstract method to get its product.",
+    "Each subclass overrides that method and decides which concrete product to return.",
+    "A new variant is a new subclass; the tested workflow is never edited (OCP).",
+    "`Collection.iterator()` is one: each collection returns its own iterator class."
   ],
   "hero": {
-    "type": "timeline",
-    "title": "A 45-minute answer, phase by phase",
-    "items": [
+    "type": "flow",
+    "title": "Class diagram of the import job",
+    "nodes": [
       {
-        "label": "Clarify, ~5 min",
-        "text": "Ask about actors, scale and edge cases. Write the agreed requirements down."
+        "id": "caller",
+        "label": "Caller",
+        "sub": "job.run(text)"
       },
       {
-        "label": "Model, ~10 min",
-        "text": "Nouns become classes, verbs become methods. Sketch one key interface."
+        "id": "job",
+        "label": "ImportJob",
+        "sub": "final run() · abstract createParser()"
       },
       {
-        "label": "Code, ~20 min",
-        "text": "Write the service, entities and one strategy, with `private final` fields."
+        "id": "csv",
+        "label": "CsvImportJob",
+        "sub": "createParser(): CsvParser"
       },
       {
-        "label": "Demo, ~5 min",
-        "text": "Trace one call through `main` and say what prints, including a failure."
+        "id": "xml",
+        "label": "XmlImportJob",
+        "sub": "added later, nothing edited"
       },
       {
-        "label": "Extend, ~5 min",
-        "text": "Answer follow-ups: show which class changes and which stays untouched."
+        "id": "parser",
+        "label": "RowParser",
+        "sub": "interface · parse(text)"
+      },
+      {
+        "id": "csvp",
+        "label": "CsvParser",
+        "sub": "drops the header line"
+      }
+    ],
+    "edges": [
+      {
+        "from": "caller",
+        "to": "job",
+        "label": "calls run()",
+        "caption": "The caller holds an `ImportJob` and calls `run`. It never names a parser class."
+      },
+      {
+        "from": "csv",
+        "to": "job",
+        "label": "extends",
+        "caption": "`CsvImportJob` inherits the whole workflow and overrides only `createParser`."
+      },
+      {
+        "from": "job",
+        "to": "parser",
+        "label": "uses",
+        "caption": "Inside `run`, the creator calls `createParser()` and talks to the result as a `RowParser`."
+      },
+      {
+        "from": "csv",
+        "to": "csvp",
+        "label": "creates",
+        "caption": "The override returns a `CsvParser`. This is the one decision the subclass makes."
+      },
+      {
+        "from": "csvp",
+        "to": "parser",
+        "label": "implements",
+        "caption": "`CsvParser` implements `RowParser`, so the creator's code works with it unchanged."
+      },
+      {
+        "from": "xml",
+        "to": "job",
+        "label": "extends",
+        "dashed": true,
+        "caption": "Supporting XML is one new subclass. `ImportJob` and `CsvImportJob` are not touched."
       }
     ]
   },
   "code": [
     {
-      "file": "LockerDemo.java",
+      "file": "SwitchImporter.java",
       "lang": "java",
-      "title": "Practice: parcel locker",
+      "title": "The problem: one switch",
       "run": "captured",
-      "caption": "A practice problem sized for an interview: assign each parcel the smallest free locker that fits.",
+      "caption": "Creation and use in one method: each new format edits and retests shared code.",
       "walk": [
         {
           "lines": [
-            15,
-            16
+            6,
+            7,
+            8
           ],
-          "text": "Model first: an `enum` for sizes and a `record` for an immutable locker."
+          "text": "Callers pass a format string; the service decides everything inside one method."
         },
         {
           "lines": [
-            18,
-            20
-          ],
-          "text": "The one place behaviour may vary becomes an interface: how to pick a locker."
-        },
-        {
-          "lines": [
+            21,
             22,
-            28
+            23,
+            24,
+            25
           ],
-          "text": "`SmallestFit` keeps only lockers big enough, then takes the smallest by enum order."
+          "text": "The CSV parsing logic is welded into the `switch`, next to every other format."
         },
         {
           "lines": [
-            30,
+            26,
+            27,
+            28,
+            29,
+            30
+          ],
+          "text": "JSON lives in the same method, so a JSON change risks breaking CSV."
+        },
+        {
+          "lines": [
+            31,
+            32,
+            33,
+            34
+          ],
+          "text": "XML needs a new `case`: editing a class that already works, which breaks the OCP."
+        },
+        {
+          "lines": [
+            9,
+            10,
+            11,
+            12,
+            13
+          ],
+          "text": "Nothing warns at compile time. The unsupported format fails only when it runs."
+        }
+      ]
+    },
+    {
+      "file": "ImporterFactoryDemo.java",
+      "lang": "java",
+      "title": "The fix: factory method",
+      "run": "captured",
+      "caption": "`ImportJob` owns the workflow; each subclass picks its parser through `createParser()`.",
+      "walk": [
+        {
+          "lines": [
+            19
+          ],
+          "text": "The product interface. The creator depends on this, never on a concrete parser."
+        },
+        {
+          "lines": [
+            23,
+            24,
+            25
+          ],
+          "text": "`run` is `final` and validates input, so no subclass can skip or reorder the workflow."
+        },
+        {
+          "lines": [
+            26,
+            30
+          ],
+          "text": "The factory method: an abstract hook the workflow calls at exactly one point."
+        },
+        {
+          "lines": [
+            34,
+            35,
+            36,
             37
           ],
-          "text": "The service owns state and receives its policy through the constructor."
+          "text": "A concrete creator is tiny. Its only decision is which product to return."
         },
         {
           "lines": [
-            38,
-            44
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50
           ],
-          "text": "`deposit` filters free lockers, asks the policy, records the parcel, reports the result."
+          "text": "XML arrived as a new class. No existing class was opened or retested."
         },
         {
           "lines": [
-            4,
-            12
+            58,
+            59,
+            60,
+            61,
+            62,
+            63
           ],
-          "text": "The demo: three lockers, four requests, including one that cannot be served."
+          "text": "Products can be shared: two creators reuse `RegexParser` with different patterns."
+        },
+        {
+          "lines": [
+            11,
+            12,
+            13,
+            14
+          ],
+          "text": "Blank input is rejected by the shared workflow, once, for every format."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Do not start coding before the interviewer agrees on the requirement list.",
-    "Avoid drawing every pattern you know; add one only when a requirement asks for it.",
-    "Keep talking while you code, so the interviewer hears each trade-off you make."
+    "Calling the factory method from the creator's constructor runs subclass code before its fields are initialised.",
+    "Calling `List.of` an example of this pattern is wrong; it is a static factory method.",
+    "Dozens of variants means dozens of subclasses; a map of suppliers may fit better."
   ],
   "quiz": {
-    "q": "In the locker demo, what does the second request print?",
+    "q": "Using the demo's `ImportJob`, what does this print?",
+    "code": "class RawJob extends ImportJob {\n    @Override protected RowParser createParser() {\n        return text -> List.of(text.split(\"\\n\"));\n    }\n    @Override protected String name() { return \"raw\"; }\n}\nSystem.out.println(new RawJob().run(\"id\\n7\\n8\"));",
+    "lang": "java",
     "options": [
-      "p2 -> L2",
-      "p2 -> L3",
-      "p2 -> no locker",
-      "p2 -> L1"
+      "raw: 2 rows [7, 8]",
+      "csv: 2 rows [7, 8]",
+      "raw: 3 rows [id, 7, 8]",
+      "Compile error: run is final"
     ],
-    "answer": 1,
-    "why": "L1 is taken by p1. L2 and L3 both fit a small parcel; `min` by size picks MEDIUM L3 over LARGE L2.",
-    "code": "// lockers: L1 SMALL, L2 LARGE, L3 MEDIUM\nservice.deposit(\"p1\", Size.SMALL);\nservice.deposit(\"p2\", Size.SMALL);",
-    "lang": "java"
+    "answer": 2,
+    "why": "`run` only calls `createParser()`. Dropping the header lives in `CsvParser`, and `RawJob` returns its own parser, so all three lines become rows."
   },
-  "takeaway": "Clarify, model, code the core, demo it, then extend on request.",
+  "takeaway": "Subclasses choose the product; the base class keeps the workflow.",
   "chat": {
     "starters": [
-      "What questions should I ask in the first five minutes?",
-      "How do I recover if I run out of time while coding?",
-      "Which practice problems should I do before an LLD interview?"
+      "How is the Factory Method pattern different from a static factory method?",
+      "Why is Collection.iterator() considered a factory method?",
+      "When would a simple factory class beat a subclass per variant?"
     ]
   }
 }

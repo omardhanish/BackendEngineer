@@ -1,0 +1,11 @@
+{
+  "stdout": "free: [R04, R20, R28]\nbookings read: 189",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java IndexedSearch.java",
+  "tool": "Java 17.0.17",
+  "hash": "3b63625a9ffa20a6",
+  "at": "2026-10-12T11:39:06.498Z"
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "two-write appender: 0 of 2 ok\none-write appender: 4000 of 4000 ok",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java TornLines.java",
+  "tool": "Java 17.0.17",
+  "hash": "4d35ff9dbad58983",
+  "at": "2026-10-14T10:22:16.759Z"
+}

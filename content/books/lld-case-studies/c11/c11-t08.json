@@ -1,0 +1,238 @@
+{
+  "title": "Reservation UI and end-to-end flow",
+  "idea": "The reservation frontend is three screens (search, pick a time, confirmation) driven by one reducer, with an API client that sends an Idempotency-Key so retries never book twice.",
+  "points": [
+    "ReservationPage owns the reducer; children render and dispatch, and ReservationPanel calls apiClient.",
+    "Confirm is ignored while SUBMITTING, and a retry reuses the same Idempotency-Key.",
+    "A 409 NO_TABLE removes that time; picking another time makes a new key.",
+    "Follow-ups: shard by restaurant, add a waitlist, or let hosts join two tables."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "Confirm a table, end to end",
+    "actors": [
+      {
+        "id": "ui",
+        "label": "ReservationPanel"
+      },
+      {
+        "id": "client",
+        "label": "apiClient"
+      },
+      {
+        "id": "api",
+        "label": "Express API"
+      },
+      {
+        "id": "svc",
+        "label": "ReservationService"
+      },
+      {
+        "id": "db",
+        "label": "PostgreSQL"
+      }
+    ],
+    "messages": [
+      {
+        "from": "ui",
+        "to": "client",
+        "label": "book(4, 19:00, rk-1)",
+        "note": "Confirm moves the screen to SUBMITTING and makes key rk-1. A second click does nothing."
+      },
+      {
+        "from": "client",
+        "to": "api",
+        "label": "POST /restaurants/RS-1/reservations",
+        "note": "The client sends the body plus an Idempotency-Key header with rk-1."
+      },
+      {
+        "from": "api",
+        "to": "svc",
+        "label": "book(rid, key, body)",
+        "note": "The controller validates the body with zod and calls the service."
+      },
+      {
+        "from": "svc",
+        "to": "db",
+        "label": "best fit + INSERT",
+        "note": "In one transaction: find the smallest free table, insert the range, commit."
+      },
+      {
+        "from": "db",
+        "to": "svc",
+        "label": "RV-7 on T2",
+        "dashed": true,
+        "note": "The exclusion constraint accepted the row, so no other party holds T2 then."
+      },
+      {
+        "from": "api",
+        "to": "client",
+        "label": "201 RV-7",
+        "dashed": true,
+        "note": "Suppose this response is lost on a weak mobile connection."
+      },
+      {
+        "from": "client",
+        "to": "api",
+        "label": "retry, key rk-1",
+        "note": "The screen offers retry. The same key goes out again."
+      },
+      {
+        "from": "api",
+        "to": "client",
+        "label": "200 RV-7",
+        "dashed": true,
+        "note": "The service finds rk-1 and replays RV-7. One party, one table."
+      },
+      {
+        "from": "client",
+        "to": "ui",
+        "label": "BOOKED",
+        "dashed": true,
+        "note": "The reducer moves to DONE and the confirmation screen shows RV-7."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "booking.mjs",
+      "lang": "js",
+      "title": "Reservation reducer",
+      "run": "browser",
+      "caption": "Pure screen logic. Run it, then add a PICK after BOOKED and predict the output.",
+      "walk": [
+        {
+          "lines": [
+            3,
+            4
+          ],
+          "text": "The whole screen state: step, party size, free times, chosen time, key and error."
+        },
+        {
+          "lines": [
+            8,
+            9,
+            10,
+            11,
+            12
+          ],
+          "text": "A search resets the screen; no free times means an EMPTY step, not a blank list."
+        },
+        {
+          "lines": [
+            13,
+            14,
+            15
+          ],
+          "text": "Picking a time is a new request, so any old key is dropped."
+        },
+        {
+          "lines": [
+            16,
+            17,
+            18,
+            19
+          ],
+          "text": "Confirm works only while CHOOSING, and keeps an existing key."
+        },
+        {
+          "lines": [
+            20,
+            21,
+            22,
+            23,
+            24,
+            25
+          ],
+          "text": "A failure keeps the key for the retry; a 409 removes the taken time."
+        },
+        {
+          "lines": [
+            43,
+            44,
+            45
+          ],
+          "text": "The loop makes keys the way the component does: reuse first, else new."
+        }
+      ]
+    },
+    {
+      "file": "ReservationPanel.jsx",
+      "lang": "js",
+      "title": "ReservationPanel component",
+      "run": "static",
+      "illustrative": true,
+      "caption": "A React component that renders state and dispatches events. Real slots carry ISO times. Not run here.",
+      "walk": [
+        {
+          "lines": [
+            3,
+            4,
+            5,
+            6
+          ],
+          "text": "Refuse a second submit, reuse or create the key, then mark SUBMITTING."
+        },
+        {
+          "lines": [
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14
+          ],
+          "text": "Call the API once; 409 NO_TABLE means the time was taken, other failures allow a retry."
+        },
+        {
+          "lines": [
+            16,
+            17
+          ],
+          "text": "Loading and empty results get their own screens, never a blank list."
+        },
+        {
+          "lines": [
+            20
+          ],
+          "text": "Errors render in an alert region so screen readers announce them."
+        },
+        {
+          "lines": [
+            23,
+            24,
+            25,
+            26
+          ],
+          "text": "The button is disabled with no time picked or while a request is in flight."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not make a new Idempotency-Key on retry; that can book two tables for one party.",
+    "After a 409, remove the taken time from the list and say why.",
+    "At scale, shard reservations by restaurant; overlaps never cross restaurants, so no global lock."
+  ],
+  "quiz": {
+    "q": "In the run, what key does the third CONFIRM_CLICKED use?",
+    "options": [
+      "rk-2",
+      "rk-1",
+      "-",
+      "rk-3"
+    ],
+    "answer": 1,
+    "why": "REQUEST_FAILED keeps `key` in state. The next click finds a key already set and reuses rk-1, so a replay cannot double book."
+  },
+  "takeaway": "One reducer owns the screen; one key per choice makes retries safe.",
+  "chat": {
+    "starters": [
+      "How would I add a waitlist when a time is full?",
+      "Should availability refresh while the user is choosing?",
+      "How would joining two tables change the schema?"
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "INFO event=booking.created id=B1 employee=e1 room=R1 slot=9.0-10.0\n-> 201 B1\nWARN event=booking.rejected code=ROOM_TAKEN employee=e2 room=R1 slot=9.5-10.5\n-> 409 ROOM_TAKEN\nWARN event=booking.rejected code=INVALID_SLOT employee=e2 room=R1 slot=11.0-10.0\n-> 400 INVALID_SLOT\nWARN event=booking.not_found employee=e2 room=R9 slot=13.0-14.0\n-> 404 NOT_FOUND\nERROR event=booking.failed type=NullPointerException employee=null room=R1 slot=13.0-14.0\n-> 500 INTERNAL\nmetrics {booking.created=1, booking.error=1, booking.not_found=1, booking.rejected.INVALID_SLOT=1, booking.rejected.ROOM_TAKEN=1}",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ErrorBoundary.java",
+  "tool": "Java 17.0.17",
+  "hash": "cdbdba4bc70d62f3",
+  "at": "2026-10-12T11:40:24.370Z"
+}

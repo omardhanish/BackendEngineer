@@ -1,0 +1,337 @@
+{
+  "title": "Spot races and edge cases",
+  "idea": "A spot race happens when two gates both see the same spot free and both assign it; the fix makes the check and the claim one atomic step.",
+  "analogy": {
+    "text": "Two valets glance at the same empty bay and both drive in. A bay with one key on a hook lets only the valet holding it park.",
+    "breaks": "A compare-and-set never blocks; a valet waits for the key."
+  },
+  "points": [
+    "Check-then-set is two steps, so the other gate can act in between.",
+    "`compareAndSet(null, id)` checks and writes in one step; one caller wins.",
+    "A losing gate moves to the next spot instead of failing the driver.",
+    "Payments use an idempotency key, so a double tap charges once."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "lanes",
+    "title": "Two gates, one spot F2-C1",
+    "scenario": {
+      "lanes": [
+        {
+          "id": "g1",
+          "label": "Gate IN-1",
+          "kind": "area"
+        },
+        {
+          "id": "g2",
+          "label": "Gate IN-2",
+          "kind": "area"
+        },
+        {
+          "id": "spot",
+          "label": "Spot F2-C1",
+          "kind": "area",
+          "hint": "who parks here"
+        }
+      ],
+      "tokens": {
+        "l1": {
+          "label": "free?",
+          "tone": "sync"
+        },
+        "l2": {
+          "label": "free?",
+          "tone": "sync"
+        },
+        "y1": {
+          "label": "yes",
+          "tone": "io"
+        },
+        "y2": {
+          "label": "yes",
+          "tone": "io"
+        },
+        "t1": {
+          "label": "T-1",
+          "tone": "micro"
+        },
+        "t2": {
+          "label": "T-2",
+          "tone": "err"
+        },
+        "c1": {
+          "label": "CAS T-1",
+          "tone": "timer"
+        },
+        "c2": {
+          "label": "CAS T-2",
+          "tone": "timer"
+        },
+        "next": {
+          "label": "try F2-C2",
+          "tone": "neutral"
+        }
+      },
+      "steps": [
+        {
+          "caption": "Unsafe version. Gate IN-1 looks at F2-C1 for its car.",
+          "at": {
+            "g1": [
+              "l1"
+            ]
+          },
+          "active": "l1"
+        },
+        {
+          "caption": "Before IN-1 writes, IN-2 looks too. The spot is still empty.",
+          "at": {
+            "g1": [
+              "y1"
+            ],
+            "g2": [
+              "l2"
+            ]
+          },
+          "active": "l2"
+        },
+        {
+          "caption": "Both gates hold the answer yes. Neither knows about the other.",
+          "at": {
+            "g1": [
+              "y1"
+            ],
+            "g2": [
+              "y2"
+            ]
+          }
+        },
+        {
+          "caption": "IN-1 writes T-1 into the spot and lifts its barrier.",
+          "at": {
+            "g2": [
+              "y2"
+            ],
+            "spot": [
+              "t1"
+            ]
+          },
+          "active": "t1"
+        },
+        {
+          "caption": "IN-2 acts on its stale yes and overwrites T-1 with T-2. Both barriers lift for one spot.",
+          "at": {
+            "spot": [
+              "t2"
+            ]
+          },
+          "active": "t2"
+        },
+        {
+          "caption": "Safe version. Both gates call `compareAndSet` at the same moment.",
+          "at": {
+            "g1": [
+              "c1"
+            ],
+            "g2": [
+              "c2"
+            ]
+          }
+        },
+        {
+          "caption": "Only one call finds the spot empty and writes. Here IN-1 wins.",
+          "at": {
+            "g2": [
+              "c2"
+            ],
+            "spot": [
+              "t1"
+            ]
+          },
+          "active": "t1"
+        },
+        {
+          "caption": "IN-2's call returns false. It moves on to the next spot.",
+          "at": {
+            "g2": [
+              "next"
+            ],
+            "spot": [
+              "t1"
+            ]
+          },
+          "active": "next"
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "SpotRace.java",
+      "lang": "java",
+      "title": "Prove the race",
+      "run": "captured",
+      "caption": "A barrier forces both gates to look before either writes, so the double assignment shows up on every run.",
+      "walk": [
+        {
+          "lines": [
+            9,
+            10,
+            11
+          ],
+          "text": "Three races: unsafe on one spot, then atomic on one and two spots."
+        },
+        {
+          "lines": [
+            18,
+            19,
+            20
+          ],
+          "text": "A barrier for two threads and a thread-safe list of taken spots."
+        },
+        {
+          "lines": [
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28
+          ],
+          "text": "Each gate tries spots in order and stops at the first it wins."
+        },
+        {
+          "lines": [
+            32,
+            33,
+            34
+          ],
+          "text": "Join both threads, then sort, so the output is the same every run."
+        },
+        {
+          "lines": [
+            44,
+            45,
+            46
+          ],
+          "text": "Safe: `compareAndSet` writes only if the spot is still empty."
+        },
+        {
+          "lines": [
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54
+          ],
+          "text": "Unsafe: look, wait for the other gate, then write on a stale answer."
+        }
+      ]
+    },
+    {
+      "file": "EdgeCases.java",
+      "lang": "java",
+      "title": "Failures and retries",
+      "run": "captured",
+      "caption": "Duplicate entry, unpaid exit, a declined card, a double tap and a stray retry, each handled with one atomic map call. PAYING is a short in-flight state added here so a second charge cannot start while the first is pending; LOST is left out to keep the demo short.",
+      "walk": [
+        {
+          "lines": [
+            8,
+            9,
+            10
+          ],
+          "text": "The same plate enters twice, then tries to leave before paying."
+        },
+        {
+          "lines": [
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "text": "Five pay calls: declined, replayed, a new key, a double tap, a stray key."
+        },
+        {
+          "lines": [
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44
+          ],
+          "text": "`putIfAbsent` on the plate refuses a second entry atomically."
+        },
+        {
+          "lines": [
+            46,
+            47,
+            48
+          ],
+          "text": "`computeIfAbsent` stores one result per key, so a repeated key never charges again."
+        },
+        {
+          "lines": [
+            46,
+            47,
+            48
+          ],
+          "text": "Demo shortcut: the mapping function holds a bin lock. With a real gateway, `putIfAbsent` PENDING, then charge outside."
+        },
+        {
+          "lines": [
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56
+          ],
+          "text": "`replace` moves ACTIVE to PAYING atomically; a declined card goes back to ACTIVE."
+        },
+        {
+          "lines": [
+            58,
+            59,
+            60,
+            61,
+            62,
+            63
+          ],
+          "text": "Exit needs PAID; it frees the plate so the car can return later."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Never check `isFree()` then set; claim with one atomic call per spot.",
+    "Do not call a slow gateway while holding a lock other gates need.",
+    "A new key after success must hit the ticket state check, not charge again."
+  ],
+  "quiz": {
+    "q": "What is the first line SpotRace prints?",
+    "options": [
+      "check-then-set, 1 spot: [F2-C1]",
+      "check-then-set, 1 spot: [F2-C1, F2-C1]",
+      "check-then-set, 1 spot: []",
+      "It changes from run to run"
+    ],
+    "answer": 1,
+    "why": "The barrier makes both gates see F2-C1 empty before either writes. Both then write and record the spot, so it appears twice."
+  },
+  "takeaway": "Claim a spot with one atomic step; make every payment retry idempotent.",
+  "chat": {
+    "starters": [
+      "Why is ConcurrentHashMap not enough to stop the first race?",
+      "What should the gate do if the payment gateway times out?",
+      "How does this change when gates run on different servers?"
+    ]
+  }
+}

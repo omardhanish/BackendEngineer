@@ -1,0 +1,11 @@
+{
+  "stdout": "JobQueue ran [email, invoice, backup] (submitted 3)\nBoundedJobQueue ran [email, invoice] (submitted 3)",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java LspBroken.java",
+  "tool": "Java 17.0.17",
+  "hash": "9e307feeba43cf5e",
+  "at": "2026-10-12T11:17:38.182Z"
+}

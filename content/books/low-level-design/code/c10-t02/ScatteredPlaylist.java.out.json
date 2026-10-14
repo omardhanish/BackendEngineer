@@ -1,0 +1,11 @@
+{
+  "stdout": "Web shows:    7:05\nMobile shows: 7 min",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ScatteredPlaylist.java",
+  "tool": "Java 17.0.17",
+  "hash": "3ea9c95959013c75",
+  "at": "2026-10-12T11:18:06.458Z"
+}

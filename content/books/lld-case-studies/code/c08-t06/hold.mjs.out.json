@@ -1,0 +1,11 @@
+{
+  "stdout": "holds that succeeded: 1\nseats booked for winner: 2\nU-3 holds A4 at 18:00: true\nU-4 holds A4 at 18:05: false\nU-4 holds A4 at 18:11: true\nU-3 confirms at 18:12, rows: 0\n[{\"status\":\"AVAILABLE\",\"n\":1},{\"status\":\"BOOKED\",\"n\":2},{\"status\":\"HELD\",\"n\":1}]",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node hold.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "2bf2ef4c19bad72e",
+  "at": "2026-10-12T11:17:31.194Z"
+}

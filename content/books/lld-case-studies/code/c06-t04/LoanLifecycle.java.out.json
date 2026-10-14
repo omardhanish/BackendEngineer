@@ -1,0 +1,11 @@
+{
+  "stdout": "LN-1 renewed, due 2026-02-02\nLN-1 renew refused: renewal limit\nLN-1 ACTIVE -> OVERDUE\nLN-1 OVERDUE -> RETURNED\nLN-1 refused RETURNED -> RETURNED\nLN-2 renew refused: title is reserved\nLN-2 ACTIVE -> LOST\nLN-2 LOST -> RETURNED",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java LoanLifecycle.java",
+  "tool": "Java 17.0.17",
+  "hash": "a7f7ccb9c9784b8c",
+  "at": "2026-10-14T08:34:27.359Z"
+}

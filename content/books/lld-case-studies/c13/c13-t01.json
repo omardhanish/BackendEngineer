@@ -1,0 +1,188 @@
+{
+  "title": "Sports ground booking scope",
+  "idea": "Scoping a sports ground booking system means fixing the slot rules, the actors and their use cases, the no-double-booking guarantee, and what v1 leaves out.",
+  "points": [
+    "Players search grounds, see a court's hourly grid, hold slots, pay and cancel.",
+    "The core rule: one court hour belongs to at most one live booking.",
+    "Slots start on the hour; one booking covers one to three hours.",
+    "Out of v1: recurring bookings and team payments. Assume busy evenings and weekends."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Actors and use cases in v1",
+    "nodes": [
+      {
+        "id": "player",
+        "label": "Player",
+        "sub": "signed-in user"
+      },
+      {
+        "id": "search",
+        "label": "Find a ground",
+        "sub": "sport, city, date"
+      },
+      {
+        "id": "grid",
+        "label": "View slot grid",
+        "sub": "per court, hourly"
+      },
+      {
+        "id": "hold",
+        "label": "Hold slots",
+        "sub": "unpaid, short expiry"
+      },
+      {
+        "id": "pay",
+        "label": "Pay and confirm",
+        "sub": "peak or off-peak"
+      },
+      {
+        "id": "cancel",
+        "label": "Cancel booking",
+        "sub": "tiered refund"
+      },
+      {
+        "id": "admin",
+        "label": "Ground admin",
+        "sub": "closes a court"
+      },
+      {
+        "id": "sys",
+        "label": "System timer",
+        "sub": "expires holds"
+      }
+    ],
+    "edges": [
+      {
+        "from": "player",
+        "to": "search",
+        "caption": "A player picks a sport, a city and a date, and gets matching grounds."
+      },
+      {
+        "from": "search",
+        "to": "grid",
+        "caption": "Opening a ground shows each court as a row of hourly slots: free, held or booked."
+      },
+      {
+        "from": "grid",
+        "to": "hold",
+        "caption": "Choosing one to three neighbouring hours creates a hold. Nobody else can take them meanwhile."
+      },
+      {
+        "from": "hold",
+        "to": "pay",
+        "caption": "Paying before the hold expires confirms the booking at the price shown."
+      },
+      {
+        "from": "pay",
+        "to": "cancel",
+        "caption": "A confirmed booking can be cancelled. The refund depends on how early the player cancels."
+      },
+      {
+        "from": "admin",
+        "to": "cancel",
+        "label": "rain, repairs",
+        "dashed": true,
+        "caption": "The ground admin can close a court. Every booking it hits is cancelled with a full refund."
+      },
+      {
+        "from": "sys",
+        "to": "hold",
+        "label": "expires",
+        "dashed": true,
+        "caption": "The system is an actor too. It frees holds that were never paid."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "SlotRules.java",
+      "lang": "java",
+      "title": "Slot rules as checks",
+      "run": "captured",
+      "caption": "The v1 booking rules written as one function, then tried on eight requests. Each rule is a stated assumption you can change.",
+      "walk": [
+        {
+          "lines": [
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "text": "Opening hours, the longest booking, how far ahead you may book, and a fixed today."
+        },
+        {
+          "lines": [
+            11,
+            12,
+            13
+          ],
+          "text": "Three valid requests: a weekday morning, a weekday evening, a Saturday."
+        },
+        {
+          "lines": [
+            27,
+            28
+          ],
+          "text": "Slots are whole hours. Half-hour starts and long bookings are refused first."
+        },
+        {
+          "lines": [
+            29,
+            30,
+            31,
+            32
+          ],
+          "text": "The date must be today or later, and within the booking window."
+        },
+        {
+          "lines": [
+            33,
+            34,
+            35,
+            36
+          ],
+          "text": "The whole booking must end by closing time, not only its first hour."
+        },
+        {
+          "lines": [
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48
+          ],
+          "text": "Peak means a weekend, or any hour starting between 17:00 and 21:00."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Agree on slot length and alignment before drawing classes; everything else depends on it.",
+    "State opening hours, booking window and scale as assumptions, not facts.",
+    "Do not forget the admin and the timer; both change booking state."
+  ],
+  "quiz": {
+    "q": "A team wants the same court every Tuesday for three months. What do you do in v1?",
+    "options": [
+      "Add a recurring flag to TimeSlot right away",
+      "Mark it out of scope; later, create many bookings",
+      "Let them hold the slots for three months",
+      "Refuse to design anything until it is specified"
+    ],
+    "answer": 1,
+    "why": "Recurring bookings are a later feature. If v1 handles single bookings well, a series becomes many ordinary bookings created together."
+  },
+  "takeaway": "Fix slot rules, actors and the no-double-booking rule before any class.",
+  "chat": {
+    "starters": [
+      "Should slots be fixed hours or free start and end times?",
+      "How long should an unpaid hold last for a court?",
+      "Which scale assumptions should I state for a booking app like this?"
+    ]
+  }
+}

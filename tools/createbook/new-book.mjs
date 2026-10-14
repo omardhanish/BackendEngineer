@@ -9,7 +9,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Ajv from 'ajv';
 import { BOOKS_DIR, BOOK_RE, ROOT, bookSlugs, loadBook } from '../lib/books.mjs';
-import { detect } from '../lib/runners.mjs';
+import { RUNNERS, detect } from '../lib/runners.mjs';
 import { hueFromSlug, normalizeBook } from '../../server/lib/book-meta.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -128,7 +128,7 @@ const versions = {
   note: 'Versions that example code is verified against. They can be newer than most training data: trust only what you have run. Add every library a page imports to content/books/package.json and run `npm run examples:install`.',
   node: process.versions.node.split('.').slice(0, 2).join('.'),
   ...(tool('python3') ? { python: tool('python3') } : {}),
-  ...(tool('java', ['-version']) ? { java: tool('java', ['-version']) } : {}),
+  ...(RUNNERS['.java'].needs().ok ? { java: RUNNERS['.java'].needs().version } : {}), // the pinned JDK the runner uses
   ...(tool('cc') ? { cc: tool('cc') } : {}),
 };
 const profile = book.meta.profile;

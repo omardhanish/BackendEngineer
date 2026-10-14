@@ -1,0 +1,11 @@
+{
+  "stdout": "ann borrowed C1\nbob C1: already out\nann borrowed C2\nann C3: at loan limit\nzoe C3: unknown member",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java LendingDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "c8131c14416ca401",
+  "at": "2026-10-12T11:34:33.097Z"
+}

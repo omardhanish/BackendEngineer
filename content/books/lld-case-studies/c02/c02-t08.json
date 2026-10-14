@@ -1,0 +1,251 @@
+{
+  "title": "Pay station and kiosk UI",
+  "idea": "The parking frontend is a few kiosk screens; the pay station runs on one reducer and one Idempotency-Key per amount, so retries never double-charge.",
+  "points": [
+    "KioskApp holds the pay reducer; PayStation renders it and dispatches.",
+    "The pay request fires once per PAYING step; extra taps are ignored.",
+    "One Idempotency-Key per quoted amount survives retries, so a retry never double-charges.",
+    "Follow-ups: plate cameras instead of tickets, many lots, and live free-spot boards."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Screens to database, end to end",
+    "nodes": [
+      {
+        "id": "app",
+        "label": "KioskApp",
+        "sub": "holds pay reducer"
+      },
+      {
+        "id": "gates",
+        "label": "Gate screens",
+        "sub": "entry ticket, exit check"
+      },
+      {
+        "id": "pay",
+        "label": "PayStation",
+        "sub": "renders pay reducer"
+      },
+      {
+        "id": "scan",
+        "label": "ScanPrompt",
+        "sub": "reads ticket QR"
+      },
+      {
+        "id": "quote",
+        "label": "FeeQuote",
+        "sub": "amount, pay button"
+      },
+      {
+        "id": "api",
+        "label": "apiClient",
+        "sub": "fetch + Idempotency-Key"
+      },
+      {
+        "id": "srv",
+        "label": "Express API",
+        "sub": "service + tx"
+      },
+      {
+        "id": "db",
+        "label": "PostgreSQL",
+        "sub": "ticket, payment"
+      }
+    ],
+    "edges": [
+      {
+        "from": "app",
+        "to": "gates",
+        "caption": "Gate kiosks run one screen each: entry posts the plate and prints a ticket; exit shows Please pay on 409."
+      },
+      {
+        "from": "app",
+        "to": "pay",
+        "caption": "KioskApp holds the pay reducer and passes state and dispatch down to PayStation."
+      },
+      {
+        "from": "pay",
+        "to": "scan",
+        "caption": "In IDLE it shows ScanPrompt. A scan dispatches SCANNED and the step becomes QUOTING."
+      },
+      {
+        "from": "pay",
+        "to": "quote",
+        "caption": "After QUOTE_OK it shows FeeQuote with the server's amount, never a browser guess."
+      },
+      {
+        "from": "quote",
+        "to": "api",
+        "label": "pay",
+        "caption": "PAY_CLICKED creates the key once. One effect sends POST /tickets/:id/payments with it."
+      },
+      {
+        "from": "api",
+        "to": "srv",
+        "caption": "POST /tickets/:id/payments carries the Idempotency-Key; the controller validates with zod."
+      },
+      {
+        "from": "srv",
+        "to": "db",
+        "caption": "One transaction checks the key, marks the ticket PAID and inserts the payment."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "payReducer.mjs",
+      "lang": "js",
+      "title": "Pay station reducer",
+      "run": "browser",
+      "caption": "Pure screen logic. Run it, then add a DRIVER_LEFT event before the last SCANNED and predict the final line.",
+      "walk": [
+        {
+          "lines": [
+            2,
+            3,
+            4,
+            5
+          ],
+          "text": "The whole screen state: step, ticket, quoted amount, Idempotency-Key and error."
+        },
+        {
+          "lines": [
+            9,
+            10,
+            11,
+            12,
+            13,
+            14
+          ],
+          "text": "A scan starts a quote only from IDLE; a failed quote returns to IDLE."
+        },
+        {
+          "lines": [
+            15,
+            16,
+            17,
+            18
+          ],
+          "text": "A new amount drops the old key: it is a different payment request."
+        },
+        {
+          "lines": [
+            19,
+            20
+          ],
+          "text": "When a new billed hour starts, the quote is fetched again."
+        },
+        {
+          "lines": [
+            21,
+            22,
+            23,
+            24
+          ],
+          "text": "Pay works only from QUOTED and makes the key once, so double taps change nothing."
+        },
+        {
+          "lines": [
+            25,
+            26,
+            27
+          ],
+          "text": "A failed payment returns to QUOTED but keeps the key for the retry."
+        },
+        {
+          "lines": [
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43
+          ],
+          "text": "The run: a double tap, two failures, a new hour, then success."
+        }
+      ]
+    },
+    {
+      "file": "PayStation.jsx",
+      "lang": "js",
+      "title": "PayStation component",
+      "run": "static",
+      "illustrative": true,
+      "caption": "A React component that renders state and runs one effect per step. Not run here.",
+      "walk": [
+        {
+          "lines": [
+            4
+          ],
+          "text": "Props bring the reducer state, dispatch and the API client."
+        },
+        {
+          "lines": [
+            5,
+            6,
+            7,
+            8,
+            9,
+            10
+          ],
+          "text": "Entering QUOTING fetches the fee once and reports success or failure."
+        },
+        {
+          "lines": [
+            12,
+            13,
+            14,
+            15,
+            16,
+            17
+          ],
+          "text": "Entering PAYING sends one payment with the key from the reducer."
+        },
+        {
+          "lines": [
+            19,
+            20,
+            21,
+            22
+          ],
+          "text": "Each step has its own screen: scan, loading, or paid."
+        },
+        {
+          "lines": [
+            26,
+            27,
+            28,
+            29,
+            30
+          ],
+          "text": "Errors render in an alert region; the button is disabled while paying."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "A disabled button is not enough; the reducer and the Idempotency-Key must stop repeats.",
+    "Never compute the fee in the browser; show the server's quote and re-quote hourly.",
+    "Interview follow-up: for many lots, add `lot_id` to every table and route."
+  ],
+  "quiz": {
+    "q": "In the run, which key does the final PAY_CLICKED use?",
+    "options": [
+      "pk-1",
+      "pk-3",
+      "pk-2",
+      "-"
+    ],
+    "answer": 2,
+    "why": "QUOTE_OK with 20000 differs from 15000, so the reducer drops pk-1. PAY_CLICKED then makes the next key, pk-2. Retries before that reused pk-1."
+  },
+  "takeaway": "One reducer per screen; one key per payment makes retries safe.",
+  "chat": {
+    "starters": [
+      "How would the screens change if cameras read plates instead of tickets?",
+      "Should the free-spot board poll or use server-sent events?",
+      "What should the pay station show when the server says NOT_PAYABLE?"
+    ]
+  }
+}

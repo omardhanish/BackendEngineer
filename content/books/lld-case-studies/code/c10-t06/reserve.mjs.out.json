@@ -1,0 +1,11 @@
+{
+  "stdout": "last Y-SAVER seat, holds that won: 1\n3 pax on J-FLEX: true\n2 pax on J-FLEX: false\nseats left: J-FLEX=1 Y-SAVER=0\nsweep at 09:10: none\nsweep at 09:16: J-FLEX +3, Y-SAVER +1\nseats left: J-FLEX=4 Y-SAVER=1\n[{\"status\":\"EXPIRED\",\"n\":2}]",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node reserve.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "5ffdd74cc9804216",
+  "at": "2026-10-14T10:25:39.644Z"
+}

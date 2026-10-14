@@ -1,0 +1,376 @@
+{
+  "title": "Library schema in PostgreSQL",
+  "idea": "The library schema maps each Java class to a table and lets PostgreSQL enforce key rules: one open loan per copy, one live reservation per member and title.",
+  "analogy": {
+    "text": "A copy's slot in the loan ledger takes one open stamp. A second clerk's stamp is refused.",
+    "breaks": "A real ledger can be overwritten; the index refuses at write time."
+  },
+  "points": [
+    "A partial unique index on loan(copy_id) allows only one open loan per copy.",
+    "Status columns are TEXT with a CHECK listing the Java enum values.",
+    "Every index names the query it serves: free copies, overdue sweep, queue order.",
+    "Borrow locks the member row, then takes a free copy with SKIP LOCKED."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "Two borrows race for CP-1",
+    "scenario": {
+      "tiers": [
+        [
+          "t1",
+          "t2"
+        ],
+        [
+          "copy"
+        ],
+        [
+          "loan"
+        ]
+      ],
+      "nodes": {
+        "t1": {
+          "label": "Tx M-1",
+          "sub": "borrow ISBN-1",
+          "kind": "client"
+        },
+        "t2": {
+          "label": "Tx M-2",
+          "sub": "borrow ISBN-1",
+          "kind": "client"
+        },
+        "copy": {
+          "label": "book_copy",
+          "sub": "CP-1 AVAILABLE",
+          "kind": "db"
+        },
+        "loan": {
+          "label": "loan",
+          "sub": "open loans",
+          "kind": "db"
+        }
+      },
+      "links": [
+        [
+          "t1",
+          "copy"
+        ],
+        [
+          "t2",
+          "copy"
+        ],
+        [
+          "copy",
+          "loan"
+        ]
+      ],
+      "steps": [
+        {
+          "caption": "Two members borrow the same title at once. Only CP-1 is free.",
+          "focus": [
+            "t1",
+            "t2"
+          ]
+        },
+        {
+          "caption": "M-1 selects a free copy `FOR UPDATE SKIP LOCKED` and locks CP-1.",
+          "send": [
+            {
+              "from": "t1",
+              "to": "copy",
+              "label": "lock CP-1",
+              "tone": "req"
+            }
+          ],
+          "state": {
+            "t1": "busy"
+          },
+          "badge": {
+            "copy": "CP-1 locked"
+          }
+        },
+        {
+          "caption": "M-2 runs the same query. SKIP LOCKED skips CP-1 instead of waiting.",
+          "send": [
+            {
+              "from": "t2",
+              "to": "copy",
+              "label": "free copy?",
+              "tone": "req"
+            }
+          ],
+          "state": {
+            "t2": "busy"
+          }
+        },
+        {
+          "caption": "No other free copy exists, so M-2 gets zero rows and rolls back with NO_COPY.",
+          "send": [
+            {
+              "from": "copy",
+              "to": "t2",
+              "label": "0 rows",
+              "tone": "err"
+            }
+          ],
+          "state": {
+            "t2": "down"
+          }
+        },
+        {
+          "caption": "M-1 marks CP-1 ON_LOAN and inserts the loan row.",
+          "send": [
+            {
+              "from": "copy",
+              "to": "loan",
+              "label": "insert LN",
+              "tone": "req"
+            }
+          ],
+          "badge": {
+            "copy": "CP-1 ON_LOAN"
+          },
+          "items": {
+            "loan": [
+              "CP-1"
+            ]
+          }
+        },
+        {
+          "caption": "M-1 commits. Even a buggy second insert would hit the partial unique index.",
+          "send": [
+            {
+              "from": "copy",
+              "to": "t1",
+              "label": "COMMIT",
+              "tone": "ok"
+            }
+          ],
+          "state": {
+            "t1": "ok"
+          },
+          "focus": [
+            "loan"
+          ]
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "schema.mjs",
+      "lang": "js",
+      "title": "Tables and constraints",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "The schema on a real PostgreSQL 18, then five bad writes the database refuses by itself, and the overdue query.",
+      "walk": [
+        {
+          "lines": [
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11
+          ],
+          "text": "Book is the title; book_copy holds status. The index serves 'find a free copy of this ISBN'."
+        },
+        {
+          "lines": [
+            12,
+            13,
+            14
+          ],
+          "text": "Fines are BIGINT minor units with a CHECK that they never go negative."
+        },
+        {
+          "lines": [
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "text": "Due dates are DATE, a calendar day. CHECKs guard renewals, status and date order."
+        },
+        {
+          "lines": [
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30
+          ],
+          "text": "Partial indexes cover only open loans: one per copy, plus the sweep and 'my loans'."
+        },
+        {
+          "lines": [
+            37,
+            38,
+            39,
+            40,
+            41
+          ],
+          "text": "One live reservation per member and title; the queue index orders by created_at."
+        },
+        {
+          "lines": [
+            51,
+            52,
+            53,
+            54
+          ],
+          "text": "Print the Postgres error code and constraint name for each refused write."
+        },
+        {
+          "lines": [
+            69,
+            70,
+            71,
+            72,
+            73
+          ],
+          "text": "The overdue sweep query, served by the partial index on due_on."
+        }
+      ]
+    },
+    {
+      "file": "borrow.mjs",
+      "lang": "js",
+      "title": "Borrow and return transactions",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "Two races decided by the database, then a late return that serves the reservation queue in the same transaction.",
+      "walk": [
+        {
+          "lines": [
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28
+          ],
+          "text": "`tx` runs one transaction; a Refused error rolls back and returns its code."
+        },
+        {
+          "lines": [
+            29,
+            30,
+            31,
+            32,
+            33,
+            34
+          ],
+          "text": "Lock the member row first, so two borrows by one member check the limit in turn."
+        },
+        {
+          "lines": [
+            35,
+            36,
+            37,
+            38,
+            39
+          ],
+          "text": "Pick a free copy, or one held for this member, skipping rows others have locked."
+        },
+        {
+          "lines": [
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48
+          ],
+          "text": "Mark the copy ON_LOAN, fulfil this member's READY reservation, and insert a 14-day loan."
+        },
+        {
+          "lines": [
+            50,
+            51,
+            52,
+            53,
+            54,
+            55
+          ],
+          "text": "Return closes the open loan and prices the fine; a second scan finds nothing."
+        },
+        {
+          "lines": [
+            56,
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63,
+            64,
+            65,
+            66
+          ],
+          "text": "Lock the oldest WAITING reservation and hold the copy for it, or shelve it as AVAILABLE."
+        },
+        {
+          "lines": [
+            69,
+            70,
+            71,
+            72,
+            73,
+            74,
+            75,
+            76,
+            77
+          ],
+          "text": "Run both races in parallel and print only the sorted outcomes."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not trust the service alone; add the partial unique index on open loans.",
+    "Lock rows in one fixed order (member, then copy) to avoid deadlocks.",
+    "Run the queue hand-off in the return transaction, or a copy can go unclaimed."
+  ],
+  "quiz": {
+    "q": "What does borrow.mjs print for the last-copy race?",
+    "options": [
+      "last copy, two members: [ 'loan', 'loan' ]",
+      "last copy, two members: [ 'NO_COPY', 'loan' ]",
+      "last copy, two members: [ 'LIMIT', 'loan' ]",
+      "A deadlock error from PostgreSQL"
+    ],
+    "answer": 1,
+    "why": "One transaction locks CP-1. The other skips the locked row or sees ON_LOAN, finds no copy, and rolls back."
+  },
+  "takeaway": "Constraints guard the rules; row locks decide who wins a race.",
+  "chat": {
+    "starters": [
+      "When should I use SKIP LOCKED instead of waiting on the lock?",
+      "Why is due_on a DATE and not a TIMESTAMPTZ?",
+      "How would the overdue sweep scale to millions of loans?"
+    ]
+  }
+}

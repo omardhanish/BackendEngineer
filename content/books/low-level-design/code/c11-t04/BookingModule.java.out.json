@@ -1,0 +1,11 @@
+{
+  "stdout": "booked Booking[id=B1, roomId=R1, employeeId=e1, start=9.0, end=10.0]\nROOM_TAKEN: R1 is taken then\nINVALID_SLOT: bad slot 10.0-9.0\nNOT_OWNER: e2 does not own B1\nrebooked Booking[id=B2, roomId=R1, employeeId=e2, start=9.5, end=11.0]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java BookingModule.java",
+  "tool": "Java 17.0.17",
+  "hash": "682ef0b9ecd8dfc3",
+  "at": "2026-10-12T11:27:23.010Z"
+}

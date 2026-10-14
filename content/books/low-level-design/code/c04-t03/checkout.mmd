@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant C as Controller
+    participant O as OrderService
+    participant I as Inventory
+    participant P as Payment
+    C->>+O: placeOrder(sku, qty)
+    O->>+I: reserve(sku, qty)
+    I-->>-O: reserved
+    O->>+P: charge(cents)
+    P-->>-O: approved or declined
+    alt approved
+        O->>I: commit(sku, qty)
+        O-->>C: CONFIRMED
+    else declined
+        O->>I: release(sku, qty)
+        O-->>C: PAYMENT_DECLINED
+    end
+    deactivate O

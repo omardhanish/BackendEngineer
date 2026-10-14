@@ -1,0 +1,11 @@
+{
+  "stdout": "tea    -> 250\ncoffee -> 0\nnull   -> 0\nA missing price and a bug both look free.",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java SwallowDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "1bb8211447ff817b",
+  "at": "2026-10-12T11:22:02.926Z"
+}

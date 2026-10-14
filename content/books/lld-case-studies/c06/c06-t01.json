@@ -1,0 +1,76 @@
+{
+  "title": "Library system requirements",
+  "idea": "Scoping a library management system means naming who borrows, returns and reserves books, the rules for loans and fines, and what v1 leaves out.",
+  "points": [
+    "Members search the catalog, borrow copies, return, renew once, and reserve titles.",
+    "The core rule: one physical copy is on at most one open loan.",
+    "A reservation queues a member for a title, served first come, first served.",
+    "Late returns earn a fine per day, capped; large unpaid fines block borrowing."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Actors and use cases in v1",
+    "nodes": [
+      { "id": "mem", "label": "Member", "sub": "card holder" },
+      { "id": "search", "label": "Search catalog", "sub": "title, author, ISBN" },
+      { "id": "borrow", "label": "Borrow a copy", "sub": "due in 14 days" },
+      { "id": "ret", "label": "Return and fine", "sub": "per day late, capped" },
+      { "id": "res", "label": "Reserve a title", "sub": "FIFO queue per title" },
+      { "id": "lib", "label": "Librarian", "sub": "adds copies, marks lost" },
+      { "id": "sys", "label": "System jobs", "sub": "overdue, pickup expiry" },
+      { "id": "out", "label": "Out of scope", "sub": "e-books, branches, buying" }
+    ],
+    "edges": [
+      { "from": "mem", "to": "search", "caption": "A member starts by finding a title and seeing how many copies are free." },
+      { "from": "search", "to": "borrow", "caption": "If a copy is free and the member is in good standing, a loan starts." },
+      { "from": "borrow", "to": "ret", "caption": "Returning closes the loan. Days past the due date turn into a fine." },
+      { "from": "search", "to": "res", "label": "none free", "caption": "If every copy is out, the member joins the title's waiting queue instead." },
+      { "from": "ret", "to": "res", "label": "hand-off", "dashed": true, "caption": "A returned copy goes to the first waiting member, not back to the shelf." },
+      { "from": "lib", "to": "borrow", "label": "adds copies", "caption": "The librarian adds copies to the catalog and handles lost or damaged items." },
+      { "from": "sys", "to": "res", "label": "expires", "dashed": true, "caption": "Scheduled jobs mark loans overdue and pass unclaimed pickups to the next member." },
+      { "from": "mem", "to": "out", "dashed": true, "caption": "E-book lending, moving copies between branches and purchasing wait for a later version." }
+    ]
+  },
+  "code": [
+    {
+      "file": "LibraryScope.java",
+      "lang": "java",
+      "title": "Use cases and policy",
+      "run": "captured",
+      "caption": "The scope as code: each use case has one actor, v1 is an explicit set, and every limit is a named assumption.",
+      "walk": [
+        { "lines": [5, 6, 7, 8], "text": "v1 is a named set. A use case missing from it is out of scope." },
+        { "lines": [9, 10, 11], "text": "Print each use case with IN or OUT and the actor who starts it." },
+        { "lines": [12, 13], "text": "One record holds every policy number, so changing a rule means one edit." },
+        { "lines": [17], "text": "Three actors: the member, the librarian and the system's scheduled jobs." },
+        { "lines": [19, 20, 21, 22, 23], "text": "Nine use cases cover search, the loan cycle, reservations and fines." },
+        { "lines": [24, 25], "text": "Three cut features stay listed, so the cut is visible in review." },
+        { "lines": [31, 32, 33, 34], "text": "Money is a long in minor units: 1000 means 10.00 per day." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not let a reservation pin one physical copy; members wait for the title.",
+    "Write limits like 14 days or 5 loans as assumptions, not as facts.",
+    "Forgetting the system actor hides overdue marking and pickup expiry until late."
+  ],
+  "quiz": {
+    "q": "All copies of a title are on loan. What should v1 do when a member asks?",
+    "options": [
+      "Refuse and ask the member to try again later",
+      "Add the member to a first-come queue for the title",
+      "Reserve the specific copy with the earliest due date",
+      "Shorten the current borrowers' due dates"
+    ],
+    "answer": 1,
+    "why": "A queue per title is fair and simple. Any copy that comes back serves the first waiting member, whichever copy it is."
+  },
+  "takeaway": "Agree on actors, loan rules and the one-open-loan-per-copy rule first.",
+  "chat": {
+    "starters": [
+      "Should a member be able to reserve a book that has a free copy?",
+      "Which scale assumptions are sensible for a city library?",
+      "How do I explain what I left out of scope in an interview?"
+    ]
+  }
+}

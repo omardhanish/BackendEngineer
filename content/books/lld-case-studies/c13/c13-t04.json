@@ -1,0 +1,203 @@
+{
+ "title": "Court booking lifecycle",
+ "idea": "A court Booking is a state machine: PENDING until paid, then CONFIRMED, then COMPLETED or CANCELLED; an unpaid hold may expire or be cancelled.",
+ "points": [
+  "A new Booking is PENDING and holds its hours until a deadline.",
+  "Payment moves PENDING to CONFIRMED; a missed deadline moves it to EXPIRED.",
+  "Only CANCELLED and EXPIRED give the court hours back.",
+  "CANCELLED, EXPIRED and COMPLETED are final: no move leaves them."
+ ],
+ "hero": {
+  "type": "seq",
+  "title": "Hold, pay, then cancel",
+  "actors": [
+   {
+    "id": "player",
+    "label": "Player"
+   },
+   {
+    "id": "svc",
+    "label": "BookingService"
+   },
+   {
+    "id": "ledger",
+    "label": "SlotLedger"
+   },
+   {
+    "id": "pay",
+    "label": "PaymentGateway"
+   },
+   {
+    "id": "policy",
+    "label": "CancellationPolicy"
+   }
+  ],
+  "messages": [
+   {
+    "from": "player",
+    "to": "svc",
+    "label": "hold(C-1, Fri 18:00, 2h)",
+    "note": "On Tuesday at 10:00 the player picks two Friday hours on the turf. The service creates BK-1 as PENDING with a ten-minute hold."
+   },
+   {
+    "from": "svc",
+    "to": "ledger",
+    "label": "reserveAll(18:00, 19:00)",
+    "note": "Both hours are reserved together, so no one else can take them."
+   },
+   {
+    "from": "svc",
+    "to": "player",
+    "label": "BK-1 PENDING, pay by 10:10",
+    "dashed": true,
+    "note": "The player gets a deadline to show as a countdown."
+   },
+   {
+    "from": "player",
+    "to": "svc",
+    "label": "pay(BK-1)",
+    "note": "Payment starts before the deadline. Page 3 did this inside one call; here it is a separate step."
+   },
+   {
+    "from": "svc",
+    "to": "pay",
+    "label": "charge(160000)",
+    "note": "The service charges the price it froze at hold time."
+   },
+   {
+    "from": "pay",
+    "to": "svc",
+    "label": "ok",
+    "dashed": true,
+    "note": "The charge succeeds, so BK-1 moves PENDING to CONFIRMED."
+   },
+   {
+    "from": "player",
+    "to": "svc",
+    "label": "cancel(BK-1)",
+    "note": "A day later, well before the game, the player cancels. CONFIRMED to CANCELLED is an allowed move."
+   },
+   {
+    "from": "svc",
+    "to": "policy",
+    "label": "refundMinor(160000, start, now)",
+    "note": "CancellationPolicy, a new swappable rule like PricingStrategy, decides the refund from how early the player cancels."
+   },
+   {
+    "from": "svc",
+    "to": "ledger",
+    "label": "release(BK-1)",
+    "note": "CANCELLED frees the hours, so the grid shows them as free again."
+   },
+   {
+    "from": "svc",
+    "to": "player",
+    "label": "CANCELLED, refund issued",
+    "dashed": true,
+    "note": "If the deadline had passed before payment, BK-1 would be EXPIRED instead."
+   }
+  ]
+ },
+ "code": [
+  {
+   "file": "BookingStates.java",
+   "lang": "java",
+   "title": "Status enum with rules",
+   "run": "captured",
+   "caption": "The allowed moves live in the enum. Booking asks the enum before every change and reports when hours are freed.",
+   "walk": [
+    {
+     "lines": [
+      5,
+      6,
+      7,
+      8
+     ],
+     "text": "BK-1 is paid and played. A cancel after the game must be refused."
+    },
+    {
+     "lines": [
+      9,
+      10,
+      11
+     ],
+     "text": "BK-2 expires unpaid, then a late payment tries to confirm it."
+    },
+    {
+     "lines": [
+      12,
+      13,
+      14
+     ],
+     "text": "BK-3 is paid, then cancelled early."
+    },
+    {
+     "lines": [
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29
+     ],
+     "text": "An `EnumMap` lists the allowed next states. Final states map to an empty set."
+    },
+    {
+     "lines": [
+      30,
+      31
+     ],
+     "text": "One question for every move, and one rule for which states keep the hours."
+    },
+    {
+     "lines": [
+      39,
+      40,
+      41,
+      42,
+      43,
+      44
+     ],
+     "text": "An illegal move is reported and changes nothing."
+    },
+    {
+     "lines": [
+      45,
+      46,
+      47,
+      48,
+      49
+     ],
+     "text": "A legal move updates status and says when the court hours go back."
+    }
+   ]
+  }
+ ],
+ "pitfalls": [
+  "Do not set status fields directly from controllers; always go through one transition method.",
+  "A late payment for an EXPIRED booking must be refunded, not confirmed.",
+  "Do not free hours on COMPLETED; past bookings stay in the history."
+ ],
+ "quiz": {
+  "q": "What does the third line of BookingStates print?",
+  "options": [
+   "BK-1 COMPLETED -> CANCELLED (player cancels after the game)",
+   "BK-1 refused COMPLETED -> CANCELLED (player cancels after the game)",
+   "BK-1 CONFIRMED -> CANCELLED (player cancels after the game)",
+   "Nothing; moveTo throws an exception"
+  ],
+  "answer": 1,
+  "why": "COMPLETED maps to an empty set of next states, so `canMoveTo` is false and `moveTo` prints the refusal without changing status."
+ },
+ "takeaway": "Allowed moves live in one table; anything else is refused.",
+ "chat": {
+  "starters": [
+   "Should a no-show be its own state?",
+   "Who moves CONFIRMED bookings to COMPLETED, and when?",
+   "How do I handle a payment that succeeds after the hold expired?"
+  ]
+ }
+}

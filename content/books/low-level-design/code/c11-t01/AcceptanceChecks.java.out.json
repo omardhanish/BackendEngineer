@@ -1,0 +1,11 @@
+{
+  "stdout": "PASS books a free room\nPASS rejects an overlapping slot\nPASS allows back-to-back slots\nPASS same hours, other room is fine\nPASS rejects end before start\nTODO search free rooms by capacity\nTODO only the owner may cancel\nTODO notify and audit every change\n5 passed, 0 failed, 3 pending",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java AcceptanceChecks.java",
+  "tool": "Java 17.0.17",
+  "hash": "a859fb9f0f53da14",
+  "at": "2026-10-12T11:22:27.072Z"
+}

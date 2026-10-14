@@ -1,0 +1,11 @@
+{
+  "stdout": "before undo: [Dear team,, Oops, wrong draft]\nafter undo:  [Dear team,, Oops, wrong draft]\ncursor: 1",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java AliasedUndo.java",
+  "tool": "Java 17.0.17",
+  "hash": "467b5bf97b485ce4",
+  "at": "2026-10-12T11:16:20.119Z"
+}

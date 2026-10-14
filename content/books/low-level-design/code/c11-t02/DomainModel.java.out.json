@@ -1,0 +1,11 @@
+{
+  "stdout": "reminder B1 -> asha@new.example\ne7 owns B1: true\ne9 owns B1: false\nrejected: capacity must be at least 1, was 0\nrejected: need 0 <= start < end <= 24, got 11.0-10.0\nrejected: need 0 <= start < end <= 24, got 23.0-25.0",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java DomainModel.java",
+  "tool": "Java 17.0.17",
+  "hash": "5a3c2ca56883e6f5",
+  "at": "2026-10-12T11:23:25.596Z"
+}

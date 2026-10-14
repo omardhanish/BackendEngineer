@@ -1,0 +1,11 @@
+{
+  "stdout": "P-1 CREATED -> PROCESSING\nP-1 PROCESSING -> SUCCEEDED\nP-1 ignored duplicate SUCCEEDED\nP-1 SUCCEEDED -> PARTIALLY_REFUNDED\nP-1 PARTIALLY_REFUNDED -> REFUNDED\nP-2 CREATED -> PROCESSING\nP-2 PROCESSING -> FAILED\nP-2 refused FAILED -> SUCCEEDED (raise alert)\nhistory P-1: [CREATED, PROCESSING, SUCCEEDED, PARTIALLY_REFUNDED, REFUNDED]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java PaymentLifecycle.java",
+  "tool": "Java 17.0.17",
+  "hash": "9bb1fb98b6f523e5",
+  "at": "2026-10-14T08:40:28.231Z"
+}

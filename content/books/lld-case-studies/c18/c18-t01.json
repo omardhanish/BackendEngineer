@@ -1,0 +1,72 @@
+{
+  "title": "File system requirements",
+  "idea": "Scoping an in-memory file system means fixing which operations users get on a tree of directories and files, how paths are written, and what v1 leaves out.",
+  "points": [
+    "Users make directories, create files, list, move, rename and delete them.",
+    "Every operation takes an absolute path such as `/home/ada/cv.pdf`.",
+    "Directory size and name search walk the whole subtree below a path.",
+    "Assume one process, data in memory, and many readers with fewer writers."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Actors and use cases in v1",
+    "nodes": [
+      { "id": "user", "label": "User", "sub": "a person or a program" },
+      { "id": "write", "label": "Change the tree", "sub": "mkdir, create, move, delete" },
+      { "id": "read", "label": "Read the tree", "sub": "list, size, find" },
+      { "id": "path", "label": "Resolve a path", "sub": "/a/b/c to a node" },
+      { "id": "tree", "label": "Directory tree", "sub": "one root, no cycles" },
+      { "id": "op", "label": "Operator", "sub": "runs the process" },
+      { "id": "out", "label": "Out of scope", "sub": "permissions, links, disk" }
+    ],
+    "edges": [
+      { "from": "user", "to": "write", "caption": "A user changes the tree: makes folders, adds files, moves, renames and deletes." },
+      { "from": "user", "to": "read", "caption": "A user also reads it: lists a folder, asks a folder's total size, or finds files by name." },
+      { "from": "write", "to": "path", "label": "uses", "caption": "Every operation starts by turning a path string into a node, or failing with a clear error." },
+      { "from": "read", "to": "path", "label": "uses", "caption": "Reads resolve paths the same way, so one parser serves every use case." },
+      { "from": "path", "to": "tree", "caption": "The tree has exactly one root. Each node has one parent, so it can never loop." },
+      { "from": "op", "to": "out", "dashed": true, "caption": "Permissions, symbolic links and saving to disk are cut from v1. Say this to the interviewer." }
+    ]
+  },
+  "code": [
+    {
+      "file": "FsScope.java",
+      "lang": "java",
+      "title": "Scope and path rules",
+      "run": "captured",
+      "caption": "The v1 scope as an enum, and the path rules as a check you can run against sample paths.",
+      "walk": [
+        { "lines": [3, 4], "text": "Print every use case with its scope tag and the actor who needs it." },
+        { "lines": [5, 6, 7, 8], "text": "Run six sample paths through the path rules, including bad ones." },
+        { "lines": [16, 17, 18, 19, 20, 21, 22, 23], "text": "Seven use cases are in v1. Each one becomes a method later." },
+        { "lines": [24, 25, 26], "text": "Three are named and cut, so the boundary is written down." },
+        { "lines": [41, 42, 43, 44, 45], "text": "Paths must be absolute, and no name between slashes may be empty." },
+        { "lines": [46, 47, 48, 49, 50, 51], "text": "A dot stays put; two dots climb one level but never above the root." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Agree whether paths are absolute only, or relative to a current directory.",
+    "Ask if delete on a non-empty directory is recursive or refused.",
+    "Name what is out of scope, such as permissions and links, before designing."
+  ],
+  "quiz": {
+    "q": "The interviewer adds symbolic links late. Which v1 promise do they break?",
+    "options": [
+      "Every path must start with a slash",
+      "One parent per node, so every walk ends",
+      "Directory names are sorted when listed",
+      "Files have a size in bytes"
+    ],
+    "answer": 1,
+    "why": "A link can point at its own ancestor. Then a recursive size or search could loop forever unless it tracks visited nodes."
+  },
+  "takeaway": "Fix the operations, the path rules and the cut list before any class.",
+  "chat": {
+    "starters": [
+      "Should I support a current directory and relative paths in an interview?",
+      "Why model the file system in memory instead of on disk?",
+      "Which non-functional requirements matter most for a file system design?"
+    ]
+  }
+}

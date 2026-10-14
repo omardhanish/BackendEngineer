@@ -1,0 +1,11 @@
+{
+  "stdout": "Request[user=U-1, priority=CRITICAL, hour=23] -> SENT\nRequest[user=U-1, priority=LOW, hour=23] -> SKIPPED (quiet hours)\nRequest[user=U-9, priority=LOW, hour=10] -> SKIPPED (opted out)\nRequest[user=U-2, priority=LOW, hour=10] -> SENT",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java FilterChain.java",
+  "tool": "Java 17.0.17",
+  "hash": "3ca85c0f207a7748",
+  "at": "2026-10-14T08:35:59.672Z"
+}

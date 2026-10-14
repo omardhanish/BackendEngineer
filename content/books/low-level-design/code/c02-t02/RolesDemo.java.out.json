@@ -1,0 +1,11 @@
+{
+  "stdout": "Clean Code -> 3600\nRefactoring -> 2100\nship 400g\nRefactoring",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java RolesDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "4268d688b747fd87",
+  "at": "2026-10-12T11:16:24.187Z"
+}

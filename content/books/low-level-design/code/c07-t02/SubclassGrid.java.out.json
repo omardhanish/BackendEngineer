@@ -1,0 +1,11 @@
+{
+  "stdout": "== CsvInvoiceReport\nitem,qty\n\"Desk, oak\",2\nTOTAL,2\n== CsvStockReport\nsku,on hand\nDesk, oak,3 LOW\n== MdInvoiceReport\n| item | qty |\n|-|-|\n| Desk, oak | 2 |\n| TOTAL | 2 |\n== MdStockReport\n| sku | on hand |\n|-|-|\n| Desk, oak | 3 LOW |",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java SubclassGrid.java",
+  "tool": "Java 17.0.17",
+  "hash": "b1243506246871c3",
+  "at": "2026-10-12T11:23:28.037Z"
+}

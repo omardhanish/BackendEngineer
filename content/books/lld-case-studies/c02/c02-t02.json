@@ -1,0 +1,220 @@
+{
+  "title": "Parking lot domain model",
+  "idea": "The parking lot domain model separates the fixed layout (ParkingLot, Floor, ParkingSpot, gates) from the per-visit records (Vehicle, Ticket, Payment) that change all day.",
+  "analogy": {
+    "text": "A building floor plan and the visitor log at reception. The plan stays the same for years; the log gets new lines every hour.",
+    "breaks": "A real log accepts any line; a Ticket refuses a misfit."
+  },
+  "points": [
+    "A ParkingLot has Floors and gates; each Floor owns its ParkingSpots.",
+    "A Ticket links one Vehicle to one ParkingSpot from entry to exit.",
+    "VehicleType lists the SpotTypes it fits, so the fit rule lives once.",
+    "A Payment settles one Ticket; FeeStrategy computes its amount in paise."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Class diagram",
+    "nodes": [
+      {
+        "id": "lot",
+        "label": "ParkingLot",
+        "sub": "id, floors, gates"
+      },
+      {
+        "id": "floor",
+        "label": "Floor",
+        "sub": "number, spots"
+      },
+      {
+        "id": "spot",
+        "label": "ParkingSpot",
+        "sub": "id, SpotType"
+      },
+      {
+        "id": "gate",
+        "label": "EntryGate / ExitGate",
+        "sub": "id"
+      },
+      {
+        "id": "ticket",
+        "label": "Ticket",
+        "sub": "entryAt, TicketStatus"
+      },
+      {
+        "id": "vehicle",
+        "label": "Vehicle",
+        "sub": "plate, VehicleType"
+      },
+      {
+        "id": "payment",
+        "label": "Payment",
+        "sub": "amountMinor"
+      },
+      {
+        "id": "fee",
+        "label": "FeeStrategy",
+        "sub": "feeMinor(type, stay)"
+      }
+    ],
+    "edges": [
+      {
+        "from": "lot",
+        "to": "floor",
+        "label": "has 1..*",
+        "caption": "A ParkingLot owns one or more Floors. Floors never move between lots."
+      },
+      {
+        "from": "floor",
+        "to": "spot",
+        "label": "has 1..*",
+        "caption": "A Floor owns its ParkingSpots. Each spot has a fixed SpotType."
+      },
+      {
+        "from": "lot",
+        "to": "gate",
+        "label": "has 1..*",
+        "caption": "The lot has entry and exit gates. They are thin and hold no rules."
+      },
+      {
+        "from": "ticket",
+        "to": "vehicle",
+        "label": "for 1",
+        "caption": "A Ticket is for exactly one Vehicle, identified by its normalised plate."
+      },
+      {
+        "from": "ticket",
+        "to": "spot",
+        "label": "uses 1",
+        "caption": "A Ticket stores the spot id it was given. The fit rule is checked here."
+      },
+      {
+        "from": "payment",
+        "to": "ticket",
+        "label": "settles 1",
+        "caption": "A Payment settles one Ticket. Its amount is a long in minor units."
+      },
+      {
+        "from": "fee",
+        "to": "payment",
+        "label": "prices",
+        "dashed": true,
+        "caption": "FeeStrategy is an interface. The next page plugs in an hourly fee."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "ParkingModel.java",
+      "lang": "java",
+      "title": "The model in Java 17",
+      "run": "captured",
+      "caption": "Records for fixed data; classes for ParkingSpot (behaviour) and Ticket (its status changes). Invariants live in constructors.",
+      "walk": [
+        {
+          "lines": [
+            7,
+            8,
+            9,
+            10,
+            11,
+            12
+          ],
+          "text": "Build the fixed layout: one floor with three spot types and two gates."
+        },
+        {
+          "lines": [
+            14,
+            15,
+            16,
+            17
+          ],
+          "text": "A messy plate is cleaned by Vehicle, then a Ticket puts the car in F1-C1."
+        },
+        {
+          "lines": [
+            20,
+            21,
+            22,
+            23,
+            24,
+            25
+          ],
+          "text": "A truck in a COMPACT spot is refused by the Ticket constructor."
+        },
+        {
+          "lines": [
+            26,
+            27,
+            28,
+            29,
+            30
+          ],
+          "text": "A negative Payment is refused too."
+        },
+        {
+          "lines": [
+            36,
+            37,
+            38,
+            39
+          ],
+          "text": "VehicleType carries its fitting spot types, smallest first."
+        },
+        {
+          "lines": [
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53
+          ],
+          "text": "The compact constructor normalises the plate and rejects a blank one."
+        },
+        {
+          "lines": [
+            82,
+            83,
+            84,
+            85,
+            86,
+            87,
+            88,
+            89,
+            90,
+            91,
+            92,
+            93,
+            94
+          ],
+          "text": "Ticket checks the fit rule; status is the only field that changes."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not subclass Vehicle per type; a VehicleType enum with fit sets is enough.",
+    "Normalise plates in one place, or one car becomes two different vehicles.",
+    "Keep fees as long paise; double arithmetic rounds money wrongly."
+  ],
+  "quiz": {
+    "q": "What is the first line ParkingModel prints?",
+    "options": [
+      "T-1  ka01ab1234  at F1-C1 ACTIVE",
+      "T-1 KA01AB1234 at F1-C1 ACTIVE",
+      "T-1 KA01AB1234 at F1-C1 PAID",
+      "rejected: empty plate"
+    ],
+    "answer": 1,
+    "why": "The Vehicle compact constructor strips spaces and upper-cases the plate. A new Ticket starts ACTIVE."
+  },
+  "takeaway": "Fixed layout and per-visit records are different classes; keep them apart.",
+  "chat": {
+    "starters": [
+      "Should ParkingSpot know which Ticket is parked in it?",
+      "Why is Vehicle a record but Ticket a class?",
+      "How would I add an EV spot type with chargers?"
+    ]
+  }
+}

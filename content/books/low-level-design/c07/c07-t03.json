@@ -1,0 +1,356 @@
+{
+  "title": "Composite pattern",
+  "idea": "The Composite pattern lets you treat a single object and a tree of objects the same way, through one shared interface that groups implement by delegating to children.",
+  "analogy": {
+    "text": "A shipping pallet holds cartons, cartons hold boxes. Ask any of them its weight and it answers, adding up whatever is inside.",
+    "breaks": "A pallet cannot sit inside itself; code must forbid that cycle explicitly."
+  },
+  "points": [
+    "Component is the shared interface; a leaf answers alone, a composite asks its children.",
+    "Recursion replaces type checks: callers never ask whether an item is a group.",
+    "AWT uses it: `java.awt.Container` is a `Component` that holds other components.",
+    "Use it for genuine part-whole trees; a flat list needs no composite."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "lanes",
+    "title": "One price call walks the tree",
+    "scenario": {
+      "code": [
+        "public long pricePence() {",
+        "    long sum = 0;",
+        "    for (CatalogItem c : children)",
+        "        sum += c.pricePence();",
+        "    return sum * (100 - discountPct) / 100;",
+        "}"
+      ],
+      "lanes": [
+        {
+          "id": "stack",
+          "label": "Call stack",
+          "kind": "stack",
+          "hint": "one frame per pricePence()"
+        },
+        {
+          "id": "done",
+          "label": "Returned to parent",
+          "kind": "area",
+          "hint": "one number per child"
+        }
+      ],
+      "tokens": {
+        "kit": {
+          "label": "Office kit -10%",
+          "tone": "neutral"
+        },
+        "set": {
+          "label": "Desk set -5%",
+          "tone": "micro"
+        },
+        "desk": {
+          "label": "Desk (leaf)",
+          "tone": "sync"
+        },
+        "chair": {
+          "label": "Chair (leaf)",
+          "tone": "sync"
+        },
+        "mon": {
+          "label": "Monitor (leaf)",
+          "tone": "sync"
+        },
+        "rDesk": {
+          "label": "Desk price",
+          "tone": "io"
+        },
+        "rChair": {
+          "label": "Chair price",
+          "tone": "io"
+        },
+        "rSet": {
+          "label": "Desk set subtotal",
+          "tone": "io"
+        },
+        "rMon": {
+          "label": "Monitor price",
+          "tone": "io"
+        },
+        "rKit": {
+          "label": "kit total",
+          "tone": "io"
+        }
+      },
+      "steps": [
+        {
+          "caption": "The caller asks the kit for its price. The caller holds only a `CatalogItem` and does not know it is a bundle.",
+          "line": 0,
+          "at": {
+            "stack": [
+              "kit"
+            ],
+            "done": []
+          },
+          "active": "kit"
+        },
+        {
+          "caption": "The kit loops over its children. The first child is itself a bundle, so a new frame opens.",
+          "line": 3,
+          "at": {
+            "stack": [
+              "kit",
+              "set"
+            ],
+            "done": []
+          },
+          "active": "set"
+        },
+        {
+          "caption": "The desk set asks the Desk, a leaf. A leaf has no loop: it returns its own price.",
+          "line": 3,
+          "at": {
+            "stack": [
+              "kit",
+              "set",
+              "desk"
+            ],
+            "done": []
+          },
+          "active": "desk"
+        },
+        {
+          "caption": "The Desk frame pops, returning its price to the desk set. The Chair is called and returns the same way.",
+          "line": 3,
+          "at": {
+            "stack": [
+              "kit",
+              "set"
+            ],
+            "done": [
+              "rDesk",
+              "rChair"
+            ]
+          },
+          "active": "rChair"
+        },
+        {
+          "caption": "The desk set sums both children, applies its own 5% and returns one number.",
+          "line": 4,
+          "at": {
+            "stack": [
+              "kit"
+            ],
+            "done": [
+              "rSet"
+            ]
+          },
+          "active": "rSet"
+        },
+        {
+          "caption": "Back in the kit's loop, the Monitor leaf answers.",
+          "line": 3,
+          "at": {
+            "stack": [
+              "kit",
+              "mon"
+            ],
+            "done": [
+              "rSet"
+            ]
+          },
+          "active": "mon"
+        },
+        {
+          "caption": "The Monitor frame pops and its price returns to the kit.",
+          "line": 3,
+          "at": {
+            "stack": [
+              "kit"
+            ],
+            "done": [
+              "rSet",
+              "rMon"
+            ]
+          },
+          "active": "rMon"
+        },
+        {
+          "caption": "The kit sums its two children and applies 10%. Same code at every depth, no type checks.",
+          "line": 4,
+          "at": {
+            "stack": [],
+            "done": [
+              "rKit"
+            ]
+          },
+          "active": "rKit"
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "InstanceofTotals.java",
+      "lang": "java",
+      "title": "The problem: type checks",
+      "run": "captured",
+      "caption": "No shared interface: the pricing code must test types and hard-code how deep bundles nest.",
+      "walk": [
+        {
+          "lines": [
+            16,
+            17,
+            18
+          ],
+          "text": "`Product` and `Bundle` share no type, so a bundle stores a `List<Object>`."
+        },
+        {
+          "lines": [
+            24,
+            25,
+            26
+          ],
+          "text": "Every caller needs an `instanceof` ladder, and must change when a new item type appears."
+        },
+        {
+          "lines": [
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33
+          ],
+          "text": "Nested bundles get one hand-written level. Their discount is ignored, and deeper bundles vanish."
+        },
+        {
+          "lines": [
+            10,
+            11,
+            12
+          ],
+          "text": "The desk set is right, the kit overcharges, and the team pack loses both desk sets."
+        },
+        {
+          "lines": [
+            9
+          ],
+          "text": "Bundles of bundles are normal in catalogues. A fixed depth will always be too small."
+        }
+      ]
+    },
+    {
+      "file": "CompositeBundleDemo.java",
+      "lang": "java",
+      "title": "The fix: a composite",
+      "run": "captured",
+      "caption": "Products and bundles share `CatalogItem`; a bundle delegates to its children at any depth.",
+      "walk": [
+        {
+          "lines": [
+            21,
+            22,
+            23,
+            24,
+            25,
+            26
+          ],
+          "text": "The component interface. `contains` has a leaf-friendly default, so only the composite overrides it."
+        },
+        {
+          "lines": [
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36
+          ],
+          "text": "The leaf is an immutable record that validates its price and answers from its own data."
+        },
+        {
+          "lines": [
+            55,
+            56,
+            57,
+            58,
+            59
+          ],
+          "text": "The composite's price is its children's sum, discounted. Each child may be a leaf or another bundle."
+        },
+        {
+          "lines": [
+            48,
+            49,
+            50,
+            51,
+            52,
+            53
+          ],
+          "text": "`add` rejects null and any item that already contains this bundle, which would recurse forever."
+        },
+        {
+          "lines": [
+            60,
+            61,
+            62,
+            63,
+            64
+          ],
+          "text": "`contains` walks the subtree, using the same recursion as pricing."
+        },
+        {
+          "lines": [
+            65,
+            66,
+            67,
+            68,
+            69
+          ],
+          "text": "`print` shows the tree: each level indents its children and repeats the same call."
+        },
+        {
+          "lines": [
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17
+          ],
+          "text": "The same kit appears twice under the team pack, and a cycle attempt fails fast."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "A cycle (a bundle inside itself) makes `pricePence` overflow the stack; check `contains` in `add`.",
+    "`add` on the component makes leaves throw at runtime; prefer the composite for type safety.",
+    "Returning the live children list lets callers bypass validation; return `List.copyOf` instead."
+  ],
+  "quiz": {
+    "q": "Using the classes from the fix, what does this print?",
+    "code": "Bundle inner = new Bundle(\"B\", 50)\n    .add(new Product(\"P\", 400));\nBundle outer = new Bundle(\"A\", 50).add(inner);\nSystem.out.println(outer.pricePence());",
+    "lang": "java",
+    "options": [
+      "400",
+      "200",
+      "100",
+      "0"
+    ],
+    "answer": 2,
+    "why": "Each level applies its own discount to its children's total. `inner` returns 200, then `outer` halves that again."
+  },
+  "takeaway": "Leaves answer for themselves; composites ask their children and combine.",
+  "chat": {
+    "starters": [
+      "Should add and remove live on the component interface or only on the composite?",
+      "How do I stop a Composite tree from containing a cycle?",
+      "How is Composite different from Decorator, since both wrap components?"
+    ]
+  }
+}

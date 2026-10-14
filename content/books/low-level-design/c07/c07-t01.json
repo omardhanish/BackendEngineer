@@ -1,0 +1,242 @@
+{
+  "title": "Adapter pattern",
+  "idea": "The Adapter pattern lets your code call a class with the wrong interface by wrapping it in a class that implements the interface you expect.",
+  "analogy": {
+    "text": "A travel plug adapter: your charger keeps its plug, the wall keeps its socket, and a small piece in between makes them fit.",
+    "breaks": "A plug adapter passes power through; a code adapter converts data too."
+  },
+  "points": [
+    "The adapter implements your target interface and wraps the foreign class, the adaptee.",
+    "The adapter only translates names, units, codes, results and errors; it adds no features.",
+    "`InputStreamReader` adapts a byte `InputStream` into a character `Reader`; `Arrays.asList` adapts an array.",
+    "Skip it when you own both sides: change the interface instead of wrapping it."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "One quote through the adapter",
+    "actors": [
+      {
+        "id": "app",
+        "label": "Checkout"
+      },
+      {
+        "id": "ad",
+        "label": "FastShipAdapter"
+      },
+      {
+        "id": "sdk",
+        "label": "FastShipClient"
+      }
+    ],
+    "messages": [
+      {
+        "from": "app",
+        "to": "ad",
+        "label": "quotePence(Parcel GB, 2500 g)",
+        "note": "Checkout holds a `RateProvider`. It has never heard of FastShip."
+      },
+      {
+        "from": "ad",
+        "to": "sdk",
+        "label": "getRate(2.5, \"GBR\")",
+        "note": "The adapter maps `GB` to `GBR` and grams to kilograms. Only it ever calls the vendor SDK."
+      },
+      {
+        "from": "sdk",
+        "to": "ad",
+        "label": "\"GBP 6.00\"",
+        "dashed": true,
+        "note": "The vendor answers with a price as text, in its own format."
+      },
+      {
+        "from": "ad",
+        "to": "app",
+        "label": "600 (long pence)",
+        "dashed": true,
+        "note": "The adapter parses it with `BigDecimal` and returns the type the target promised."
+      },
+      {
+        "from": "app",
+        "to": "ad",
+        "label": "quotePence(Parcel US, 500 g)",
+        "note": "Next, a destination the vendor does not serve."
+      },
+      {
+        "from": "ad",
+        "to": "sdk",
+        "label": "getRate(0.5, \"USA\")",
+        "note": "US maps to USA and 500 g becomes 0.5 kg, exactly as before."
+      },
+      {
+        "from": "sdk",
+        "to": "ad",
+        "label": "throws UnsupportedDestinationException",
+        "dashed": true,
+        "note": "The vendor signals failure with a magic string, not an exception."
+      },
+      {
+        "from": "ad",
+        "to": "app",
+        "label": "throws UnsupportedDestination",
+        "dashed": true,
+        "note": "The adapter turns the vendor's error into our own exception type."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "VendorLeak.java",
+      "lang": "java",
+      "title": "The problem: vendor leaks",
+      "run": "captured",
+      "caption": "Two services call the vendor SDK directly; each repeats the translation, and each gets it wrong differently.",
+      "walk": [
+        {
+          "lines": [
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22
+          ],
+          "text": "The vendor SDK speaks kilograms, 3-letter country codes and text prices. You cannot change it."
+        },
+        {
+          "lines": [
+            28,
+            29,
+            30,
+            31,
+            32
+          ],
+          "text": "`Checkout` hand-translates codes, units and the price string. Any unknown country is silently priced as Ireland."
+        },
+        {
+          "lines": [
+            39,
+            40,
+            41,
+            42
+          ],
+          "text": "`Returns` copied the call but missed steps: grams go in as kilograms, and `IE` is never mapped."
+        },
+        {
+          "lines": [
+            6,
+            7,
+            8,
+            9
+          ],
+          "text": "The output: a US parcel quoted as Irish, a huge price, and a raw vendor error string."
+        },
+        {
+          "lines": [
+            3,
+            4,
+            5
+          ],
+          "text": "Swapping carriers now means editing every class that touches `FastShipClient`."
+        }
+      ]
+    },
+    {
+      "file": "ShippingAdapterDemo.java",
+      "lang": "java",
+      "title": "The fix: one adapter",
+      "run": "captured",
+      "caption": "All translation lives in `FastShipAdapter`; the rest of the code sees only `RateProvider`.",
+      "walk": [
+        {
+          "lines": [
+            26,
+            27
+          ],
+          "text": "The target interface speaks our domain: a `Parcel` in, a price in pence out."
+        },
+        {
+          "lines": [
+            20,
+            21,
+            22,
+            23,
+            24,
+            25
+          ],
+          "text": "The `Parcel` record validates once, so the adapter never sees a zero-gram parcel."
+        },
+        {
+          "lines": [
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50
+          ],
+          "text": "Object adapter: it implements the target and holds the adaptee by has-a composition, injected through the constructor."
+        },
+        {
+          "lines": [
+            52,
+            53,
+            54,
+            55
+          ],
+          "text": "Input translation: country codes via a fixed map, grams to kilograms. An unknown code fails loudly."
+        },
+        {
+          "lines": [
+            56,
+            57,
+            58
+          ],
+          "text": "Error translation: the vendor's magic string becomes our own unchecked exception."
+        },
+        {
+          "lines": [
+            59,
+            60,
+            61
+          ],
+          "text": "Output translation: `BigDecimal` parses the text exactly; `longValueExact` throws rather than silently truncate."
+        },
+        {
+          "lines": [
+            7
+          ],
+          "text": "The only client line that names FastShip. A new carrier needs one new adapter and this line."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Caching or retries inside the adapter mix jobs; use a decorator (same-interface wrapper, c07-t04) instead.",
+    "Letting vendor types such as error strings leak through the target interface defeats the adapter.",
+    "Class adapters (`extends` the adaptee) expose every adaptee method; prefer wrapping by composition."
+  ],
+  "quiz": {
+    "q": "Your code depends on `RateProvider`. A second carrier's SDK offers `price(Shipment)`, and you want every quote logged. Best design?",
+    "options": [
+      "An adapter for the SDK, wrapped in a logging decorator",
+      "Make the adapter also log, to keep one class",
+      "Subclass the new SDK and override `price` to log",
+      "Change `RateProvider` to accept a `Shipment`"
+    ],
+    "answer": 0,
+    "why": "The adapter only converts interfaces. Logging keeps the same interface and adds behaviour, which is a decorator's job. Changing the target bends your code to one vendor."
+  },
+  "takeaway": "An adapter changes the interface, never the behaviour.",
+  "chat": {
+    "starters": [
+      "What is the difference between an object adapter and a class adapter in Java?",
+      "How do I tell Adapter, Decorator and Proxy apart in an interview?",
+      "Should the adapter throw checked or unchecked exceptions when the vendor fails?"
+    ]
+  }
+}

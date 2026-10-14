@@ -1,0 +1,89 @@
+{
+  "title": "Game loop and win check",
+  "idea": "The game loop asks the current player's strategy for a move, applies it, and stops when the new move completes a line or fills the board.",
+  "points": [
+    "Each turn: ask the current `MoveStrategy`, apply the move, check, pass the turn.",
+    "Players are the Strategy pattern from c08, so new types never touch the loop.",
+    "A win can only appear on lines through the last move: O(n) work.",
+    "Counters per row, column and diagonal make the check O(1) and undo trivial."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "Last two turns of the demo",
+    "actors": [
+      { "id": "game", "label": "Game" },
+      { "id": "x", "label": "X strategy" },
+      { "id": "o", "label": "O strategy" },
+      { "id": "board", "label": "Board" },
+      { "id": "win", "label": "Win check" }
+    ],
+    "messages": [
+      { "from": "game", "to": "o", "label": "next(board copy)", "note": "The loop asks the current player's strategy. It gets a copy, so it cannot edit the real cells." },
+      { "from": "o", "to": "game", "label": "Move(0, 2)", "dashed": true, "note": "A human, a script or a bot all answer the same way: with a `Move`." },
+      { "from": "game", "to": "board", "label": "check, then place", "note": "The rules from the model page run here before anything changes." },
+      { "from": "game", "to": "win", "label": "wins(move)?", "note": "Only the row, column and diagonals through the new move can have changed." },
+      { "from": "win", "to": "game", "label": "no", "dashed": true, "note": "No win and free cells remain, so the turn passes to X." },
+      { "from": "game", "to": "x", "label": "next(board copy)", "note": "Same call, different strategy. The loop never knows which player is a bot." },
+      { "from": "x", "to": "game", "label": "Move(2, 2)", "dashed": true, "note": "The scripted player answers through the same interface as the bot." },
+      { "from": "game", "to": "win", "label": "wins(move)?", "note": "The same check runs after every move, for every player." },
+      { "from": "win", "to": "game", "label": "yes: X_WON", "dashed": true, "note": "X completes the main diagonal. The loop returns a `Status` value." }
+    ]
+  },
+  "code": [
+    {
+      "file": "GameLoopDemo.java",
+      "lang": "java",
+      "title": "Loop with strategies",
+      "run": "captured",
+      "caption": "A scripted player against a bot. The loop only knows the `MoveStrategy` interface.",
+      "walk": [
+        { "lines": [19], "text": "One contract for every kind of player: given a board, return a move." },
+        { "lines": [8, 9, 10], "text": "A scripted strategy stands in for a human. Tests use the same trick." },
+        { "lines": [21, 22, 23, 24, 25, 26, 27], "text": "The bot is a strategy too. A smarter bot is a new class, not a loop change." },
+        { "lines": [40, 41, 42, 43], "text": "Each turn hands over a deep copy, so a buggy strategy cannot edit the board." },
+        { "lines": [44, 45, 46], "text": "The move is placed. Real code runs the model page's rule checks first." },
+        { "lines": [47, 48], "text": "Two exits: a win on the new move, or a full board for a draw." },
+        { "lines": [51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61], "text": "Only the row, column and two diagonals through the move are scanned: O(n) per move." }
+      ]
+    },
+    {
+      "file": "CounterWinCheck.java",
+      "lang": "java",
+      "title": "O(1) check and undo",
+      "run": "captured",
+      "caption": "An N-by-N extension: running sums per line give an O(1) win check and a cheap undo.",
+      "walk": [
+        { "lines": [18, 19, 20], "text": "One counter per row and column, plus two diagonals. Memory is O(n), not O(n²)." },
+        { "lines": [6], "text": "X adds +1 and O adds -1, so a line reaches ±n only when one symbol fills it." },
+        { "lines": [38, 39, 40, 41, 42], "text": "Each move updates at most four counters, whatever the board size." },
+        { "lines": [30, 31, 32, 33], "text": "A win is any counter whose absolute value equals n." },
+        { "lines": [36], "text": "Undo subtracts the same move. A scanning design would have to recompute." },
+        { "lines": [11, 12, 13], "text": "X's anti-diagonal win is taken back, then O completes the main diagonal." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Passing the live array to a strategy lets a buggy bot overwrite cells; pass a copy.",
+    "Forgetting the draw exit makes the loop ask for a move on a full board.",
+    "Reusing counters for k-in-a-row with k < n reports wins for non-adjacent marks."
+  ],
+  "quiz": {
+    "q": "Extension: a 5x5 board where four in a row wins. Which win check is correct?",
+    "options": [
+      "Keep line counters, but win at absolute value 4",
+      "Count adjacent marks out from the last move, four directions",
+      "Check only the two diagonals through the last move",
+      "Test whether each player's last four moves line up"
+    ],
+    "answer": 1,
+    "why": "A row counter sums the whole row, so gaps still count. Walking out from the new move counts only adjacent marks, in each of the four line directions."
+  },
+  "takeaway": "Loop over strategies, check only the last move's lines, stop on win or draw.",
+  "chat": {
+    "starters": [
+      "How would I add a minimax bot as another MoveStrategy?",
+      "Why do the counters use +1 for X and -1 for O?",
+      "How would undo and redo work with the Command pattern here?"
+    ]
+  }
+}

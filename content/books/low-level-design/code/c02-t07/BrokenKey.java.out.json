@@ -1,0 +1,11 @@
+{
+  "stdout": "equals: true\ncontains copy: false\nset size: 2\nstock of copy: null",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java BrokenKey.java",
+  "tool": "Java 17.0.17",
+  "hash": "559103af91fc88b9",
+  "at": "2026-10-12T11:16:50.636Z"
+}

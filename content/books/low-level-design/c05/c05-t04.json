@@ -1,231 +1,161 @@
 {
-  "title": "The booking service core",
-  "idea": "The core modules are the entities, the repositories that store them, and `BookingService`, which runs each use case by combining them through constructor injection.",
+  "title": "Readable names and small functions",
+  "idea": "Readable code lets the next engineer see intent without running it: names state meaning and units, and each small function does one job at one level of detail.",
   "points": [
-    "Repositories hide storage and reach `BookingService` through its constructor.",
-    "`searchFree` keeps rooms that are big enough, then drops any room that clashes.",
-    "`book` asks the policy first and saves only when the slot is free.",
-    "`cancel` finds the booking and refuses anyone who is not its owner."
+    "Name by meaning and unit: `priceInCents` beats `r`, `rideLength` beats `t`.",
+    "Replace magic numbers with named constants and boolean flags with an `enum`.",
+    "Keep functions small: one job, one level of abstraction, few parameters.",
+    "Reject bad input early with a clear exception, never a sentinel like -1."
   ],
   "hero": {
-    "type": "anim",
-    "engine": "pipeline",
-    "title": "One booking through the core",
-    "scenario": {
-      "token": {
-        "label": "book R-101 10-11",
-        "tone": "req"
+    "type": "anatomy",
+    "title": "A signature that explains itself",
+    "parts": [
+      {
+        "text": "int ",
+        "label": "Return type",
+        "note": "A plain number, so the name must say what it measures.",
+        "tone": "a"
       },
-      "stages": [
-        {
-          "id": "caller",
-          "label": "Caller",
-          "sub": "employee E7",
-          "kind": "end"
-        },
-        {
-          "id": "svc",
-          "label": "BookingService",
-          "sub": "book()"
-        },
-        {
-          "id": "policy",
-          "label": "ConflictPolicy",
-          "sub": "conflicts()"
-        },
-        {
-          "id": "repo",
-          "label": "BookingRepository",
-          "sub": "save()",
-          "kind": "end"
-        }
-      ],
-      "steps": [
-        {
-          "caption": "Employee E7 asks for room `R-101` from 10 to 11.",
-          "at": "caller",
-          "slot": "top",
-          "state": {
-            "caller": "active"
-          }
-        },
-        {
-          "caption": "`BookingService` builds a candidate `Booking` and loads the room's bookings with `forRoom`.",
-          "at": "svc",
-          "slot": "top",
-          "state": {
-            "caller": "done",
-            "svc": "active"
-          }
-        },
-        {
-          "caption": "`ConflictPolicy` finds no overlap, so the candidate may go ahead.",
-          "at": "policy",
-          "slot": "top",
-          "state": {
-            "caller": "done",
-            "svc": "done",
-            "policy": "active"
-          }
-        },
-        {
-          "caption": "`BookingRepository` saves it. Only now does the id counter move on.",
-          "at": "repo",
-          "slot": "top",
-          "state": {
-            "caller": "done",
-            "svc": "done",
-            "policy": "done",
-            "repo": "active"
-          }
-        },
-        {
-          "caption": "The saved `Booking` returns to the caller.",
-          "at": "caller",
-          "slot": "bottom",
-          "state": {
-            "caller": "active",
-            "svc": "done",
-            "policy": "done",
-            "repo": "done"
-          },
-          "token": {
-            "label": "BK1",
-            "tone": "ok"
-          }
-        },
-        {
-          "caption": "A second request asks for the same room from 10:30 to 12:00.",
-          "at": "svc",
-          "slot": "top",
-          "state": {
-            "caller": "done",
-            "svc": "active",
-            "policy": "done",
-            "repo": "done"
-          },
-          "token": {
-            "label": "book R-101 10.5-12",
-            "tone": "req"
-          }
-        },
-        {
-          "caption": "This time `ConflictPolicy` finds an overlap with the first booking.",
-          "at": "policy",
-          "slot": "top",
-          "state": {
-            "caller": "done",
-            "svc": "done",
-            "policy": "error",
-            "repo": "done"
-          },
-          "token": {
-            "label": "book R-101 10.5-12",
-            "tone": "req"
-          }
-        },
-        {
-          "caption": "The service throws before saving, so the repository never sees the clash.",
-          "at": "caller",
-          "slot": "bottom",
-          "state": {
-            "caller": "active",
-            "svc": "done",
-            "policy": "error",
-            "repo": "blocked"
-          },
-          "token": {
-            "label": "refused",
-            "tone": "err"
-          }
-        }
-      ]
-    }
+      {
+        "text": "priceInCents",
+        "label": "Name with unit",
+        "note": "Names the result, not the action. The suffix stops cents and whole units being mixed.",
+        "tone": "b"
+      },
+      {
+        "text": "(Duration rideLength",
+        "label": "Typed quantity",
+        "note": "`java.time.Duration` carries its unit. Callers write `Duration.ofHours(2)`, never a bare int.",
+        "tone": "c"
+      },
+      {
+        "text": ", DayType day)",
+        "label": "Enum, not flag",
+        "note": "`DayType.WEEKEND` reads clearly at the call site; a bare `true` does not.",
+        "tone": "d"
+      }
+    ]
   },
   "code": [
     {
-      "file": "BookingCoreDemo.java",
+      "file": "RentalMess.java",
       "lang": "java",
-      "title": "Service and repositories",
+      "title": "The problem",
       "run": "captured",
-      "caption": "The core in one file: search, book, cancel, repository interfaces with in-memory versions, and an injected policy.",
+      "caption": "Short names, a boolean flag and magic numbers hide a unit bug in plain sight.",
       "walk": [
         {
           "lines": [
-            29,
-            35
+            10,
+            11
           ],
-          "text": "Dependencies arrive through the constructor as interfaces and stay `private final`."
+          "text": "`calc`, `t` and `f` hide the meaning. The comment asks what the names should answer."
         },
         {
           "lines": [
-            36,
-            40
+            3,
+            4
           ],
-          "text": "Search keeps rooms big enough, then drops rooms that `clash`, the helper `book` also uses."
+          "text": "The caller passes 2 meaning hours; `calc` reads minutes. Each side looks right alone."
         },
         {
           "lines": [
-            41,
-            47
+            12,
+            21
           ],
-          "text": "Book checks first, then takes the id and saves; a refusal changes nothing."
+          "text": "Nested ifs mix three jobs: validation, the time price and the weekend surcharge."
         },
         {
           "lines": [
-            48,
-            54
+            14,
+            17
           ],
-          "text": "Cancel finds the booking, refuses anyone but its owner, then removes it."
+          "text": "60, 200 and 150 are business rules with no names. Changing one means hunting for copies."
         },
         {
           "lines": [
-            65,
-            82
-          ],
-          "text": "Repositories are interfaces; `main` picks in-memory ones, so a database version needs no service change."
-        },
-        {
-          "lines": [
-            5,
-            10
-          ],
-          "text": "`main` wires the parts by hand; the overlap rule is a lambda."
-        },
-        {
-          "lines": [
-            13,
+            22,
             24
           ],
-          "text": "Refusals are an `IllegalStateException` for now; the next page gives errors their own types."
+          "text": "Bad input returns -1, a price-shaped number that a careless caller could charge."
+        }
+      ]
+    },
+    {
+      "file": "RentalPriceDemo.java",
+      "lang": "java",
+      "title": "The fix",
+      "run": "captured",
+      "caption": "Same rules, renamed and split: a `Duration` input, a `DayType` enum, named constants.",
+      "walk": [
+        {
+          "lines": [
+            7,
+            11
+          ],
+          "text": "`Duration.ofHours(2)` puts the unit at the call site, and `DayType` names the option."
+        },
+        {
+          "lines": [
+            23,
+            26
+          ],
+          "text": "Each business rule becomes a constant whose name states the rule and its unit."
+        },
+        {
+          "lines": [
+            28,
+            33
+          ],
+          "text": "`priceInCents` reads as a summary: check inputs, add base and extra time, apply surcharge."
+        },
+        {
+          "lines": [
+            35,
+            41
+          ],
+          "text": "A guard clause rejects a zero or negative ride with a message, never a -1."
+        },
+        {
+          "lines": [
+            43,
+            52
+          ],
+          "text": "Each helper does one step at one level of detail, small enough to check at a glance."
+        },
+        {
+          "lines": [
+            12,
+            16
+          ],
+          "text": "Bad input fails loudly here, where the caller made the mistake."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Do not let `BookingService` create its repositories; inject them so tests can swap them.",
-    "Never save before checking conflicts; a refused booking must leave storage unchanged.",
-    "Do not advance the id counter before the check passes, or refusals waste ids."
+    "Vague names like `calc`, `data` or `tmp` force readers into the body; name the result.",
+    "Comments that restate code go stale; rename the variable or extract a named method instead.",
+    "Dozens of one-line methods that hop around hurt too; extract only a coherent step."
   ],
   "quiz": {
-    "q": "After `BK1` (R-101, 10 to 11) is saved, what does this print?",
-    "code": "// R-101 seats 6, R-201 seats 12, R-301 seats 4\nSystem.out.println(\"free: \" + svc.searchFree(5, 11, 12));",
-    "lang": "java",
+    "q": "A teammate writes `send(order, true, false)`. What is the best readability fix?",
     "options": [
-      "free: [R-201]",
-      "free: [R-101, R-201]",
-      "free: [R-101, R-201, R-301]",
-      "free: []"
+      "Replace the booleans with enums or separately named methods",
+      "Add a comment above every call explaining the flags",
+      "Rename the parameters to flag1 and flag2",
+      "Move the flags into static fields set before the call"
     ],
-    "answer": 1,
-    "why": "`R-301` seats only 4. `BK1` ends at 11, and `11 < 11` is false, so a back-to-back slot does not clash."
+    "answer": 0,
+    "why": "Call sites then say what they mean, like `Delivery.EXPRESS`. Comments drift, renamed parameters are invisible at the call, and static flags add hidden shared state."
   },
-  "takeaway": "Inject the parts, check before you save, keep storage behind a repository.",
+  "takeaway": "Names carry meaning and units; each function does one job.",
   "chat": {
     "starters": [
-      "Should cancel delete the booking or mark it as cancelled?",
-      "Why does searchFree return room ids instead of Room objects here?",
-      "What changes when BookingRepository is backed by a real database?"
+      "How long should a method be before I split it?",
+      "When is a short name like i or e acceptable?",
+      "How do I talk about readability in an LLD interview without sounding vague?"
     ]
   }
 }

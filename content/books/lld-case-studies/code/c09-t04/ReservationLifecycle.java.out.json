@@ -1,0 +1,11 @@
+{
+  "stdout": "RS-1 HELD -> CONFIRMED\nRS-1 refused CONFIRMED -> CHECKED_IN (before check-in date)\nRS-1 CONFIRMED -> CHECKED_IN\nRS-1 CHECKED_IN -> CHECKED_OUT\nRS-2 HELD -> CONFIRMED\nRS-2 CONFIRMED -> NO_SHOW\nRS-2 refused NO_SHOW -> CHECKED_IN (not allowed)\nRS-3 HELD -> EXPIRED\nRS-3 refused EXPIRED -> CONFIRMED (not allowed)",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ReservationLifecycle.java",
+  "tool": "Java 17.0.17",
+  "hash": "b99b722038f59056",
+  "at": "2026-10-14T08:45:08.036Z"
+}

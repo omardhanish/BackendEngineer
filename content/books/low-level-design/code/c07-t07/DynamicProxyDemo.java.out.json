@@ -1,0 +1,11 @@
+{
+  "stdout": "audit: price\n300\naudit: basket\n700\naudit: price\ncaught blank item\nis proxy: true",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java DynamicProxyDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "b9517646c3f76b06",
+  "at": "2026-10-12T11:23:43.059Z"
+}

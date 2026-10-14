@@ -1,0 +1,192 @@
+{
+  "title": "Retrying fetch client in Node.js",
+  "idea": "In a Node.js service the API client wraps `fetch` with a per-attempt timeout and jittered retries, and sends an Idempotency-Key so a retried POST never charges twice.",
+  "points": [
+    "`AbortSignal.timeout` cancels an attempt that takes too long.",
+    "Retry 502, 503, 504 and timeouts, and only for safe requests.",
+    "The server stores each Idempotency-Key's result and replays it on a repeat.",
+    "Interview follow-up: retries at every layer multiply; retry at one layer only."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "A retried charge with a key",
+    "actors": [
+      {
+        "id": "caller",
+        "label": "Checkout code"
+      },
+      {
+        "id": "client",
+        "label": "ApiClient"
+      },
+      {
+        "id": "server",
+        "label": "Payments API"
+      }
+    ],
+    "messages": [
+      {
+        "from": "caller",
+        "to": "client",
+        "label": "charge order A",
+        "note": "The caller passes a key built from the order, so every retry carries the same one."
+      },
+      {
+        "from": "client",
+        "to": "server",
+        "label": "POST /charges, key pay-A",
+        "note": "Attempt 1. The server creates the charge and stores it under the key."
+      },
+      {
+        "from": "server",
+        "to": "client",
+        "label": "reply lost (demo sends 503)",
+        "dashed": true,
+        "note": "The charge is stored, but the reply never arrives as a success. The demo fakes this with a 503; on a real network it is usually a timeout."
+      },
+      {
+        "from": "client",
+        "to": "client",
+        "label": "wait with jitter",
+        "note": "The request has a key, so it is safe to repeat. The client backs off first."
+      },
+      {
+        "from": "client",
+        "to": "server",
+        "label": "POST /charges, key pay-A",
+        "note": "Attempt 2 sends the same key and the same body."
+      },
+      {
+        "from": "server",
+        "to": "client",
+        "label": "200 stored charge (replay)",
+        "dashed": true,
+        "note": "The server finds the key and replays the stored charge with 200. Nothing new is created."
+      },
+      {
+        "from": "client",
+        "to": "caller",
+        "label": "charge CH-1",
+        "dashed": true,
+        "note": "The caller sees one success, and the customer is charged once."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "retry-client.mjs",
+      "lang": "js",
+      "title": "fetch client, Express server",
+      "run": "captured",
+      "caption": "A local Express service fails on purpose. The client recovers a GET, gives up on a slow one, and retries only the keyed POST.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7,
+            8,
+            9,
+            10,
+            12,
+            13,
+            14,
+            15
+          ],
+          "text": "/flaky fails twice then works; /slow answers after 500 ms, too late for the client."
+        },
+        {
+          "lines": [
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28
+          ],
+          "text": "Each order's first reply is lost after the charge is made. A known key replays the stored charge."
+        },
+        {
+          "lines": [
+            32,
+            33,
+            34
+          ],
+          "text": "A seeded generator makes the jitter identical on every run."
+        },
+        {
+          "lines": [
+            41,
+            42,
+            43
+          ],
+          "text": "Safe means an idempotent method, or a request that carries a key."
+        },
+        {
+          "lines": [
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55
+          ],
+          "text": "Each attempt gets its own 100 ms timeout; a timeout becomes a result, not a crash."
+        },
+        {
+          "lines": [
+            57,
+            58,
+            59,
+            60,
+            61,
+            62
+          ],
+          "text": "Stop on success, unsafe requests or the last attempt; otherwise back off with jitter."
+        },
+        {
+          "lines": [
+            74,
+            75,
+            76,
+            77,
+            78,
+            79,
+            80
+          ],
+          "text": "Four calls, then count how many charges the server really made."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Never retry a POST without a key; order B's charge exists, but the caller saw 503.",
+    "Interview follow-up: share breaker state per instance or in a store, and say which.",
+    "Interview follow-up: cap retries with a budget, such as a share of total traffic."
+  ],
+  "quiz": {
+    "q": "What does the last line of retry-client.mjs print?",
+    "options": [
+      "charges created on the server: 1",
+      "charges created on the server: 2",
+      "charges created on the server: 3",
+      "charges created on the server: 4"
+    ],
+    "answer": 1,
+    "why": "Order A is created once; its retry replays the stored charge by key. Order B is created once and never retried."
+  },
+  "takeaway": "Time out every attempt, retry with jitter, and key every retried write.",
+  "chat": {
+    "starters": [
+      "How long should the server keep Idempotency-Keys?",
+      "How would I add a total deadline across all attempts in Node?",
+      "Should a gateway or each service own the retries?"
+    ]
+  }
+}

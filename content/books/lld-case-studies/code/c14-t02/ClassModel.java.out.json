@@ -1,0 +1,11 @@
+{
+  "stdout": "N-1 PENDING to +15550101\nbody: Hi Ana, your code is 4821\npush address: none\nN-1 SENT via sms-a\nrejected: missing code",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ClassModel.java",
+  "tool": "Java 17.0.17",
+  "hash": "c1b4f414622b6308",
+  "at": "2026-10-14T08:33:06.154Z"
+}

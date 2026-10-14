@@ -1,0 +1,11 @@
+{
+  "stdout": "pin 0000: false\npin 1234: true\nwithdraw 260000: TX-1 notes {200000=1, 50000=1, 10000=1}\nwithdraw 250000: refused: insufficient funds\nwithdraw 900000: refused: ATM cannot make this amount\nbalance 40000, notes left {200000=1, 50000=3, 10000=4}",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java CoreAtm.java",
+  "tool": "Java 17.0.17",
+  "hash": "dba1e329edecefcf",
+  "at": "2026-10-14T08:33:08.536Z"
+}

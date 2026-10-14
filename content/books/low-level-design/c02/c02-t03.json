@@ -1,129 +1,197 @@
 {
-  "title": "Prototype and Object Pool",
-  "idea": "Prototype creates a new object by copying a ready-made one. Object Pool keeps a fixed set of costly objects and lends them out instead of rebuilding them.",
+  "title": "Safe inheritance in Java",
+  "idea": "Inheritance done right means a subclass truly is-a kind of its parent, and the parent is designed for extension or marked `final`.",
   "points": [
-    "A prototype exposes a `copy()` method or copy constructor that returns a new twin.",
-    "A deep copy duplicates mutable fields; a shallow copy shares them with the original.",
-    "A pool hands out an idle object, or creates one while under its limit.",
-    "Callers must return borrowed objects with `release`, or the pool runs dry."
+    "Use `extends` only for a real is-a that keeps every parent promise.",
+    "A subclass depends on parent internals, such as which methods call which.",
+    "Design for extension: `final` public methods plus documented `protected` hooks.",
+    "Otherwise mark the class `final` and offer composition instead."
   ],
   "hero": {
-    "type": "anim",
-    "engine": "lanes",
-    "title": "Borrow, refuse, return, reuse",
-    "scenario": {
-      "code": [
-        "ConnectionPool pool = new ConnectionPool(2);",
-        "Connection a = pool.acquire().orElseThrow();",
-        "Connection b = pool.acquire().orElseThrow();",
-        "pool.acquire().isPresent();   // third",
-        "pool.release(a);",
-        "Connection c = pool.acquire().orElseThrow();"
-      ],
-      "lanes": [
-        { "id": "idle", "label": "Idle in pool", "kind": "stack", "hint": "ready to lend" },
-        { "id": "used", "label": "Borrowed", "kind": "area", "hint": "held by callers" },
-        { "id": "none", "label": "Refused", "kind": "area", "hint": "Optional.empty()" }
-      ],
-      "tokens": {
-        "c1": { "label": "conn-1", "tone": "io" },
-        "c2": { "label": "conn-2", "tone": "io" },
-        "r3": { "label": "3rd acquire", "tone": "timer" }
+    "type": "seq",
+    "title": "How a self-call double counts",
+    "actors": [
+      {
+        "id": "main",
+        "label": "main"
       },
-      "steps": [
-        {
-          "caption": "The pool starts empty with a limit of two. Nothing is created until someone asks.",
-          "line": 0,
-          "at": { "idle": [], "used": [], "none": [] }
-        },
-        {
-          "caption": "First `acquire`: nothing is idle, so the pool creates `conn-1` and lends it.",
-          "line": 1,
-          "at": { "idle": [], "used": ["c1"], "none": [] },
-          "active": "c1"
-        },
-        {
-          "caption": "Second `acquire` creates `conn-2`. The pool has now reached its limit.",
-          "line": 2,
-          "at": { "idle": [], "used": ["c1", "c2"], "none": [] },
-          "active": "c2"
-        },
-        {
-          "caption": "Third `acquire`: nothing idle and no room to create, so it gets an empty `Optional`.",
-          "line": 3,
-          "at": { "idle": [], "used": ["c1", "c2"], "none": ["r3"] },
-          "active": "r3"
-        },
-        {
-          "caption": "`release(a)` puts `conn-1` back on the idle stack. It is not destroyed.",
-          "line": 4,
-          "at": { "idle": ["c1"], "used": ["c2"], "none": [] },
-          "active": "c1"
-        },
-        {
-          "caption": "The next `acquire` pops `conn-1` again. Reuse, not a third creation.",
-          "line": 5,
-          "at": { "idle": [], "used": ["c1", "c2"], "none": [] },
-          "active": "c1"
-        }
-      ]
-    }
+      {
+        "id": "sub",
+        "label": "AuditedInbox"
+      },
+      {
+        "id": "base",
+        "label": "Inbox (super)"
+      }
+    ],
+    "messages": [
+      {
+        "from": "main",
+        "to": "sub",
+        "label": "receiveAll(3 messages)",
+        "note": "The override counts the whole batch first, then delegates to the parent."
+      },
+      {
+        "from": "sub",
+        "to": "base",
+        "label": "super.receiveAll(batch)",
+        "note": "The parent loops and calls `receive` on `this` for each message."
+      },
+      {
+        "from": "base",
+        "to": "sub",
+        "label": "this.receive(\"hi\")",
+        "note": "`this` is an `AuditedInbox`, so the subclass override runs and counts again."
+      },
+      {
+        "from": "sub",
+        "to": "base",
+        "label": "super.receive(\"hi\")",
+        "note": "Only now is the message stored. It was counted twice on the way."
+      },
+      {
+        "from": "base",
+        "to": "sub",
+        "label": "this.receive(...) x2 more",
+        "note": "The same detour repeats for each remaining message in the batch."
+      },
+      {
+        "from": "sub",
+        "to": "main",
+        "label": "audited() too high",
+        "dashed": true,
+        "note": "The subclass broke because of a parent detail nobody documented: the self-call."
+      }
+    ]
   },
   "code": [
     {
-      "file": "PrototypeDemo.java",
+      "file": "CountingInbox.java",
       "lang": "java",
-      "title": "Prototype",
+      "title": "The problem",
       "run": "captured",
-      "caption": "Copy a template invoice, then edit the copy. A shallow copy leaks edits into the template.",
+      "caption": "A subclass overrides two methods and silently double counts because the parent calls itself.",
       "walk": [
-        { "lines": [23, 26], "text": "A `private` constructor stores the list it is given, as is." },
-        { "lines": [28, 30], "text": "The factory method builds the original with its own mutable list." },
-        { "lines": [32, 32], "text": "`copy` makes a new list: a deep copy, safe to edit." },
-        { "lines": [34, 35], "text": "`shallowCopy` reuses the same list: the classic Prototype bug." },
-        { "lines": [8, 11], "text": "Editing the deep copy leaves the template alone." },
-        { "lines": [13, 15], "text": "Editing the shallow copy changes the template too." }
+        {
+          "lines": [
+            13,
+            14
+          ],
+          "text": "`Inbox` is neither `final` nor documented for extension. Anyone may subclass it."
+        },
+        {
+          "lines": [
+            19,
+            22
+          ],
+          "text": "`receiveAll` loops over `receive`. This self-call is an invisible detail."
+        },
+        {
+          "lines": [
+            31,
+            34
+          ],
+          "text": "The subclass counts each single message, a reasonable override on its own."
+        },
+        {
+          "lines": [
+            36,
+            39
+          ],
+          "text": "It also counts batches, unaware that the parent re-enters `receive`."
+        },
+        {
+          "lines": [
+            6,
+            9
+          ],
+          "text": "Compare stored and audited: the counts disagree, with no error raised."
+        },
+        {
+          "lines": [
+            20,
+            21
+          ],
+          "text": "If the parent later stops self-calling, the subclass breaks the other way."
+        }
       ]
     },
     {
-      "file": "ObjectPoolDemo.java",
+      "file": "DesignedInbox.java",
       "lang": "java",
-      "title": "Object Pool",
+      "title": "The fix",
       "run": "captured",
-      "caption": "A two-slot connection pool. The fake `Connection` stands in for something costly to open. It is a single-threaded sketch; a pool shared by threads needs a lock or a concurrent queue.",
+      "caption": "The parent fixes its flow with `final` methods and exposes one documented hook.",
       "walk": [
-        { "lines": [27, 29], "text": "The pool tracks idle objects, its limit and how many it has made." },
-        { "lines": [33, 37], "text": "Lend an idle one first; create only under the limit; else refuse." },
-        { "lines": [39, 39], "text": "`release` returns the object to the idle stack for the next caller." },
-        { "lines": [7, 11], "text": "Two borrows succeed; the third is refused while both are out." },
-        { "lines": [13, 16], "text": "After a return, the next borrow gets the same object back." }
+        {
+          "lines": [
+            16,
+            17
+          ],
+          "text": "The parent is abstract and keeps its list private. Subclasses cannot touch it."
+        },
+        {
+          "lines": [
+            19,
+            23
+          ],
+          "text": "`receive` is `final`: it validates, stores, then calls the hook exactly once."
+        },
+        {
+          "lines": [
+            25,
+            27
+          ],
+          "text": "`receiveAll` is `final` too, so its self-call is now a safe, fixed fact."
+        },
+        {
+          "lines": [
+            31,
+            32
+          ],
+          "text": "The hook is the only extension point, and its contract is written down."
+        },
+        {
+          "lines": [
+            35,
+            42
+          ],
+          "text": "The subclass overrides only the hook, and is itself `final`."
+        },
+        {
+          "lines": [
+            7,
+            11
+          ],
+          "text": "Batch and single calls now agree: each stored message is audited once."
+        }
       ]
     }
   ],
   "pitfalls": [
-    "Deep-copy every mutable field in a prototype; copying references shares state silently.",
-    "Prefer a copy constructor or `copy()` over `Cloneable`, whose `clone()` is shallow by default.",
-    "Release pooled objects in `finally`, and reset their state before lending them again."
+    "Extending a class only to reuse code; if it is not is-a, compose instead.",
+    "Calling an overridable method from a constructor; the subclass sees its fields still unset.",
+    "Leaving a public class non-final without documenting self-calls; future parent edits break subclasses."
   ],
   "quiz": {
-    "q": "What is the last line `ObjectPoolDemo` prints?",
+    "q": "`Base` calls an overridable method from its constructor. What prints?",
+    "code": "class Base {\n    Base() { System.out.println(describe()); }\n    String describe() { return \"base\"; }\n}\nclass Child extends Base {\n    private final String name;\n    Child() { name = \"child\"; }\n    @Override String describe() { return \"I am \" + name; }\n}\n// in main: new Child();",
+    "lang": "java",
     "options": [
-      "reused a: false, created: 3",
-      "reused a: true, created: 3",
-      "reused a: true, created: 2",
-      "reused a: false, created: 2"
+      "I am child",
+      "base",
+      "I am null",
+      "NullPointerException"
     ],
     "answer": 2,
-    "why": "`release(a)` put `a` on the idle stack, and `acquire` pops idle objects before creating new ones. Only two were ever created.",
-    "code": "pool.release(a);\nConnection c = pool.acquire().orElseThrow();\nSystem.out.println(\"reused a: \" + (c == a)\n    + \", created: \" + pool.created());",
-    "lang": "java"
+    "why": "The `Base` constructor runs before the `Child` constructor body. The override runs on a half-built object, so `name` is still `null`."
   },
-  "takeaway": "Prototype copies a ready object; Object Pool lends costly objects for reuse.",
+  "takeaway": "Extend only for true is-a, and only classes designed for it.",
   "chat": {
     "starters": [
-      "Why is Cloneable considered broken in Java?",
-      "Should I write my own pool or use a library like HikariCP?",
-      "How would I make this pool safe for many threads?"
+      "How do I tell a real is-a from code reuse in an interview?",
+      "Should all my classes be final by default?",
+      "Why is a protected field riskier than a protected method?"
     ]
   }
 }

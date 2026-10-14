@@ -1,0 +1,11 @@
+{
+  "stdout": "race winners: 1 | loser got: SLOT_TAKEN (23505)\n10:00 winner pays, rows confirmed: 1\n10:00 BK-C holds 07:00: ok\n10:05 BK-D holds 07:00: SLOT_TAKEN (23505)\n10:11 BK-D holds 07:00: ok\n10:12 BK-C confirms, rows: 0\n[{\"status\":\"CONFIRMED\",\"n\":1},{\"status\":\"EXPIRED\",\"n\":1},{\"status\":\"PENDING\",\"n\":1}]\nlive court hours: 3",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node reserve.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "ddba4f6244d01657",
+  "at": "2026-10-14T08:38:42.646Z"
+}

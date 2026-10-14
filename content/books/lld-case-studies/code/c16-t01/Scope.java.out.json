@@ -1,0 +1,11 @@
+{
+  "stdout": "100 requests per 60s per API_KEY\n20 requests per 1s per USER_ID\n300 requests per 60s per IP_ADDRESS\nIN  Caller: CHECK_REQUEST\nIN  Caller: REPORT_REMAINING_AND_RETRY_AFTER\nIN  Operator: CONFIGURE_RULE_PER_KEY_TYPE\nIN  Clock: REFILL_OR_ROLL_WINDOW\nOUT Operator: SHARE_LIMIT_ACROSS_INSTANCES\nOUT Operator: MONTHLY_BILLING_QUOTA\nOUT Network: BLOCK_NETWORK_FLOODS",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java Scope.java",
+  "tool": "Java 17.0.17",
+  "hash": "4f34b259e53facee",
+  "at": "2026-10-14T10:22:21.015Z"
+}

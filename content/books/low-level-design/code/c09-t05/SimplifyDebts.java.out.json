@@ -1,0 +1,11 @@
+{
+  "stdout": "net: {Asha=7000, Ben=0, Chen=-6000, Dev=-1000}\nTransfer[from=Chen, to=Asha, cents=6000]\nTransfer[from=Dev, to=Asha, cents=1000]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java SimplifyDebts.java",
+  "tool": "Java 17.0.17",
+  "hash": "497e85e723746b00",
+  "at": "2026-10-12T11:33:30.358Z"
+}

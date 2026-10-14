@@ -1,0 +1,11 @@
+{
+  "stdout": "receipt for Ada: 96.00\nreceipt for Lin: 120.00\nrejected: bad term: -3",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java RenewalDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "2498a1bf158077b3",
+  "at": "2026-10-12T11:45:16.888Z"
+}

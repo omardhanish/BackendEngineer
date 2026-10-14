@@ -1,0 +1,73 @@
+{
+  "title": "Rate limiter requirements",
+  "idea": "Scoping a rate limiter means deciding who is counted, how many requests each key gets per time window, what a rejected caller hears, and what v1 leaves out.",
+  "points": [
+    "A rule names a key type, a limit, and a time window.",
+    "Every call returns a decision: allowed, or rejected with a retry-after hint.",
+    "Each key has its own budget, so one noisy caller cannot starve others.",
+    "Assume many keys and a fast check; the limiter sits on every request."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Actors and use cases in v1",
+    "nodes": [
+      { "id": "caller", "label": "Caller", "sub": "client with an API key" },
+      { "id": "check", "label": "Check request", "sub": "allow or reject" },
+      { "id": "hint", "label": "Report remaining", "sub": "and retry-after" },
+      { "id": "op", "label": "Operator", "sub": "owns the rules" },
+      { "id": "rule", "label": "Configure rule", "sub": "limit per window" },
+      { "id": "clock", "label": "Clock", "sub": "time moves on" },
+      { "id": "refill", "label": "Refill or roll", "sub": "budget comes back" },
+      { "id": "out", "label": "Out of scope", "sub": "shared limit, billing, floods" }
+    ],
+    "edges": [
+      { "from": "caller", "to": "check", "caption": "Every incoming request asks the limiter one question: may this key go ahead now?" },
+      { "from": "check", "to": "hint", "caption": "The answer carries how many calls remain, or how long to wait before trying again." },
+      { "from": "op", "to": "rule", "caption": "An operator sets the rules, for example 100 requests per 60 seconds per API key." },
+      { "from": "rule", "to": "check", "label": "used by", "caption": "The check reads the rule that matches the caller's key type." },
+      { "from": "clock", "to": "refill", "caption": "Time is an actor too: as it passes, spent budget returns to each key." },
+      { "from": "refill", "to": "check", "label": "feeds", "dashed": true, "caption": "The check uses the refilled budget, so a rejected key can succeed later." },
+      { "from": "op", "to": "out", "dashed": true, "caption": "A limit shared across servers, billing quotas and network floods wait for later. Say so out loud." }
+    ]
+  },
+  "code": [
+    {
+      "file": "Scope.java",
+      "lang": "java",
+      "title": "Rules and scope as code",
+      "run": "captured",
+      "caption": "The rules are data with an invariant, and the v1 scope is an enum you can read aloud.",
+      "walk": [
+        { "lines": [5, 6, 7, 8], "text": "Three `LimitRule`s: each picks a key type, a limit and a window in seconds." },
+        { "lines": [12, 13, 14, 15], "text": "List every use case with its actor and an IN or OUT tag." },
+        { "lines": [21, 22, 23, 24, 25, 26], "text": "A rule with a zero limit or window can never be built." },
+        { "lines": [33, 34, 35, 36], "text": "Four use cases form v1: check, report, configure, refill." },
+        { "lines": [37, 38, 39], "text": "Three are named and cut, so the boundary is visible in the design." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Ask which key is counted before choosing an algorithm; it changes everything.",
+    "Agree what a rejection returns: status, remaining count, and when to retry.",
+    "Say whether one server or a fleet shares the limit; v1 here is one process."
+  ],
+  "quiz": {
+    "q": "An interviewer says only \"design a rate limiter\". What do you settle first?",
+    "options": [
+      "Which algorithm is the fastest",
+      "How to store counters in a database",
+      "Which HTTP framework will host it",
+      "The key, the rate, and what a rejection returns"
+    ],
+    "answer": 3,
+    "why": "The key, the rate and the rejection contract define the interface. Algorithm, storage and framework are choices made to serve them."
+  },
+  "takeaway": "Fix the key, the rate, and the rejection contract before any algorithm.",
+  "chat": {
+    "starters": [
+      "Should I limit by API key, user id, or IP address?",
+      "What should happen when the limiter itself fails?",
+      "How do burst limits differ from average rate limits?"
+    ]
+  }
+}

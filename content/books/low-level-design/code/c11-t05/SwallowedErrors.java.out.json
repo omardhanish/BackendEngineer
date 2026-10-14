@@ -1,0 +1,11 @@
+{
+  "stdout": "-> 201 booked\nERROR service: booking failed\nERROR endpoint: booking failed in R1\n-> 500 something went wrong\nERROR service: booking failed\nERROR endpoint: booking failed in R1\n-> 500 something went wrong",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java SwallowedErrors.java",
+  "tool": "Java 17.0.17",
+  "hash": "96c7a4d1b1eb3125",
+  "at": "2026-10-12T11:28:44.674Z"
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "code looks valid: true\nsetter forgotten: Cannot invoke \"java.time.Clock.instant()\" because \"this.clock\" is null\nlater test expiry: 2020-01-02T00:00:00Z",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java HiddenDependencies.java",
+  "tool": "Java 17.0.17",
+  "hash": "dae994cd56100fee",
+  "at": "2026-10-12T11:43:54.706Z"
+}

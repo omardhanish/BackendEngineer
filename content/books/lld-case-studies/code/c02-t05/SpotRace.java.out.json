@@ -1,0 +1,11 @@
+{
+  "stdout": "check-then-set, 1 spot: [F2-C1, F2-C1]\ncompareAndSet, 1 spot:  [F2-C1]\ncompareAndSet, 2 spots: [F2-C1, F2-C2]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java SpotRace.java",
+  "tool": "Java 17.0.17",
+  "hash": "f02051aa73077450",
+  "at": "2026-10-14T08:36:41.588Z"
+}

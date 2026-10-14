@@ -1,0 +1,187 @@
+{
+  "title": "Pluggable search, rules and visitors",
+  "idea": "An extensible file system takes new filters, tree operations and write rules as new classes; after a one-time `accept` hook, nodes and facade stay untouched.",
+  "points": [
+    "A `Criteria` is a strategy; `and` and `negate` combine small filters.",
+    "A `NodeVisitor` adds an operation, such as bytes per extension, as one class.",
+    "`WriteRule` checks run as a chain before every create; any rule can refuse.",
+    "A registry maps config names to rule factories; unknown names fail at startup."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "Each change, its pattern, its cost",
+    "head": [
+      "Change you need",
+      "Pattern",
+      "What you add",
+      "Core edits"
+    ],
+    "rows": [
+      [
+        "Find large log files",
+        "Strategy (Criteria)",
+        "Combine existing filters",
+        "None"
+      ],
+      [
+        "Report bytes per extension",
+        "Visitor",
+        "BytesByExtension class",
+        "None"
+      ],
+      [
+        "Block .exe uploads",
+        "Chain of rules",
+        "BlockedExtension class",
+        "None"
+      ],
+      [
+        "Per-tenant quota from config",
+        "Registry + factory",
+        "One registry entry",
+        "None"
+      ],
+      [
+        "A new node kind, such as a link",
+        "Composite subclass",
+        "Link class",
+        "Every visitor"
+      ]
+    ],
+    "highlight": {
+      "row": 4
+    },
+    "caption": "Visitors make new operations cheap but new node kinds costly. Choose it when the node kinds are stable."
+  },
+  "code": [
+    {
+      "file": "Extensions.java",
+      "lang": "java",
+      "title": "Criteria, visitor, rule chain",
+      "run": "captured",
+      "caption": "`Volume` is a trimmed `FileSystem` facade. A config string picks three write rules; filters combine; a visitor adds a report without touching the nodes.",
+      "walk": [
+        {
+          "lines": [
+            9,
+            10
+          ],
+          "text": "Config names three rules and gives each one its setting."
+        },
+        {
+          "lines": [
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17
+          ],
+          "text": "Four files pass the rules; three more are each refused by a different rule."
+        },
+        {
+          "lines": [
+            18,
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "text": "Filters combine with `and` and `negate`; `find` never changes."
+        },
+        {
+          "lines": [
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53
+          ],
+          "text": "Each filter is a lambda; the default methods build bigger ones."
+        },
+        {
+          "lines": [
+            61,
+            62,
+            63,
+            64,
+            65,
+            66,
+            67,
+            68,
+            69,
+            70,
+            71,
+            72,
+            73,
+            74,
+            75
+          ],
+          "text": "The visitor walks the tree and sums bytes per extension."
+        },
+        {
+          "lines": [
+            105,
+            106,
+            107,
+            108,
+            114,
+            115,
+            116,
+            117,
+            118,
+            119,
+            120,
+            121,
+            122,
+            123,
+            124,
+            125
+          ],
+          "text": "The registry turns config names into rules, refusing unknown names at once."
+        },
+        {
+          "lines": [
+            130,
+            131,
+            132,
+            133
+          ],
+          "text": "Every create runs the whole chain first, then adds the file."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not add `if (ext.equals(...))` branches to `create`; add a `WriteRule`.",
+    "Validate configuration when the volume is built, not on the first write.",
+    "Use a visitor only when node kinds are stable; each new kind edits every visitor."
+  ],
+  "quiz": {
+    "q": "Which `refused` message does the `big.log` create print?",
+    "options": [
+      "refused    NAME_TOO_LONG",
+      "refused    BLOCKED .exe",
+      "refused    QUOTA_EXCEEDED",
+      "refused    ALREADY_EXISTS big.log"
+    ],
+    "answer": 2,
+    "why": "The volume already holds 5700 bytes. Adding 900 passes the name rules but goes over the 6000-byte quota, so the last rule in the chain refuses it."
+  },
+  "takeaway": "New behaviour arrives as a class and a registry entry, not an edit.",
+  "chat": {
+    "starters": [
+      "When is a visitor better than adding a method to every node?",
+      "How would I load the rule list from a YAML file per tenant?",
+      "Should write rules run inside the write lock from the last page?"
+    ]
+  }
+}

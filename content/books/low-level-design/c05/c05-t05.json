@@ -1,163 +1,170 @@
 {
-  "title": "Errors, logs and metrics",
-  "idea": "Error handling turns each expected failure into a typed exception with a stable code; logging records what happened; monitoring counts outcomes so trends become visible.",
+  "title": "Code smells and refactorings",
+  "idea": "A code smell is a surface symptom, like a long method or a copied rule, that hints at a design problem; each smell has a known refactoring.",
   "points": [
-    "Expected failures are unchecked `BookingException` subclasses with a stable `code()`.",
-    "Callers branch on `code()`, never on the message text, which may change.",
-    "Log one line per event with `key=value` fields, so tools can search them.",
-    "A counter per outcome shows trends a single log line cannot, like rising refusals."
+    "A smell is a hint, not a bug: confirm it hurts before you refactor.",
+    "Fix one smell at a time, keep behaviour unchanged, rerun checks each step.",
+    "Duplicated rules cause shotgun surgery; move the rule into the class owning its data.",
+    "Flag arguments and magic numbers are covered in c05-t04; this page shows structural smells."
   ],
   "hero": {
-    "type": "seq",
-    "title": "Two refusals, logged and counted",
-    "actors": [
-      {
-        "id": "caller",
-        "label": "Caller"
-      },
-      {
-        "id": "svc",
-        "label": "BookingService"
-      },
-      {
-        "id": "log",
-        "label": "Log"
-      },
-      {
-        "id": "metrics",
-        "label": "Metrics"
-      }
+    "type": "table",
+    "title": "Five smells you will meet in review",
+    "head": [
+      "Smell",
+      "Symptom in a review",
+      "Refactoring"
     ],
-    "messages": [
-      {
-        "from": "caller",
-        "to": "svc",
-        "label": "book(R-101, 10.5-12)",
-        "note": "The request overlaps a booking that already exists."
-      },
-      {
-        "from": "svc",
-        "to": "caller",
-        "label": "RoomTakenException",
-        "dashed": true,
-        "note": "The service throws a typed exception whose `code()` is `ROOM_TAKEN`."
-      },
-      {
-        "from": "caller",
-        "to": "log",
-        "label": "WARN event=refused code=ROOM_TAKEN",
-        "note": "The caller logs once, at the boundary, with structured fields."
-      },
-      {
-        "from": "caller",
-        "to": "metrics",
-        "label": "inc(ROOM_TAKEN)",
-        "note": "One counter per code shows how often each failure happens."
-      },
-      {
-        "from": "caller",
-        "to": "svc",
-        "label": "book(R-101, 15-14)",
-        "note": "Next, a slot that ends before it starts."
-      },
-      {
-        "from": "svc",
-        "to": "caller",
-        "label": "InvalidSlotException",
-        "dashed": true,
-        "note": "Validation fails with `INVALID_SLOT` before any conflict check runs."
-      },
-      {
-        "from": "caller",
-        "to": "log",
-        "label": "WARN event=refused code=INVALID_SLOT",
-        "note": "Same boundary, same line shape, a different code."
-      },
-      {
-        "from": "caller",
-        "to": "metrics",
-        "label": "inc(INVALID_SLOT)",
-        "note": "Each code gets its own counter."
-      }
-    ]
+    "rows": [
+      [
+        "Long method",
+        "You scroll to see one method; comments mark its sections",
+        "Extract method, one name per step"
+      ],
+      [
+        "Duplicated code",
+        "The same rule pasted into two classes",
+        "Keep the rule once; both callers use it"
+      ],
+      [
+        "Shotgun surgery",
+        "One business change edits several files, and one gets missed",
+        "Move the rule into the class that owns its data"
+      ],
+      [
+        "Primitive obsession",
+        "Months, ages and money passed around as bare int and long",
+        "Value object (record) that validates itself"
+      ],
+      [
+        "Flags and magic numbers",
+        "renew(x, true, false) and a bare 4000 in many places",
+        "Enum and named constant (c05-t04)"
+      ]
+    ],
+    "caption": "Name the smell, then apply its refactoring in small, behaviour-preserving steps."
   },
   "code": [
     {
-      "file": "ErrorHandlingDemo.java",
+      "file": "RenewalSmells.java",
       "lang": "java",
-      "title": "Codes, log lines, counters",
+      "title": "The problem",
       "run": "captured",
-      "caption": "The service is trimmed from the last page so the error handling stands out. Teams log through SLF4J with Logback.",
+      "caption": "A long method and a discount rule copied into two classes. Every call compiles and returns a believable total.",
       "walk": [
         {
           "lines": [
-            26,
-            29
+            12,
+            25
           ],
-          "text": "The base exception is unchecked and forces every subclass to supply a `code()`."
+          "text": "Long method: four commented sections, each a step that deserves its own name."
         },
         {
           "lines": [
-            30,
-            39
+            16,
+            19
           ],
-          "text": "Each failure type keeps a fixed code; the message is for humans only."
+          "text": "The student discount was raised to 20% here, in one of its two homes."
         },
         {
           "lines": [
-            46,
+            28,
+            37
+          ],
+          "text": "Duplicated code: `Receipts` repeats the rule and still says 15%. Shotgun surgery missed one file."
+        },
+        {
+          "lines": [
+            13,
+            13
+          ],
+          "text": "Primitive obsession: age and months are bare `int` values, so a negative term is accepted."
+        },
+        {
+          "lines": [
+            3,
+            7
+          ],
+          "text": "Run it: the receipt disagrees with the charge, and a negative renewal prints a refund."
+        }
+      ]
+    },
+    {
+      "file": "RenewalDemo.java",
+      "lang": "java",
+      "title": "The fix",
+      "run": "captured",
+      "caption": "Each section has a named home and the discount lives in one place. Rejecting a negative term changes behaviour, so it ships in its own commit.",
+      "walk": [
+        {
+          "lines": [
+            19,
+            25
+          ],
+          "text": "Replace primitive with a record: `Term` checks its range once, so no invalid term exists."
+        },
+        {
+          "lines": [
+            27,
+            36
+          ],
+          "text": "`Money` owns arithmetic and formatting; callers stop rebuilding the decimal string."
+        },
+        {
+          "lines": [
+            38,
             49
           ],
-          "text": "Validate the slot first, then check overlaps in the same room; each failure throws its own type."
+          "text": "Move method: the discount reads age, so it lives on `Member`. One edit changes it everywhere."
         },
         {
           "lines": [
-            10,
-            17
+            51,
+            61
           ],
-          "text": "The caller catches the base type once, logs it and counts it by code."
+          "text": "Extract method: the long method's steps are now named calls that read like the rule."
         },
         {
           "lines": [
-            21,
-            23
+            63,
+            68
           ],
-          "text": "One line per event: level, event name, then `key=value` fields."
+          "text": "`Receipt` is handed the price instead of recomputing it. The duplicate is gone."
         },
         {
           "lines": [
             4,
-            4
+            16
           ],
-          "text": "A `TreeMap` keeps counter names sorted, so the summary prints the same every run."
+          "text": "Charge and receipt now agree, and a negative term fails at the edge."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Do not catch and log the same exception at every layer; log once at the boundary.",
-    "Never branch on `getMessage()` text; branch on `code()`, which you promise to keep.",
-    "Keep personal data out of logs; log ids such as `E7`, not names or emails."
+    "Refactoring and changing behaviour in one commit makes a broken total impossible to trace.",
+    "Renaming a smell away: `renewV2` with the same bare ints is still primitive obsession.",
+    "Chasing every smell in old code; fix the ones in the file you must change."
   ],
   "quiz": {
-    "q": "What does the last line print?",
-    "code": "double[][] asks = { {9, 10}, {9.5, 11}, {12, 12}, {9, 9.5} };\n// each ask: book R-101; count \"booked\" or e.code()\nSystem.out.println(\"metrics \" + metrics); // TreeMap inside",
+    "q": "In the smelly version, what does this call print?",
+    "code": "System.out.println(Receipts.line(\"Ada\", 22, 3));",
     "lang": "java",
     "options": [
-      "metrics {booked=1, INVALID_SLOT=1, ROOM_TAKEN=2}",
-      "metrics {ROOM_TAKEN=3, booked=1}",
-      "metrics {INVALID_SLOT=1, ROOM_TAKEN=2, booked=1}",
-      "metrics {INVALID_SLOT=1, ROOM_TAKEN=1, booked=2}"
+      "receipt for Ada: 96.00",
+      "receipt for Ada: 120.00",
+      "receipt for Ada: 102.00",
+      "IllegalStateException: rules differ"
     ],
     "answer": 2,
-    "why": "Only 9-10 books. 9.5-11 and 9-9.5 overlap it; 12-12 ends where it starts. `TreeMap` sorts upper-case keys before lower-case ones."
+    "why": "`Receipts` holds its own copy of the discount, still at 15%: 12000 minus 1800 is 10200 cents. Only the copy in `Renewals` was updated."
   },
-  "takeaway": "Typed exceptions with codes, one structured log line, a counter per outcome.",
+  "takeaway": "Name the smell, pick its refactoring, change one thing at a time.",
   "chat": {
     "starters": [
-      "Should BookingException be checked or unchecked, and why?",
-      "How would these error codes map to HTTP status codes in a REST API?",
-      "What should I put in an alert, and what only in a dashboard?"
+      "How do I refactor a long method safely without tests?",
+      "How do I find every copy of a duplicated rule?",
+      "Which code smells come up most in LLD interviews?"
     ]
   }
 }

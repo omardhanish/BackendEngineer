@@ -1,0 +1,171 @@
+{
+  "title": "Notification system requirements",
+  "idea": "Scoping a notification system means naming who sends what to whom, on which channel, how urgent it is, and which delivery guarantee you promise.",
+  "points": [
+    "Other services ask it to notify a user by email, SMS or push.",
+    "Each message comes from a stored template filled with per-user values.",
+    "Each channel lists backup providers, so one vendor outage need not stop delivery.",
+    "Assume OTPs in seconds, promotions later; a caller's retry never creates a second notification."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Actors and use cases in v1",
+    "nodes": [
+      {
+        "id": "caller",
+        "label": "Calling service",
+        "sub": "orders, auth, marketing"
+      },
+      {
+        "id": "send",
+        "label": "Send notification",
+        "sub": "user, type, params"
+      },
+      {
+        "id": "prefs",
+        "label": "Check preferences",
+        "sub": "opt-outs per channel"
+      },
+      {
+        "id": "render",
+        "label": "Render template",
+        "sub": "fill {{name}} values"
+      },
+      {
+        "id": "deliver",
+        "label": "Deliver via provider",
+        "sub": "retry, then failover"
+      },
+      {
+        "id": "status",
+        "label": "Query status",
+        "sub": "SENT, FAILED, SKIPPED"
+      },
+      {
+        "id": "user",
+        "label": "End user",
+        "sub": "sets preferences"
+      },
+      {
+        "id": "out",
+        "label": "Out of scope",
+        "sub": "digests, inbox, campaigns"
+      }
+    ],
+    "edges": [
+      {
+        "from": "caller",
+        "to": "send",
+        "caption": "A calling service sends a request with a user id, a notification type and template values."
+      },
+      {
+        "from": "send",
+        "to": "prefs",
+        "caption": "The system checks whether the user allows this type on this channel."
+      },
+      {
+        "from": "prefs",
+        "to": "render",
+        "caption": "Allowed requests get their template rendered into a subject and a body."
+      },
+      {
+        "from": "render",
+        "to": "deliver",
+        "caption": "A provider for the channel sends it. A failing provider hands over to the next one."
+      },
+      {
+        "from": "deliver",
+        "to": "status",
+        "caption": "Callers can ask what happened: sent, failed, or skipped because of an opt-out."
+      },
+      {
+        "from": "user",
+        "to": "prefs",
+        "dashed": true,
+        "label": "sets",
+        "caption": "The end user is an actor too: their opt-outs decide what is allowed."
+      },
+      {
+        "from": "caller",
+        "to": "out",
+        "dashed": true,
+        "caption": "Weekly digests, an in-app inbox and campaign scheduling wait for later. Say so out loud."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "NotifyScope.java",
+      "lang": "java",
+      "title": "Notification types as an enum",
+      "run": "captured",
+      "caption": "The scope as code: each notification type carries its priority, whether users may opt out, and its channels.",
+      "walk": [
+        {
+          "lines": [
+            4,
+            5
+          ],
+          "text": "v1 is a named set of types. Anything missing is out of scope."
+        },
+        {
+          "lines": [
+            7,
+            8,
+            9,
+            10,
+            11,
+            12
+          ],
+          "text": "Print every type with its scope, priority, opt-out rule and channels."
+        },
+        {
+          "lines": [
+            16,
+            18
+          ],
+          "text": "Three channels and three priority levels, fixed for v1."
+        },
+        {
+          "lines": [
+            21,
+            22,
+            23
+          ],
+          "text": "OTP is critical and cannot be muted; promotions are low priority and can."
+        },
+        {
+          "lines": [
+            24,
+            25
+          ],
+          "text": "Digests and the inbox are listed as OUT, so the cut is visible."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not promise exactly-once delivery; providers can deliver twice after a timeout.",
+    "Never let users opt out of security messages such as OTPs.",
+    "State volume and latency as assumptions, like \"OTP within seconds\", not as facts."
+  ],
+  "quiz": {
+    "q": "A login OTP must arrive fast. Which scoping decision fits best?",
+    "options": [
+      "Send it through the same queue as promotions",
+      "Give it its own high-priority path and allow no opt-out",
+      "Let the user mute it like any other message",
+      "Batch it into the weekly digest"
+    ],
+    "answer": 1,
+    "why": "An OTP is useless if it waits behind bulk mail. A separate priority keeps it fast, and muting it would lock users out."
+  },
+  "takeaway": "Name the types, channels, priorities and the dedupe-by-key rule first.",
+  "chat": {
+    "starters": [
+      "Why dedupe requests instead of promising exactly-once delivery?",
+      "Which scale numbers should I assume for a notification system interview?",
+      "Should the notification service own user preferences or ask another service?"
+    ]
+  }
+}

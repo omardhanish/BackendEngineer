@@ -1,0 +1,233 @@
+{
+  "title": "Visitor pattern",
+  "idea": "The Visitor pattern adds new operations to a fixed set of classes by putting each operation in a visitor object with one method per class.",
+  "points": [
+    "Each element's `accept` calls back the visitor method for its own type.",
+    "Two calls choose the code: element type, then visitor type. That is double dispatch.",
+    "New operations are cheap; a new element type forces edits in every visitor.",
+    "The JDK's `Files.walkFileTree` takes a `FileVisitor` with one callback per event."
+  ],
+  "hero": {
+    "type": "seq",
+    "title": "Evaluating (1 + 2) * 4, double dispatch",
+    "actors": [
+      {
+        "id": "main",
+        "label": "main"
+      },
+      {
+        "id": "mul",
+        "label": "Mul"
+      },
+      {
+        "id": "ev",
+        "label": "EvalVisitor"
+      },
+      {
+        "id": "add",
+        "label": "Add"
+      },
+      {
+        "id": "num",
+        "label": "Num"
+      }
+    ],
+    "messages": [
+      {
+        "from": "main",
+        "to": "mul",
+        "label": "accept(eval)",
+        "note": "The caller holds only an `Expr`. It does not know the node is a `Mul`."
+      },
+      {
+        "from": "mul",
+        "to": "ev",
+        "label": "visitMul(this)",
+        "note": "`Mul` knows its own type, so it calls the matching visitor method."
+      },
+      {
+        "from": "ev",
+        "to": "add",
+        "label": "left.accept(this)",
+        "note": "The visitor recurses into the left child and passes itself along."
+      },
+      {
+        "from": "add",
+        "to": "ev",
+        "label": "visitAdd(this)",
+        "note": "`Add` routes back to `visitAdd`. No `instanceof`, no cast."
+      },
+      {
+        "from": "ev",
+        "to": "num",
+        "label": "accept(this)",
+        "note": "Each `Num` leaf answers through `visitNum` with its own value."
+      },
+      {
+        "from": "ev",
+        "to": "main",
+        "label": "result",
+        "dashed": true,
+        "note": "`visitMul` multiplies both child results and returns the product to the caller."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "OverloadTrap.java",
+      "lang": "java",
+      "title": "The problem: overloads",
+      "run": "captured",
+      "caption": "Overloads look like per-type dispatch, but Java picks them from the declared type.",
+      "walk": [
+        {
+          "lines": [
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31
+          ],
+          "text": "Three overloads. It looks as if Java will choose one per node type."
+        },
+        {
+          "lines": [
+            8
+          ],
+          "text": "`e` is declared `Expr`, so the compiler binds `print(Expr)` for every element."
+        },
+        {
+          "lines": [
+            28,
+            29,
+            30
+          ],
+          "text": "Even if `print(Add)` ran, its children are typed `Expr`, so each child would print `?`."
+        },
+        {
+          "lines": [
+            13,
+            14,
+            15,
+            16,
+            17
+          ],
+          "text": "The usual workaround is an `instanceof` chain, repeated in every operation."
+        },
+        {
+          "lines": [
+            16
+          ],
+          "text": "A forgotten node type is caught only at runtime, by this throw."
+        }
+      ]
+    },
+    {
+      "file": "ExprVisitorDemo.java",
+      "lang": "java",
+      "title": "The fix: visitors",
+      "run": "captured",
+      "caption": "Each node routes to the right visitor method; each operation is one class.",
+      "walk": [
+        {
+          "lines": [
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "text": "One method per element type. Distinct names avoid any overload confusion."
+        },
+        {
+          "lines": [
+            17,
+            18
+          ],
+          "text": "`sealed` fixes the element set: only these three records may implement `Expr`."
+        },
+        {
+          "lines": [
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30
+          ],
+          "text": "Each `accept` is one line: call the visitor method for my own type."
+        },
+        {
+          "lines": [
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41
+          ],
+          "text": "`EvalVisitor` recurses with `accept(this)`; the exact-math calls throw on overflow."
+        },
+        {
+          "lines": [
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52
+          ],
+          "text": "A second operation is one new class. No element class changed."
+        },
+        {
+          "lines": [
+            5,
+            6,
+            7
+          ],
+          "text": "One tree, two operations, chosen by which visitor you pass in."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Passing an `Expr` variable to overloaded `visit` methods skips type dispatch; go through `accept`.",
+    "Choosing Visitor while element types still change often means editing every visitor each time.",
+    "Visitors that need private element data push you to add getters; check encapsulation first."
+  ],
+  "quiz": {
+    "q": "A tree has three node types and four visitors. You add a `Neg` node. What must change?",
+    "options": [
+      "Only the new `Neg` record",
+      "`Neg` and the `permits` list only",
+      "`Neg`, `permits`, `Visitor` and all four visitors",
+      "Only the `Visitor` interface"
+    ],
+    "answer": 2,
+    "why": "`Neg` needs a `visitNeg` method in `Visitor`, and every visitor then fails to compile until it implements it. New element types are Visitor's costly direction."
+  },
+  "takeaway": "Visitor makes new operations cheap and new element types expensive.",
+  "chat": {
+    "starters": [
+      "What exactly is double dispatch and why does Java need accept for it?",
+      "When would I choose Visitor over adding a method to each class?",
+      "How does FileVisitor in java.nio.file follow the Visitor pattern?"
+    ]
+  }
+}

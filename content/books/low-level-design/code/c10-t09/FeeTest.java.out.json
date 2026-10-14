@@ -1,0 +1,11 @@
+{
+  "stdout": "PASS fee uses today's date\nPASS grace edge is free\nPASS null due date is rejected\n3 passed, 0 failed",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java FeeTest.java",
+  "tool": "Java 17.0.17",
+  "hash": "3551b6210530a138",
+  "at": "2026-10-12T11:24:50.969Z"
+}

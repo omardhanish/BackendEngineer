@@ -1,0 +1,11 @@
+{
+  "stdout": "now:          {bolt=6, nut=7}\nafter undo 1: {bolt=6, nut=0}\nafter undo 2: {bolt=6, nut=-7}",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java NaiveUndo.java",
+  "tool": "Java 17.0.17",
+  "hash": "fad50fecb07fc17e",
+  "at": "2026-10-12T11:25:06.340Z"
+}

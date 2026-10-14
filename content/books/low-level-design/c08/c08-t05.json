@@ -1,0 +1,293 @@
+{
+  "title": "Strategy pattern",
+  "idea": "The Strategy pattern puts each interchangeable algorithm behind one interface, so a context class calls it without knowing which version runs.",
+  "analogy": {
+    "text": "A map app asks how you travel: car, bike or on foot. The same trip gets a different route, and the app's screen never changes.",
+    "breaks": "You pick the mode; in code, configuration or a factory usually picks."
+  },
+  "points": [
+    "A context holds a strategy interface and delegates one decision to it.",
+    "Adding an algorithm means adding a class, not editing a growing `if` chain.",
+    "The JDK uses it: `List.sort` takes a `Comparator` that decides the order.",
+    "Skip it for two stable branches; a plain `if` reads better there."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Checkout delegates pricing to a strategy",
+    "dir": "TB",
+    "nodes": [
+      {
+        "id": "cfg",
+        "label": "main / config",
+        "sub": "builds the rates"
+      },
+      {
+        "id": "ctx",
+        "label": "Checkout",
+        "sub": "context: shipping(method, kg)"
+      },
+      {
+        "id": "api",
+        "label": "ShippingRate",
+        "sub": "interface: centsFor(kg)"
+      },
+      {
+        "id": "wr",
+        "label": "WeightRate",
+        "sub": "record: base + per kg"
+      },
+      {
+        "id": "lam",
+        "label": "kg -> 0",
+        "sub": "lambda for pickup"
+      },
+      {
+        "id": "new",
+        "label": "DroneRate (new)",
+        "sub": "added later, no edits"
+      }
+    ],
+    "edges": [
+      {
+        "from": "cfg",
+        "to": "ctx",
+        "label": "injects map"
+      },
+      {
+        "from": "ctx",
+        "to": "api",
+        "label": "calls centsFor"
+      },
+      {
+        "from": "wr",
+        "to": "api",
+        "label": "implements",
+        "dashed": true
+      },
+      {
+        "from": "lam",
+        "to": "api",
+        "label": "implements",
+        "dashed": true
+      },
+      {
+        "from": "new",
+        "to": "api",
+        "label": "implements",
+        "dashed": true
+      }
+    ],
+    "steps": [
+      {
+        "caption": "Configuration builds the strategies and hands them to `Checkout` through its constructor.",
+        "active": [
+          "cfg",
+          "ctx"
+        ],
+        "edges": [
+          0
+        ]
+      },
+      {
+        "caption": "`Checkout` validates the weight, then looks up the rate for the chosen method.",
+        "active": [
+          "ctx"
+        ],
+        "edges": []
+      },
+      {
+        "caption": "It calls `centsFor` on the interface. It never asks which class it got.",
+        "active": [
+          "ctx",
+          "api"
+        ],
+        "edges": [
+          1
+        ]
+      },
+      {
+        "caption": "`WeightRate` serves standard and express. Same class, different numbers.",
+        "active": [
+          "api",
+          "wr"
+        ],
+        "edges": [
+          2
+        ]
+      },
+      {
+        "caption": "A lambda fits too, because `ShippingRate` has exactly one abstract method.",
+        "active": [
+          "api",
+          "lam"
+        ],
+        "edges": [
+          3
+        ]
+      },
+      {
+        "caption": "A new delivery method is one new class. `Checkout` stays untouched: the Open/Closed Principle (OCP).",
+        "active": [
+          "new",
+          "api"
+        ],
+        "edges": [
+          4
+        ]
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "ShippingSwitch.java",
+      "lang": "java",
+      "title": "The problem: if chain",
+      "run": "captured",
+      "caption": "Every pricing rule lives in one method, and the last `else` swallows typos.",
+      "walk": [
+        {
+          "lines": [
+            12,
+            13,
+            14
+          ],
+          "text": "One method owns every pricing rule, so each new delivery method edits this class."
+        },
+        {
+          "lines": [
+            15,
+            16,
+            17,
+            18,
+            19
+          ],
+          "text": "Rules hide in branches. You cannot test express pricing apart from the rest."
+        },
+        {
+          "lines": [
+            20,
+            21
+          ],
+          "text": "A drone rule with a weight limit makes the chain harder to read again."
+        },
+        {
+          "lines": [
+            22,
+            23,
+            24,
+            25
+          ],
+          "text": "The final `else` catches every unknown string and charges it as standard."
+        },
+        {
+          "lines": [
+            7,
+            8
+          ],
+          "text": "The output proves it: \"Express\" gets a wrong price instead of a loud failure."
+        }
+      ]
+    },
+    {
+      "file": "ShippingStrategyDemo.java",
+      "lang": "java",
+      "title": "The fix: strategies",
+      "run": "captured",
+      "caption": "One interface, swappable implementations, and a context that only delegates.",
+      "walk": [
+        {
+          "lines": [
+            24,
+            25,
+            26,
+            27
+          ],
+          "text": "The strategy interface has one method, so lambdas can implement it."
+        },
+        {
+          "lines": [
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37
+          ],
+          "text": "A record strategy. Its compact constructor rejects negative rates up front."
+        },
+        {
+          "lines": [
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45
+          ],
+          "text": "`Map.copyOf` makes the context immutable; later changes to the caller's map cannot leak in."
+        },
+        {
+          "lines": [
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53
+          ],
+          "text": "Validate, look up the strategy, and fail loudly on an unknown key."
+        },
+        {
+          "lines": [
+            7,
+            8,
+            9,
+            10
+          ],
+          "text": "Strategies are chosen at the edge. A `TreeMap` keeps the printed order stable."
+        },
+        {
+          "lines": [
+            16,
+            17,
+            18,
+            19,
+            20
+          ],
+          "text": "The typo that was mispriced before is now rejected with a clear message."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "A context that checks `instanceof` on its strategy has rebuilt the `if` chain; keep it blind.",
+    "Strategies with shared mutable fields break when threads share them; keep them stateless or immutable.",
+    "Creating strategies with `new` inside the context hard-codes them again; inject them from outside."
+  ],
+  "quiz": {
+    "q": "What does this print?",
+    "lang": "java",
+    "code": "List<String> names =\n    new ArrayList<>(List.of(\"bo\", \"alice\", \"cy\"));\nComparator<String> byLength =\n    Comparator.comparingInt(String::length);\nnames.sort(byLength.reversed());\nSystem.out.println(names);",
+    "options": [
+      "[bo, cy, alice]",
+      "[alice, bo, cy]",
+      "[alice, cy, bo]",
+      "[cy, bo, alice]"
+    ],
+    "answer": 1,
+    "why": "`reversed()` puts longer names first. `List.sort` is stable, so the tied names keep their original relative order."
+  },
+  "takeaway": "Strategy swaps how a step is done; the calling code never changes.",
+  "chat": {
+    "starters": [
+      "How is the Strategy pattern different from the State pattern?",
+      "Should I build strategies with a factory or inject them with DI?",
+      "How do I explain Strategy with Comparator in an interview?"
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "play Intro\nplay Rain\nplay Outro\nplay null\nfirst now: Ad break\ncount still: 3",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java LeakyPlaylist.java",
+  "tool": "Java 17.0.17",
+  "hash": "b4c59122723e83cb",
+  "at": "2026-10-12T11:15:09.802Z"
+}

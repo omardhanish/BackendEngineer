@@ -1,0 +1,11 @@
+{
+  "stdout": "IN  MEMBER    SEARCH\nIN  MEMBER    BORROW\nIN  MEMBER    RETURN\nIN  MEMBER    RENEW\nIN  MEMBER    RESERVE\nIN  MEMBER    PAY_FINE\nIN  LIBRARIAN ADD_COPY\nIN  SYSTEM    MARK_OVERDUE\nIN  SYSTEM    EXPIRE_PICKUP\nOUT MEMBER    EBOOK_LENDING\nOUT LIBRARIAN BRANCH_TRANSFER\nOUT LIBRARIAN PURCHASE_ORDERS\nPolicy[loanDays=14, maxActiveLoans=5, maxRenewals=1, finePerDayMinor=1000, fineCapMinor=10000, blockAtFineMinor=5000, pickupDays=3]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java LibraryScope.java",
+  "tool": "Java 17.0.17",
+  "hash": "a8c7ea2a1f1cc40a",
+  "at": "2026-10-14T08:32:24.257Z"
+}

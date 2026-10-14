@@ -1,0 +1,298 @@
+{
+  "title": "Ground booking service in Java",
+  "idea": "The core design is a BookingService facade that reserves court hours through a SlotLedger, prices them with a PricingStrategy, and charges through a PaymentGateway.",
+  "analogy": {
+    "text": "A club receptionist. They check the planner, read the rate card, take the card payment, and rub out the pencil mark if the card is declined.",
+    "breaks": "The receptionist is one person; the service may run on many machines."
+  },
+  "points": [
+    "BookingService is a facade: callers use one method, not three collaborators.",
+    "SlotLedger reserves every hour of a booking, or none of them.",
+    "PricingStrategy prices each hour, so peak rules change without touching the service.",
+    "A declined payment releases the reserved hours before the error returns."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "One booking through the service",
+    "scenario": {
+      "token": {
+        "label": "P-1, C-1, 18:00 x2",
+        "tone": "req"
+      },
+      "stages": [
+        {
+          "id": "caller",
+          "label": "Caller",
+          "kind": "end"
+        },
+        {
+          "id": "svc",
+          "label": "BookingService",
+          "sub": "facade"
+        },
+        {
+          "id": "ledger",
+          "label": "SlotLedger",
+          "sub": "all or nothing"
+        },
+        {
+          "id": "price",
+          "label": "PricingStrategy",
+          "sub": "per hour"
+        },
+        {
+          "id": "pay",
+          "label": "PaymentGateway",
+          "sub": "charge",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "P-1 asks for court C-1 on Friday, 18:00 for two hours.",
+          "at": "caller",
+          "slot": "top",
+          "state": {
+            "caller": "active"
+          }
+        },
+        {
+          "caption": "BookingService expands the request into hours 18:00 and 19:00 and picks id `BK-1`.",
+          "at": "svc",
+          "slot": "top",
+          "state": {
+            "caller": "done",
+            "svc": "active"
+          }
+        },
+        {
+          "caption": "The ledger checks both hours, then writes both. Either all hours are reserved or none.",
+          "at": "ledger",
+          "slot": "top",
+          "state": {
+            "svc": "done",
+            "ledger": "active"
+          }
+        },
+        {
+          "caption": "The pricing strategy prices each hour. Friday evening hours are both peak.",
+          "at": "price",
+          "slot": "top",
+          "state": {
+            "ledger": "done",
+            "price": "active"
+          }
+        },
+        {
+          "caption": "The gateway charges the total once. The charge succeeds.",
+          "at": "pay",
+          "slot": "top",
+          "state": {
+            "price": "done",
+            "pay": "active"
+          }
+        },
+        {
+          "caption": "The service returns the Booking with its frozen price.",
+          "at": "caller",
+          "slot": "bottom",
+          "token": {
+            "label": "BK-1 booked",
+            "tone": "ok"
+          },
+          "state": {
+            "pay": "done",
+            "caller": "active"
+          }
+        },
+        {
+          "caption": "P-2 asks for 19:00 on the same court. The ledger refuses, so nothing is charged.",
+          "at": "ledger",
+          "slot": "bottom",
+          "token": {
+            "label": "19:00 taken",
+            "tone": "err"
+          },
+          "state": {
+            "ledger": "blocked"
+          }
+        },
+        {
+          "caption": "P-3 gets a slot but the card fails. The service releases the hour before returning the error.",
+          "at": "pay",
+          "slot": "bottom",
+          "token": {
+            "label": "declined",
+            "tone": "err"
+          },
+          "state": {
+            "ledger": "done",
+            "pay": "error"
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "GroundBooking.java",
+      "lang": "java",
+      "title": "Service and interfaces",
+      "run": "captured",
+      "caption": "Every collaborator is an interface passed into the constructor. Booking is a plain record here; page 4 adds status rules. PricingStrategy now prices one hour at a time, so mixed peak and off-peak bookings add up correctly.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7,
+            8
+          ],
+          "text": "Wire the service: an in-memory ledger, peak and off-peak rates, a fake gateway."
+        },
+        {
+          "lines": [
+            10,
+            11,
+            12,
+            13,
+            14
+          ],
+          "text": "Five requests: a booking, a clash, a mixed-rate booking, a declined card, a retry by another player."
+        },
+        {
+          "lines": [
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39
+          ],
+          "text": "Three interfaces, three swap points: who owns hours, how they are priced, how money moves."
+        },
+        {
+          "lines": [
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48
+          ],
+          "text": "`synchronized` makes check-all-then-write-all one step for this ledger."
+        },
+        {
+          "lines": [
+            60,
+            61,
+            62,
+            63
+          ],
+          "text": "Peak is a weekend or an evening hour. Each hour is priced on its own."
+        },
+        {
+          "lines": [
+            79,
+            80,
+            81,
+            82
+          ],
+          "text": "Reserve first, then price. A clash stops before any money moves."
+        },
+        {
+          "lines": [
+            83,
+            84,
+            85,
+            86
+          ],
+          "text": "A declined charge is undone: the hours go back to the ledger."
+        }
+      ]
+    },
+    {
+      "file": "FloodlightSurcharge.java",
+      "lang": "java",
+      "title": "New rule, no edits",
+      "run": "captured",
+      "caption": "A new pricing rule added as a decorator. The interface and PeakOffPeakPricing are copied unchanged from the core file.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7
+          ],
+          "text": "Wrap the existing strategy. Only court C-1, the turf, is outdoor."
+        },
+        {
+          "lines": [
+            9,
+            10,
+            11,
+            12
+          ],
+          "text": "Price three Tuesday hours on the indoor hall and the outdoor turf."
+        },
+        {
+          "lines": [
+            17,
+            18,
+            19
+          ],
+          "text": "The interface is the one BookingService already depends on."
+        },
+        {
+          "lines": [
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40
+          ],
+          "text": "The decorator holds the inner strategy, the outdoor courts and the fee."
+        },
+        {
+          "lines": [
+            41,
+            42,
+            43,
+            44,
+            45
+          ],
+          "text": "Ask the inner rule first, then add the fee for dark outdoor hours."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not charge before reserving; a clash after payment needs a refund.",
+    "Never put peak rules inside BookingService; that forces an edit for every rule.",
+    "Release reserved hours on every failure path, not only the happy one."
+  ],
+  "quiz": {
+    "q": "What does GroundBooking print for P-2's Tuesday booking?",
+    "options": [
+      "booked  BK-3 P-2 C-1 2026-03-03T16:00 x2h = 100000",
+      "booked  BK-3 P-2 C-1 2026-03-03T16:00 x2h = 130000",
+      "booked  BK-3 P-2 C-1 2026-03-03T16:00 x2h = 160000",
+      "refused BK-3 SLOT_TAKEN 2026-03-03T16:00"
+    ],
+    "answer": 1,
+    "why": "Each hour is priced alone. 16:00 is off-peak at 50000 and 17:00 is peak at 80000, so the total is 130000."
+  },
+  "takeaway": "A facade calls swappable strategies; new rules arrive as new classes.",
+  "chat": {
+    "starters": [
+      "Why reserve hours before pricing and charging?",
+      "When is a decorator better than a new strategy class?",
+      "How would I add a members-only discount to this design?"
+    ]
+  }
+}

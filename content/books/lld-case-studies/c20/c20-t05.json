@@ -1,0 +1,168 @@
+{
+  "title": "Pluggable delivery policies",
+  "idea": "An extensible event bus takes its retry rules as a `RetryPolicy` strategy, adds behaviour by wrapping subscribers in decorators, and builds validated settings with a builder.",
+  "points": [
+    "`RetryPolicy` answers two questions: how many attempts, and how long to wait.",
+    "A decorator implements `Subscriber` and wraps another, adding dedupe or metrics.",
+    "Decorator order matters: the outer one sees every call first.",
+    "A builder holds defaults and refuses invalid settings before the bus runs."
+  ],
+  "hero": {
+    "type": "compare",
+    "title": "Where new features go",
+    "left": {
+      "title": "Edit the bus each time",
+      "tone": "bad",
+      "items": [
+        "Dedupe adds a flag and a branch inside deliver",
+        "Each new backoff adds another case in the bus",
+        "Every change retests the whole delivery loop"
+      ]
+    },
+    "right": {
+      "title": "Plug in at the seams",
+      "tone": "good",
+      "items": [
+        "A new RetryPolicy class leaves the bus untouched",
+        "Subscriber decorators add dedupe, metrics or logging",
+        "The builder sets defaults and rejects bad settings"
+      ]
+    },
+    "verdict": "The delivery loop is written once. New behaviour arrives as new classes."
+  },
+  "code": [
+    {
+      "file": "Extensions.java",
+      "lang": "java",
+      "title": "Strategy, decorators, builder",
+      "run": "captured",
+      "caption": "The core loop never changes. Backoff, dedupe and counting are all added as separate classes.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7,
+            8
+          ],
+          "text": "The builder sets exponential backoff and remembers the last 1000 ids; print the delays."
+        },
+        {
+          "lines": [
+            10,
+            11
+          ],
+          "text": "Wrap billing in two decorators: count outside, skip duplicates inside."
+        },
+        {
+          "lines": [
+            12,
+            13,
+            14,
+            15,
+            16,
+            17
+          ],
+          "text": "Deliver EV-1 twice and EV-2 once; EV-2 fails twice before it succeeds."
+        },
+        {
+          "lines": [
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35
+          ],
+          "text": "The core loop asks the policy for attempts and delays. It never changes."
+        },
+        {
+          "lines": [
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59
+          ],
+          "text": "RetryPolicy is the strategy; FixedDelay and ExponentialBackoff plug into it."
+        },
+        {
+          "lines": [
+            70,
+            71,
+            72,
+            73,
+            74,
+            75,
+            76,
+            77,
+            78,
+            79,
+            80,
+            81,
+            82,
+            83,
+            84,
+            85
+          ],
+          "text": "Deduplicating marks an id only after success, so a failure is still retried."
+        },
+        {
+          "lines": [
+            102,
+            103,
+            104,
+            105,
+            106,
+            107,
+            108,
+            109,
+            110,
+            111,
+            112,
+            113,
+            114,
+            115,
+            116
+          ],
+          "text": "The builder holds defaults and rejects invalid values before any bus sees them."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Mark an event as seen only after the handler succeeds, or failures are lost.",
+    "Cap exponential delays; add random jitter, seeded only in tests, so retries spread out.",
+    "Bound the dedup memory; an unbounded set of ids grows forever."
+  ],
+  "quiz": {
+    "q": "What does the waited line print?",
+    "options": [
+      "waited [500, 500] ms; calls=5 failures=2",
+      "waited [100, 200] ms; calls=4 failures=2",
+      "waited [100, 200] ms; calls=5 failures=2",
+      "waited [100, 200, 400] ms; calls=6 failures=3"
+    ],
+    "answer": 2,
+    "why": "Counting is outside, so the duplicate EV-1 still counts as a call. EV-2 fails twice, giving two backoff waits of 100 and 200 ms."
+  },
+  "takeaway": "Strategies for policy, decorators for behaviour, a builder for settings.",
+  "chat": {
+    "starters": [
+      "Why should Counting wrap Deduplicating and not the other way round?",
+      "How would I add a per-subscriber timeout as a decorator?",
+      "When is a chain of filters better than one predicate?"
+    ]
+  }
+}

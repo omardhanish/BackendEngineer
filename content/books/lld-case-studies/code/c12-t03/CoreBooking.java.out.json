@@ -1,0 +1,11 @@
+{
+  "stdout": "E-1 wants 4 at 10:00 -> Orion\n  notify E-1: BK-1 confirmed in Orion\nE-2 wants 3 at 10:30 -> Lyra\n  notify E-2: BK-2 confirmed in Lyra\nE-3 wants 12 at 09:00 -> NO_ROOM_AVAILABLE\nE-4 wants 4 at 11:00 -> Orion\n  notify E-4: BK-3 confirmed in Orion",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java CoreBooking.java",
+  "tool": "Java 17.0.17",
+  "hash": "26a1bbef21a0ec4d",
+  "at": "2026-10-14T08:33:47.687Z"
+}

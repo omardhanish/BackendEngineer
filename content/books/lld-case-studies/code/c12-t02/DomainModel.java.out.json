@@ -1,0 +1,11 @@
+{
+  "stdout": "BK-1 Orion 10:00-11:00 for 3\nfree 11:00-12:00? true\nfree 10:30-11:30? false\nrejected: start must be before end\nrejected: 7 people > capacity 6",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java DomainModel.java",
+  "tool": "Java 17.0.17",
+  "hash": "8159becb64c97895",
+  "at": "2026-10-14T10:22:10.906Z"
+}

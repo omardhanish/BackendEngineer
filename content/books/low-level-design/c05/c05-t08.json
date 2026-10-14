@@ -1,55 +1,231 @@
 {
-  "title": "Design review feedback",
-  "idea": "A peer review is a second engineer reading your design against the requirements, and giving feedback you can turn into a specific change.",
+  "title": "Library management system design",
+  "idea": "A library management system is a low-level design (LLD) exercise: model copies, members and loans, put the lending rules in one service, and inject storage, policy and time.",
   "points": [
-    "Share the requirements, the class diagram and the tests before the review.",
-    "Ask reviewers to trace one use case, such as booking a taken room.",
-    "Phrase comments as the chapter 3 review page shows: class, problem, fix.",
-    "Record each point as accept, discuss or decline, with a one-line reason."
+    "Lend a `BookCopy`, not a `Book`: three copies of one title are three loans.",
+    "`LendingService` owns the rules; repositories only store and find, behind interfaces.",
+    "Limits and fines vary, so inject them as policies (the Strategy pattern from c08).",
+    "Each rule failure is a `LibraryException` subclass with a stable `code()` for clients."
   ],
   "hero": {
-    "type": "table",
-    "title": "A decision log for review comments",
-    "head": [
-      "Comment",
-      "Decision",
-      "Reason"
+    "type": "seq",
+    "title": "Ada's third loan is refused",
+    "actors": [
+      {
+        "id": "desk",
+        "label": "Desk app"
+      },
+      {
+        "id": "svc",
+        "label": "LendingService"
+      },
+      {
+        "id": "copies",
+        "label": "CopyRepository"
+      },
+      {
+        "id": "loans",
+        "label": "LoanRepository"
+      },
+      {
+        "id": "policy",
+        "label": "LoanPolicy"
+      }
     ],
-    "rows": [
-      [
-        "Cancel by a stranger succeeds",
-        "accept",
-        "R3 says own booking"
-      ],
-      [
-        "BookingService also formats emails",
-        "accept",
-        "NotificationService owns messages"
-      ],
-      [
-        "No test for two rooms at one time",
-        "accept",
-        "a real gap in the tests"
-      ],
-      [
-        "Add buffer time between meetings",
-        "discuss",
-        "not in the requirements yet"
-      ],
-      [
-        "Use a Builder for Booking",
-        "decline",
-        "only five fields"
-      ]
-    ],
-    "caption": "Every comment gets a decision and a one-line reason, so the same point is not argued twice."
+    "messages": [
+      {
+        "from": "desk",
+        "to": "svc",
+        "label": "borrow(ada, \"C2\")",
+        "note": "The desk app calls one method. It knows nothing about storage or limits."
+      },
+      {
+        "from": "svc",
+        "to": "copies",
+        "label": "findById(\"C2\")",
+        "note": "First rule: the copy must exist. The repository answers with an `Optional`, never null."
+      },
+      {
+        "from": "copies",
+        "to": "svc",
+        "label": "Optional[C2]",
+        "dashed": true,
+        "note": "Found. An empty `Optional` would become `COPY_NOT_FOUND` through `orElseThrow`."
+      },
+      {
+        "from": "svc",
+        "to": "loans",
+        "label": "forCopy(\"C2\")",
+        "note": "Second rule: one copy, one active loan. The service asks whether C2 is out."
+      },
+      {
+        "from": "loans",
+        "to": "svc",
+        "label": "Optional.empty",
+        "dashed": true,
+        "note": "Nobody holds C2, so the copy is free."
+      },
+      {
+        "from": "svc",
+        "to": "policy",
+        "label": "maxLoans(ada)",
+        "note": "Third rule: the limit comes from the injected policy, not from a constant in the service."
+      },
+      {
+        "from": "policy",
+        "to": "svc",
+        "label": "2",
+        "dashed": true,
+        "note": "Ada is not staff, so her limit is two loans."
+      },
+      {
+        "from": "svc",
+        "to": "loans",
+        "label": "countFor(\"m-ada\")",
+        "note": "The service counts Ada's active loans."
+      },
+      {
+        "from": "loans",
+        "to": "svc",
+        "label": "2",
+        "dashed": true,
+        "note": "She already holds C1 and C3, so she is at her limit."
+      },
+      {
+        "from": "svc",
+        "to": "desk",
+        "label": "throws LOAN_LIMIT",
+        "dashed": true,
+        "note": "The service throws `LoanLimitException`. Nothing was saved, and the desk shows a message for that code."
+      }
+    ]
   },
-  "takeaway": "Ask for feedback tied to a class and a scenario, then log decisions.",
+  "code": [
+    {
+      "file": "LendingDemo.java",
+      "lang": "java",
+      "title": "Borrowing",
+      "run": "captured",
+      "caption": "Entities as records, rules in one service, storage and policy injected, failures with stable codes.",
+      "walk": [
+        {
+          "lines": [
+            31,
+            33
+          ],
+          "text": "Entities are immutable records. A `Loan` links one copy to one member."
+        },
+        {
+          "lines": [
+            35,
+            42
+          ],
+          "text": "Storage and the limit rule are interfaces, so tests and databases can swap in."
+        },
+        {
+          "lines": [
+            45,
+            62
+          ],
+          "text": "One base exception; each subclass fixes its `code()`, which clients may switch on safely."
+        },
+        {
+          "lines": [
+            76,
+            87
+          ],
+          "text": "`borrow` checks exist, free, under limit, in that order, and saves only when all pass."
+        },
+        {
+          "lines": [
+            105,
+            117
+          ],
+          "text": "The in-memory store is not thread-safe. Two desks could lend one copy; a database constraint prevents that."
+        },
+        {
+          "lines": [
+            9,
+            20
+          ],
+          "text": "`main` is the composition root: it builds the stock, picks a policy and runs each case."
+        }
+      ]
+    },
+    {
+      "file": "ReturnsDemo.java",
+      "lang": "java",
+      "title": "Returns and fines",
+      "run": "captured",
+      "caption": "The return side: here `Loan` also carries its due date, which `borrow` would set from the clock and policy. A fixed clock makes fines testable, and a fine policy swaps without editing the service.",
+      "walk": [
+        {
+          "lines": [
+            38,
+            48
+          ],
+          "text": "`FinePolicy` is a strategy. `DailyFine` charges per day up to a cap and rejects negatives."
+        },
+        {
+          "lines": [
+            83,
+            89
+          ],
+          "text": "`giveBack` removes the loan or throws `NOT_ON_LOAN`, then prices lateness from the injected clock."
+        },
+        {
+          "lines": [
+            87,
+            87
+          ],
+          "text": "`Math.max` clamps early returns to zero late days, so no one earns a negative fine."
+        },
+        {
+          "lines": [
+            13,
+            22
+          ],
+          "text": "Each loan tests one case: on time, a few days late, and far past the cap."
+        },
+        {
+          "lines": [
+            23,
+            27
+          ],
+          "text": "Returning C2 twice fails with a code, not a silent second receipt."
+        },
+        {
+          "lines": [
+            28,
+            31
+          ],
+          "text": "An amnesty is a new policy, a lambda here. `ReturnService` does not change."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Modelling `Book` with an `available` flag breaks once the library owns two copies.",
+    "Reading `LocalDate.now()` inside the service makes fine tests depend on the calendar.",
+    "Check-then-save in `borrow` races under concurrent desks; lock it or rely on a unique constraint."
+  ],
+  "quiz": {
+    "q": "The library adds a rule: members with unpaid fines cannot borrow. Where does it belong?",
+    "options": [
+      "In the BookCopy record",
+      "In the desk app, before calling borrow",
+      "In CopyRepository.findById",
+      "In LendingService.borrow, through an injected collaborator"
+    ],
+    "answer": 3,
+    "why": "Lending rules live in one service. A copy record knows no members, a repository only stores, and a desk-only check is skipped by other clients."
+  },
+  "takeaway": "Records for data, one service for rules, interfaces for everything that varies.",
   "chat": {
     "starters": [
-      "What should I ask a reviewer to focus on first?",
-      "How do I disagree with feedback without sounding defensive?",
-      "What does a reviewer look for in a booking system design?"
+      "How would I add reservations to this design?",
+      "Should Member hold its own list of loans?",
+      "How do I explain this design in a 45-minute interview?"
     ]
   }
 }

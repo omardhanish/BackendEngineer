@@ -1,232 +1,122 @@
 {
-  "title": "Defensive, failure-tolerant classes",
-  "idea": "Defensive programming makes each class reject bad input at its edge and stay valid; resilient design keeps the system useful when a dependency fails.",
+  "title": "Use case diagrams",
+  "idea": "A use case diagram shows who uses a system and which goals they reach with it, so you fix the scope before drawing a single class.",
   "points": [
-    "Validate arguments in constructors and public methods, and fail fast.",
-    "Copy mutable inputs in, and hand out unmodifiable views.",
-    "Keep invariants safe: `final` fields and no setters, so state stays valid.",
-    "Retry short-lived failures a few times, then fall back to a safe answer."
+    "A use case is one goal an actor reaches through the system, named verb-first.",
+    "Secondary actors are outside systems a use case calls, such as a payment gateway.",
+    "«include» is a step that always runs; «extend» adds optional behaviour under a condition.",
+    "Each use case has a main flow and alternate flows: your requirements."
   ],
   "hero": {
-    "type": "anim",
-    "engine": "pipeline",
-    "title": "Guards in, fallbacks out",
-    "scenario": {
-      "token": {
-        "label": "name=' '",
-        "tone": "req"
+    "type": "flow",
+    "title": "A parcel locker's use cases",
+    "nodes": [
+      { "id": "sender", "label": "Sender", "sub": "actor" },
+      { "id": "recipient", "label": "Recipient", "sub": "actor" },
+      { "id": "drop", "label": "Drop off parcel", "sub": "use case" },
+      { "id": "collect", "label": "Collect parcel", "sub": "use case" },
+      { "id": "postage", "label": "Pay postage", "sub": "always runs" },
+      { "id": "verify", "label": "Verify pickup code", "sub": "always runs" },
+      { "id": "late", "label": "Pay overdue fee", "sub": "only if late" },
+      { "id": "gateway", "label": "Payment Gateway", "sub": "secondary actor" }
+    ],
+    "edges": [
+      { "from": "sender", "to": "drop" },
+      { "from": "recipient", "to": "collect" },
+      { "from": "drop", "to": "postage", "label": "«include»", "dashed": true },
+      { "from": "collect", "to": "verify", "label": "«include»", "dashed": true },
+      { "from": "late", "to": "collect", "label": "«extend»", "dashed": true },
+      { "from": "postage", "to": "gateway" }
+    ],
+    "steps": [
+      {
+        "caption": "Start with actors: roles outside the system that want something. A person can play several roles.",
+        "active": ["sender", "recipient"],
+        "edges": []
       },
-      "stages": [
-        {
-          "id": "caller",
-          "label": "Caller"
-        },
-        {
-          "id": "guards",
-          "label": "Guard clauses",
-          "sub": "constructor"
-        },
-        {
-          "id": "domain",
-          "label": "Profile",
-          "sub": "always valid"
-        },
-        {
-          "id": "remote",
-          "label": "RateService",
-          "sub": "remote call"
-        },
-        {
-          "id": "fallback",
-          "label": "Fallback",
-          "sub": "cached value",
-          "kind": "end"
-        }
-      ],
-      "steps": [
-        {
-          "caption": "A call arrives with a blank name.",
-          "at": "caller"
-        },
-        {
-          "caption": "The guard rejects it at once. No half-built object ever exists.",
-          "at": "guards",
-          "token": {
-            "label": "blank name",
-            "tone": "err"
-          },
-          "state": {
-            "guards": "error"
-          }
-        },
-        {
-          "caption": "A valid call arrives with a name and a tag list.",
-          "at": "caller",
-          "token": {
-            "label": "name='ana'",
-            "tone": "req"
-          },
-          "state": {
-            "guards": "active"
-          }
-        },
-        {
-          "caption": "The guards pass, and the constructor copies the list in.",
-          "at": "guards",
-          "state": {
-            "guards": "done"
-          }
-        },
-        {
-          "caption": "The object starts valid. Callers cannot change its list from outside.",
-          "at": "domain",
-          "state": {
-            "domain": "done"
-          }
-        },
-        {
-          "caption": "Later the code needs a remote rate. The call times out.",
-          "at": "remote",
-          "token": {
-            "label": "rate()",
-            "tone": "err"
-          },
-          "state": {
-            "remote": "error"
-          }
-        },
-        {
-          "caption": "It tries again, up to three attempts in all. Each one fails.",
-          "at": "remote",
-          "token": {
-            "label": "retry 3",
-            "tone": "err"
-          },
-          "state": {
-            "remote": "blocked"
-          }
-        },
-        {
-          "caption": "Instead of crashing, it returns a cached rate and the request completes.",
-          "at": "fallback",
-          "token": {
-            "label": "cached 1.10",
-            "tone": "ok"
-          },
-          "state": {
-            "fallback": "done"
-          }
-        }
-      ]
-    }
+      {
+        "caption": "Each actor links to the goal it starts. Name a use case with a verb and an object.",
+        "active": ["sender", "recipient", "drop", "collect"],
+        "edges": [0, 1]
+      },
+      {
+        "caption": "«include» points from the base use case to a step it always performs. Every drop-off pays postage.",
+        "active": ["drop", "postage"],
+        "edges": [2]
+      },
+      {
+        "caption": "Collecting always checks the pickup code. An included step becomes a step inside the method, or a private helper like `pay`.",
+        "active": ["collect", "verify"],
+        "edges": [3]
+      },
+      {
+        "caption": "«extend» points the other way: from the optional behaviour to the base. The fee runs only when a parcel waited too long.",
+        "active": ["late", "collect"],
+        "edges": [4]
+      },
+      {
+        "caption": "The gateway is a secondary actor: the system calls it. In code it becomes an interface at the boundary.",
+        "active": ["postage", "gateway"],
+        "edges": [5]
+      }
+    ]
   },
   "code": [
     {
-      "file": "GuardDemo.java",
-      "lang": "java",
-      "title": "Guard clauses and copies",
-      "run": "captured",
-      "caption": "`Profile` checks its inputs and copies the list, so no caller can make it invalid.",
+      "file": "locker-usecases.puml",
+      "lang": "text",
+      "title": "The diagram",
+      "run": "static",
+      "illustrative": true,
+      "caption": "The full diagram as PlantUML text, including the courier's use case. Paste it into a PlantUML renderer to draw it.",
       "walk": [
-        {
-          "lines": [
-            32,
-            35
-          ],
-          "text": "Guard clauses: refuse `null` and blank names before any field is set."
-        },
-        {
-          "lines": [
-            36,
-            36
-          ],
-          "text": "`List.copyOf` takes a private, unmodifiable copy of the caller's list."
-        },
-        {
-          "lines": [
-            7,
-            10
-          ],
-          "text": "The caller changes its own list afterwards; the profile does not see it."
-        },
-        {
-          "lines": [
-            12,
-            16
-          ],
-          "text": "The getter returns the unmodifiable list, so writes through it fail."
-        },
-        {
-          "lines": [
-            18,
-            24
-          ],
-          "text": "Both bad names are rejected with a clear message."
-        }
+        { "lines": [3, 6], "text": "Actors are roles, not people. The payment gateway is an outside system, so it is an actor too." },
+        { "lines": [7, 14], "text": "The rectangle is the system boundary. Everything inside is in scope; everything outside is not." },
+        { "lines": [15, 17], "text": "Solid lines join an actor to its use cases, including the secondary actor the postage step calls." },
+        { "lines": [18, 19], "text": "`<<include>>` arrows run from the base use case to the step it always needs." },
+        { "lines": [20, 20], "text": "`<<extend>>` runs from the optional extension to the base it can extend." },
+        { "lines": [21, 21], "text": "The courier has its own goal. Each actor's goals hint at a separate client of your API." }
       ]
     },
     {
-      "file": "RetryDemo.java",
+      "file": "ParcelLockerDemo.java",
       "lang": "java",
-      "title": "Retry, then fall back",
+      "title": "From use cases to code",
       "run": "captured",
-      "caption": "A fake remote service fails a set number of times. `Retry` tries a few times, then uses the fallback. Real code waits between attempts (backoff); the demo skips it to stay deterministic.",
+      "caption": "Each use case becomes one method; included steps become private helpers or guard checks; the gateway becomes an interface.",
       "walk": [
-        {
-          "lines": [
-            13,
-            26
-          ],
-          "text": "A stand-in for a network call: it times out a fixed number of times."
-        },
-        {
-          "lines": [
-            30,
-            38
-          ],
-          "text": "Catch only `RemoteTimeoutException`. `Supplier` cannot throw checked exceptions, so it is unchecked here."
-        },
-        {
-          "lines": [
-            40,
-            41
-          ],
-          "text": "After the last attempt, return the fallback instead of failing the caller."
-        },
-        {
-          "lines": [
-            5,
-            9
-          ],
-          "text": "The first service recovers on attempt three; the second never does."
-        }
+        { "lines": [30, 33], "text": "The secondary actor is outside the boundary, so the service depends on an interface, not a vendor." },
+        { "lines": [44, 45], "text": "One service exposes the actors' goals. Its methods read like the use case list." },
+        { "lines": [57, 66], "text": "The main flow of \"Drop off parcel\". The full-lockers check is an alternate flow, written as an exception." },
+        { "lines": [62, 62], "text": "Postage is «include»d: the drop-off cannot finish without calling `pay`." },
+        { "lines": [67, 72], "text": "An unknown code is an expected alternate flow, so it returns `Optional.empty()`." },
+        { "lines": [70, 70], "text": "The «extend» condition is a guarded call: the late fee runs only after the free days." },
+        { "lines": [9, 26], "text": "The run walks the main flow and each alternate flow: full lockers, a bad code, a late pickup." }
       ]
     }
   ],
   "pitfalls": [
-    "Do not catch `Exception` and ignore it; log it or rethrow with context.",
-    "Retry only calls that are safe to repeat, and wait longer between attempts (backoff).",
-    "Cap retries; unlimited retries turn one outage into a flood of calls."
+    "Drawing internal steps like \"save to database\" as use cases; keep only goals an actor values.",
+    "Reversing «include» and «extend» arrows makes a mandatory step look optional, or the reverse.",
+    "Listing only the main flow; alternate flows like a wrong pickup code become your error handling."
   ],
   "quiz": {
-    "q": "Using `Profile` above, what does this print?",
-    "code": "List<String> tags = new ArrayList<>(List.of(\"a\"));\nProfile p = new Profile(\"li\", tags);\ntags.add(\"b\");\nSystem.out.println(p.tags());",
-    "lang": "java",
+    "q": "A recipient pays an overdue fee only if the parcel waited too long. How do you draw it?",
     "options": [
-      "[a, b]",
-      "[]",
-      "[a]",
-      "UnsupportedOperationException"
+      "«include» from Collect parcel to Pay overdue fee",
+      "Make Pay overdue fee a separate actor",
+      "«extend» from Pay overdue fee to Collect parcel",
+      "A solid line from Recipient to Pay overdue fee only"
     ],
     "answer": 2,
-    "why": "The constructor stored `List.copyOf(tags)`, a separate copy. Adding to the caller's list later does not reach the profile."
+    "why": "Conditional, optional behaviour is «extend», drawn from the extension to the base. «include» means the step runs every time, which is wrong for a fee charged only when late."
   },
-  "takeaway": "Reject bad input early, protect your state, plan for failing dependencies.",
+  "takeaway": "Actors and their goals first; classes come from the use cases.",
   "chat": {
     "starters": [
-      "When should I use a checked exception instead of an unchecked one?",
-      "What is exponential backoff and why add jitter?",
-      "How is a circuit breaker different from a retry?"
+      "Where do non-functional requirements like latency go, if not in the diagram?",
+      "What is the difference between a use case and a user story?",
+      "When does a use case deserve its own service class?"
     ]
   }
 }

@@ -1,135 +1,261 @@
 {
-  "title": "Cohesion and coupling",
-  "idea": "Cohesion is how closely a class's parts serve one purpose; coupling is how much a class depends on others. Aim for high cohesion and low coupling.",
+  "title": "Class diagrams for LLD",
+  "idea": "A class diagram is a map of your design's types: each box names a class with its fields and methods, and each line shows how two classes connect.",
   "points": [
-    "A cohesive class has one job, and its methods share its fields.",
-    "Coupling grows with every concrete class you construct, call or import.",
-    "Depend on narrow interfaces, passed in through the constructor.",
-    "Low coupling lets you change or test one class without touching others."
+    "Each class box has three parts: name, attributes, then operations with return types.",
+    "Visibility marks: `+` public, `-` private, `#` protected, `~` package-private.",
+    "An arrow with multiplicity like 1 to 0..* usually becomes a field or collection.",
+    "In interviews, sketch boxes and arrows first; add members only for the core classes."
   ],
   "hero": {
-    "type": "table",
-    "title": "Signals you can count",
-    "head": [
-      "Signal",
-      "How to count it",
-      "Healthy",
-      "Warning sign"
+    "type": "flow",
+    "title": "Reading a library class diagram",
+    "nodes": [
+      {
+        "id": "lib",
+        "label": "Library",
+        "sub": "- books · + lend(…) : Loan"
+      },
+      {
+        "id": "pol",
+        "label": "«interface» LoanPolicy",
+        "sub": "+ maxDays() : int"
+      },
+      {
+        "id": "stu",
+        "label": "StudentPolicy",
+        "sub": "+ maxDays() : int"
+      },
+      {
+        "id": "book",
+        "label": "Book",
+        "sub": "- isbn · - title"
+      },
+      {
+        "id": "loan",
+        "label": "Loan",
+        "sub": "- days : int"
+      },
+      {
+        "id": "mem",
+        "label": "Member",
+        "sub": "- id · - name"
+      }
     ],
-    "rows": [
-      [
-        "Fan-out (efferent coupling)",
-        "Types this class uses",
-        "A few, mostly interfaces",
-        "Many concrete classes"
-      ],
-      [
-        "Fan-in (afferent coupling)",
-        "Types that use this class",
-        "High on stable core types",
-        "High on a class that changes often"
-      ],
-      [
-        "Shared fields",
-        "Which methods use which fields",
-        "Most methods touch most fields",
-        "Separate field groups for separate methods"
-      ],
-      [
-        "Change ripple",
-        "Classes edited per feature change",
-        "One or two",
-        "Edits spread across many files"
-      ],
-      [
-        "Name test",
-        "Describe the class in one sentence",
-        "No 'and' needed",
-        "It prices and emails and logs"
-      ]
+    "edges": [
+      {
+        "from": "stu",
+        "to": "pol",
+        "label": "implements",
+        "dashed": true
+      },
+      {
+        "from": "lib",
+        "to": "pol",
+        "label": "1"
+      },
+      {
+        "from": "lib",
+        "to": "book",
+        "label": "1 → 0..*"
+      },
+      {
+        "from": "lib",
+        "to": "loan",
+        "label": "1 → 0..*"
+      },
+      {
+        "from": "loan",
+        "to": "book",
+        "label": "1"
+      },
+      {
+        "from": "loan",
+        "to": "mem",
+        "label": "1"
+      }
     ],
-    "highlight": {
-      "col": 3
-    },
-    "caption": "Use these on any class diagram. In the code below, Invoicing has a fan-out of two: the Sender interface and the small PriceBook class."
+    "steps": [
+      {
+        "caption": "Start with one box. `Library` lists private fields under its name, then public operations with return types.",
+        "active": [
+          "lib"
+        ],
+        "edges": []
+      },
+      {
+        "caption": "The «interface» stereotype marks a contract. `LoanPolicy` has operations only, no state.",
+        "active": [
+          "pol"
+        ],
+        "edges": []
+      },
+      {
+        "caption": "A dashed line with a hollow triangle is realisation. `StudentPolicy` implements `LoanPolicy`.",
+        "active": [
+          "stu",
+          "pol"
+        ],
+        "edges": [
+          0
+        ]
+      },
+      {
+        "caption": "A solid arrow is an association. `Library` holds exactly one policy, so the far end reads 1.",
+        "active": [
+          "lib",
+          "pol"
+        ],
+        "edges": [
+          1
+        ]
+      },
+      {
+        "caption": "Multiplicity 0..* means zero or more. In Java that becomes a `List` field.",
+        "active": [
+          "lib",
+          "book",
+          "loan"
+        ],
+        "edges": [
+          2,
+          3
+        ]
+      },
+      {
+        "caption": "Each `Loan` points at one `Book` and one `Member`. Arrowheads show who knows whom.",
+        "active": [
+          "loan",
+          "book",
+          "mem"
+        ],
+        "edges": [
+          4,
+          5
+        ]
+      }
+    ]
   },
   "code": [
     {
-      "file": "InvoicingDemo.java",
-      "lang": "java",
-      "title": "Cohesive, loosely coupled",
-      "run": "captured",
-      "caption": "Each class has one job. `Invoicing` knows only two small collaborators, both passed in.",
+      "file": "library.mmd",
+      "lang": "text",
+      "title": "The diagram",
+      "run": "static",
+      "illustrative": true,
+      "caption": "The same design as Mermaid text. Paste it into any Mermaid viewer to draw it.",
       "walk": [
         {
           "lines": [
-            14,
-            14
+            2,
+            9
           ],
-          "text": "`Sender` is a one-method interface: all `Invoicing` needs to know about delivery."
+          "text": "A class block: `-` private attributes first, then `+` operations with their return type last."
         },
         {
           "lines": [
-            16,
-            22
+            10,
+            13
           ],
-          "text": "`Outbox` is one way to send. Email, SMS or a test fake fit the same slot."
+          "text": "The `<<interface>>` stereotype marks a contract with no state."
         },
         {
           "lines": [
-            24,
-            32
+            28,
+            28
           ],
-          "text": "`PriceBook` only knows prices. Changing a price touches this class and nothing else."
+          "text": "`<|..` draws the dashed realisation line from implementation to interface."
         },
         {
           "lines": [
-            34,
-            40
+            29,
+            31
           ],
-          "text": "Collaborators arrive through the constructor; `Invoicing` never calls `new` on them."
+          "text": "Quoted text near each end is multiplicity: how many objects sit at that end."
         },
         {
           "lines": [
-            41,
-            44
+            32,
+            33
           ],
-          "text": "`bill` uses both fields: a small, cohesive method that coordinates and owns no details."
+          "text": "Arrowheads show direction: a `Loan` knows its book and member, not the reverse."
+        }
+      ]
+    },
+    {
+      "file": "LibraryDemo.java",
+      "lang": "java",
+      "title": "The code it maps to",
+      "run": "captured",
+      "caption": "Every box is a type and every solid arrow is a field. The rules the diagram hides live in methods.",
+      "walk": [
+        {
+          "lines": [
+            26,
+            31
+          ],
+          "text": "The interface and its implementation match the dashed realisation line one to one."
         },
         {
           "lines": [
-            6,
-            10
+            32,
+            34
           ],
-          "text": "`main` wires the parts together. Swapping `Outbox` needs no edit to `Invoicing`."
+          "text": "Records give private final fields, the `-` attributes in the boxes."
+        },
+        {
+          "lines": [
+            36,
+            38
+          ],
+          "text": "Each association arrow from `Library` becomes one private final field; 0..* becomes a list."
+        },
+        {
+          "lines": [
+            39,
+            41
+          ],
+          "text": "The policy is injected through the constructor, so swapping `StudentPolicy` needs no edit to `Library`."
+        },
+        {
+          "lines": [
+            47,
+            54
+          ],
+          "text": "Rules such as loan limits are not drawn. They live in `lend` and fail loudly."
+        },
+        {
+          "lines": [
+            59,
+            59
+          ],
+          "text": "Return a copy so callers cannot change the 0..* collection behind the diagram's back."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Do not split classes into trivial fragments; many chatty pieces raise coupling again.",
-    "Do not let two classes share one mutable object; a change ripples to both.",
-    "Watch for chains like `a.getB().getC().run()`; they couple you to internals."
+    "Drawing every getter and setter buries the design; show only members that explain behaviour.",
+    "Drawing realisation with a solid line makes it read as inheritance; dash it.",
+    "Leaving out multiplicity makes a list look like a single field; label both ends."
   ],
   "quiz": {
-    "q": "What does this print?",
-    "code": "Outbox outbox = new Outbox();\nInvoicing inv = new Invoicing(new PriceBook(), outbox);\ninv.bill(\"li\", List.of(\"pad\", \"cup\"));\noutbox.sent().forEach(System.out::println);",
-    "lang": "java",
+    "q": "`StudentPolicy` joins `LoanPolicy` with a dashed line and hollow triangle. Which Java matches?",
     "options": [
-      "li: total 340",
-      "li: total 1340",
-      "li: total 1240",
-      "total 1240"
+      "StudentPolicy has a LoanPolicy field",
+      "class StudentPolicy implements LoanPolicy",
+      "class StudentPolicy extends LoanPolicy",
+      "A method takes LoanPolicy as a parameter"
     ],
-    "answer": 2,
-    "why": "`PriceBook` gives 340 for a pad and the default 900 for anything unknown. `Outbox` prefixes the recipient, so the line is `li: total 1240`."
+    "answer": 1,
+    "why": "A dashed line with a hollow triangle is realisation: a class implementing an interface. A solid line with that triangle is inheritance; plain arrows are associations."
   },
-  "takeaway": "One job per class; few, narrow, injected collaborators.",
+  "takeaway": "Boxes are types, solid arrows are fields, numbers are how many.",
   "chat": {
     "starters": [
-      "How do I measure cohesion on a real class?",
-      "Is depending on a concrete class always bad coupling?",
-      "How does low coupling make unit testing easier?"
+      "How much detail should a class diagram have in a 45-minute interview?",
+      "How do I show a static method or an abstract class in UML?",
+      "Should I draw the diagram before or after writing the code?"
     ]
   }
 }

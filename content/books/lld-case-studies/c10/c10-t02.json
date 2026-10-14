@@ -1,0 +1,79 @@
+{
+  "title": "Flight booking domain model",
+  "idea": "The flight domain model splits the physical plane (Aircraft, Seat) from what is sold (Flight, FareClass) and from who bought it (Booking, Passenger, Ticket).",
+  "analogy": {
+    "text": "A concert hall, its ticket price tiers, and the guest list. The hall has fixed chairs; tiers sell a number of places; the list names each guest.",
+    "breaks": "A Booking can expire on its own; a guest list cannot."
+  },
+  "points": [
+    "An Aircraft owns its Seats; each Seat sits in one Cabin.",
+    "A Flight flies one Aircraft on one route and sells several FareClasses.",
+    "A Booking buys one FareClass for 1 to 9 Passengers under one PNR.",
+    "A Ticket is issued per Passenger and may carry a seat number."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Class diagram",
+    "nodes": [
+      { "id": "flight", "label": "Flight", "sub": "number, route, departsAt" },
+      { "id": "aircraft", "label": "Aircraft", "sub": "model, seatsIn(cabin)" },
+      { "id": "seat", "label": "Seat", "sub": "seatNo, Cabin" },
+      { "id": "fare", "label": "FareClass", "sub": "code, priceMinor, refundable" },
+      { "id": "booking", "label": "Booking", "sub": "pnr, status, amountMinor()" },
+      { "id": "pax", "label": "Passenger", "sub": "name, documentNo" },
+      { "id": "ticket", "label": "Ticket", "sub": "ticketNo, seatNo" },
+      { "id": "status", "label": "BookingStatus", "sub": "enum" }
+    ],
+    "edges": [
+      { "from": "flight", "to": "aircraft", "label": "flies 1", "caption": "A Flight is one departure of one Aircraft. Many flights reuse the same aircraft." },
+      { "from": "aircraft", "to": "seat", "label": "has 1..*", "caption": "The Aircraft fixes the seat layout. Each Seat belongs to one Cabin, economy or business." },
+      { "from": "flight", "to": "fare", "label": "sells 1..*", "caption": "A Flight sells FareClasses. Each has a cabin, a price in minor units and refund rules." },
+      { "from": "booking", "to": "fare", "label": "buys 1", "caption": "A Booking buys one FareClass on one Flight. Its PNR is the reference the traveller sees." },
+      { "from": "booking", "to": "pax", "label": "has 1..9", "caption": "A Booking carries one to nine Passengers. The total is price times passenger count." },
+      { "from": "booking", "to": "ticket", "label": "issues 0..*", "caption": "After payment each Passenger gets a Ticket. A seat number is optional on it." },
+      { "from": "booking", "to": "status", "label": "has", "caption": "BookingStatus is an enum. The state machine page adds the allowed moves." }
+    ]
+  },
+  "code": [
+    {
+      "file": "FlightModel.java",
+      "lang": "java",
+      "title": "The model in Java 17",
+      "run": "captured",
+      "caption": "Records for fixed data, a class for Booking because its status and tickets change. Invariants live in constructors.",
+      "walk": [
+        { "lines": [6, 7, 8], "text": "Build an Aircraft with two business and two economy seats." },
+        { "lines": [9, 10, 11, 12, 13], "text": "Two fare classes, prices in paise, and one Flight that sells both." },
+        { "lines": [16, 17, 18, 19, 20], "text": "A two-passenger Booking; its total is price times passengers, status HELD." },
+        { "lines": [21, 22, 23], "text": "Issue a ticket with economy seat 12A for the first passenger; status checks come on page 4." },
+        { "lines": [24, 25, 26, 27], "text": "Three bad inputs: a business seat on an economy fare, a loop route, no passengers." },
+        { "lines": [57, 58, 59, 60, 61, 62, 63, 64], "text": "The Flight constructor refuses a route that starts and ends in one place." },
+        { "lines": [91, 92, 93, 94, 95, 96, 97, 98], "text": "A ticket needs a passenger on this booking and a seat in the fare's cabin." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not store booked state on Seat; the same Aircraft flies many Flights.",
+    "Keep FareClass separate from Cabin; one cabin sells many fares at different prices.",
+    "Never use double for fares; keep money as long minor units."
+  ],
+  "quiz": {
+    "q": "What does the line after the TK-1 ticket print?",
+    "options": [
+      "rejected: no seat 1A",
+      "rejected: 1A is not in ECONOMY",
+      "TK-2 Ravi Rao seat 1A",
+      "rejected: Ravi Rao is not on PNR-1"
+    ],
+    "answer": 1,
+    "why": "Seat 1A exists and Ravi is on PNR-1, but 1A is a BUSINESS seat. The Y-SAVER fare is ECONOMY, so the cabin check throws."
+  },
+  "takeaway": "Plane, product and purchase are different classes; never mix their state.",
+  "chat": {
+    "starters": [
+      "Why is FareClass not just an enum of cabins?",
+      "Where does the per-flight seat map live if not on Seat?",
+      "How would a connecting trip with two flights change this model?"
+    ]
+  }
+}

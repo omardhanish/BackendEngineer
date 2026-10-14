@@ -1,141 +1,302 @@
 {
-  "title": "Testing the booking service",
-  "idea": "A test case runs one small scenario against your code and checks one expected result, so a change that breaks a rule fails loudly.",
+  "title": "How an IoC container wires objects",
+  "idea": "An IoC container is a library that builds your object graph: it reads which classes exist, resolves each constructor's parameters by type, and hands back ready objects.",
   "points": [
-    "Each test follows arrange, act, assert: set up state, call once, check.",
-    "Test the boundaries: back-to-back slots, reversed times, an exact overlap.",
-    "Assert on the stable error `code()`, not on the message text.",
-    "Replace listeners with a test double that records what it heard."
+    "Spring finds beans by component scanning (`@Component`, `@Service`) or `@Bean` methods.",
+    "It resolves constructor parameters by type, building dependencies first, recursively.",
+    "Beans are singletons by default: one shared instance per container, so keep them stateless.",
+    "Wiring errors (missing, ambiguous or cyclic beans) fail at startup for eager singletons."
   ],
   "hero": {
-    "type": "table",
-    "title": "Cases worth a test",
-    "head": [
-      "Case",
-      "Already booked",
-      "Request",
-      "Expect"
-    ],
-    "rows": [
-      [
-        "Free slot",
-        "nothing",
-        "R-101, 10 to 11",
-        "Booking BK1 (set-up)"
+    "type": "anim",
+    "engine": "lanes",
+    "title": "One get() call, resolved depth first",
+    "scenario": {
+      "code": [
+        "T get(Class<T> role)",
+        "  impl = bindings.getOrDefault(role, role)",
+        "  if (singletons has impl) return it",
+        "  for each constructor parameter: get(param)",
+        "  bean = constructor.newInstance(deps)",
+        "  singletons.put(impl, bean)"
       ],
-      [
-        "Back-to-back",
-        "R-101, 10 to 11",
-        "R-101, 11 to 12",
-        "Booking BK2"
+      "lanes": [
+        {
+          "id": "reg",
+          "label": "Bindings",
+          "kind": "area",
+          "hint": "role to class"
+        },
+        {
+          "id": "stack",
+          "label": "Being built",
+          "kind": "stack",
+          "hint": "cycle check"
+        },
+        {
+          "id": "cache",
+          "label": "Singletons",
+          "kind": "area",
+          "hint": "one per class"
+        }
       ],
-      [
-        "Overlap",
-        "R-101, 10 to 11",
-        "R-101, 10.5 to 11.5",
-        "ROOM_TAKEN"
-      ],
-      [
-        "Reversed slot",
-        "nothing",
-        "R-201, 15 to 14",
-        "INVALID_SLOT"
-      ],
-      [
-        "Listener",
-        "BK1, BK2 saved",
-        "two refused requests",
-        "heard BK1, BK2 only"
+      "tokens": {
+        "bind": {
+          "label": "PaymentGateway: FakeGateway",
+          "tone": "neutral"
+        },
+        "os": {
+          "label": "OrderService",
+          "tone": "sync"
+        },
+        "fg": {
+          "label": "FakeGateway",
+          "tone": "io"
+        },
+        "log": {
+          "label": "AuditLog",
+          "tone": "timer"
+        }
+      },
+      "steps": [
+        {
+          "caption": "`bind` records that the `PaymentGateway` role is played by `FakeGateway`. Nothing is built yet.",
+          "at": {
+            "reg": [
+              "bind"
+            ],
+            "stack": [],
+            "cache": []
+          },
+          "active": "bind"
+        },
+        {
+          "caption": "`get(OrderService.class)`: no binding, so the class itself is used. It is not cached, so building starts.",
+          "line": 1,
+          "at": {
+            "reg": [
+              "bind"
+            ],
+            "stack": [
+              "os"
+            ],
+            "cache": []
+          },
+          "active": "os"
+        },
+        {
+          "caption": "Its constructor needs a `PaymentGateway`. The binding says build `FakeGateway`, so it goes on the stack.",
+          "line": 3,
+          "at": {
+            "reg": [
+              "bind"
+            ],
+            "stack": [
+              "os",
+              "fg"
+            ],
+            "cache": []
+          },
+          "active": "fg"
+        },
+        {
+          "caption": "`FakeGateway` takes no parameters. It is created and cached as a singleton.",
+          "line": 5,
+          "at": {
+            "reg": [
+              "bind"
+            ],
+            "stack": [
+              "os"
+            ],
+            "cache": [
+              "fg"
+            ]
+          },
+          "active": "fg"
+        },
+        {
+          "caption": "The second parameter is `AuditLog`, a concrete class. It is built the same way.",
+          "line": 3,
+          "at": {
+            "reg": [
+              "bind"
+            ],
+            "stack": [
+              "os",
+              "log"
+            ],
+            "cache": [
+              "fg"
+            ]
+          },
+          "active": "log"
+        },
+        {
+          "caption": "`AuditLog` is cached too. Every parameter of `OrderService` now exists.",
+          "line": 5,
+          "at": {
+            "reg": [
+              "bind"
+            ],
+            "stack": [
+              "os"
+            ],
+            "cache": [
+              "fg",
+              "log"
+            ]
+          },
+          "active": "log"
+        },
+        {
+          "caption": "The container calls the constructor with both objects: constructor injection, done by code you did not write.",
+          "line": 4,
+          "at": {
+            "reg": [
+              "bind"
+            ],
+            "stack": [],
+            "cache": [
+              "fg",
+              "log",
+              "os"
+            ]
+          },
+          "active": "os"
+        },
+        {
+          "caption": "A second `get(OrderService.class)` finds the cached singleton and returns the same instance.",
+          "line": 2,
+          "at": {
+            "reg": [
+              "bind"
+            ],
+            "stack": [],
+            "cache": [
+              "fg",
+              "log",
+              "os"
+            ]
+          },
+          "active": "os"
+        }
       ]
-    ],
-    "highlight": {
-      "row": 1
-    },
-    "caption": "The back-to-back row guards the boundary: one meeting ending at 11 must not block one starting at 11."
+    }
   },
   "code": [
     {
-      "file": "BookingServiceTest.java",
+      "file": "MiniContainerDemo.java",
       "lang": "java",
-      "title": "Hand-made test runner",
+      "title": "A toy container",
       "run": "captured",
-      "caption": "JUnit is not available here, so a tiny `check` method plays its role. To stay short, these checks share one service and build on each other; JUnit gives each `@Test` a fresh instance, as the next tab shows.",
+      "caption": "A toy container with the same core moves as Spring: bindings, recursive resolution, singletons, startup errors.",
       "walk": [
         {
           "lines": [
-            5,
-            7
+            57,
+            65
           ],
-          "text": "Arrange: a recording test double (a spy), a fresh service and one booking."
+          "text": "Bindings map a role to a class. Singletons cache built objects. `inProgress` tracks the current path."
         },
         {
           "lines": [
-            8,
-            9
+            67,
+            71
           ],
-          "text": "The boundary case: a slot starting exactly when the last one ends."
+          "text": "`get` resolves the binding, then returns the cached object or builds a new one."
         },
         {
           "lines": [
-            10,
-            13
+            80,
+            89
           ],
-          "text": "Error cases assert the stable `code()`, never the wording of the message."
+          "text": "Reflection finds the single constructor, builds each parameter first, then calls it."
         },
         {
           "lines": [
-            14,
-            15
+            75,
+            78
           ],
-          "text": "The spy proves refused bookings never reach the listeners."
+          "text": "Fail fast: an interface with no binding, or a class already on the path, means a cycle."
         },
         {
           "lines": [
-            18,
-            25
+            12,
+            18
           ],
-          "text": "`check` counts and prints; `errorOf` turns a thrown exception into its code."
+          "text": "`main` binds one role and asks for the top object. The container builds the rest."
         },
         {
           "lines": [
-            27,
-            30
+            19,
+            20
           ],
-          "text": "A test double: a real `BookingListener` that only records ids."
+          "text": "An empty container hits the missing binding; `Inventory` and `Pricing` need each other."
         }
       ]
     },
     {
-      "file": "BookingServiceTest.junit.txt",
+      "file": "SpringWiring.txt",
       "lang": "java",
-      "title": "The same test in JUnit 5",
+      "title": "The same graph in Spring",
       "run": "static",
       "illustrative": true,
-      "caption": "JUnit creates a new test object per `@Test`, so `svc` starts empty each time. Mockito could replace the lambda listener with a mock you verify."
+      "caption": "Annotations replace `bind`; Spring scans, builds and caches the beans at startup.",
+      "walk": [
+        {
+          "lines": [
+            2,
+            8
+          ],
+          "text": "`@Component` marks a class for component scanning. Spring registers it as a singleton bean."
+        },
+        {
+          "lines": [
+            10,
+            14
+          ],
+          "text": "`@Service` is a `@Component` with a clearer name. The fields stay `final`."
+        },
+        {
+          "lines": [
+            15,
+            19
+          ],
+          "text": "With one constructor, Spring injects it without `@Autowired`, matching each parameter by type."
+        },
+        {
+          "lines": [
+            22,
+            28
+          ],
+          "text": "`SpringApplication.run` scans, wires the graph and returns the context. `getBean` only proves it; real code gets injected."
+        }
+      ]
     }
   ],
   "pitfalls": [
-    "Never keep the service in a `static` field; tests then leak bookings into each other.",
-    "Test only the happy path and an off-by-one overlap bug ships unnoticed.",
-    "Asserting on exception messages breaks tests whenever someone rewords them."
+    "Two beans for one single-valued parameter fail startup as ambiguous; pick one with `@Primary` or `@Qualifier`.",
+    "Mutable fields in a singleton bean are shared by every request thread.",
+    "Calling `new` on a `@Service` yourself skips the container; its dependencies stay unset."
   ],
   "quiz": {
-    "q": "What is the last line `BookingServiceTest` prints?",
+    "q": "You add `StripeGateway` as a second `@Component` implementing `PaymentGateway`. What happens at startup?",
     "options": [
-      "4 passed, 0 failed",
-      "3 passed, 1 failed",
-      "5 passed, 0 failed",
-      "It stops at RoomTakenException"
+      "Spring picks the first class it scanned",
+      "Startup fails: two beans match PaymentGateway",
+      "Both are injected as a list automatically",
+      "The last scanned class silently wins"
     ],
-    "answer": 0,
-    "why": "Four `check` calls run and all hold. `errorOf` catches each `BookingException`, so no exception escapes `main`."
+    "answer": 1,
+    "why": "Injection matches by type. Neither bean is `@Primary` and neither name matches the parameter `gateway`, so the candidates are ambiguous and startup fails until `@Qualifier` picks one."
   },
-  "takeaway": "One scenario per test, boundaries included, asserted on stable codes.",
+  "takeaway": "A container automates constructor injection: scan, resolve by type, cache singletons.",
   "chat": {
     "starters": [
-      "When should I use a mock instead of a hand-written fake?",
-      "How do I test the ConflictPolicy on its own?",
-      "How many tests are enough in an LLD interview?"
+      "How does Spring choose between two beans of the same type?",
+      "What is the difference between @Component and @Bean?",
+      "Why does Spring reject circular constructor dependencies?"
     ]
   }
 }

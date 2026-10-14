@@ -1,0 +1,11 @@
+{
+  "stdout": "?\n?\n4\n3",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java OverloadTrap.java",
+  "tool": "Java 17.0.17",
+  "hash": "72b14e6cef80a34b",
+  "at": "2026-10-12T11:18:44.989Z"
+}

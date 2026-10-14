@@ -1,0 +1,11 @@
+{
+  "stdout": "two presses, same call id: true\nassignments made: 1 car: E2\noperator update rows: 1\ncontroller stale update rows: 0\n[{\"floor_no\":5,\"direction\":\"UP\",\"status\":\"ASSIGNED\",\"elevator_id\":\"E1\"}] {\"state\":\"OUT_OF_SERVICE\",\"version\":2}",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node assign.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "4b567d1270ac34ba",
+  "at": "2026-10-14T08:35:42.199Z"
+}

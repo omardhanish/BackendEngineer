@@ -1,0 +1,11 @@
+{
+  "stdout": "Harbour View DLX rooms: 1\nRS-1 DLX 3 nights 1950000 HELD\nrefund if cancelled on 03-07: 1950000\nrefund if cancelled on 03-09: 0\nrejected: 3 guests do not fit TWN\nrejected: stay needs at least one night",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java HotelModel.java",
+  "tool": "Java 17.0.17",
+  "hash": "a4339ef1e0314a54",
+  "at": "2026-10-14T08:43:31.025Z"
+}

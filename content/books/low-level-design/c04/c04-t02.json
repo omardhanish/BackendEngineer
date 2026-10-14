@@ -1,164 +1,267 @@
 {
-  "title": "GRASP responsibility patterns",
-  "idea": "GRASP is a set of nine guidelines for deciding which class owns each responsibility, such as Information Expert, Creator, Controller and Pure Fabrication.",
+  "title": "The four UML relationships",
+  "idea": "UML relationships say how strongly two classes are tied: dependency uses briefly, association knows, aggregation groups shared parts, composition owns parts that die with it.",
+  "analogy": {
+    "text": "A car's chassis is built with the car and scrapped with it. A car park holds cars that leave freely. A borrowed jump-starter is used once, then returned.",
+    "breaks": "Java never scraps objects; the garbage collector frees unreferenced ones."
+  },
   "points": [
-    "Information Expert: give a job to the class that holds the data.",
-    "Creator: class A creates B when A contains or aggregates B.",
-    "Controller: one non-UI class receives each system event and delegates.",
-    "Low Coupling and High Cohesion, from the last page, are GRASP guidelines too."
+    "Dependency is a dashed arrow: a parameter or local variable, no stored field.",
+    "Association is a solid line: a stored reference, both sides live independently.",
+    "A hollow diamond marks aggregation: the whole groups parts it does not own.",
+    "A filled diamond marks composition: the whole creates its parts; they die together."
   ],
   "hero": {
     "type": "flow",
-    "title": "Who owns each job at checkout",
+    "title": "One music app, four strengths",
     "nodes": [
       {
-        "id": "ui",
-        "label": "UI or main",
-        "sub": "system event"
+        "id": "artist",
+        "label": "Artist",
+        "sub": "- name"
       },
       {
-        "id": "ctl",
-        "label": "CheckoutController",
-        "sub": "Controller"
+        "id": "album",
+        "label": "Album",
+        "sub": "+ addTrack(title, secs)"
       },
       {
-        "id": "order",
-        "label": "Order",
-        "sub": "Creator, Expert"
+        "id": "track",
+        "label": "Track",
+        "sub": "record: title, seconds"
       },
       {
-        "id": "line",
-        "label": "OrderLine",
-        "sub": "Expert"
+        "id": "playlist",
+        "label": "Playlist",
+        "sub": "+ add(Track) · + clear()"
       },
       {
-        "id": "orders",
-        "label": "Orders interface",
-        "sub": "Indirection"
-      },
-      {
-        "id": "mem",
-        "label": "InMemoryOrders",
-        "sub": "Pure Fabrication"
+        "id": "player",
+        "label": "Player",
+        "sub": "+ play(Track) : String"
       }
     ],
     "edges": [
       {
-        "from": "ui",
-        "to": "ctl",
-        "label": "checkout",
-        "caption": "Controller: the UI hands the system event to one class that is not UI code."
+        "from": "player",
+        "to": "track",
+        "label": "dependency",
+        "dashed": true
       },
       {
-        "from": "ctl",
-        "to": "order",
-        "label": "new, add",
-        "caption": "The controller starts an `Order` and hands it the item; it does no maths itself."
+        "from": "album",
+        "to": "artist",
+        "label": "association"
       },
       {
-        "from": "order",
-        "to": "line",
-        "label": "creates",
-        "caption": "Creator: `Order` contains its lines, so `Order` creates each `OrderLine`."
+        "from": "playlist",
+        "to": "track",
+        "label": "◇ aggregation"
       },
       {
-        "from": "ctl",
-        "to": "orders",
-        "label": "save",
-        "caption": "Indirection: the controller talks to the `Orders` interface, not to a storage class."
+        "from": "album",
+        "to": "track",
+        "label": "◆ composition"
+      }
+    ],
+    "steps": [
+      {
+        "caption": "Weakest first. `Player` receives a `Track` as a parameter and keeps nothing. That is a dependency: dashed arrow.",
+        "active": [
+          "player",
+          "track"
+        ],
+        "edges": [
+          0
+        ]
       },
       {
-        "from": "orders",
-        "to": "mem",
-        "label": "implements",
-        "dashed": true,
-        "caption": "Pure Fabrication: storage is not a domain idea, so an invented class does it."
+        "caption": "`Album` stores a reference to its `Artist`. Neither creates the other, and the artist outlives any album.",
+        "active": [
+          "album",
+          "artist"
+        ],
+        "edges": [
+          1
+        ]
       },
       {
-        "from": "mem",
-        "to": "order",
-        "label": "asks total",
-        "caption": "Information Expert: `Order` holds the lines, so it computes the total."
+        "caption": "`Playlist` holds tracks someone else made. Clearing it leaves every track alive: hollow diamond, aggregation.",
+        "active": [
+          "playlist",
+          "track"
+        ],
+        "edges": [
+          2
+        ]
+      },
+      {
+        "caption": "`Album` builds its tracks inside `addTrack` and never hands out its list. Filled diamond: composition.",
+        "active": [
+          "album",
+          "track"
+        ],
+        "edges": [
+          3
+        ]
+      },
+      {
+        "caption": "To choose, ask three questions: is it stored, who creates it, and does it die with the whole?",
+        "active": [
+          "album",
+          "playlist",
+          "player",
+          "track"
+        ],
+        "edges": [
+          0,
+          2,
+          3
+        ]
       }
     ]
   },
   "code": [
     {
-      "file": "GraspDemo.java",
+      "file": "LeakyAlbum.java",
       "lang": "java",
-      "title": "GRASP at checkout",
+      "title": "The problem",
       "run": "captured",
-      "caption": "Every class got its job by asking one GRASP question: who has the data, who contains it, who receives the event?",
+      "caption": "The diagram says composition, but the code shares its parts. Outsiders rewrite the album.",
       "walk": [
         {
           "lines": [
-            11,
-            19
+            6,
+            9
           ],
-          "text": "Controller: receives `checkout`, delegates every step, and does no arithmetic itself."
+          "text": "The caller builds the parts and passes its own list. The album never created its tracks."
         },
         {
           "lines": [
-            26,
-            28
+            6,
+            9
           ],
-          "text": "Creator: `Order` contains the lines, so it is the one that builds them."
+          "text": "c02-t05 calls any has-a field composition; UML composition is stricter: the whole creates and owns the part."
         },
         {
           "lines": [
-            29,
-            31
+            32,
+            36
           ],
-          "text": "Information Expert: `Order` holds the lines, so it sums them."
+          "text": "The constructor stores that list and the getter returns it: both ends alias the internals."
         },
         {
           "lines": [
-            33,
-            35
+            20,
+            26
           ],
-          "text": "Each `OrderLine` is the expert on its own price times quantity."
+          "text": "`Track` is mutable, so any holder of a reference can rename it."
+        },
+        {
+          "lines": [
+            13,
+            14
+          ],
+          "text": "A playlist renames what it thinks is its own track; the album's track changes too."
+        },
+        {
+          "lines": [
+            15,
+            16
+          ],
+          "text": "The caller reuses its list, and the album silently loses every track."
+        }
+      ]
+    },
+    {
+      "file": "MusicLibraryDemo.java",
+      "lang": "java",
+      "title": "The fix",
+      "run": "captured",
+      "caption": "Each relationship coded to its real strength: owned parts are created and hidden inside the whole.",
+      "walk": [
+        {
+          "lines": [
+            24,
+            30
+          ],
+          "text": "`Track` is an immutable record, so sharing it is safe; the album still controls its own list."
+        },
+        {
+          "lines": [
+            35,
+            39
+          ],
+          "text": "Association: the artist arrives from outside and is stored, but never created or destroyed here."
         },
         {
           "lines": [
             36,
-            36
+            43
           ],
-          "text": "Indirection: the controller depends on this interface, not on a storage class."
+          "text": "Composition: `addTrack` creates each part, so no outsider holds the album's list."
         },
         {
           "lines": [
-            38,
-            45
+            44,
+            44
           ],
-          "text": "Pure Fabrication: an invented storage class. A database version could replace it (Polymorphism)."
+          "text": "The getter returns a copy; `List.copyOf` is unmodifiable, so callers cannot edit the parts."
+        },
+        {
+          "lines": [
+            49,
+            53
+          ],
+          "text": "Aggregation: the playlist stores tracks made elsewhere, and clearing it destroys nothing."
+        },
+        {
+          "lines": [
+            56,
+            60
+          ],
+          "text": "Dependency: `Player` uses a `Track` only during the call, with no field."
+        },
+        {
+          "lines": [
+            14,
+            21
+          ],
+          "text": "Clearing the playlist leaves the album whole, and outside edits are rejected."
         }
       ]
+    },
+    {
+      "file": "relations.mmd",
+      "lang": "text",
+      "title": "The diagram",
+      "run": "static",
+      "illustrative": true,
+      "caption": "The fixed design in Mermaid: `*--` composition, `o--` aggregation, `-->` association, `..>` dependency."
     }
   ],
   "pitfalls": [
-    "Do not put business rules in the controller; it should only receive and delegate.",
-    "Avoid one bloated controller that handles every system event; split controllers by use case.",
-    "Add a Pure Fabrication only for a clear job, not as a dumping ground."
+    "Calling every collection field aggregation; interviewers then ask who creates the parts and you stall.",
+    "Composing parts the caller builds or can still change; the whole no longer controls them.",
+    "Drawing a field arrow for a parameter-only use exaggerates coupling; use a dashed dependency."
   ],
   "quiz": {
-    "q": "After the two calls in `main`, this runs. What does it print?",
-    "code": "controller.checkout(\"li\", \"pad\", 340, 2);",
-    "lang": "java",
+    "q": "An `Order` builds its `OrderLine` objects internally; they are deleted with it. Which relationship?",
     "options": [
-      "saved #1 li total 680",
-      "saved #3 li total 680",
-      "saved #3 li total 340",
-      "saved #2 li total 680"
+      "Aggregation, because an order holds many lines",
+      "Dependency, because lines are created in a method",
+      "Composition, because lines live and die with the order",
+      "Association, because the order stores references"
     ],
-    "answer": 1,
-    "why": "`InMemoryOrders` keeps one list across calls, so this is the third save. `Order.total` asks each line: 340 times 2 is 680."
+    "answer": 2,
+    "why": "The whole creates the parts, nobody else owns them, and they end with it. Holding many is not enough for aggregation; lifetime ownership decides."
   },
-  "takeaway": "Give each job to the class that has the data it needs.",
+  "takeaway": "Stored? Created by whom? Dies with the whole? That picks the line.",
   "chat": {
     "starters": [
-      "What are all nine GRASP principles?",
-      "How is GRASP different from SOLID?",
-      "When does Information Expert give a bad answer?"
+      "Is aggregation still worth drawing, or is association enough?",
+      "Can a composed part be passed to another object temporarily?",
+      "How do these relationships map to JPA cascade settings?"
     ]
   }
 }

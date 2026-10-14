@@ -1,0 +1,11 @@
+{
+  "stdout": "Ravi\nu9 present: false\ncopied 2 entities\nOrder[id=101, totalCents=2500]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java TypedRepository.java",
+  "tool": "Java 17.0.17",
+  "hash": "f2678fed883e6158",
+  "at": "2026-10-12T11:16:53.102Z"
+}

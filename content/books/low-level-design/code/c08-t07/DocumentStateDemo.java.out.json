@@ -1,0 +1,11 @@
+{
+  "stdout": "Draft -> InReview\nreviewer: needs sources\nInReview -> Draft\nDraft -> InReview\nInReview -> Published\nrefused: edit not allowed in Published\nPublished: v2 with sources",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java DocumentStateDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "68271f1fdd2b5689",
+  "at": "2026-10-12T11:18:44.362Z"
+}

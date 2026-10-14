@@ -1,0 +1,11 @@
+{
+  "stdout": "leaky [] -3\nsafe  [ann, bob] 8\nrejected: UnsupportedOperationException\nrejected: IllegalArgumentException hours 1..12, got -3\nrejected: IllegalArgumentException shift needs staff\nrejected: NullPointerException",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java DefensiveShift.java",
+  "tool": "Java 17.0.17",
+  "hash": "4d1cffd70fec16ba",
+  "at": "2026-10-12T11:34:33.821Z"
+}

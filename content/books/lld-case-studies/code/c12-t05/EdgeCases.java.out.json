@@ -1,0 +1,11 @@
+{
+  "stdout": "10:00-11:00 OK BK-1\n11:00-12:00 OK BK-2\nsweep 10:05 released []\nsweep 10:12 released [BK-1]\nwalk-in 10:15-11:00 OK BK-3\nseries REFUSED: occurrence 1 clashes BK-2\nbookings now [BK-2, BK-3]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java EdgeCases.java",
+  "tool": "Java 17.0.17",
+  "hash": "ee008eb4b353c48c",
+  "at": "2026-10-14T10:22:12.775Z"
+}

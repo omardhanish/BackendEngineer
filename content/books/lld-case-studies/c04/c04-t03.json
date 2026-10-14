@@ -1,0 +1,333 @@
+{
+  "title": "Elevator controller and scheduling",
+  "idea": "The core design is one ElevatorController that accepts calls, asks a SchedulingStrategy which car should answer, and lets each Elevator serve its stops with the LOOK algorithm.",
+  "analogy": {
+    "text": "A taxi dispatcher. A call comes in, the dispatcher picks a cab by a rule, and that cab adds the pickup to its route.",
+    "breaks": "A cab drives anywhere; an elevator only goes up or down."
+  },
+  "points": [
+    "ElevatorController is a facade: callers see `hallCall`, `carCall` and `tick`.",
+    "SchedulingStrategy is the strategy pattern: each dispatch rule is a class.",
+    "NearestCarStrategy charges extra when a car must turn around first.",
+    "Each Elevator uses LOOK: keep direction while stops lie ahead, then reverse."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "pipeline",
+    "title": "One hall call through the design",
+    "scenario": {
+      "token": {
+        "label": "6 DOWN",
+        "tone": "req"
+      },
+      "stages": [
+        {
+          "id": "panel",
+          "label": "Hall panel",
+          "kind": "end"
+        },
+        {
+          "id": "ctl",
+          "label": "ElevatorController",
+          "sub": "facade"
+        },
+        {
+          "id": "strat",
+          "label": "SchedulingStrategy",
+          "sub": "cost per car"
+        },
+        {
+          "id": "car",
+          "label": "Elevator E2",
+          "sub": "stops set"
+        },
+        {
+          "id": "doors",
+          "label": "Doors",
+          "sub": "open at 6",
+          "kind": "end"
+        }
+      ],
+      "steps": [
+        {
+          "caption": "Someone on floor 6 presses DOWN. The panel sends a hall call.",
+          "at": "panel",
+          "slot": "top",
+          "state": {
+            "panel": "active"
+          }
+        },
+        {
+          "caption": "The controller does not pick a car itself. It asks the strategy.",
+          "at": "ctl",
+          "slot": "top",
+          "state": {
+            "panel": "done",
+            "ctl": "active"
+          }
+        },
+        {
+          "caption": "The strategy scores each car in service. E2 at floor 8 costs 2; E1 at floor 0 costs 6.",
+          "at": "strat",
+          "slot": "top",
+          "state": {
+            "panel": "done",
+            "ctl": "done",
+            "strat": "active"
+          }
+        },
+        {
+          "caption": "The strategy returns E2. The controller adds floor 6 to E2's stops.",
+          "at": "car",
+          "slot": "top",
+          "token": {
+            "label": "stop 6",
+            "tone": "req"
+          },
+          "state": {
+            "panel": "done",
+            "ctl": "done",
+            "strat": "done",
+            "car": "active"
+          }
+        },
+        {
+          "caption": "Each `tick` moves E2 one floor. LOOK keeps it going down while stops lie below.",
+          "at": "car",
+          "slot": "bottom",
+          "token": {
+            "label": "8 → 7 → 6",
+            "tone": "req"
+          },
+          "state": {
+            "car": "active"
+          }
+        },
+        {
+          "caption": "At floor 6 the stop is removed and the doors open.",
+          "at": "doors",
+          "slot": "top",
+          "token": {
+            "label": "E2 at 6",
+            "tone": "ok"
+          },
+          "state": {
+            "car": "done",
+            "doors": "active"
+          }
+        },
+        {
+          "caption": "The hall call is served. The controller never knew how cars were scored.",
+          "at": "panel",
+          "slot": "bottom",
+          "token": {
+            "label": "served",
+            "tone": "ok"
+          },
+          "state": {
+            "panel": "active",
+            "ctl": "done",
+            "strat": "done",
+            "car": "done",
+            "doors": "done"
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "CoreElevator.java",
+      "lang": "java",
+      "title": "Controller, strategy, LOOK",
+      "run": "captured",
+      "caption": "The core flow in one file. Time is a tick counter, so every run prints the same trace.",
+      "walk": [
+        {
+          "lines": [
+            7,
+            8,
+            9,
+            10
+          ],
+          "text": "Two cars at floors 0 and 8, wired with NearestCarStrategy."
+        },
+        {
+          "lines": [
+            11,
+            12,
+            13,
+            14
+          ],
+          "text": "Two hall calls and one car call, then eight ticks of time."
+        },
+        {
+          "lines": [
+            35,
+            36,
+            37,
+            38,
+            39
+          ],
+          "text": "A hall call asks the strategy for a car, then adds the stop."
+        },
+        {
+          "lines": [
+            56,
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63,
+            64,
+            65,
+            66,
+            67,
+            68,
+            69,
+            70,
+            71,
+            72,
+            73
+          ],
+          "text": "Cost is distance when idle or passing; otherwise the trip via the farthest stop."
+        },
+        {
+          "lines": [
+            98,
+            99,
+            100,
+            101,
+            102,
+            103,
+            104,
+            105,
+            106,
+            107,
+            108,
+            109,
+            110,
+            111,
+            112,
+            113,
+            114,
+            115
+          ],
+          "text": "Each tick: close open doors, open at a stop, or move one floor."
+        },
+        {
+          "lines": [
+            117,
+            118,
+            119,
+            120,
+            121,
+            122,
+            123
+          ],
+          "text": "LOOK keeps the current direction while stops remain ahead, then reverses."
+        }
+      ]
+    },
+    {
+      "file": "ZonedDispatch.java",
+      "lang": "java",
+      "title": "A new strategy",
+      "run": "captured",
+      "caption": "Zoning wraps any strategy as a new class. The copies below are trimmed: all cars are idle, so distance is the cost.",
+      "walk": [
+        {
+          "lines": [
+            7,
+            8,
+            9,
+            10,
+            11,
+            12
+          ],
+          "text": "Three cars. Zoning sends E1 and E2 to low floors, E3 to high floors."
+        },
+        {
+          "lines": [
+            13,
+            14,
+            15,
+            16,
+            17,
+            18
+          ],
+          "text": "Compare both strategies on the same calls, then with E1 out of service."
+        },
+        {
+          "lines": [
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44
+          ],
+          "text": "ZonedStrategy is a decorator: it filters cars by zone, then delegates to the inner strategy."
+        },
+        {
+          "lines": [
+            46,
+            47,
+            48
+          ],
+          "text": "A Zone serves its range plus floor 0, the lobby every car shares."
+        },
+        {
+          "lines": [
+            59,
+            60,
+            61,
+            62,
+            63,
+            64,
+            65,
+            66,
+            67
+          ],
+          "text": "The inner strategy skips cars that are out of service and breaks ties by id."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not add `if (peakHour)` branches to the controller; add a strategy class.",
+    "Never pick a car by distance alone; a car heading away is not close.",
+    "Skip OUT_OF_SERVICE cars inside the strategy, or calls go to a dead car."
+  ],
+  "quiz": {
+    "q": "What does ZonedDispatch print for floor 8 DOWN before E1 fails?",
+    "options": [
+      "floor 8 DOWN: nearest=E3 zoned=E3",
+      "floor 8 DOWN: nearest=E3 zoned=E1",
+      "floor 8 DOWN: nearest=E1 zoned=E1",
+      "floor 8 DOWN: nearest=E1 zoned=E2"
+    ],
+    "answer": 1,
+    "why": "E3 at 12 is four floors away, so nearest picks it. Zoning drops E3 for floor 8; E1 and E2 tie, and the id picks E1."
+  },
+  "takeaway": "One facade controller; every dispatch rule is an injected strategy.",
+  "chat": {
+    "starters": [
+      "How is LOOK different from SCAN for elevators?",
+      "Should a hall call ever be reassigned to a better car later?",
+      "How would I add a peak-hour strategy that parks cars at the lobby?"
+    ]
+  }
+}

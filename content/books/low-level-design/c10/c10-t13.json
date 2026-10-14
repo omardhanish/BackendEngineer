@@ -1,0 +1,273 @@
+{
+  "title": "Extension points and maintainable code",
+  "idea": "Extensible code takes new behaviour as new classes at a seam (an interface where new code plugs in); maintainable code keeps changes small, local and testable.",
+  "points": [
+    "Find the axis of change first; put the seam only there.",
+    "An interface plus an injected list lets new rules arrive without editing old code.",
+    "Boolean flag parameters signal a missing seam; callers can swap them silently.",
+    "Small named classes make reviews, tests and traces point at one place."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Pricing rules behind one seam",
+    "nodes": [
+      {
+        "id": "main",
+        "label": "Composition root",
+        "sub": "builds the rule list"
+      },
+      {
+        "id": "pricer",
+        "label": "Pricer",
+        "sub": "rules, total(Cart)"
+      },
+      {
+        "id": "cart",
+        "label": "Cart",
+        "sub": "cents, Set<Tag>"
+      },
+      {
+        "id": "rule",
+        "label": "«interface» PriceRule",
+        "sub": "+ apply(Cart, long)"
+      },
+      {
+        "id": "member",
+        "label": "MemberDiscount",
+        "sub": "percent"
+      },
+      {
+        "id": "coupon",
+        "label": "CouponDiscount",
+        "sub": "cents"
+      },
+      {
+        "id": "holiday",
+        "label": "HolidaySurcharge",
+        "sub": "percent"
+      },
+      {
+        "id": "student",
+        "label": "StudentDiscount",
+        "sub": "added later"
+      }
+    ],
+    "edges": [
+      {
+        "from": "main",
+        "to": "pricer",
+        "label": "injects rules"
+      },
+      {
+        "from": "pricer",
+        "to": "cart",
+        "label": "reads"
+      },
+      {
+        "from": "pricer",
+        "to": "rule",
+        "label": "runs each in order"
+      },
+      {
+        "from": "member",
+        "to": "rule",
+        "label": "implements",
+        "dashed": true
+      },
+      {
+        "from": "coupon",
+        "to": "rule",
+        "label": "implements",
+        "dashed": true
+      },
+      {
+        "from": "holiday",
+        "to": "rule",
+        "label": "implements",
+        "dashed": true
+      },
+      {
+        "from": "student",
+        "to": "rule",
+        "label": "implements",
+        "dashed": true
+      }
+    ],
+    "steps": [
+      {
+        "caption": "The composition root decides which rules exist and in what order. Nothing else does.",
+        "active": [
+          "main",
+          "pricer"
+        ],
+        "edges": [
+          0
+        ]
+      },
+      {
+        "caption": "`Pricer` reads the `Cart` and knows rules only through the `PriceRule` interface.",
+        "active": [
+          "pricer",
+          "cart",
+          "rule"
+        ],
+        "edges": [
+          1,
+          2
+        ]
+      },
+      {
+        "caption": "Each rule is one small class with one job. Each is testable alone.",
+        "active": [
+          "rule",
+          "member",
+          "coupon",
+          "holiday"
+        ],
+        "edges": [
+          3,
+          4,
+          5
+        ]
+      },
+      {
+        "caption": "A new rule is a new class plus one line in the root. `Pricer` is never edited.",
+        "active": [
+          "student",
+          "rule",
+          "main"
+        ],
+        "edges": [
+          6,
+          0
+        ]
+      },
+      {
+        "caption": "Maintainability bonus: `Pricer` traces each rule by name, so a wrong total points to one class.",
+        "active": [
+          "pricer",
+          "member",
+          "coupon",
+          "holiday"
+        ],
+        "edges": [
+          2
+        ]
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "FlagPricer.java",
+      "lang": "java",
+      "title": "The problem",
+      "run": "captured",
+      "caption": "Rules hidden behind boolean flags. A swapped argument charges the customer more, and nothing complains.",
+      "walk": [
+        {
+          "lines": [
+            16,
+            17
+          ],
+          "text": "Three booleans in a row. Every new rule widens this signature and every call site."
+        },
+        {
+          "lines": [
+            19,
+            27
+          ],
+          "text": "All rules live in one method. Editing one risks the others, and ordering is implicit."
+        },
+        {
+          "lines": [
+            7,
+            8
+          ],
+          "text": "The caller meant coupon but passed holiday. Both are `boolean`, so it compiles."
+        },
+        {
+          "lines": [
+            9,
+            9
+          ],
+          "text": "Look at the output: a coupon holder pays more than the list price."
+        }
+      ]
+    },
+    {
+      "file": "ExtensiblePricer.java",
+      "lang": "java",
+      "title": "The fix",
+      "run": "captured",
+      "caption": "Rules plug into one interface. Named tags remove the flag mix-up, and the trace shows each rule's effect.",
+      "walk": [
+        {
+          "lines": [
+            15,
+            25
+          ],
+          "text": "An `enum` tag cannot be passed in the wrong slot. The record copies the set defensively."
+        },
+        {
+          "lines": [
+            27,
+            30
+          ],
+          "text": "The seam: one small interface for the one thing that keeps changing."
+        },
+        {
+          "lines": [
+            32,
+            66
+          ],
+          "text": "Each rule is a record with one job that rejects nonsense values. Adding one never touches the others."
+        },
+        {
+          "lines": [
+            68,
+            74
+          ],
+          "text": "`Pricer` takes rules by constructor injection and copies the list, so callers cannot mutate it."
+        },
+        {
+          "lines": [
+            76,
+            84
+          ],
+          "text": "The loop logs every step, then clamps the total so stacked discounts never go negative."
+        },
+        {
+          "lines": [
+            6,
+            9
+          ],
+          "text": "Order matters and is visible: discounts run before the surcharge, in one place."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Adding seams everywhere \"just in case\"; unused seams are indirection nobody can follow.",
+    "Methods with several boolean parameters; callers swap them and the compiler cannot help.",
+    "Rule order buried in `if` chains; put the order in one visible list."
+  ],
+  "quiz": {
+    "q": "New discount types ship monthly, tax rules change yearly, and the currency never changes. Where should the extension point go?",
+    "options": [
+      "On discounts, the axis that changes most often",
+      "On currency, so a second currency is cheap later",
+      "Nowhere; one method with flags is simpler",
+      "On every class, so anything can be swapped"
+    ],
+    "answer": 0,
+    "why": "Seams cost indirection, so place them where change is frequent and likely. Discounts change monthly; currency has no evidence of change at all."
+  },
+  "takeaway": "Put one stable seam where change happens; keep each change small and local.",
+  "chat": {
+    "starters": [
+      "How do I spot the axis of change in an interview problem?",
+      "Is a list of rules the same as Chain of Responsibility?",
+      "How do I keep rule order from becoming a hidden bug?"
+    ]
+  }
+}

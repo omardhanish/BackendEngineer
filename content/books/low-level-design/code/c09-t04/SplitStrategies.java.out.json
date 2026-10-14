@@ -1,0 +1,11 @@
+{
+  "stdout": "[Share[user=Asha, cents=334], Share[user=Ben, cents=333], Share[user=Chen, cents=333]]\n[Share[user=Asha, cents=334], Share[user=Ben, cents=333], Share[user=Chen, cents=333]]\nrejected: amounts sum to 900, not 1000",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java SplitStrategies.java",
+  "tool": "Java 17.0.17",
+  "hash": "47fcbf8e0f8405e3",
+  "at": "2026-10-12T11:21:44.978Z"
+}

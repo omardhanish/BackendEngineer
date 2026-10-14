@@ -1,0 +1,154 @@
+{
+  "title": "Refactoring in small safe steps",
+  "idea": "Refactoring is changing code's structure without changing its behaviour, done as a chain of tiny named steps with the tests run after each one.",
+  "points": [
+    "Characterization tests pin today's behaviour, quirks included, before you touch legacy code.",
+    "Take one named step, such as Rename or Extract Method, then run tests.",
+    "Green after every step means any failure points at the last small edit.",
+    "Never mix refactoring and behaviour changes in one commit; reviewers cannot separate them."
+  ],
+  "hero": {
+    "type": "timeline",
+    "title": "Six safe steps on a legacy invoice",
+    "items": [
+      {
+        "label": "Pin behaviour",
+        "text": "Write characterization tests for today's output, including the odd VIP boundary at exactly 1000."
+      },
+      {
+        "label": "Rename",
+        "text": "Turn `c`, `q` and `t` into real names. Run the tests: still green."
+      },
+      {
+        "label": "Extract Method",
+        "text": "Move the discount rule into `total()`. Run the tests: still green."
+      },
+      {
+        "label": "Parameter Object",
+        "text": "Replace three parallel arrays with a `Line` record. Update test calls, run them."
+      },
+      {
+        "label": "Swap concatenation",
+        "text": "Build text with `StringBuilder` instead of string `+=` in a loop. Run the tests."
+      },
+      {
+        "label": "Commit each step",
+        "text": "Each green step is its own commit, so any one can be reverted alone."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "InvoiceBefore.java",
+      "lang": "java",
+      "title": "Pin it first",
+      "run": "captured",
+      "caption": "Legacy code wrapped in characterization tests before a single line of it changes.",
+      "walk": [
+        {
+          "lines": [
+            22,
+            35
+          ],
+          "text": "The legacy method: parallel arrays, one-letter names, pricing and formatting tangled together."
+        },
+        {
+          "lines": [
+            5,
+            7
+          ],
+          "text": "A characterization test records the exact text the code produces now, not what it should produce."
+        },
+        {
+          "lines": [
+            11,
+            13
+          ],
+          "text": "This pins a quirk: a VIP at exactly 1000 gets no discount. Keep it until someone decides."
+        },
+        {
+          "lines": [
+            32,
+            32
+          ],
+          "text": "The rule behind that quirk is `>` not `>=`. Refactoring must preserve it."
+        },
+        {
+          "lines": [
+            16,
+            18
+          ],
+          "text": "No JUnit here, so `check` prints PASS or FAIL. All three must pass before step one."
+        }
+      ]
+    },
+    {
+      "file": "InvoiceAfter.java",
+      "lang": "java",
+      "title": "After the steps",
+      "run": "captured",
+      "caption": "Same three tests, same expected text, all green. Only the structure changed.",
+      "walk": [
+        {
+          "lines": [
+            25,
+            30
+          ],
+          "text": "Introduce Parameter Object: one `Line` per item replaces three arrays that had to stay in sync."
+        },
+        {
+          "lines": [
+            32,
+            37
+          ],
+          "text": "`Invoice` validates its customer and copies the list, so callers cannot change it later."
+        },
+        {
+          "lines": [
+            42,
+            50
+          ],
+          "text": "Formatting only. `StringBuilder` replaces repeated string `+=` inside the loop."
+        },
+        {
+          "lines": [
+            52,
+            59
+          ],
+          "text": "Extract Method gave the pricing rule a name. The `>` boundary survived unchanged."
+        },
+        {
+          "lines": [
+            7,
+            17
+          ],
+          "text": "The expected strings are identical to before. Only the call shape changed with the new signature."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Fixing a quirk mid-refactor; pin it, finish, then change it in a separate tested commit.",
+    "Running tests only after a long rewrite; a failure then points nowhere useful.",
+    "Refactoring code with no tests; write characterization tests first, even crude ones."
+  ],
+  "quiz": {
+    "q": "Mid-refactor, you see a VIP at exactly 1000 gets no discount. It looks like a bug. What now?",
+    "options": [
+      "Change > to >= now, while the code is open",
+      "Delete the boundary test because it pins a bug",
+      "Stop refactoring and rewrite the method from scratch",
+      "Keep the behaviour, finish refactoring, raise it separately"
+    ],
+    "answer": 3,
+    "why": "A refactoring must not change behaviour. Callers may rely on the quirk. Finish the structural steps green, then change behaviour in its own reviewed commit."
+  },
+  "takeaway": "Pin behaviour, take one small step, run tests, commit, repeat.",
+  "chat": {
+    "starters": [
+      "How do I write characterization tests for code with no seams?",
+      "Which IDE refactorings are safe to run automatically?",
+      "How do I refactor when the tests themselves are slow?"
+    ]
+  }
+}

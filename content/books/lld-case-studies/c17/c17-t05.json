@@ -1,0 +1,239 @@
+{
+  "title": "Pluggable eviction and decorators",
+  "idea": "An extensible cache adds behaviour by new classes only: policies plug into `EvictionPolicy`, decorators wrap `Cache`, and a builder wires them from configuration.",
+  "points": [
+    "A new policy implements `EvictionPolicy`; `BoundedCache` is never edited.",
+    "`CountingCache` wraps any `Cache`; `TtlCache` wraps a store of stamped values.",
+    "A builder holds the options, validates them once, and stacks the layers.",
+    "An injected clock lets expiry tests jump time instead of sleeping."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "Policies and layers to choose from",
+    "head": [
+      "Option",
+      "Removes",
+      "Good fit",
+      "Cost per call"
+    ],
+    "rows": [
+      [
+        "LRU policy",
+        "least recently used key",
+        "recent items get read again",
+        "O(1)"
+      ],
+      [
+        "LFU policy",
+        "fewest uses, oldest on a tie",
+        "stable popular items",
+        "O(log n) in this version"
+      ],
+      [
+        "FIFO policy",
+        "oldest inserted key",
+        "simple, predictable churn",
+        "O(1)"
+      ],
+      [
+        "TTL decorator",
+        "entries past their expiry",
+        "data that goes stale",
+        "O(1) check on read"
+      ],
+      [
+        "Counting decorator",
+        "nothing: counts hits and misses",
+        "measuring the hit ratio",
+        "O(1)"
+      ]
+    ],
+    "highlight": {
+      "row": 1
+    },
+    "caption": "Every row is its own class. Adding one never edits the core store or its contract from the class design page."
+  },
+  "code": [
+    {
+      "file": "LfuPlugin.java",
+      "lang": "java",
+      "title": "Add LFU without edits",
+      "run": "captured",
+      "caption": "The same workload under LRU and LFU. The core from the class design page is pasted unchanged at the bottom.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7,
+            8
+          ],
+          "text": "Pick a policy by name; the cache code is identical for both."
+        },
+        {
+          "lines": [
+            9,
+            10,
+            11
+          ],
+          "text": "Wrap the bounded cache in a counting decorator and print evictions."
+        },
+        {
+          "lines": [
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "text": "home is read often, promo was read last; then a third key arrives."
+        },
+        {
+          "lines": [
+            23,
+            24,
+            25
+          ],
+          "text": "LFU tracks a use count per key and groups keys by count."
+        },
+        {
+          "lines": [
+            32,
+            33,
+            34
+          ],
+          "text": "The victim is the oldest key in the lowest-count group."
+        },
+        {
+          "lines": [
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41
+          ],
+          "text": "A use moves the key from its old group to the next one."
+        },
+        {
+          "lines": [
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57
+          ],
+          "text": "The decorator counts hits and misses, then delegates every call."
+        }
+      ]
+    },
+    {
+      "file": "Configured.java",
+      "lang": "java",
+      "title": "Builder and TTL",
+      "run": "captured",
+      "caption": "A builder adds expiry by wrapping the store. The fake clock is a long the demo moves by hand.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7,
+            8
+          ],
+          "text": "Configure capacity, a 30-second TTL and a fake clock, then build."
+        },
+        {
+          "lines": [
+            9,
+            10,
+            11,
+            12,
+            13,
+            14
+          ],
+          "text": "Read one millisecond before expiry and exactly at expiry."
+        },
+        {
+          "lines": [
+            15,
+            16,
+            17,
+            18,
+            19
+          ],
+          "text": "A negative TTL is refused at build time, before any use."
+        },
+        {
+          "lines": [
+            24,
+            25,
+            26,
+            27,
+            28
+          ],
+          "text": "Defaults: capacity 1,000, LRU, no expiry, the system clock, a no-op listener."
+        },
+        {
+          "lines": [
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46
+          ],
+          "text": "Without TTL, return the plain store; with it, wrap the store."
+        },
+        {
+          "lines": [
+            49
+          ],
+          "text": "Each stored value carries its own expiry time."
+        },
+        {
+          "lines": [
+            60,
+            61,
+            62,
+            63,
+            64,
+            65,
+            66,
+            67
+          ],
+          "text": "An expired entry is removed on read and reported as a miss."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Lazy expiry keeps unread dead entries; add a sweeper if capacity matters.",
+    "Plain LFU keeps old favourites forever; age the counts so new keys survive.",
+    "Validate options in `build()`, not during the first `put` in production."
+  ],
+  "quiz": {
+    "q": "Which line does LfuPlugin print for the LFU run's eviction?",
+    "options": [
+      "LFU evicts promo",
+      "LFU evicts home",
+      "LFU evicts about",
+      "Nothing: LFU never evicts here"
+    ],
+    "answer": 0,
+    "why": "home has four uses and promo two. LFU drops the key with the fewest uses, so promo goes even though it was read last."
+  },
+  "takeaway": "Extend with new policies and decorators; leave the core store untouched.",
+  "chat": {
+    "starters": [
+      "How would I make LFU run in O(1) per operation?",
+      "Should TTL be a decorator or a field inside the core cache?",
+      "How do I combine a size limit with a byte limit?"
+    ]
+  }
+}

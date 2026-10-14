@@ -1,0 +1,11 @@
+{
+  "stdout": "IN  Customer: AUTHENTICATE\nIN  Customer: CHECK_BALANCE\nIN  Customer: WITHDRAW_CASH\nOUT Customer: DEPOSIT_CASH\nOUT Customer: TRANSFER_FUNDS\nIN  Operator: REFILL_CASH\nIN  System: REVERSE_FAILED_DISPENSE\nRs 500 -> ok\nRs 250 -> refused: not a multiple of Rs 100\nRs 12000 -> refused: over the per-withdrawal limit\nRs 6000 -> refused: over the daily limit",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java WithdrawRules.java",
+  "tool": "Java 17.0.17",
+  "hash": "b67f228f540caf90",
+  "at": "2026-10-14T10:23:59.966Z"
+}

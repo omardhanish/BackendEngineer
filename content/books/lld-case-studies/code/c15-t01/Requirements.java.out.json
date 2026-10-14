@@ -1,0 +1,11 @@
+{
+  "stdout": "threshold WARN\ndrop  DEBUG\ndrop  INFO\nwrite WARN\nwrite ERROR\nwrite FATAL\nv1 leaves out: [log shipping, search UI, retention jobs]",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java Requirements.java",
+  "tool": "Java 17.0.17",
+  "hash": "b304723eb97ac80c",
+  "at": "2026-10-14T08:31:49.256Z"
+}

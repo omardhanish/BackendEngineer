@@ -1,0 +1,95 @@
+{
+  "title": "Repositories and domain services",
+  "idea": "A repository loads and saves whole aggregates as if they sat in a collection; a domain service holds a rule no single aggregate owns.",
+  "points": [
+    "A repository exists per aggregate root and speaks domain words: `findById`, `save`, `overdueLoans`.",
+    "The interface lives in the domain; JDBC or in-memory adapters plug in outside.",
+    "A domain service is stateless and named for a domain verb, like `LendingService.lend`.",
+    "Application services only load, delegate and save; rules there have leaked."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "One lend request through the layers",
+    "nodes": [
+      { "id": "app", "label": "lend (application)", "sub": "load · delegate · save" },
+      { "id": "mrepo", "label": "Repository<Member>", "sub": "findById · save" },
+      { "id": "crepo", "label": "Repository<Copy>", "sub": "findById · save" },
+      { "id": "svc", "label": "LendingService", "sub": "lend(Member, Copy)" },
+      { "id": "member", "label": "Member", "sub": "borrowOne(): limit 2" },
+      { "id": "copy", "label": "Copy", "sub": "lendTo(id): one holder" },
+      { "id": "store", "label": "InMemoryRepo", "sub": "or a JDBC adapter" }
+    ],
+    "edges": [
+      { "from": "app", "to": "mrepo", "label": "findById · save" },
+      { "from": "app", "to": "crepo", "label": "findById · save" },
+      { "from": "app", "to": "svc", "label": "lend" },
+      { "from": "svc", "to": "member", "label": "borrowOne" },
+      { "from": "svc", "to": "copy", "label": "lendTo" },
+      { "from": "mrepo", "to": "store", "label": "implemented by", "dashed": true },
+      { "from": "crepo", "to": "store", "label": "implemented by", "dashed": true }
+    ],
+    "steps": [
+      { "caption": "The application service gets ids from the outside world, not objects.", "active": ["app"], "edges": [] },
+      { "caption": "It asks each repository for a whole aggregate by id. It never sees rows or SQL.", "active": ["app", "mrepo", "crepo"], "edges": [0, 1] },
+      { "caption": "Lending touches a member and a copy, so one domain service coordinates both.", "active": ["app", "svc"], "edges": [2] },
+      { "caption": "The service asks each aggregate to change itself. Each still guards its own invariant.", "active": ["svc", "member", "copy"], "edges": [3, 4] },
+      { "caption": "Back in the application service, both new versions are saved only if no rule failed.", "active": ["app", "mrepo", "crepo"], "edges": [0, 1] },
+      { "caption": "The repository is an interface. Tests plug in the in-memory adapter; production plugs in JDBC.", "active": ["mrepo", "crepo", "store"], "edges": [5, 6] }
+    ]
+  },
+  "code": [
+    {
+      "file": "LeakyLending.java",
+      "lang": "java",
+      "title": "The problem: rules in callers",
+      "run": "captured",
+      "caption": "Two desks edit shared maps directly. The web desk lost the checks, so a copy is lent twice and a limit is broken.",
+      "walk": [
+        { "lines": [6, 9], "text": "Raw maps stand in for storage, and every caller gets direct access to them." },
+        { "lines": [26, 32], "text": "The kiosk re-implements the two lending rules itself before writing." },
+        { "lines": [34, 34], "text": "Nothing forces the next caller to repeat those checks. Copy-paste drifts." },
+        { "lines": [42, 45], "text": "The web desk writes straight through: `C1` silently changes holder." },
+        { "lines": [14, 15], "text": "The output shows three loans for one member and a stolen copy." }
+      ]
+    },
+    {
+      "file": "LendingDemo.java",
+      "lang": "java",
+      "title": "The fix: repo + domain service",
+      "run": "captured",
+      "caption": "Every lend goes through repositories and one domain service, so no caller can skip a rule.",
+      "walk": [
+        { "lines": [32, 36], "text": "The repository port: collection-like, one per aggregate, no persistence words." },
+        { "lines": [37, 46], "text": "An in-memory adapter. A JDBC adapter would implement the same interface unchanged." },
+        { "lines": [47, 52], "text": "The domain service coordinates both aggregates, holds no state, and is where a two-aggregate rule lives." },
+        { "lines": [54, 65], "text": "Each aggregate still enforces its own invariant and returns a new version." },
+        { "lines": [17, 26], "text": "The application service loads, delegates, then saves both results together." },
+        { "lines": [27, 29], "text": "A broken rule throws before any save, so storage never holds half a loan." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "A repository per table, such as `OrderLineRepository`, lets callers bypass the aggregate root.",
+    "Returning query builders or entity managers from repositories leaks persistence into the domain.",
+    "Putting every rule in a `*Service` leaves anaemic entities that are only getters and setters."
+  ],
+  "quiz": {
+    "q": "A rule says members under 16 may not borrow copies marked adults-only. Where does it belong?",
+    "options": [
+      "In the copy repository's `save` method",
+      "In a domain service that sees member and copy",
+      "In the application service before calling the domain",
+      "In the controller that receives the HTTP request"
+    ],
+    "answer": 1,
+    "why": "The rule needs the member's age and the copy's rating, so neither aggregate owns it alone. A domain service keeps it in the domain, where every caller passes through."
+  },
+  "takeaway": "Repositories store whole aggregates; domain services hold rules that span them.",
+  "chat": {
+    "starters": [
+      "Should a repository method ever return a list of DTOs?",
+      "How is a domain service different from an application service?",
+      "Can a domain service call a repository itself?"
+    ]
+  }
+}

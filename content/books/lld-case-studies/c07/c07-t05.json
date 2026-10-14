@@ -1,0 +1,364 @@
+{
+  "title": "Overselling races and checkout edges",
+  "idea": "Overselling happens when two buyers both read \"one left\" and both take it; the fix makes reading and decrementing stock one atomic step.",
+  "analogy": {
+    "text": "Two shoppers see one cake in the window and both run in. A ticket machine at the door hands out the only ticket once.",
+    "breaks": "A real machine queues people; a failed CAS must retry or give up."
+  },
+  "points": [
+    "Check-then-act is two steps, so another buyer can act in between.",
+    "`compareAndSet` writes only if the count is still what you read.",
+    "An Idempotency-Key makes a retried checkout return the same order.",
+    "Reservations carry a deadline; a sweeper frees stock that nobody paid for."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "lanes",
+    "title": "Two buyers, one T-shirt",
+    "scenario": {
+      "lanes": [
+        {
+          "id": "a",
+          "label": "Thread U-7",
+          "kind": "area"
+        },
+        {
+          "id": "b",
+          "label": "Thread U-9",
+          "kind": "area"
+        },
+        {
+          "id": "stock",
+          "label": "SKU-TEE stock",
+          "kind": "area",
+          "hint": "available count"
+        }
+      ],
+      "tokens": {
+        "s1": {
+          "label": "1 left",
+          "tone": "io"
+        },
+        "s0": {
+          "label": "0 left",
+          "tone": "io"
+        },
+        "sm": {
+          "label": "-1 left",
+          "tone": "macro"
+        },
+        "ra": {
+          "label": "read 1",
+          "tone": "sync"
+        },
+        "rb": {
+          "label": "read 1",
+          "tone": "sync"
+        },
+        "da": {
+          "label": "sold",
+          "tone": "micro"
+        },
+        "db": {
+          "label": "sold",
+          "tone": "macro"
+        },
+        "ca": {
+          "label": "CAS 1 to 0",
+          "tone": "timer"
+        },
+        "cb": {
+          "label": "CAS 1 to 0",
+          "tone": "timer"
+        },
+        "no": {
+          "label": "out of stock",
+          "tone": "neutral"
+        }
+      },
+      "steps": [
+        {
+          "caption": "Unsafe version. One T-shirt is left in stock.",
+          "at": {
+            "stock": [
+              "s1"
+            ]
+          }
+        },
+        {
+          "caption": "U-7 reads the count: one left, so it plans to buy.",
+          "at": {
+            "a": [
+              "ra"
+            ],
+            "stock": [
+              "s1"
+            ]
+          },
+          "active": "ra"
+        },
+        {
+          "caption": "Before U-7 writes, U-9 reads the same count. Both believe they can buy.",
+          "at": {
+            "a": [
+              "ra"
+            ],
+            "b": [
+              "rb"
+            ],
+            "stock": [
+              "s1"
+            ]
+          },
+          "active": "rb"
+        },
+        {
+          "caption": "U-7 decrements and reports a sale. Stock is now zero.",
+          "at": {
+            "a": [
+              "da"
+            ],
+            "b": [
+              "rb"
+            ],
+            "stock": [
+              "s0"
+            ]
+          },
+          "active": "da"
+        },
+        {
+          "caption": "U-9 acts on its stale read and decrements too. Two sales, one shirt.",
+          "at": {
+            "a": [
+              "da"
+            ],
+            "b": [
+              "db"
+            ],
+            "stock": [
+              "sm"
+            ]
+          },
+          "active": "db"
+        },
+        {
+          "caption": "Safe version. Both threads ask `compareAndSet` to move the count from 1 to 0.",
+          "at": {
+            "a": [
+              "ca"
+            ],
+            "b": [
+              "cb"
+            ],
+            "stock": [
+              "s1"
+            ]
+          }
+        },
+        {
+          "caption": "Only one swap can see 1. U-7's swap succeeds and the count becomes 0.",
+          "at": {
+            "a": [
+              "da"
+            ],
+            "b": [
+              "cb"
+            ],
+            "stock": [
+              "s0"
+            ]
+          },
+          "active": "da"
+        },
+        {
+          "caption": "U-9's swap fails. It rereads, sees zero, and reports out of stock.",
+          "at": {
+            "a": [
+              "da"
+            ],
+            "b": [
+              "no"
+            ],
+            "stock": [
+              "s0"
+            ]
+          },
+          "active": "no"
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "StockRace.java",
+      "lang": "java",
+      "title": "Prove the race",
+      "run": "captured",
+      "caption": "A barrier makes both buyers read before either writes, so the oversell happens on every run.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7,
+            8
+          ],
+          "text": "Run the same race twice: unsafe first, then with compare-and-set."
+        },
+        {
+          "lines": [
+            12,
+            13,
+            14
+          ],
+          "text": "One unit in stock, a barrier for two threads, and a sales counter."
+        },
+        {
+          "lines": [
+            19,
+            20,
+            21
+          ],
+          "text": "Safe: wait for both, then try an atomic reserve."
+        },
+        {
+          "lines": [
+            22,
+            23,
+            24,
+            25
+          ],
+          "text": "Unsafe: both read one left, wait for each other, then both decrement."
+        },
+        {
+          "lines": [
+            34,
+            35
+          ],
+          "text": "Join both threads before reading the counts, so output is stable."
+        },
+        {
+          "lines": [
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44
+          ],
+          "text": "The CAS loop: refuse if too few, swap if unchanged, else retry."
+        }
+      ]
+    },
+    {
+      "file": "CheckoutEdges.java",
+      "lang": "java",
+      "title": "Edge cases in checkout",
+      "run": "captured",
+      "caption": "Changed prices, retried requests, declined cards and abandoned orders, with time passed in so every run is the same.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7,
+            8,
+            9
+          ],
+          "text": "The price rose after the cart was shown. The shopper confirms, then retries."
+        },
+        {
+          "lines": [
+            10,
+            11,
+            12,
+            13,
+            14
+          ],
+          "text": "Key k-2 takes the last mug as OR-2; OR-1 pays on a second try; OR-2 is abandoned."
+        },
+        {
+          "lines": [
+            36,
+            37,
+            38,
+            39
+          ],
+          "text": "A known Idempotency-Key returns the stored order and reserves nothing new."
+        },
+        {
+          "lines": [
+            40,
+            41,
+            42
+          ],
+          "text": "Refuse if the total differs from what the shopper saw, or stock is short."
+        },
+        {
+          "lines": [
+            43,
+            44,
+            45,
+            46,
+            47,
+            48
+          ],
+          "text": "Reserve stock and give the order a fifteen-minute payment window."
+        },
+        {
+          "lines": [
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59,
+            60
+          ],
+          "text": "Pay refuses closed or late orders. A declined card keeps the hold until the deadline."
+        },
+        {
+          "lines": [
+            63,
+            64,
+            65,
+            66,
+            67,
+            68,
+            69,
+            70,
+            71
+          ],
+          "text": "The sweeper cancels unpaid orders past their deadline and releases stock."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Never read stock, then write it, in two separate steps; use one atomic operation.",
+    "Reserve multi-item carts in sorted SKU order, or two checkouts can deadlock.",
+    "If a payment lands after the order was cancelled, refund it; never resurrect the order."
+  ],
+  "quiz": {
+    "q": "What is the first line StockRace prints?",
+    "options": [
+      "check-then-act: sold 1, available 0",
+      "check-then-act: sold 2, available -1",
+      "check-then-act: sold 2, available 0",
+      "It changes from run to run"
+    ],
+    "answer": 1,
+    "why": "The barrier makes both threads read one left before either writes. Both then decrement and count a sale: two sold, minus one left."
+  },
+  "takeaway": "Make check and decrement one atomic step; give every reservation a deadline.",
+  "chat": {
+    "starters": [
+      "Why does AtomicInteger not prevent the first race by itself?",
+      "Should a declined card release the reservation straight away?",
+      "What happens to in-memory reservations if the server restarts?"
+    ]
+  }
+}

@@ -1,167 +1,260 @@
 {
-  "title": "Aggregates, repositories and events",
-  "idea": "An aggregate is a cluster of domain objects changed as one unit through a single root, which guards the rules that must always hold.",
+  "title": "State and activity diagrams",
+  "idea": "A state diagram shows the states one object moves through and the events that move it; an activity diagram shows the steps and decisions of a process.",
   "points": [
-    "Outside code holds references only to the root, never to inner objects.",
-    "A repository stores and finds whole aggregates by the root's id.",
-    "Domain events record facts, like `OrderPlaced`, for other parts to react to.",
-    "A domain service holds logic that belongs to no single aggregate."
+    "State transitions read `event [guard]`; the guard must be true for the move.",
+    "A missing arrow is a rule: that event is refused in that state.",
+    "Activity diagrams use diamonds for decisions and bars for parallel fork and join.",
+    "Use a state diagram for a status field; use activity for a workflow."
   ],
   "hero": {
-    "type": "seq",
-    "title": "One change through the root",
-    "actors": [
+    "type": "flow",
+    "title": "A document's lifecycle",
+    "nodes": [
       {
-        "id": "app",
-        "label": "Application service"
+        "id": "start",
+        "label": "● start"
       },
       {
-        "id": "repo",
-        "label": "OrderRepository"
+        "id": "draft",
+        "label": "DRAFT",
+        "sub": "author edits"
       },
       {
-        "id": "root",
-        "label": "Order (root)"
+        "id": "review",
+        "label": "IN_REVIEW",
+        "sub": "waiting for reviewer"
       },
       {
-        "id": "line",
-        "label": "Line"
+        "id": "pub",
+        "label": "PUBLISHED",
+        "sub": "readers see it"
       },
       {
-        "id": "subs",
-        "label": "Listeners"
+        "id": "arch",
+        "label": "ARCHIVED",
+        "sub": "final, read-only"
+      },
+      {
+        "id": "end",
+        "label": "◉ end"
       }
     ],
-    "messages": [
+    "edges": [
       {
-        "from": "app",
-        "to": "repo",
-        "label": "find(O-1)",
-        "note": "The service loads order O-1 by its root id. It already holds 2 pens; the limit is 3."
+        "from": "start",
+        "to": "draft",
+        "label": "create"
       },
       {
-        "from": "repo",
-        "to": "app",
-        "label": "Order",
-        "dashed": true,
-        "note": "It gets the root back. Inner lines come with it, never on their own."
+        "from": "draft",
+        "to": "review",
+        "label": "submit"
       },
       {
-        "from": "app",
-        "to": "root",
-        "label": "addLine(pad, 1)",
-        "note": "Every change goes through the root, which checks the rules first."
+        "from": "review",
+        "to": "draft",
+        "label": "reject",
+        "back": true
       },
       {
-        "from": "root",
-        "to": "line",
-        "label": "new Line",
-        "note": "Only the root creates and holds its lines."
+        "from": "review",
+        "to": "pub",
+        "label": "approve [not author]"
       },
       {
-        "from": "app",
-        "to": "root",
-        "label": "addLine(ink, 1)",
-        "note": "Pens plus pad make 3 units. One more ink would make 4, so the root refuses it."
+        "from": "pub",
+        "to": "arch",
+        "label": "archive"
       },
       {
-        "from": "app",
-        "to": "root",
-        "label": "place()",
-        "note": "Placing records an `OrderPlaced` domain event inside the aggregate."
+        "from": "draft",
+        "to": "arch",
+        "label": "archive"
       },
       {
-        "from": "app",
-        "to": "repo",
-        "label": "save(order)",
-        "note": "The service saves the whole aggregate in one step."
+        "from": "arch",
+        "to": "end"
+      }
+    ],
+    "steps": [
+      {
+        "caption": "The filled dot is the initial pseudostate. A new document always starts in `DRAFT`.",
+        "active": [
+          "start",
+          "draft"
+        ],
+        "edges": [
+          0
+        ]
       },
       {
-        "from": "app",
-        "to": "subs",
-        "label": "OrderPlaced",
-        "dashed": true,
-        "note": "After saving, the event goes to listeners such as billing, outside the aggregate."
+        "caption": "The `submit` event moves it to `IN_REVIEW`. Each arrow is labelled with the event that fires it.",
+        "active": [
+          "draft",
+          "review"
+        ],
+        "edges": [
+          1
+        ]
+      },
+      {
+        "caption": "`reject` loops back to `DRAFT`. Cycles are normal; they show that work can return to an earlier state.",
+        "active": [
+          "review",
+          "draft"
+        ],
+        "edges": [
+          2
+        ]
+      },
+      {
+        "caption": "`approve` has a guard in brackets: only someone other than the author may fire it.",
+        "active": [
+          "review",
+          "pub"
+        ],
+        "edges": [
+          3
+        ]
+      },
+      {
+        "caption": "Two arrows enter `ARCHIVED`. A draft can be abandoned; a published document can retire.",
+        "active": [
+          "draft",
+          "pub",
+          "arch"
+        ],
+        "edges": [
+          4,
+          5
+        ]
+      },
+      {
+        "caption": "`ARCHIVED` has no outgoing events, only the final state. Any event there must be refused.",
+        "active": [
+          "arch",
+          "end"
+        ],
+        "edges": [
+          6
+        ]
       }
     ]
   },
   "code": [
     {
-      "file": "AggregateDemo.java",
+      "file": "DocumentWorkflow.java",
       "lang": "java",
-      "title": "An Order aggregate",
+      "title": "State diagram as code",
       "run": "captured",
-      "caption": "`Order` is the root. Its unit limit holds no matter who calls, because every change passes through it.",
+      "caption": "The arrows become a transition table. Missing arrows and false guards are refused with clear errors.",
       "walk": [
         {
           "lines": [
-            23,
-            29
+            26,
+            27
           ],
-          "text": "Fields are private; no getter exposes the live list of lines."
+          "text": "Each state box becomes an enum constant, and each arrow label becomes an `Event`."
         },
         {
           "lines": [
             30,
-            34
-          ],
-          "text": "`addLine` is the only way in. It checks state and the unit limit first."
-        },
-        {
-          "lines": [
-            35,
-            35
-          ],
-          "text": "Placing records a domain event instead of calling other code directly."
-        },
-        {
-          "lines": [
-            41,
-            45
-          ],
-          "text": "The repository saves and finds whole orders by id, never single lines."
-        },
-        {
-          "lines": [
-            8,
-            16
-          ],
-          "text": "The loaded root accepts the pad but refuses the ink: three units is the limit."
-        },
-        {
-          "lines": [
-            38,
             38
           ],
-          "text": "Events are handed out as a copy, ready for the caller to publish."
+          "text": "One `rule` call per arrow, so reviewers can check the table against the diagram line by line."
+        },
+        {
+          "lines": [
+            39,
+            42
+          ],
+          "text": "`EnumMap` keeps lookups fast and ordered; a state with no rules has no entry."
+        },
+        {
+          "lines": [
+            50,
+            52
+          ],
+          "text": "No arrow for this event in this state means refusal, never a silent no-op."
+        },
+        {
+          "lines": [
+            53,
+            54
+          ],
+          "text": "The guard from the diagram becomes one explicit check before the state changes."
+        },
+        {
+          "lines": [
+            11,
+            15
+          ],
+          "text": "The run hits a false guard, a missing transition and the final state."
+        }
+      ]
+    },
+    {
+      "file": "publish-activity.mmd",
+      "lang": "text",
+      "title": "Activity diagram",
+      "run": "static",
+      "illustrative": true,
+      "caption": "The publishing process as steps, with a review loop and two parallel tasks after approval.",
+      "walk": [
+        {
+          "lines": [
+            2,
+            3
+          ],
+          "text": "Rounded boxes are actions people or systems perform, in order."
+        },
+        {
+          "lines": [
+            4,
+            6
+          ],
+          "text": "The diamond is a decision; the \"no\" path loops back to resubmission."
+        },
+        {
+          "lines": [
+            7,
+            9
+          ],
+          "text": "Mermaid has no fork bar, so `[[fork]]` stands in for UML's thick bar; branches may run in parallel."
+        },
+        {
+          "lines": [
+            10,
+            12
+          ],
+          "text": "The join waits for both branches before the process ends."
         }
       ]
     }
   ],
   "pitfalls": [
-    "Do not return the live inner list; callers could bypass the root's checks.",
-    "Keep aggregates small; refer to other aggregates by id, not by object.",
-    "Change one aggregate per transaction; let a domain event update the others."
+    "Modelling status as several booleans allows impossible mixes like approved and draft; use one enum.",
+    "Ignoring events with no transition hides bugs; throw so callers learn the request was invalid.",
+    "Mixing actions into a state diagram; states are conditions that last, actions are steps."
   ],
   "quiz": {
-    "q": "Using `Order` above, what does this print?",
-    "code": "Order o = new Order(\"O-2\", 2);\no.addLine(\"pen\", 1);\no.place();\ntry { o.addLine(\"pad\", 1); }\ncatch (IllegalStateException e) {\n    System.out.println(e.getMessage());\n}",
-    "lang": "java",
+    "q": "In the code, the document is `PUBLISHED`. A reviewer fires `REJECT`. What happens?",
     "options": [
-      "full",
-      "placed",
-      "Nothing is printed",
-      "OrderPlaced[orderId=O-2, units=1]"
+      "It throws: REJECT not allowed in PUBLISHED",
+      "It moves back to DRAFT",
+      "Nothing changes and no error is raised",
+      "It moves to ARCHIVED"
     ],
-    "answer": 1,
-    "why": "`place` set the order to placed, so `addLine` throws `placed` before checking units."
+    "answer": 0,
+    "why": "The table has no `REJECT` arrow from `PUBLISHED`, so the lookup returns null and `fire` throws `IllegalStateException` before changing state."
   },
-  "takeaway": "Change an aggregate only through its root; load and save it whole.",
+  "takeaway": "States are nouns, transitions are events; every missing arrow is a refusal.",
   "chat": {
     "starters": [
-      "How do I decide where an aggregate boundary goes?",
-      "When should I use a domain service instead of a method on an entity?",
-      "How are domain events published after saving?"
+      "When should a state machine become the State pattern instead of a table?",
+      "How do I persist a state machine's current state in a database?",
+      "What is the difference between an activity diagram and a flowchart?"
     ]
   }
 }

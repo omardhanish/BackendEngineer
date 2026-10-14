@@ -1,0 +1,398 @@
+{
+  "title": "Elevator schema in PostgreSQL",
+  "idea": "The elevator schema stores floors, cars and hall calls so PostgreSQL enforces the rules: one open call per button, real floors only, legal states only.",
+  "analogy": {
+    "text": "A hotel desk with one key hook per room. A second key cannot hang on a taken hook until the first one comes back.",
+    "breaks": "A served call frees its hook, but its row stays for history."
+  },
+  "points": [
+    "A composite foreign key to `floor` rejects calls and cars on missing floors.",
+    "A partial unique index allows one PENDING or ASSIGNED call per button.",
+    "A partial index on `elevator_id` serves a car's open calls and failover.",
+    "Assign locks the call `FOR UPDATE`; a `version` column guards car state."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "topology",
+    "title": "Presses, dispatchers and an operator",
+    "scenario": {
+      "tiers": [
+        [
+          "pa",
+          "pb"
+        ],
+        [
+          "db"
+        ],
+        [
+          "ctl",
+          "op"
+        ]
+      ],
+      "nodes": {
+        "pa": {
+          "label": "Panel A",
+          "sub": "5 UP",
+          "kind": "client"
+        },
+        "pb": {
+          "label": "Panel B",
+          "sub": "5 UP",
+          "kind": "client"
+        },
+        "db": {
+          "label": "hall_call",
+          "sub": "PostgreSQL",
+          "kind": "db"
+        },
+        "ctl": {
+          "label": "Controller",
+          "sub": "read version 1",
+          "kind": "service"
+        },
+        "op": {
+          "label": "Operator",
+          "sub": "read version 1",
+          "kind": "user"
+        }
+      },
+      "links": [
+        [
+          "pa",
+          "db"
+        ],
+        [
+          "pb",
+          "db"
+        ],
+        [
+          "db",
+          "ctl"
+        ],
+        [
+          "db",
+          "op"
+        ]
+      ],
+      "steps": [
+        {
+          "caption": "Two panels on floor 5 send UP at the same moment.",
+          "focus": [
+            "pa",
+            "pb"
+          ]
+        },
+        {
+          "caption": "Panel A inserts first. The partial unique index now holds one open 5 UP call.",
+          "send": [
+            {
+              "from": "pa",
+              "to": "db",
+              "label": "INSERT",
+              "tone": "req"
+            }
+          ],
+          "badge": {
+            "db": "1 open call"
+          }
+        },
+        {
+          "caption": "Panel B's insert hits the index. `ON CONFLICT DO NOTHING` skips it, and B reads the open call.",
+          "send": [
+            {
+              "from": "pb",
+              "to": "db",
+              "label": "INSERT",
+              "tone": "warn"
+            }
+          ],
+          "state": {
+            "pb": "ok"
+          }
+        },
+        {
+          "caption": "The call is locked `FOR UPDATE`, matched to the nearest car in service, and marked ASSIGNED.",
+          "send": [
+            {
+              "from": "db",
+              "to": "ctl",
+              "label": "ASSIGNED E2",
+              "tone": "ok"
+            }
+          ],
+          "badge": {
+            "db": "5 UP → E2"
+          }
+        },
+        {
+          "caption": "The operator takes E2 out of service with version 1. The row moves to version 2.",
+          "send": [
+            {
+              "from": "op",
+              "to": "db",
+              "label": "v1 → v2",
+              "tone": "req"
+            }
+          ],
+          "state": {
+            "op": "ok"
+          }
+        },
+        {
+          "caption": "The controller still holds version 1. Its update matches zero rows: a stale write is refused.",
+          "send": [
+            {
+              "from": "ctl",
+              "to": "db",
+              "label": "v1: 0 rows",
+              "tone": "err"
+            }
+          ],
+          "state": {
+            "ctl": "stale"
+          }
+        },
+        {
+          "caption": "Failover moves E2's open call back to PENDING and assigns it to E1.",
+          "send": [
+            {
+              "from": "db",
+              "to": "ctl",
+              "label": "→ E1",
+              "tone": "ok"
+            }
+          ],
+          "badge": {
+            "db": "5 UP → E1"
+          },
+          "state": {
+            "ctl": "ok"
+          }
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "schema.mjs",
+      "lang": "js",
+      "title": "Tables and constraints",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "The schema on a real PostgreSQL 18, then bad writes that the database refuses by itself.",
+      "walk": [
+        {
+          "lines": [
+            4,
+            5,
+            6
+          ],
+          "text": "Every floor is a row, so a foreign key can check any floor number."
+        },
+        {
+          "lines": [
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14
+          ],
+          "text": "elevator: state is TEXT with a CHECK, plus a version and a real floor."
+        },
+        {
+          "lines": [
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25
+          ],
+          "text": "hall_call: checked direction and status, and a named check that assigned calls have a car."
+        },
+        {
+          "lines": [
+            26,
+            27,
+            28,
+            29
+          ],
+          "text": "Partial unique index: at most one open call per floor and button."
+        },
+        {
+          "lines": [
+            30,
+            31,
+            32
+          ],
+          "text": "Partial index for listing a car's open calls during dispatch and failover."
+        },
+        {
+          "lines": [
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59
+          ],
+          "text": "Each bad write prints the Postgres error code and the constraint that stopped it."
+        },
+        {
+          "lines": [
+            60,
+            61,
+            62,
+            63
+          ],
+          "text": "Once the call is SERVED, the same button can open a new call."
+        }
+      ]
+    },
+    {
+      "file": "assign.mjs",
+      "lang": "js",
+      "title": "Press, assign, fail over",
+      "run": "captured",
+      "needs": [
+        "postgres"
+      ],
+      "caption": "Parallel presses and parallel dispatchers, then optimistic locking and failover. It uses trimmed tables so the races stay short.",
+      "walk": [
+        {
+          "lines": [
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "text": "A press inserts with ON CONFLICT DO NOTHING, else returns the open call's id."
+        },
+        {
+          "lines": [
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36
+          ],
+          "text": "Assign locks the PENDING call FOR UPDATE, then picks the nearest car in service."
+        },
+        {
+          "lines": [
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47
+          ],
+          "text": "Mark the call ASSIGNED and commit; any error rolls the transaction back."
+        },
+        {
+          "lines": [
+            49,
+            50,
+            51,
+            52,
+            53
+          ],
+          "text": "Two presses and two dispatchers run in parallel; print counts, never who won."
+        },
+        {
+          "lines": [
+            55,
+            56,
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63
+          ],
+          "text": "Optimistic locking: a write that still carries version 1 updates zero rows."
+        },
+        {
+          "lines": [
+            65,
+            66,
+            67,
+            68,
+            69,
+            70,
+            71,
+            72,
+            73,
+            74,
+            75
+          ],
+          "text": "Failover: E2's open calls go back to PENDING and are assigned again."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Without the partial index, two panels can open two calls for one button.",
+    "Never update car state without the `version` check; stale writes silently win.",
+    "Keep `WHERE status = 'PENDING'` in the locking SELECT, or both dispatchers assign."
+  ],
+  "quiz": {
+    "q": "What does assign.mjs print for the two parallel dispatchers?",
+    "options": [
+      "assignments made: 2 car: E2",
+      "assignments made: 1 car: E2",
+      "assignments made: 1 car: E1",
+      "A deadlock error from PostgreSQL"
+    ],
+    "answer": 1,
+    "why": "The second dispatcher waits on the row lock. After the first commits, the row is ASSIGNED, so its PENDING filter matches nothing."
+  },
+  "takeaway": "Let indexes, foreign keys and row locks enforce the dispatch rules.",
+  "chat": {
+    "starters": [
+      "Why a partial unique index instead of a plain UNIQUE constraint?",
+      "Should car calls be stored in the database too?",
+      "When would pessimistic locking on the elevator row be better than a version column?"
+    ]
+  }
+}

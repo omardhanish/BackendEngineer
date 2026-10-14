@@ -1,0 +1,168 @@
+{
+  "title": "Pluggable providers and filters",
+  "idea": "An extensible notification service adds providers, retry behaviour and delivery rules as new classes wired by configuration, so the core send loop never changes.",
+  "points": [
+    "Each delivery rule is a `NotificationFilter`; the service runs them as a chain.",
+    "`RetryingProvider` wraps any provider with retries, replacing the service's own retry loop.",
+    "A registry maps provider names to factories; config picks the failover order.",
+    "A builder assembles the filters once, then the service is immutable."
+  ],
+  "hero": {
+    "type": "compare",
+    "title": "Adding a vendor and a quiet-hours rule",
+    "left": {
+      "title": "Switch inside the service",
+      "tone": "bad",
+      "items": [
+        "New vendor means a new case in send",
+        "Quiet hours become another if in send",
+        "Retry logic copied into every vendor branch",
+        "Every change retests the whole service"
+      ]
+    },
+    "right": {
+      "title": "Interfaces, decorator and registry",
+      "tone": "good",
+      "items": [
+        "New vendor is one class plus one registry line",
+        "Quiet hours is one new filter class",
+        "Retries wrap any provider once, as a decorator",
+        "Failover order changes in config, not code"
+      ]
+    },
+    "verdict": "The send loop is closed for edits and open for new classes."
+  },
+  "code": [
+    {
+      "file": "FilterChain.java",
+      "lang": "java",
+      "title": "Filter chain and builder",
+      "run": "captured",
+      "caption": "Delivery rules as a chain. Quiet hours was added as a new class; the service did not change.",
+      "walk": [
+        {
+          "lines": [
+            5,
+            6,
+            7,
+            8
+          ],
+          "text": "The builder collects filters in order and builds the service."
+        },
+        {
+          "lines": [
+            9,
+            10,
+            11,
+            12,
+            13,
+            14
+          ],
+          "text": "Four requests: an OTP at night, a promo at night, and two daytime promos."
+        },
+        {
+          "lines": [
+            22
+          ],
+          "text": "One method: return a reason to skip, or empty to let it pass."
+        },
+        {
+          "lines": [
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40
+          ],
+          "text": "Quiet hours span midnight. Critical messages such as OTPs always pass."
+        },
+        {
+          "lines": [
+            50,
+            51,
+            52,
+            53,
+            54,
+            55
+          ],
+          "text": "The first filter that rejects wins, and its reason is recorded."
+        }
+      ]
+    },
+    {
+      "file": "ProviderConfig.java",
+      "lang": "java",
+      "title": "Registry and decorator",
+      "run": "captured",
+      "caption": "Vendors are registered by name and wrapped with retries. A config string picks the failover order. Booleans keep the demo short; the real decorator retries only RETRYABLE and returns REJECTED at once.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7,
+            8,
+            9
+          ],
+          "text": "Three vendor factories. vendor-c is the new one and fails a lot."
+        },
+        {
+          "lines": [
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "text": "Wire two configs and send one SMS through each chain."
+        },
+        {
+          "lines": [
+            19,
+            22,
+            23,
+            24,
+            25
+          ],
+          "text": "Unknown names fail at startup, not at the first send."
+        },
+        {
+          "lines": [
+            33,
+            40,
+            41,
+            42
+          ],
+          "text": "The decorator retries its inner provider and looks like any other provider."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Validate provider names when the service starts, not when the first message fails.",
+    "Do not put `if (vendor == ...)` in the service; register a new class instead.",
+    "Keep filter order explicit; a rate limit before opt-out wastes quota on muted users."
+  ],
+  "quiz": {
+    "q": "What is the last line ProviderConfig prints?",
+    "options": [
+      "vendor-c -> RETRYABLE",
+      "vendor-c -> OK",
+      "vendor-a -> OK",
+      "vendor-b -> OK"
+    ],
+    "answer": 2,
+    "why": "vendor-c is set to fail nine times, so its decorator gives up after two tries. The chain then fails over to vendor-a, which succeeds."
+  },
+  "takeaway": "New behaviour arrives as a new class plus one line of wiring.",
+  "chat": {
+    "starters": [
+      "Is a filter chain the same as the chain of responsibility pattern?",
+      "How would I reload the provider order without restarting the service?",
+      "Should Channel stay an enum if we add WhatsApp later?"
+    ]
+  }
+}

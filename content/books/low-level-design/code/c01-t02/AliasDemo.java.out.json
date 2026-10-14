@@ -1,0 +1,11 @@
+{
+  "stdout": "q3\nRejected: alias taken: q3\nq3 -> https://example.com/q3",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java AliasDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "1b6eaf39facdfc5e",
+  "at": "2026-10-12T11:30:09.090Z"
+}

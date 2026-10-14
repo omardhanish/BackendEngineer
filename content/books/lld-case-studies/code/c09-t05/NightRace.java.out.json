@@ -1,0 +1,11 @@
+{
+  "stdout": "check-then-act: winners 2, night 14 taken 2 of 1\nper-night CAS: winners 1, night 14 taken 1 of 1",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java NightRace.java",
+  "tool": "Java 17.0.17",
+  "hash": "12bf21b3510b4b45",
+  "at": "2026-10-14T08:46:12.944Z"
+}

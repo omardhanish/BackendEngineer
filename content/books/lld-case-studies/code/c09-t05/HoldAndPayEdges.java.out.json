@@ -1,0 +1,11 @@
+{
+  "stdout": "RS-1 HELD until 2026-03-01T09:15:00Z\nRS-2 hold refused: sold out\nRS-1 EXPIRED, room freed\nRS-2 HELD until 2026-03-01T09:31:00Z\nRS-1 refused: hold expired, refund if charged\nRS-2 payment timeout, still HELD\nRS-2 CONFIRMED\nRS-2 CANCELLED, room freed\ncharges made: 1, free rooms: 1",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java HoldAndPayEdges.java",
+  "tool": "Java 17.0.17",
+  "hash": "e145348a67680ae6",
+  "at": "2026-10-14T08:46:13.564Z"
+}

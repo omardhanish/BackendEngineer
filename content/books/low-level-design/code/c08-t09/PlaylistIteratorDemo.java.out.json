@@ -1,0 +1,11 @@
+{
+  "stdout": "play Intro\nplay Rain\nplay Outro\na at Outro, b at Intro\nend of playlist\nfail-fast: ConcurrentModificationException",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java PlaylistIteratorDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "79d274c92adb71df",
+  "at": "2026-10-12T11:15:19.028Z"
+}

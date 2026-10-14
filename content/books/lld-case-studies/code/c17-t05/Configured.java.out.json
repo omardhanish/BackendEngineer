@@ -1,0 +1,11 @@
+{
+  "stdout": "29999 ms -> user:42\n30000 ms -> MISS\nsize after expiry = 0\nrefused: ttlMillis < 0",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java Configured.java",
+  "tool": "Java 17.0.17",
+  "hash": "2bc42fd0a2202e77",
+  "at": "2026-10-14T08:37:51.675Z"
+}

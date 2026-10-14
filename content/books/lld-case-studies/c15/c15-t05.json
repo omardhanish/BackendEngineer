@@ -1,0 +1,178 @@
+{
+  "title": "Pluggable appenders and config",
+  "idea": "An extensible logger lets you add outputs, layouts and filters as new classes registered by name, then wire them from configuration without editing Logger.",
+  "points": [
+    "A new layout is a new `Formatter` class: the strategy pattern.",
+    "A filter wraps any appender in another `Appender`: the decorator pattern.",
+    "A builder assembles a Logger step by step, from code or from config.",
+    "A registry maps config names to factories; unknown names fail at startup."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "Each change, its pattern, its cost",
+    "head": [
+      "Change you need",
+      "Pattern",
+      "What you add",
+      "Core edits"
+    ],
+    "rows": [
+      [
+        "JSON lines for a log store",
+        "Strategy",
+        "JsonFormatter class",
+        "None"
+      ],
+      [
+        "Only ERROR to the alerts channel",
+        "Decorator",
+        "MinLevelAppender wrapper",
+        "None"
+      ],
+      [
+        "A new output such as alerts",
+        "Factory registry",
+        "Appender class + registry entry",
+        "None"
+      ],
+      [
+        "Levels and outputs set per environment",
+        "Builder from config",
+        "A properties file",
+        "None"
+      ],
+      [
+        "A new level between WARN and ERROR",
+        "Enum change",
+        "New enum constant",
+        "Yes, LogLevel"
+      ]
+    ],
+    "highlight": {
+      "row": 4
+    },
+    "caption": "Everything that varies is a plug-in. The level scale is the one closed set; change it rarely."
+  },
+  "code": [
+    {
+      "file": "Extensions.java",
+      "lang": "java",
+      "title": "Strategy, decorator, builder",
+      "run": "captured",
+      "caption": "A config file picks the outputs; a JSON formatter and an alerts output are added without touching Logger.",
+      "walk": [
+        {
+          "lines": [
+            6,
+            7,
+            8
+          ],
+          "text": "Formatters by name. JsonFormatter is a plug-in, not an edit."
+        },
+        {
+          "lines": [
+            9,
+            10,
+            11,
+            12,
+            13
+          ],
+          "text": "Appender factories by name. Each builds an appender around a formatter."
+        },
+        {
+          "lines": [
+            15,
+            16,
+            17,
+            18,
+            19
+          ],
+          "text": "Config: INFO overall; the alerts output gets JSON and ERROR only."
+        },
+        {
+          "lines": [
+            21,
+            22,
+            23,
+            24,
+            25
+          ],
+          "text": "Build from config, then log three levels."
+        },
+        {
+          "lines": [
+            26,
+            27,
+            28,
+            29,
+            30,
+            31
+          ],
+          "text": "An unknown output name is refused while building, not on the first log call."
+        },
+        {
+          "lines": [
+            56,
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63,
+            64,
+            65
+          ],
+          "text": "The decorator passes a record on only at or above its own level."
+        },
+        {
+          "lines": [
+            88,
+            89,
+            90,
+            91,
+            92,
+            93,
+            94,
+            95,
+            96,
+            97,
+            98,
+            99,
+            100,
+            101,
+            102,
+            103,
+            104,
+            105
+          ],
+          "text": "`fromConfig` looks up each name, rejects an unknown output or format, and wraps it when `minLevel` is set."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not add `kafka` if-branches inside `Logger`; register a factory instead.",
+    "Validate configuration when the logger is built, not when the first line arrives.",
+    "In JSON output escape quotes, backslashes and control characters like newlines, or a message forges lines."
+  ],
+  "quiz": {
+    "q": "How many lines does Extensions print that start with `alerts`?",
+    "options": [
+      "None",
+      "One",
+      "Two",
+      "Three"
+    ],
+    "answer": 1,
+    "why": "DEBUG is cut by the Logger threshold. INFO reaches the decorator but is below ERROR. Only the ERROR record passes, formatted as JSON."
+  },
+  "takeaway": "Add classes and register them; Logger itself never changes.",
+  "chat": {
+    "starters": [
+      "Is MinLevelAppender a decorator or a chain of responsibility?",
+      "How would I reload the config at runtime without losing lines?",
+      "Where would Java's ServiceLoader fit in this registry?"
+    ]
+  }
+}

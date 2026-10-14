@@ -1,0 +1,48 @@
+{
+  "title": "Capstone submission checklist",
+  "idea": "A final submission is a package someone else can verify without you: requirements, diagrams, runnable code, passing checks and a record of your decisions.",
+  "points": [
+    "A stranger runs every check using the `javac` and `java` lines in your README.",
+    "Diagrams must match the code: same class names, same `book` and `cancel` signatures.",
+    "The decision log explains each trade-off and each declined review comment.",
+    "List known limits honestly, such as no recurring meetings and in-memory storage."
+  ],
+  "hero": {
+    "type": "table",
+    "title": "What goes in the package",
+    "head": ["Item", "Contents", "Done when"],
+    "rows": [
+      ["Requirements", "Use cases, rules, scope cuts", "Each rule traces to a class or check"],
+      ["Diagrams", "Class and sequence diagrams as Mermaid text", "Names match the code exactly"],
+      ["Code", "Entities, service, repositories, policy, listeners", "Compiles and runs with the JDK only"],
+      ["Checks", "Happy path plus each error code", "All pass in one run"],
+      ["Decision log", "Trade-offs and review verdicts", "Every feedback id has an outcome"],
+      ["Known limits", "What this version does not do", "Written down, not discovered by a reviewer"]
+    ],
+    "highlight": { "col": 2 },
+    "caption": "Read the Done when column as your final test. Any row you cannot tick is not finished."
+  },
+  "pitfalls": [
+    "Submitting diagrams drawn before the last refactor; reviewers spot renamed classes at once.",
+    "Shipping only happy-path checks; include `ROOM_TAKEN`, `INVALID_SLOT` and `NOT_OWNER` cases."
+  ],
+  "quiz": {
+    "q": "Your class diagram shows `reserve`, but the code says `book`. What should you do before submitting?",
+    "options": [
+      "Leave it; reviewers read the code, not the diagram",
+      "Add a note saying the names differ",
+      "Update the diagram so it matches the code",
+      "Rename `book` to `reserve` the night before"
+    ],
+    "answer": 2,
+    "why": "The diagram documents the code that ships. Diagrams-as-code are cheap to edit, while a last-minute rename risks breaking checks and callers."
+  },
+  "takeaway": "Submit a package a stranger can run, read and trust.",
+  "chat": {
+    "starters": [
+      "Can you review my submission list for the booking system and spot gaps?",
+      "How detailed should my known limits section be?",
+      "What would I change if the booking system had to persist to a database next?"
+    ]
+  }
+}

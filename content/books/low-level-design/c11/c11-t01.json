@@ -1,0 +1,170 @@
+{
+  "title": "Meeting room booking capstone",
+  "idea": "The capstone is one system, a Meeting Room Booking System, that you take from a written brief to tested, documented Java you can defend in a review.",
+  "points": [
+    "Employees search free rooms by capacity, book a slot, and cancel their own bookings.",
+    "Agree scope first: list must-haves, name what is out, write each as a check.",
+    "Start with a walking skeleton: the thinnest slice that books rooms end to end.",
+    "Each later page replaces one shortcut in the skeleton with a production-grade module."
+  ],
+  "hero": {
+    "type": "timeline",
+    "title": "From brief to defended design",
+    "items": [
+      {
+        "label": "Requirements",
+        "text": "Turn the brief into use cases, actors and entities. Agree what is out."
+      },
+      {
+        "label": "Class diagram",
+        "text": "Draw `BookingService`, the repositories and the extension points as interfaces before any logic."
+      },
+      {
+        "label": "Core modules",
+        "text": "Build entities and repositories first, then the service that enforces the booking rules."
+      },
+      {
+        "label": "Errors and monitoring",
+        "text": "Replace returned strings with `BookingException` subclasses, structured logs and counters."
+      },
+      {
+        "label": "Patterns and tests",
+        "text": "Make `ConflictPolicy` a Strategy and `BookingListener` an Observer, then cover the rules with checks."
+      },
+      {
+        "label": "Review and present",
+        "text": "Collect peer feedback, refine, document with UML, and explain every trade-off you made."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "WalkingSkeleton.java",
+      "lang": "java",
+      "title": "Walking skeleton",
+      "run": "captured",
+      "caption": "Day one: the smallest program that books rooms and rejects a clash. Shortcuts are deliberate and marked.",
+      "walk": [
+        {
+          "lines": [
+            16,
+            24
+          ],
+          "text": "`Booking` is a record. Hours are `double`, so 9.5 means 09:30. An empty slot is rejected at birth."
+        },
+        {
+          "lines": [
+            26,
+            29
+          ],
+          "text": "Two slots overlap when each starts before the other ends. Equal end and start do not overlap."
+        },
+        {
+          "lines": [
+            32,
+            34
+          ],
+          "text": "The comment names the shortcuts: one class, one list, strings instead of exceptions. Later pages remove each."
+        },
+        {
+          "lines": [
+            36,
+            44
+          ],
+          "text": "`book` builds a candidate and scans existing bookings. The first clash wins and names the blocker."
+        },
+        {
+          "lines": [
+            41,
+            42
+          ],
+          "text": "Returning a string is a skeleton shortcut. c11-t04 throws `RoomTakenException` instead; c11-t05 handles it."
+        },
+        {
+          "lines": [
+            8,
+            12
+          ],
+          "text": "The run shows a clash, a back-to-back slot, and the same hours in another room."
+        }
+      ]
+    },
+    {
+      "file": "AcceptanceChecks.java",
+      "lang": "java",
+      "title": "Scope as checks",
+      "run": "captured",
+      "caption": "Each requirement becomes a named check. Unbuilt ones are listed as TODO, so scope is visible in one run.",
+      "walk": [
+        {
+          "lines": [
+            13,
+            17
+          ],
+          "text": "Every must-have rule is one line that reads like the brief: a name plus a boolean."
+        },
+        {
+          "lines": [
+            18,
+            20
+          ],
+          "text": "Requirements not built yet stay on the list as TODO. Nothing in scope is forgotten silently."
+        },
+        {
+          "lines": [
+            25,
+            32
+          ],
+          "text": "A hand-written `check` runner stands in for JUnit 5, which this book cannot run."
+        },
+        {
+          "lines": [
+            41,
+            49
+          ],
+          "text": "`SlotBook` keeps slots per room in a `TreeMap`, so any printing order is stable."
+        },
+        {
+          "lines": [
+            50,
+            56
+          ],
+          "text": "The same overlap rule as the skeleton. Back-to-back slots pass because the comparison is strict."
+        },
+        {
+          "lines": [
+            21,
+            22
+          ],
+          "text": "The summary line is your progress bar for the whole capstone."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Coding before agreeing scope: you build recurring meetings nobody asked for and miss cancellation.",
+    "Starting with a perfect domain model instead of an end-to-end slice delays your first working run.",
+    "Leaving skeleton shortcuts unmarked; reviewers later mistake them for design decisions."
+  ],
+  "quiz": {
+    "q": "Using the skeleton, what does the second call print?",
+    "code": "BookingService s = new BookingService();\ns.book(\"e1\", \"R1\", 9.0, 10.0);\nSystem.out.println(s.book(\"e2\", \"R1\", 10.0, 10.5));",
+    "lang": "java",
+    "options": [
+      "REJECTED R1 10.0-10.5 clashes with B1",
+      "BOOKED B2 R1 10.0-10.5",
+      "BOOKED B1 R1 10.0-10.5",
+      "IllegalArgumentException: start must be before end"
+    ],
+    "answer": 1,
+    "why": "Overlap needs `start < other.end`; 10.0 is not below 10.0, so the slots only touch. The list holds one booking, so the id is B2."
+  },
+  "takeaway": "Agree scope as checks, then grow one walking skeleton into the system.",
+  "chat": {
+    "starters": [
+      "How do I decide what is out of scope in a 45-minute interview?",
+      "Why use double for hours instead of LocalTime?",
+      "What should the walking skeleton include on day one?"
+    ]
+  }
+}

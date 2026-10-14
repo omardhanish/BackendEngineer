@@ -1,0 +1,11 @@
+{
+  "stdout": "schema ready: 1 flight, 1 fare, PNR-1 with 2 tickets\noversell the fare -> 23514 fare_class_check\nsame seat twice -> 23505 ticket_flight_id_seat_no_key\nzero passengers -> 23514 booking_pax_count_check\nunknown fare -> 23503 booking_flight_id_fare_code_fkey\nloop route -> 23514 flight_check\nsecond ticket without a seat -> TK-4",
+  "stderr": "",
+  "code": 0,
+  "node": "20.20.2",
+  "runner": "node",
+  "command": "node schema.mjs",
+  "tool": "PostgreSQL 18.4",
+  "hash": "7803e6b08c95cb90",
+  "at": "2026-10-14T10:25:38.841Z"
+}

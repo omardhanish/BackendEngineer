@@ -1,0 +1,11 @@
+{
+  "stdout": "left after hold:  0\nPNR-1 EXPIRED, seats back: 2\nleft after sweep: 2\nPNR-1 is EXPIRED: refund the payment\nPNR-2 CONFIRMED, ticketing failed: timeout\nPNR-2 TICKETED [TK-1]\nPNR-2 is TICKETED, tickets [TK-1]\nPNR-2 is TICKETED: duplicate, ignored",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java EdgeCases.java",
+  "tool": "Java 17.0.17",
+  "hash": "8a97bd1cdb241e2e",
+  "at": "2026-10-14T08:46:50.127Z"
+}

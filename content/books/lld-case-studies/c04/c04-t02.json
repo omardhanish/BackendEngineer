@@ -1,0 +1,253 @@
+{
+  "title": "Elevator domain model",
+  "idea": "The elevator domain model separates the fixed building (Floor), the moving parts (Elevator with state and stops) and short-lived calls (Request), coordinated by one ElevatorController.",
+  "analogy": {
+    "text": "A bus line. The stops never move, each bus knows where it is and where it heads, and every stop bell lasts until it is served.",
+    "breaks": "A bus follows a fixed route; an elevator reverses on demand."
+  },
+  "points": [
+    "A Floor is a value: its number and which hall buttons it has.",
+    "A hall Request has UP or DOWN; a car Request has IDLE.",
+    "An Elevator owns its floor, Direction, ElevatorState and a sorted set of stops.",
+    "ElevatorController holds the cars and asks a SchedulingStrategy which car answers."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Class diagram",
+    "nodes": [
+      {
+        "id": "ctl",
+        "label": "ElevatorController",
+        "sub": "building, cars"
+      },
+      {
+        "id": "bld",
+        "label": "Building",
+        "sub": "floor(n)"
+      },
+      {
+        "id": "floor",
+        "label": "Floor",
+        "sub": "number, hasUp, hasDown"
+      },
+      {
+        "id": "car",
+        "label": "Elevator",
+        "sub": "currentFloor, stops"
+      },
+      {
+        "id": "state",
+        "label": "ElevatorState",
+        "sub": "enum"
+      },
+      {
+        "id": "dir",
+        "label": "Direction",
+        "sub": "UP, DOWN, IDLE"
+      },
+      {
+        "id": "req",
+        "label": "Request",
+        "sub": "floor, direction, source"
+      },
+      {
+        "id": "strat",
+        "label": "SchedulingStrategy",
+        "sub": "choose(floor, dir, cars)"
+      }
+    ],
+    "edges": [
+      {
+        "from": "ctl",
+        "to": "bld",
+        "label": "has 1",
+        "caption": "The controller serves one building. The building owns the floors."
+      },
+      {
+        "from": "bld",
+        "to": "floor",
+        "label": "has 1..*",
+        "caption": "Each Floor is an immutable record. The top floor has no UP button."
+      },
+      {
+        "from": "ctl",
+        "to": "car",
+        "label": "has 1..*",
+        "caption": "The controller holds every car. Cars never move between controllers."
+      },
+      {
+        "from": "car",
+        "to": "state",
+        "label": "has 1",
+        "caption": "ElevatorState says what the car is doing now: idle, moving, doors open, or out."
+      },
+      {
+        "from": "car",
+        "to": "dir",
+        "label": "has 1",
+        "caption": "Direction is separate from state. An idle car can still face UP."
+      },
+      {
+        "from": "req",
+        "to": "floor",
+        "label": "at 1",
+        "caption": "A Request points at one Floor. Hall calls carry a Direction; car calls do not."
+      },
+      {
+        "from": "ctl",
+        "to": "strat",
+        "label": "uses 1",
+        "caption": "Choosing a car is a swappable policy. Page 3 implements it."
+      }
+    ]
+  },
+  "code": [
+    {
+      "file": "DomainModel.java",
+      "lang": "java",
+      "title": "The model in Java 17",
+      "run": "captured",
+      "caption": "Records and enums for values, a class for Elevator because it changes. Invariants live in constructors.",
+      "walk": [
+        {
+          "lines": [
+            7,
+            8,
+            9,
+            10,
+            11
+          ],
+          "text": "Build a ten-floor building, two cars, and the controller that owns them."
+        },
+        {
+          "lines": [
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18
+          ],
+          "text": "One hall call and one car call become stops on E1. E2 has none."
+        },
+        {
+          "lines": [
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28
+          ],
+          "text": "Two bad inputs are refused: UP on the top floor, and floor 12."
+        },
+        {
+          "lines": [
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50
+          ],
+          "text": "The compact constructor checks each request against the buttons its floor has."
+        },
+        {
+          "lines": [
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59,
+            60
+          ],
+          "text": "Two factories build the two kinds; a car call is always IDLE."
+        },
+        {
+          "lines": [
+            86,
+            87,
+            88,
+            89,
+            90,
+            91,
+            92,
+            93,
+            94,
+            95,
+            96,
+            97,
+            98,
+            99,
+            100,
+            101,
+            102,
+            103,
+            104,
+            105,
+            106,
+            107
+          ],
+          "text": "Elevator keeps stops in a TreeSet, so the next stop either way is cheap."
+        },
+        {
+          "lines": [
+            110,
+            111,
+            112,
+            113,
+            114,
+            115,
+            116,
+            117,
+            118,
+            119,
+            120,
+            121,
+            122,
+            123,
+            124
+          ],
+          "text": "The controller holds an immutable car list. The strategy is filled in next page."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not store waiting people on Floor; store each call as a Request.",
+    "Keep stops in a sorted set; an unsorted list makes the next stop slow.",
+    "Reject impossible requests in constructors, such as UP on the top floor."
+  ],
+  "quiz": {
+    "q": "What does the third line of DomainModel print?",
+    "options": [
+      "E1 at 3 MOVING UP stops=[7]",
+      "E1 at 0 IDLE IDLE stops=[7, 3]",
+      "E1 at 0 IDLE IDLE stops=[3, 7]",
+      "E2 at 6 IDLE IDLE stops=[]"
+    ],
+    "answer": 2,
+    "why": "Adding a stop only records it; nothing ticks, so E1 stays at floor 0. The TreeSet keeps stops sorted, so 3 comes before 7."
+  },
+  "takeaway": "Floors are fixed, Elevators hold state, Requests are short-lived.",
+  "chat": {
+    "starters": [
+      "Why is Direction separate from ElevatorState?",
+      "Should a car call and a hall call be two classes instead of one Request?",
+      "Where would passenger weight and capacity checks go?"
+    ]
+  }
+}

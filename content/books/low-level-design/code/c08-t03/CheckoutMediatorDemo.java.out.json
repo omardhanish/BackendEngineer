@@ -1,0 +1,11 @@
+{
+  "stdout": "quantity changed\n  total: 6000\n  order button: true\nquantity changed\n  total: 0\n  order button: false\ncoupon changed\n  total: 0\n  order button: false\nquantity changed\n  total: 3000\n  order button: true",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java CheckoutMediatorDemo.java",
+  "tool": "Java 17.0.17",
+  "hash": "a400dd052cf0fddc",
+  "at": "2026-10-12T11:25:08.029Z"
+}

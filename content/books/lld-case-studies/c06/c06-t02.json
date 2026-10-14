@@ -1,0 +1,79 @@
+{
+  "title": "Library domain model",
+  "idea": "The library domain model separates the catalog title (Book) from each physical item (BookCopy), and links Members to copies through Loans and to titles through Reservations.",
+  "analogy": {
+    "text": "A recipe card and the dishes cooked from it. One card, many plates; each plate is eaten by one person at a time.",
+    "breaks": "Plates are not returned; a BookCopy comes back and circulates again."
+  },
+  "points": [
+    "A Book is one title by ISBN; it has one or more BookCopy items.",
+    "A Loan links one BookCopy to one Member, with a due date.",
+    "A Reservation links a Member to a Book, never to a specific copy.",
+    "FinePolicy is an interface, so the fine rule can change without touching Loan."
+  ],
+  "hero": {
+    "type": "flow",
+    "title": "Class diagram",
+    "nodes": [
+      { "id": "book", "label": "Book", "sub": "isbn, title, author" },
+      { "id": "copy", "label": "BookCopy", "sub": "id, CopyStatus" },
+      { "id": "member", "label": "Member", "sub": "id, fineDueMinor" },
+      { "id": "loan", "label": "Loan", "sub": "dueOn, renewals" },
+      { "id": "res", "label": "Reservation", "sub": "isbn, memberId, seq" },
+      { "id": "status", "label": "LoanStatus", "sub": "enum" },
+      { "id": "fine", "label": "FinePolicy", "sub": "fineFor(due, returned)" },
+      { "id": "perday", "label": "PerDayFine", "sub": "rate, cap" }
+    ],
+    "edges": [
+      { "from": "book", "to": "copy", "label": "has 1..*", "caption": "One Book title owns many BookCopy items. Each copy has its own barcode id." },
+      { "from": "loan", "to": "copy", "label": "for 1", "caption": "A Loan is for exactly one copy. A copy has at most one open Loan." },
+      { "from": "loan", "to": "member", "label": "by 1", "caption": "A Member has zero to five open Loans under the v1 policy." },
+      { "from": "res", "to": "book", "label": "waits for 1", "caption": "A Reservation points at the title, so any returned copy can serve it." },
+      { "from": "res", "to": "member", "label": "by 1", "caption": "Each Reservation belongs to one Member and keeps a sequence number for queue order." },
+      { "from": "loan", "to": "status", "label": "has", "caption": "LoanStatus is an enum. The flows page turns it into a state machine." },
+      { "from": "perday", "to": "fine", "label": "is-a", "caption": "PerDayFine is one FinePolicy: a rate per late day, capped per loan." }
+    ]
+  },
+  "code": [
+    {
+      "file": "LibraryModel.java",
+      "lang": "java",
+      "title": "The model in Java 17",
+      "run": "captured",
+      "caption": "Records for data that never changes, classes for things whose status moves. Constructors refuse invalid objects.",
+      "walk": [
+        { "lines": [6, 7, 8, 9], "text": "One Book title with two physical copies and one Member." },
+        { "lines": [10, 11, 12], "text": "A Loan for copy CP-1, due 14 days after a fixed date." },
+        { "lines": [16, 17, 18, 19, 20, 21], "text": "The fine policy prices a 4-day late return and a very late one." },
+        { "lines": [24, 25, 26, 27, 28, 29, 30, 31, 32, 33], "text": "Two invalid objects are refused: a due date before the borrow date and a blank ISBN." },
+        { "lines": [50, 51, 52, 53, 54, 55, 56], "text": "BookCopy is mutable only in status. Status lives on the copy, not on the Book." },
+        { "lines": [71, 72, 73, 74, 75, 76, 77], "text": "The Loan constructor guards its invariant: the due date comes after the borrow date." },
+        { "lines": [89, 90, 91, 92, 93, 94], "text": "Early returns give zero late days; the cap limits the fine per loan." }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Do not put an availability flag on Book; status belongs to each BookCopy.",
+    "Keep fines as long minor units; never use double for money.",
+    "Do not store the fine on Loan before return; compute it from dates."
+  ],
+  "quiz": {
+    "q": "What does LibraryModel print for the very late return?",
+    "options": [
+      "fine, 30 days late: 30000",
+      "fine, 30 days late: 10000",
+      "fine, 30 days late: 0",
+      "fine, 30 days late: 100.0"
+    ],
+    "answer": 1,
+    "why": "Thirty late days at 1000 each is 30000, but `Math.min` with the cap of 10000 wins."
+  },
+  "takeaway": "A Book is the title; a BookCopy is the thing that gets borrowed.",
+  "chat": {
+    "starters": [
+      "Why does a Reservation point at Book instead of BookCopy?",
+      "Should OVERDUE be stored or computed from the due date?",
+      "How would I add DVDs or magazines to this model?"
+    ]
+  }
+}

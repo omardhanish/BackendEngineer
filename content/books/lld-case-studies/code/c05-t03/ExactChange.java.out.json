@@ -1,0 +1,11 @@
+{
+  "stdout": "GreedyPlanner 60000 -> refused\nBacktrackingPlanner 60000 -> {20000=3}",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java ExactChange.java",
+  "tool": "Java 17.0.17",
+  "hash": "64b947bbe008561c",
+  "at": "2026-10-14T08:33:09.345Z"
+}

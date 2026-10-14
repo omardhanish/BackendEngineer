@@ -1,0 +1,11 @@
+{
+  "stdout": "IN  PASSENGER: CALL_FROM_FLOOR\nIN  PASSENGER: CHOOSE_DESTINATION\nIN  SYSTEM: DISPATCH_CAR\nIN  SYSTEM: STOP_AND_OPEN_DOORS\nIN  OPERATOR: TAKE_OUT_OF_SERVICE\nIN  OPERATOR: VIEW_CAR_STATUS\nOUT PASSENGER: DESTINATION_KEYPAD\nOUT OPERATOR: FIRE_SERVICE_MODE\nassume: 1 building, floors 0-15, 3 cars",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java Scope.java",
+  "tool": "Java 17.0.17",
+  "hash": "27647e947153e636",
+  "at": "2026-10-14T08:34:09.328Z"
+}

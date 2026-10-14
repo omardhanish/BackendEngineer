@@ -1,0 +1,347 @@
+{
+  "title": "Thread-safe notification dispatch",
+  "idea": "A thread-safe notification service changes shared state, like the key map and counters, atomically, and calls slow providers with no lock held.",
+  "analogy": {
+    "text": "A mailroom with four clerks and one sign-out sheet. The first clerk to sign for a parcel delivers it; others see the signature and move on.",
+    "breaks": "Two clerks can both see a blank line; `putIfAbsent` cannot."
+  },
+  "points": [
+    "Two workers can receive the same request when a caller or queue retries.",
+    "Get-then-put on the key map lets both workers send the same SMS.",
+    "`putIfAbsent` makes claiming a key one atomic step: one winner sends.",
+    "A bounded queue with `CallerRunsPolicy` slows producers instead of exhausting memory."
+  ],
+  "hero": {
+    "type": "anim",
+    "engine": "lanes",
+    "title": "Two workers, one request k1",
+    "scenario": {
+      "lanes": [
+        {
+          "id": "w1",
+          "label": "Worker W-1",
+          "kind": "area"
+        },
+        {
+          "id": "w2",
+          "label": "Worker W-2",
+          "kind": "area"
+        },
+        {
+          "id": "map",
+          "label": "byKey map",
+          "kind": "area",
+          "hint": "who owns k1"
+        },
+        {
+          "id": "sms",
+          "label": "SMS provider",
+          "kind": "queue",
+          "hint": "messages sent"
+        }
+      ],
+      "tokens": {
+        "g1": {
+          "label": "k1 seen?",
+          "tone": "sync"
+        },
+        "g2": {
+          "label": "k1 seen?",
+          "tone": "sync"
+        },
+        "n1": {
+          "label": "no",
+          "tone": "io"
+        },
+        "n2": {
+          "label": "no",
+          "tone": "io"
+        },
+        "o1": {
+          "label": "k1: W-1",
+          "tone": "micro"
+        },
+        "o2": {
+          "label": "k1: W-2",
+          "tone": "err"
+        },
+        "s1": {
+          "label": "OTP #1",
+          "tone": "macro"
+        },
+        "s2": {
+          "label": "OTP #2",
+          "tone": "err"
+        },
+        "p1": {
+          "label": "putIfAbsent",
+          "tone": "timer"
+        },
+        "p2": {
+          "label": "putIfAbsent",
+          "tone": "timer"
+        },
+        "dup": {
+          "label": "duplicate",
+          "tone": "neutral"
+        }
+      },
+      "steps": [
+        {
+          "caption": "Unsafe version. W-1 asks the map whether `k1` was seen.",
+          "at": {
+            "w1": [
+              "g1"
+            ]
+          },
+          "active": "g1"
+        },
+        {
+          "caption": "Before W-1 writes, W-2 asks the same question.",
+          "at": {
+            "w1": [
+              "n1"
+            ],
+            "w2": [
+              "g2"
+            ]
+          },
+          "active": "g2"
+        },
+        {
+          "caption": "Both workers hold the answer no.",
+          "at": {
+            "w1": [
+              "n1"
+            ],
+            "w2": [
+              "n2"
+            ]
+          }
+        },
+        {
+          "caption": "W-1 claims `k1` and sends the OTP.",
+          "at": {
+            "w2": [
+              "n2"
+            ],
+            "map": [
+              "o1"
+            ],
+            "sms": [
+              "s1"
+            ]
+          },
+          "active": "s1"
+        },
+        {
+          "caption": "W-2 acts on its stale no. The user gets the same OTP twice.",
+          "at": {
+            "map": [
+              "o2"
+            ],
+            "sms": [
+              "s1",
+              "s2"
+            ]
+          },
+          "active": "s2"
+        },
+        {
+          "caption": "Safe version. Both workers call `putIfAbsent` at once.",
+          "at": {
+            "w1": [
+              "p1"
+            ],
+            "w2": [
+              "p2"
+            ]
+          }
+        },
+        {
+          "caption": "The map applies one call first. W-1 finds no owner and writes itself.",
+          "at": {
+            "w2": [
+              "p2"
+            ],
+            "map": [
+              "o1"
+            ]
+          },
+          "active": "o1"
+        },
+        {
+          "caption": "W-2 gets W-1 back as the owner, so it drops the request.",
+          "at": {
+            "w2": [
+              "dup"
+            ],
+            "map": [
+              "o1"
+            ]
+          },
+          "active": "dup"
+        },
+        {
+          "caption": "Only the winner calls the provider, outside any lock. One OTP is sent.",
+          "at": {
+            "w2": [
+              "dup"
+            ],
+            "map": [
+              "o1"
+            ],
+            "sms": [
+              "s1"
+            ]
+          },
+          "active": "s1"
+        }
+      ]
+    }
+  },
+  "code": [
+    {
+      "file": "DuplicateSend.java",
+      "lang": "java",
+      "title": "Prove the duplicate",
+      "run": "captured",
+      "caption": "A barrier makes both workers look before either writes, so the duplicate shows up on every run.",
+      "walk": [
+        {
+          "lines": [
+            7,
+            8
+          ],
+          "text": "Run the same race twice: get-then-put first, then `putIfAbsent`."
+        },
+        {
+          "lines": [
+            13,
+            14,
+            15
+          ],
+          "text": "A thread-safe map, a two-party barrier, and a counter of SMS sends."
+        },
+        {
+          "lines": [
+            20,
+            21,
+            22,
+            23
+          ],
+          "text": "Safe: `putIfAbsent` returns null only to the one call that wrote."
+        },
+        {
+          "lines": [
+            25,
+            26,
+            27,
+            28,
+            29,
+            30
+          ],
+          "text": "Unsafe: each call is thread-safe, but the pair is not. Both send."
+        },
+        {
+          "lines": [
+            38,
+            39
+          ],
+          "text": "Join both threads before reading the count, so output is stable."
+        }
+      ]
+    },
+    {
+      "file": "Dispatcher.java",
+      "lang": "java",
+      "title": "Worker pool",
+      "run": "captured",
+      "caption": "Four workers process 200 requests with 50 duplicates, while the primary provider fails every third call.",
+      "walk": [
+        {
+          "lines": [
+            7,
+            8
+          ],
+          "text": "sms-a fails every third call; sms-b never fails."
+        },
+        {
+          "lines": [
+            9,
+            10,
+            11
+          ],
+          "text": "Four threads and a queue of 20. When it is full, the submitting thread runs the task."
+        },
+        {
+          "lines": [
+            12,
+            13,
+            14,
+            15
+          ],
+          "text": "Submit 200 requests over 150 distinct keys."
+        },
+        {
+          "lines": [
+            16,
+            17,
+            18
+          ],
+          "text": "Wait for every task to finish before printing."
+        },
+        {
+          "lines": [
+            27,
+            28,
+            29,
+            30,
+            31,
+            34
+          ],
+          "text": "Shared state: an immutable provider list, a concurrent map and atomic counters."
+        },
+        {
+          "lines": [
+            38,
+            39
+          ],
+          "text": "Ids come from an `AtomicLong`; the key claim is one atomic call."
+        },
+        {
+          "lines": [
+            40,
+            41,
+            42
+          ],
+          "text": "The winner fails over across providers with no lock held during the slow call."
+        }
+      ]
+    }
+  ],
+  "pitfalls": [
+    "Never send inside `computeIfAbsent`; it holds a bin lock and can block other updates.",
+    "Do not share a plain `int` id counter across threads; use an `AtomicLong`.",
+    "Use a bounded queue; an unbounded one hides overload until memory runs out."
+  ],
+  "quiz": {
+    "q": "What does Dispatcher print for sms-b?",
+    "options": [
+      "sms-b calls=0 ok=0",
+      "sms-b calls=66 ok=66",
+      "sms-b calls=50 ok=50",
+      "It changes from run to run"
+    ],
+    "answer": 2,
+    "why": "Only 150 keys win the claim, so sms-a gets 150 calls and fails every third: 50. Each failure fails over to sms-b once."
+  },
+  "takeaway": "Claim the key atomically, then send with no lock held.",
+  "chat": {
+    "starters": [
+      "Why is ConcurrentHashMap alone not enough to stop duplicate sends?",
+      "What happens to claimed keys if the worker crashes before sending?",
+      "How do I keep one user's notifications in order across worker threads?"
+    ]
+  }
+}

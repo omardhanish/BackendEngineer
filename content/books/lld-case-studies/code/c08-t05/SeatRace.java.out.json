@@ -1,0 +1,11 @@
+{
+  "stdout": "check-then-act winners: 2\nputIfAbsent winners:    1",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java SeatRace.java",
+  "tool": "Java 17.0.17",
+  "hash": "fcccc384cbadf242",
+  "at": "2026-10-12T11:17:28.023Z"
+}

@@ -1,0 +1,11 @@
+{
+  "stdout": "rejected: shares sum to 6666, total is 10000\nrejected: Zed not in group\nGoa trip: Dinner 10000 cents, paid by Asha",
+  "stderr": "",
+  "code": 0,
+  "node": null,
+  "runner": "java",
+  "command": "java SplitwiseModel.java",
+  "tool": "Java 17.0.17",
+  "hash": "f72cd6c30f7e522d",
+  "at": "2026-10-12T11:19:30.029Z"
+}
